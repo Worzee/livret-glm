@@ -1,4 +1,3 @@
-import { Trash2 } from 'lucide-react';
 import type { FicheSuiviPeriode, LigneSuiviEntreprise } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
@@ -6,6 +5,7 @@ import { peutEditer } from '@/lib/droits';
 import { peutEncoreEditerFiche } from '@/lib/transitions-fiche';
 import { competencesParId, referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
 import { SelecteurNiveau } from '@/components/common/SelecteurNiveau';
+import { BoutonSupprimer } from '@/components/common/BoutonSupprimer';
 import { cn } from '@/lib/utils';
 
 /**
@@ -215,14 +215,12 @@ function LigneTableau(props: CelluleProps) {
       </td>
       {props.peutSupprimer && (
         <td className="px-3 py-3">
-          <button
-            type="button"
-            onClick={props.onSupprimer}
-            className="rounded-md p-1 text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
-            aria-label={`Supprimer la compétence ${code}`}
-          >
-            <Trash2 className="h-4 w-4" aria-hidden="true" />
-          </button>
+          <BoutonSupprimer
+            ariaLabel={`Supprimer la compétence ${code}`}
+            question={`Supprimer ${code} ?`}
+            onConfirmer={props.onSupprimer}
+            variant="icon"
+          />
         </td>
       )}
     </tr>
@@ -294,14 +292,12 @@ function CarteCompetence(props: CelluleProps) {
 
       {props.peutSupprimer && (
         <div className="text-right">
-          <button
-            type="button"
-            onClick={props.onSupprimer}
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
-          >
-            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-            Supprimer
-          </button>
+          <BoutonSupprimer
+            ariaLabel={`Supprimer la compétence ${code}`}
+            question={`Supprimer ${code} ?`}
+            onConfirmer={props.onSupprimer}
+            variant="text"
+          />
         </div>
       )}
     </article>
