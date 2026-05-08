@@ -304,6 +304,15 @@ function Ligne({ label, valeur }: { label: string; valeur: string }) {
 
 function PageOrganisation({ livret }: { livret: Livret }) {
   const o = livret.organisationSuivi;
+
+  /** Combine date + commentaire en une chaîne lisible pour le PDF. */
+  const fmt = (c: { date?: string; commentaire?: string }): string => {
+    const date = c.date ? formaterDateLongue(c.date) : '';
+    const comm = c.commentaire?.trim() ?? '';
+    if (date && comm) return `${date} — ${comm}`;
+    return date || comm || '—';
+  };
+
   return (
     <Page size="A4" style={styles.page}>
       <PiedDePage dateExport={new Date().toISOString()} />
@@ -312,12 +321,12 @@ function PageOrganisation({ livret }: { livret: Livret }) {
         <Text style={[styles.italique, { marginBottom: 12 }]}>
           Cette section détaille l'organisation pédagogique mise en place pour la promotion.
         </Text>
-        <Champ label="Réunion de rentrée" valeur={o.reunionRentree} />
-        <Champ label="Entretien individuel" valeur={o.entretienIndividuel} />
-        <Champ label="Accueil des tuteurs" valeur={o.accueilTuteurs} />
-        <Champ label="Visites en entreprise" valeur={o.visitesEntreprise} />
-        <Champ label="Restitution d'activités" valeur={o.restitutionActivites} />
-        <Champ label="Bilans de formation" valeur={o.bilansFormation} />
+        <Champ label="Réunion de rentrée" valeur={fmt(o.reunionRentree)} />
+        <Champ label="Entretien individuel" valeur={fmt(o.entretienIndividuel)} />
+        <Champ label="Accueil des tuteurs" valeur={fmt(o.accueilTuteurs)} />
+        <Champ label="Visites en entreprise" valeur={fmt(o.visitesEntreprise)} />
+        <Champ label="Restitution d'activités" valeur={fmt(o.restitutionActivites)} />
+        <Champ label="Bilans de formation" valeur={fmt(o.bilansFormation)} />
         <View style={[styles.encart, { marginTop: 12 }]}>
           <Text>
             Dernière modification : {formaterDateHeure(o.modifieLe)} · auteur : {o.modifiePar}

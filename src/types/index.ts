@@ -165,13 +165,29 @@ export interface SignaturesTripartite {
   formateur: SignaturePartie;
 }
 
+/**
+ * Un champ de l'organisation du suivi (CDC §5.1).
+ * Date principale optionnelle (ISO 8601 YYYY-MM-DD) + commentaire libre.
+ *
+ * Pour les cas multi-dates (visites en entreprise, bilans semestriels), la
+ * date principale porte la première occurrence et les autres sont énumérées
+ * dans le commentaire. Pour les cas sans date précise (restitution périodique,
+ * bilans à planifier), la date reste vide.
+ */
+export interface ChampOrganisationSuivi {
+  /** Date principale au format ISO 8601 (YYYY-MM-DD), optionnelle. */
+  date?: string;
+  /** Commentaire libre — lieu, modalités, dates secondaires, etc. */
+  commentaire?: string;
+}
+
 export interface OrganisationSuivi {
-  reunionRentree?: string;
-  entretienIndividuel?: string;
-  accueilTuteurs?: string;
-  visitesEntreprise?: string;
-  restitutionActivites?: string;
-  bilansFormation?: string;
+  reunionRentree: ChampOrganisationSuivi;
+  entretienIndividuel: ChampOrganisationSuivi;
+  accueilTuteurs: ChampOrganisationSuivi;
+  visitesEntreprise: ChampOrganisationSuivi;
+  restitutionActivites: ChampOrganisationSuivi;
+  bilansFormation: ChampOrganisationSuivi;
   modifieLe: string;
   modifiePar: string;
 }

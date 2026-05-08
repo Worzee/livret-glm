@@ -41,8 +41,8 @@ import { creerCloture } from '@/lib/cloture-livret';
  * pas ici — le store accepte chaque appel et écrit immédiatement.
  */
 
-// Bumpé en sprint 5 : ajout `cloture` (R22) et `historiqueDeverrouillages` (R10).
-const VERSION_SCHEMA = 3;
+// Bumpé post-sprint 5 : refonte `OrganisationSuivi` (date + commentaire structurés).
+const VERSION_SCHEMA = 4;
 
 interface LivretStore {
   livrets: Record<string, Livret>;
