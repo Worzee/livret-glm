@@ -1,4 +1,4 @@
-import { CalendarDays, Lock, MessageSquare } from 'lucide-react';
+import { CalendarDays, Lock, LockOpen, MessageSquare } from 'lucide-react';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
@@ -131,6 +131,9 @@ export function OrganisationSuivi() {
               onChangeCommentaire={(commentaire) =>
                 patcherChamp(champ.cle, { commentaire })
               }
+              onToggleVerrouille={() =>
+                patcherChamp(champ.cle, { verrouille: !valeur.verrouille })
+              }
             />
           );
         })}
@@ -161,6 +164,7 @@ interface CarteOrganisationProps {
   editable: boolean;
   onChangeDate: (date: string) => void;
   onChangeCommentaire: (commentaire: string) => void;
+  onToggleVerrouille: () => void;
 }
 
 function CarteOrganisation({
@@ -169,15 +173,20 @@ function CarteOrganisation({
   editable,
   onChangeDate,
   onChangeCommentaire,
+  onToggleVerrouille,
 }: CarteOrganisationProps) {
   const idDate = `org-date-${champ.cle}`;
   const idCommentaire = `org-com-${champ.cle}`;
+  const verrouille = valeur.verrouille === true;
+  // Édition possible si le rôle a le droit ET que le champ n'est pas verrouillé.
+  const peutEditerChamp = editable && !verrouille;
 
   return (
     <article
       className={cn(
         'flex flex-col gap-3 rounded-lg border border-border bg-card p-4',
         editable && 'border-l-4 border-l-role-formateur',
+        verrouille && 'bg-muted/30',
       )}
     >
       <header className="flex items-start gap-2">
@@ -192,37 +201,85 @@ function CarteOrganisation({
       </header>
 
       <div className="flex flex-col gap-3 sm:flex-row">
-        {/* Colonne date */}
-        <div className="sm:w-44 sm:shrink-0 space-y-1">
-          <label
-            htmlFor={idDate}
-            className="text-xs font-medium text-muted-foreground"
-          >
-            Date{champ.dateAttendue ? '' : ' (optionnelle)'}
-          </label>
-          {editable ? (
-            <input
-              id={idDate}
-              type="date"
-              value={valeur.date ?? ''}
-              onChange={(e) => onChangeDate(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          ) : (
-            <p
-              className={cn(
-                'rounded-md border border-transparent px-2 py-1.5 text-sm',
-                !valeur.date && 'italic text-muted-foreground',
-              )}
+        {/* Colonne date + bouton verrou */}
+        <div className="sm:w-44 sm:shrink-0 space-y-2">
+          <div className="space-y-1">
+            <label
+              htmlFor={idDate}
+              className="text-xs font-medium text-muted-foreground"
             >
-              {valeur.date
-                ? new Date(valeur.date).toLocaleDateString('fr-FR', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                  })
-                : 'Non renseigné'}
-            </p>
+              Date{champ.dateAttendue ? '' : ' (optionnelle)'}
+            </label>
+            {peutEditerChamp ? (
+              <input
+                id={idDate}
+                type="date"
+                value={valeur.date ?? ''}
+                onChange={(e) => onChangeDate(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            ) : editable ? (
+              // Champ verrouillé pour le formateur : on garde l'apparence input,
+              // mais désactivé visuellement.
+              <input
+                id={idDate}
+                type="date"
+                value={valeur.date ?? ''}
+                disabled
+                className="w-full cursor-not-allowed rounded-md border border-input bg-muted px-2 py-1.5 text-sm text-muted-foreground"
+              />
+            ) : (
+              // Lecture seule pour les autres rôles (apprenti·e, maître…).
+              <p
+                className={cn(
+                  'rounded-md border border-transparent px-2 py-1.5 text-sm',
+                  !valeur.date && 'italic text-muted-foreground',
+                )}
+              >
+                {valeur.date
+                  ? new Date(valeur.date).toLocaleDateString('fr-FR', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                    })
+                  : 'Non renseigné'}
+              </p>
+            )}
+          </div>
+
+          {/* Bouton verrouiller / déverrouiller — formateur uniquement */}
+          {editable && (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={onToggleVerrouille}
+                aria-pressed={verrouille}
+                aria-label={
+                  verrouille
+                    ? `Déverrouiller le champ ${champ.libelle}`
+                    : `Verrouiller le champ ${champ.libelle}`
+                }
+                className={cn(
+                  'inline-flex items-center justify-center gap-1.5 rounded-md border px-3 py-1 text-xs font-medium transition-colors',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  verrouille
+                    ? 'border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100'
+                    : 'border-input bg-background text-muted-foreground hover:bg-secondary',
+                )}
+              >
+                {verrouille ? (
+                  <>
+                    <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+                    Verrouillé
+                  </>
+                ) : (
+                  <>
+                    <LockOpen className="h-3.5 w-3.5" aria-hidden="true" />
+                    Verrouiller
+                  </>
+                )}
+              </button>
+            </div>
           )}
         </div>
 
@@ -235,7 +292,7 @@ function CarteOrganisation({
             <MessageSquare className="h-3 w-3" aria-hidden="true" />
             Commentaire
           </label>
-          {editable ? (
+          {peutEditerChamp ? (
             <textarea
               id={idCommentaire}
               rows={3}
@@ -243,6 +300,15 @@ function CarteOrganisation({
               onChange={(e) => onChangeCommentaire(e.target.value)}
               placeholder={champ.placeholderCommentaire}
               className="w-full resize-y rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          ) : editable ? (
+            // Champ verrouillé pour le formateur.
+            <textarea
+              id={idCommentaire}
+              rows={3}
+              value={valeur.commentaire ?? ''}
+              readOnly
+              className="w-full cursor-not-allowed resize-y rounded-md border border-input bg-muted px-2 py-1.5 text-sm text-muted-foreground"
             />
           ) : (
             <p

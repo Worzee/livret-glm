@@ -179,6 +179,15 @@ export interface ChampOrganisationSuivi {
   date?: string;
   /** Commentaire libre — lieu, modalités, dates secondaires, etc. */
   commentaire?: string;
+  /**
+   * Verrou local du champ — quand `true`, la date et le commentaire passent
+   * en lecture seule jusqu'à un déverrouillage explicite. Aucune validation
+   * supplémentaire (ni motif, ni confirmation) : c'est un simple toggle.
+   *
+   * Compatibilité ascendante : un livret persisté en v4 sans ce champ vaut
+   * `undefined` ≡ déverrouillé. Pas besoin de bumper VERSION_SCHEMA.
+   */
+  verrouille?: boolean;
 }
 
 export interface OrganisationSuivi {
