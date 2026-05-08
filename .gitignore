@@ -1,0 +1,41 @@
+# ─── Secrets de déploiement ──────────────────────────────────────────────────
+scripts/.env.deploy
+*.pem
+*.key
+.htpasswd*
+
+# ─── Node / Vite ─────────────────────────────────────────────────────────────
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+
+# ─── IDE & OS ────────────────────────────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ─── Tests / coverage ────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# ─── Document source (volumineux) ────────────────────────────────────────────
+*.docx

@@ -1,0 +1,63 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Compose — Livret d'apprentissage GRETA Lyon Métropole
+#
+# S'intègre dans le Traefik existant du VPS (réseau n8n_default).
+# Sert les fichiers statiques (build Vite) déposés dans /var/www/livret.
+#
+# Variables substituées par setup-vps.sh :
+#   {{DOMAIN}}      — livret-glm.duckdns.org
+#   {{REMOTE_PATH}} — /var/www/livret
+#   {{BASIC_AUTH}}  — chaîne user:bcrypt-hash (les $ sont déjà doublés)
+#   {{REALM}}       — texte affiché dans le prompt Basic Auth
+#
+# Pour l'opérer manuellement sur le VPS :
+#   cd /docker/livret
+#   docker compose up -d
+#   docker compose logs -f
+#   docker compose down
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  livret:
+    image: nginx:1.27-alpine
+    container_name: livret
+    restart: unless-stopped
+    networks:
+      - traefik
+    volumes:
+      - {{REMOTE_PATH}}:/usr/share/nginx/html:ro
+      - ./nginx-livret.conf:/etc/nginx/conf.d/default.conf:ro
+    labels:
+      # ── Activation Traefik ────────────────────────────────────────────────
+      - traefik.enable=true
+      - traefik.docker.network=n8n_default
+
+      # ── Router HTTPS ──────────────────────────────────────────────────────
+      - traefik.http.routers.livret.rule=Host(`{{DOMAIN}}`)
+      - traefik.http.routers.livret.entrypoints=websecure
+      - traefik.http.routers.livret.tls=true
+      - traefik.http.routers.livret.tls.certresolver=mytlschallenge
+      - traefik.http.routers.livret.middlewares=livret-auth,livret-headers
+
+      # ── Router HTTP → redirection automatique par Traefik (configuré globalement)
+      # L'entrypoint "web" du Traefik existant redirige déjà tout vers websecure.
+
+      # ── Middleware Basic Auth ─────────────────────────────────────────────
+      - traefik.http.middlewares.livret-auth.basicauth.users={{BASIC_AUTH}}
+      - traefik.http.middlewares.livret-auth.basicauth.realm={{REALM}}
+
+      # ── Middleware en-têtes de sécurité ───────────────────────────────────
+      - traefik.http.middlewares.livret-headers.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.livret-headers.headers.browserXSSFilter=true
+      - traefik.http.middlewares.livret-headers.headers.frameDeny=true
+      - traefik.http.middlewares.livret-headers.headers.referrerPolicy=strict-origin-when-cross-origin
+      - traefik.http.middlewares.livret-headers.headers.STSSeconds=31536000
+      - traefik.http.middlewares.livret-headers.headers.STSIncludeSubdomains=true
+
+      # ── Service ───────────────────────────────────────────────────────────
+      - traefik.http.services.livret.loadbalancer.server.port=80
+
+networks:
+  traefik:
+    external: true
+    name: n8n_default
