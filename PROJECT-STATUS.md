@@ -1,8 +1,8 @@
 # État du projet — Livret d'apprentissage GRETA Lyon Métropole
 
-**Dernière mise à jour** : 2026-05-06
+**Dernière mise à jour** : 2026-05-08
 **Version applicative** : 0.1.0
-**Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3)
+**Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3) **livrée**
 **Pilote métier** : Guillaume FERRERI
 
 ---
@@ -13,12 +13,15 @@
 |---|---|
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
-| **Sprints livrés** | 1, 2, 3, 4 + 3 extensions hors-CDC (Coordo, Admin, import référentiels phase A/B) |
-| **Sprint en cours** | Sprint 5 (export PDF + polish + DEMO scriptée) — **non démarré** |
-| **Tests automatisés** | **134 / 134 ✓** sur 8 fichiers de tests |
-| **Bundle JS gzippé** | 89 KB (cible CDC §19.1 : < 500 KB) |
-| **Bundle CSS gzippé** | 4.85 KB (cible : < 50 KB) |
+| **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main`) |
+| **Sprints livrés** | **1, 2, 3, 4, 5** + 3 extensions hors-CDC + post-livraison (mobile, UX, verrouillage par champ) |
+| **Tests unitaires** | **162 / 162 ✓** (Vitest, 10 fichiers) |
+| **Tests E2E** | **30 / 30 ✓** (Playwright — 18 desktop + 12 mobile Pixel 5) |
+| **Bundle JS gzippé** | 94 KB (cible CDC §19.1 : < 500 KB → marge × 5,3) |
+| **Bundle CSS gzippé** | 5,2 KB (cible : < 50 KB → marge × 9,6) |
+| **Chunk PDF lazy** | 495 KB (chargé uniquement au clic « Exporter ») |
 | **Préflight VPS** | 11 / 11 ✓ |
+| **TTFB VPS** | ~80 ms |
 | **TypeScript** | strict, sans erreur |
 | **ESLint** | sans erreur |
 
@@ -28,9 +31,11 @@
 
 - **Frontend** : Vite 6 + React 18 + TypeScript 5.7 (strict)
 - **Style** : Tailwind CSS 3 + shadcn/ui (tokens CSS variables)
-- **State** : Zustand 5 + middleware `persist` (localStorage, schema v2)
+- **State** : Zustand 5 + middleware `persist` (localStorage, schema **v4**)
 - **Routing** : React Router v6
-- **Tests** : Vitest 2 + Testing Library + jsdom
+- **PDF** : `@react-pdf/renderer` 4 (lazy-loaded — chargé uniquement au clic « Exporter »)
+- **Tests unitaires** : Vitest 2 + Testing Library + jsdom
+- **Tests E2E** : Playwright 1.59 (Chromium-desktop + Pixel 5 émulation mobile)
 - **Lint/Format** : ESLint 9 (flat config) + Prettier 3
 - **Icônes** : lucide-react (exclusif, pas d'emojis)
 - **Aucune dépendance d'analytics ou tracking** (CDC §20)
@@ -49,7 +54,7 @@
 | **Reverse proxy** | Traefik (Docker, port 80/443) — partagé avec n8n, pronote-tracker, amklelec, laremisevintage |
 | **TLS** | Let's Encrypt automatique via ACME challenge Traefik |
 | **DNS** | DuckDNS (`livret-glm.duckdns.org`) |
-| **Conteneur livret** | `nginx:1.27-alpine`, 3 Mo RAM, 0% CPU, sur réseau `n8n_default` |
+| **Conteneur livret** | `nginx:1.27-alpine`, 3 Mo RAM, 0 % CPU, sur réseau `n8n_default` |
 | **Web root** | `/var/www/livret/` (bind-mount RO côté conteneur) |
 | **Compose** | `/docker/livret/docker-compose.yml` |
 | **Basic Auth** | middleware Traefik (bcrypt) |
@@ -58,10 +63,10 @@
 
 | Fichier | Rôle |
 |---|---|
-| `.env.deploy.example` | Gabarit de configuration (domaine, IP, Basic Auth) |
-| `.env.deploy` | Valeurs réelles — **JAMAIS committé** (dans `.gitignore`) |
+| `.env.deploy.example` | Gabarit (domaine, IP, Basic Auth) |
+| `.env.deploy` | Valeurs réelles — **JAMAIS committé** (gitignored) |
 | `setup-vps.sh` | Installation initiale du VPS — idempotent, à exécuter UNE fois |
-| `docker-compose.livret.yml` | Compose du conteneur nginx + labels Traefik |
+| `docker-compose.livret.yml` | Compose du conteneur Nginx + labels Traefik |
 | `nginx-livret.conf` | Config Nginx du conteneur (SPA fallback, gzip, cache) |
 | `deploy.sh` | Build + transfert (rsync ou tar+scp en fallback Windows) |
 | `verifier-vps.sh` | 11 contrôles préflight (DNS, TLS, Basic Auth, headers, anti-tracker) |
@@ -70,18 +75,16 @@
 ### Procédure de déploiement courante
 
 ```bash
-# Build + déploiement (depuis la racine projet)
-bash scripts/deploy.sh
-
-# Vérification
-bash scripts/verifier-vps.sh
+bash scripts/deploy.sh             # build + déploie sur le VPS
+bash scripts/deploy.sh --no-build  # redéploiement rapide d'un dist/ existant
+bash scripts/verifier-vps.sh       # 11 contrôles préflight
 ```
 
 ### Ce qui peut casser
 
 - **Service DuckDNS gratuit** — best effort, peut tomber temporairement
 - **Renouvellement Let's Encrypt** automatique par Traefik (vérifier les logs si > 60 j)
-- **localStorage navigateur** — limite ~5 Mo, déjà géré (CDC §C1) avec modale d'export
+- **localStorage navigateur** — limite ~5 Mo, déjà géré (CDC §C1)
 - **VPS root SSH par mot de passe** : à basculer en clé SSH dès que possible (cf. §11)
 
 ---
@@ -90,58 +93,102 @@ bash scripts/verifier-vps.sh
 
 ### Sprint 1 — Socle + infrastructure + Skills
 
-- [x] Projet Vite + React + TS + Tailwind + shadcn-ready initialisé
-- [x] AppShell : header, role switcher, sidebar, footer
-- [x] Bandeau démo non-dismissable (CDC §21.6)
-- [x] 6 routes principales placeholder
-- [x] Store Zustand `useUserStore` (rôle actif, persist)
-- [x] Fixtures : 3 utilisateurs (Léa MARTIN, Karim BENALI, Sophie DUBOIS)
-- [x] `lib/droits.ts` matrice §6 + tests TDD
-- [x] Composant `ChampEditable` (wrapper droits)
-- [x] VPS configuré, déploiement opérationnel, 11/11 préflight
+- Projet Vite + React + TS + Tailwind + shadcn-ready initialisé
+- AppShell : header, role switcher, sidebar, footer
+- Bandeau démo non-dismissable (CDC §21.6)
+- 6 routes principales placeholder
+- Store Zustand `useUserStore` (rôle actif, persist)
+- Fixtures : 5 utilisateurs (apprenti, maître, formateur, coordo, admin)
+- `lib/droits.ts` matrice §6 + tests TDD
+- VPS configuré, déploiement opérationnel, 11/11 préflight
 
 ### Sprint 2 — Fiches de suivi par période (cœur de valeur)
 
-- [x] Liste + détail des fiches de période avec badges d'état
-- [x] Sous-fiche **Suivi GRETA CFA** (formateur édite, ajout/suppression de lignes)
-- [x] **Tableau tri-colonnes** complet (desktop = table / mobile = empilement par compétence)
-- [x] Référentiel CAP Cuisine (3 blocs, 10 compétences, 6 attitudes)
-- [x] Bloc signatures avec validation R20 + tooltip de blocage
-- [x] Machine à états R15 / R16 / R17 (brouillon → en-cours → signée → verrouillée)
-- [x] Persistance Zustand avec `persist` middleware (schema v2)
-- [x] Indicateur "Enregistré" + détection localStorage indisponible (CDC §C3)
-- [x] `useLivretStore` avec mutations granulaires (12+ actions)
+- Liste + détail des fiches de période avec badges d'état
+- Sous-fiche **Suivi GRETA CFA** (formateur édite, ajout/suppression de lignes)
+- **Tableau tri-colonnes** complet (desktop = table / mobile = empilement par compétence)
+- Référentiel CAP Cuisine (3 blocs, 10 compétences, 6 attitudes)
+- Bloc signatures avec validation R20 + tooltip de blocage
+- Machine à états R15 / R16 / R17 (brouillon → en-cours → signée → verrouillée)
+- Persistance Zustand avec `persist` middleware
+- `useLivretStore` avec mutations granulaires
 
 ### Sprint 3 — Organisation du suivi + Entretien tripartite
 
-- [x] **Organisation du suivi** : 6 champs (réunion rentrée, entretien individuel, accueil tuteurs, visites, restitution, bilans)
-- [x] **Entretien tripartite** complet :
-  - En-tête pré-rempli depuis profil apprenti·e
-  - 7 questions apprenti·e
-  - 3 questions maître + boolean *déjà formé un·e apprenti·e*
-  - Grille appréciation 4×4 (++/+/-/--)
-  - 4 démarches admin oui/non + remarques
-  - 4 conditions pratiques (textes)
-  - 3 aides demandées oui/non + autres
-  - 3 zones commentaires (1 par rôle)
-  - Bloc signatures tripartite avec validerSignatureEntretien
-- [x] R6 (un seul entretien par livret, initialisation idempotente)
-- [x] R7 (bandeau ambre si > 60 j sans entretien complet)
-- [x] R8 (verrouillage progressif par rôle après signature)
-- [x] R9 (3 signatures = tout figé)
-- [x] Barre de progression globale + 3 par rôle
-- [x] Fixture Léa peuplée : entretien signé le 28/10/2025 (CDC §24.5)
+- **Organisation du suivi** : 6 champs (réunion rentrée, entretien individuel, accueil tuteurs, visites, restitution, bilans)
+- **Entretien tripartite** complet (questions apprenti·e/maître, appréciations, démarches, signatures)
+- R6, R7 (alerte si > 60 j sans entretien), R8 (verrouillage progressif), R9 (3 sig = tout figé)
+- Barre de progression globale + 3 par rôle
+- Fixture Léa peuplée : entretien signé le 28/10/2025 (CDC §24.5)
 
 ### Sprint 4 — Grilles d'évaluation finales
 
-- [x] Page `/livret/evaluation-finale` avec 2 onglets (Compétences / Attitudes)
-- [x] **Grille compétences** par bloc (entreprise + centre)
-- [x] **Grille attitudes** (++/+/-/-- par maître + formateur, commentaires)
-- [x] **Synthèse graphique** par bloc — barres empilées CSS pures (pas de biblio externe)
-- [x] **Pré-remplissage** depuis les fiches de suivi (last-write-wins) avec badge ✨ *Hérité des fiches*
-- [x] R23 mise à jour temps réel
-- [x] R24 apprenti·e voit en lecture seule
-- [x] Mutations store : `setLigneCompetenceFinale`, `setLigneAttitudeFinale`
+- Page `/livret/evaluation-finale` avec 2 onglets (Compétences / Attitudes)
+- **Grille compétences** par bloc (entreprise + centre)
+- **Grille attitudes** (++/+/-/-- par maître + formateur, commentaires)
+- **Synthèse graphique** par bloc — barres empilées CSS pures (pas de biblio externe)
+- **Pré-remplissage** depuis les fiches de suivi (last-write-wins) avec badge ✨ *Hérité des fiches*
+- R23 mise à jour temps réel
+- R24 apprenti·e voit en lecture seule
+
+### Sprint 5 — Export PDF + polish + démo
+
+#### Phase A — Briques métier
+- **R22 Clôture livret** : type `ClotureLivret`, lib `cloture-livret.ts` (4 fonctions, 14 tests TDD), composant `BandeauCloture` 4 états (gris / vert avec bouton / vert avec confirmation / bleu si clôturé), R22 appliquée dans grilles compétences + attitudes
+- **R10 Déverrouillage motivé** : type `EntreeDeverrouillage`, lib `deverrouillage-fiche.ts` (validation motif ≥ 10 caractères, 8 tests TDD), composant `DialogDeverrouillage` (modale a11y, focus piégé, Esc), historique consultable sous chaque fiche
+- **Bouton « Réinitialiser la démo »** : footer, confirmation 2 clics + auto-annulation 10 s + reset rôle vers formateur
+
+#### Phase B — Export PDF
+- `npm install @react-pdf/renderer`
+- `components/pdf/LivretPdf.tsx` (7 pages : garde, organisation, entretien, fiches × 3, évaluations, annexes)
+- `components/pdf/styles.ts` + `format.ts` (helpers de formatage)
+- `components/pdf/BoutonExportPdf.tsx` + `ExportPdfLazy.tsx` (lazy via `React.lazy`)
+- Garde-fou C14 (avertissement si livret > 50 pages estimées)
+- Nom de fichier : `livret-apprentissage-NOM-Prenom-AAAA-MM-JJ.pdf`
+- Visible uniquement pour le formateur (matrice droits `export-pdf`)
+
+#### Phase C — Polish
+- **`DEMO.md`** étoffé : script minuté 10 min + mode 5 min + plan B + checklist post-démo
+- **`README.md`** utilisateur final (9 sections : démarrage, commandes, structure, sécurité…)
+- **`perf-sprint-5.md`** : mesures bundle + TTFB + procédure Lighthouse manuelle + cibles CDC
+
+#### Phase D — Tests E2E Playwright (5 scénarios CDC §22.2.3)
+- `e2e/sprint1-role-switcher.spec.ts` (4 tests) : bandeau démo, role switcher 5 rôles
+- `e2e/sprint2-coedition.spec.ts` (3 tests) : co-édition tri-colonnes + R21
+- `e2e/sprint3-droits-entretien.spec.ts` (3 tests) : droits granulaires entretien
+- `e2e/sprint4-evaluation-finale.spec.ts` (5 tests) : grilles + synthèse + R22
+- `e2e/sprint5-bout-en-bout.spec.ts` (3 tests) : parcours complet + export PDF non vide
+- Total : **18 tests desktop ✓** en ~10 s
+
+### Améliorations post-Sprint 5
+
+#### Cohérence des actions destructrices (5 actions, 1 pattern)
+- **`BoutonSigner`** (composant commun) : confirmation 2 clics avant signature (apposée à chaque slot, fiche + entretien)
+- **`BoutonSupprimer`** (composant commun) : confirmation 2 clics avant suppression d'une ligne — appliqué au tableau tri-colonnes (variants `icon` / `text`) ET au Suivi GRETA CFA
+- Bandeau R22 : confirmation 2 clics avec récapitulatif
+- Modale R10 : motif obligatoire ≥ 10 caractères
+- Réinitialisation démo : confirmation 2 clics + auto-annulation 10 s
+
+#### Bugfix R21 (régression silencieuse découverte en revue)
+- Avant : un rôle pouvait modifier ses zones (observation, colonnes du tableau) **après** avoir signé, ce qui invalidait sa signature *par effet de bord*
+- Helper `peutEncoreEditerFiche(fiche, role)` dans `lib/transitions-fiche.ts` (6 tests TDD)
+- Appliqué dans `ZoneObservation`, `TableauTriColonnes`, `SuiviGretaCfa`
+- Mention UI explicite : « Figée par signature » au lieu de simple « Lecture seule »
+
+#### Refonte UX « Organisation du suivi »
+- Modèle de données : `string` libre → `ChampOrganisationSuivi { date?, commentaire?, verrouille? }`
+- UI : chaque carte coupée en deux (date picker natif + commentaire libre)
+- **Toggle verrouiller / déverrouiller par champ** (sans modale, sans motif — simple toggle)
+- Schema localStorage v3 → v4 (migration = reset, cohérent avec stratégie étape 1)
+- PDF mis à jour pour afficher proprement date + commentaire
+
+#### Responsive mobile (cas d'usage terrain)
+- **`MobileMenu`** : bouton hamburger + drawer overlay accessible (`role=dialog`, focus piégé, Esc, fermeture auto après navigation)
+- **`RoleSwitcher` compact** : icônes seules sur mobile, libellé visible à partir de `lg` (1024 px)
+- Header simplifié sur petit écran (logo + role switcher en icônes + hamburger)
+- Touch targets ≥ 44 px (norme WCAG 2.5.5)
+- Audit Playwright dédié `e2e/audit-mobile.mobile.spec.ts` (12 tests sur Pixel 5 393×851) : aucun débordement horizontal sur les 5 pages principales, navigation mobile validée
+- **Fix bug** : icônes du rôle actif devenaient invisibles sur mobile après tap (le `:hover` mobile écrasait `bg-role-X`) — `hover:bg-background` retiré de l'état actif
 
 ---
 
@@ -149,40 +196,29 @@ bash scripts/verifier-vps.sh
 
 ### Extension 1 — Rôle Coordo (coordinateur·rice administratif·ve)
 
-- [x] 4ᵉ rôle dans le système
-- [x] Couleur `#0e7490` (cyan-700)
-- [x] Section *Administration* dans la sidebar (Utilisateurs, Formations, Affectations)
-- [x] 10 nouvelles ressources `admin.*` dans la matrice de droits
-- [x] Pages placeholder (formulaires CRUD à venir en sprint dédié)
-- [x] Fixture : Martine LEFÈVRE
-- [x] **Aucun droit pédagogique** (testé exhaustivement)
+- 4ᵉ rôle dans le système, couleur `#0e7490` (cyan-700)
+- Section *Administration* dans la sidebar (Utilisateurs, Formations, Affectations)
+- 10 nouvelles ressources `admin.*` dans la matrice de droits
+- Pages placeholder (formulaires CRUD à venir en sprint dédié)
+- Fixture : Martine LEFÈVRE
+- **Aucun droit pédagogique** (testé exhaustivement)
 
 ### Extension 2 — Rôle Admin (super-utilisateur, vous)
 
-- [x] 5ᵉ rôle dans le système
-- [x] Couleur `#4338ca` (indigo-700) + icône 👑
-- [x] Fixture : Guillaume FERRERI
-- [x] Partage avec coordo : créer apprenti·e/maître/formateur, modifier/supprimer utilisateurs, gérer formations + affectations
-- [x] **Droit exclusif** : créer un coordo
-- [x] **Aucun droit pédagogique** (commentaires, niveaux, signatures, observations)
-- [x] Tests TDD complets (10 cas) : pas un seul faux-positif côté pédagogie
+- 5ᵉ rôle, couleur `#4338ca` (indigo-700) + icône 👑
+- Fixture : Guillaume FERRERI
+- Partage avec coordo : créer apprenti·e/maître/formateur, modifier/supprimer utilisateurs, gérer formations + affectations
+- **Droit exclusif** : créer un coordo
+- **Aucun droit pédagogique** (commentaires, niveaux, signatures, observations)
+- Tests TDD complets (10 cas) : pas un seul faux-positif côté pédagogie
 
 ### Extension 3 — Import de référentiels (Phase A + B sur 4)
 
-- [x] **Phase A** : `Competence.sousFamille?: string` (groupement intermédiaire optionnel)
-- [x] **Phase A** : `Referentiel.niveauxColonnes?: 2 \| 3` + `source?: ...` (métadonnées)
-- [x] **Phase A** : ressource `admin.referentiels.gerer` (coordo + admin)
-- [x] **Phase B** : `lib/import-referentiel.ts` complet avec :
-  - Auto-détection encodage UTF-8 / Windows-1252 (cas Excel FR)
-  - Auto-détection séparateur `;` / `,` / tab
-  - Parser CSV minimal (sans dépendance externe, gère guillemets + BOM)
-  - Auto-détection 2 vs 3 colonnes
-  - Construction Referentiel + agrégation par bloc + ids uniques
-  - Avertissements non-bloquants
-  - Tests TDD : 24 / 24
-- [ ] **Phase C** : UI page `/admin/referentiels` (liste + modal d'import) — à faire
-- [ ] **Phase D** : adapter `GrilleCompetences` et `TableauTriColonnes` pour grouper par `sousFamille` — à faire
-- [ ] **Phase E** : support XLSX via dynamic import — différable
+- **Phase A** : `Competence.sousFamille?: string` + `Referentiel.niveauxColonnes?: 2 | 3` + `source?` + ressource `admin.referentiels.gerer`
+- **Phase B** : `lib/import-referentiel.ts` complet (parsing CSV maison, encodage UTF-8 / Windows-1252, séparateur auto, 24 / 24 tests TDD)
+- **Phase C** : UI page `/admin/referentiels` (liste + modal d'import) — **à faire**
+- **Phase D** : adapter `GrilleCompetences` et `TableauTriColonnes` pour grouper par `sousFamille` — **à faire**
+- **Phase E** : support XLSX via dynamic import — différable
 
 ---
 
@@ -199,7 +235,7 @@ bash scripts/verifier-vps.sh
 | R7 | Alerte si > 60 j sans entretien | ✓ | 5 tests |
 | R8 | Verrouillage progressif entretien | ✓ | 2 tests (`peutEncoreEditer`) |
 | R9 | 3 signatures = tout figé | ✓ | 1 test |
-| R10 | Déverrouillage formateur + motif | partiel | bouton sans motif (sprint 5 polish) |
+| **R10** | **Déverrouillage formateur + motif** | ✓ | **8 tests TDD + modale UI + traçabilité** |
 | R11 | `dateFin > dateDebut` période | ✓ | 3 tests |
 | R12 | Pas de chevauchement | ✓ | 4 tests |
 | R13 | Création période N | ✓ | 5 tests |
@@ -210,92 +246,124 @@ bash scripts/verifier-vps.sh
 | R18 | Signer son propre slot | ✓ | testé matrice |
 | R19 | Horodatage ISO 8601 au clic | ✓ | dans `signer()` du store |
 | R20 | Champs requis avant signature | ✓ | 7 tests `validerSignature` |
-| R21 | Retrait signature impossible | ✓ | par design (formateur via R10) |
-| R22 | Clôture livret | non | sprint 5 (bouton à ajouter) |
+| **R21** | **Retrait signature impossible** | ✓ | **6 tests TDD `peutEncoreEditerFiche` + bugfix UI** |
+| **R22** | **Clôture livret** | ✓ | **14 tests TDD + bandeau 4 états + grilles figées** |
 | R23 | Synthèse temps réel | ✓ | recalcul à chaque render |
 | R24 | Apprenti·e consulte à tout moment | ✓ | matrice droits + bandeau lecture |
 
+**Toutes les règles R1 → R24 sont implémentées et testées.**
+
 ---
 
-## 7. Tests (134 / 134 ✓)
+## 7. Tests (162 unitaires + 30 E2E)
+
+### Tests unitaires Vitest (162 / 162 ✓)
 
 | Fichier | Tests | Périmètre |
 |---|---|---|
-| `lib/droits.test.ts` | 36 | Matrice des 32 ressources × 5 rôles, cohérence transverse |
-| `lib/transitions-fiche.test.ts` | 14 | Machine à états R15/R16/R17 + auto-verrou |
+| `lib/droits.test.ts` | 36 | Matrice 32 ressources × 5 rôles, cohérence transverse |
+| `lib/transitions-fiche.test.ts` | 20 | R15/R16/R17 + auto-verrou + R21 (`peutEncoreEditerFiche`) |
 | `lib/validation-signature.test.ts` | 11 | R18/R20 par rôle métier + coordo/admin refusés |
 | `lib/regles-periode.test.ts` | 15 | R11 (dates) + R12 (chevauchement) + R13 (création) |
 | `lib/regles-entretien.test.ts` | 19 | R7/R8/R9 + validerSignatureEntretien + progression |
 | `lib/synthese-evaluation.test.ts` | 9 | Last-write-wins depuis fiches + valeur effective |
 | `lib/stats-bloc.test.ts` | 6 | Compte des niveaux par bloc + pourcentage |
 | `lib/import-referentiel.test.ts` | 24 | Parsing CSV, encodage CP1252, 2/3 colonnes, robustesse |
+| `lib/cloture-livret.test.ts` | 14 | R22 (estCloture, peutCloturer, motifBlocage, creerCloture) |
+| `lib/deverrouillage-fiche.test.ts` | 8 | R10 (validation motif min/max) |
 
-**Aucun test E2E / Playwright pour l'instant** — prévu en sprint 5 (CDC §22.2.3, skill `webapp-testing`).
+### Tests E2E Playwright (30 / 30 ✓)
+
+| Projet | Fichier | Tests | Périmètre |
+|---|---|---|---|
+| `chromium-desktop` | `sprint1-role-switcher.spec.ts` | 4 | Bandeau démo + role switcher 5 rôles |
+| `chromium-desktop` | `sprint2-coedition.spec.ts` | 3 | Co-édition tri-colonnes + R21 |
+| `chromium-desktop` | `sprint3-droits-entretien.spec.ts` | 3 | Droits granulaires entretien |
+| `chromium-desktop` | `sprint4-evaluation-finale.spec.ts` | 5 | Grilles + synthèse + R22 |
+| `chromium-desktop` | `sprint5-bout-en-bout.spec.ts` | 3 | Parcours complet + export PDF non vide |
+| `mobile-pixel5` | `audit-mobile.mobile.spec.ts` | 12 | Aucun débordement horizontal, hamburger, drawer, RoleSwitcher compact, modale R10 dans largeur écran |
 
 ---
 
 ## 8. Architecture des fichiers
 
 ```
-livret-apprentissage/
-├── PROJECT-STATUS.md                # ce fichier
-├── CONVENTIONS.md                   # règles de code (résumé CDC §16)
-├── DEMO.md                          # script de démo (à étoffer sprint 5)
-├── TODO-etape-2.md                  # captures de scope creep
-├── design-system/
-│   └── MASTER.md                    # design system complet (CDC §14)
-├── scripts/
+LIVRET APPRENTISSAGE/
+├── README.md                       # mode d'emploi pilote
+├── PROJECT-STATUS.md               # ce fichier
+├── DEMO.md                         # script minuté 10 min + plan B
+├── CONVENTIONS.md                  # règles de code (résumé CDC §16)
+├── TODO-etape-2.md                 # captures de scope creep
+├── perf-sprint-5.md                # mesures bundle + procédure Lighthouse
+├── cahier-des-charges-livret-apprentissage-v1.3.md
+├── design-system/MASTER.md
+├── scripts/                        # déploiement VPS
 │   ├── .env.deploy.example
 │   ├── setup-vps.sh, deploy.sh, verifier-vps.sh
 │   ├── docker-compose.livret.yml, nginx-livret.conf
 │   └── README.md
-├── package.json, vite.config.ts, vitest.config.ts, tsconfig*.json
+├── e2e/                            # tests Playwright
+│   ├── helpers.ts                  # resetState + selectRole
+│   ├── sprint1-role-switcher.spec.ts
+│   ├── sprint2-coedition.spec.ts
+│   ├── sprint3-droits-entretien.spec.ts
+│   ├── sprint4-evaluation-finale.spec.ts
+│   ├── sprint5-bout-en-bout.spec.ts
+│   └── audit-mobile.mobile.spec.ts # projet mobile-pixel5 uniquement
+├── playwright.config.ts            # 2 projets (desktop + mobile)
+├── package.json                    # scripts: dev, test, e2e, e2e:ui, lint…
+├── vite.config.ts, vitest.config.ts, tsconfig*.json
 ├── tailwind.config.ts, postcss.config.js, components.json
 ├── eslint.config.js, .prettierrc.json, .gitignore
 ├── index.html
-├── cahier-des-charges-livret-apprentissage-v1.3.md  # source de vérité fonctionnelle
 └── src/
     ├── main.tsx, App.tsx, vite-env.d.ts
-    ├── styles/index.css             # tokens shadcn + thème institutionnel
-    ├── types/index.ts               # CDC §7 + extensions Coordo/Admin/Lieu
-    ├── lib/
-    │   ├── utils.ts                 # cn() helper
-    │   ├── droits.ts                # matrice §6 (32 ressources × 5 rôles)
-    │   ├── transitions-fiche.ts     # R15/R16/R17 machine à états
-    │   ├── validation-signature.ts  # R18/R20 fiches de période
-    │   ├── regles-periode.ts        # R11/R12/R13/R14
-    │   ├── regles-entretien.ts      # R6/R7/R8/R9 + progression
-    │   ├── synthese-evaluation.ts   # last-write-wins depuis fiches
-    │   ├── stats-bloc.ts            # compte des niveaux par bloc
-    │   ├── import-referentiel.ts    # parsing CSV + encodage + agrégation
-    │   └── *.test.ts                # 8 fichiers de tests, 134 tests
+    ├── styles/index.css
+    ├── types/index.ts              # CDC §7 + ChampOrganisationSuivi + ClotureLivret + EntreeDeverrouillage
+    ├── lib/                        # logique métier pure
+    │   ├── droits.ts               # matrice §6 (32 ressources × 5 rôles)
+    │   ├── transitions-fiche.ts    # R15/R16/R17/R21 (machine + non-régression)
+    │   ├── validation-signature.ts # R18/R20
+    │   ├── regles-periode.ts       # R11/R12/R13/R14
+    │   ├── regles-entretien.ts     # R6/R7/R8/R9 + progression
+    │   ├── synthese-evaluation.ts  # last-write-wins fiches → finales
+    │   ├── stats-bloc.ts           # agrégation par bloc
+    │   ├── cloture-livret.ts       # R22 (clôture)
+    │   ├── deverrouillage-fiche.ts # R10 (motif obligatoire)
+    │   ├── import-referentiel.ts   # parsing CSV (encodage, 2/3 cols)
+    │   ├── utils.ts                # cn() helper
+    │   └── *.test.ts               # 10 fichiers de tests, 162 tests
     ├── store/
-    │   ├── useUserStore.ts          # rôle actif (persist)
-    │   └── useLivretStore.ts        # données livret (persist v2)
+    │   ├── useUserStore.ts         # rôle actif (persist)
+    │   └── useLivretStore.ts       # données livret (persist v4)
     ├── fixtures/
-    │   ├── utilisateurs.ts          # 5 utilisateurs (1 par rôle)
-    │   ├── formations.ts            # CAP Cuisine 2025-2026
-    │   ├── referentiel-cap-cuisine.ts # 3 blocs, 10 compétences, 6 attitudes
-    │   └── livret-demo.ts           # Léa : 3 périodes (verrouillée/signée/en-cours) + entretien signé
+    │   ├── utilisateurs.ts         # 5 utilisateurs (1 par rôle)
+    │   ├── formations.ts           # CAP Cuisine 2025-2026
+    │   ├── referentiel-cap-cuisine.ts
+    │   └── livret-demo.ts          # Léa : 3 périodes + entretien signé
     ├── components/
-    │   ├── ui/                      # (vide — shadcn/ui à la demande)
+    │   ├── ui/                     # vide (shadcn à la demande)
     │   ├── layout/
     │   │   ├── AppShell.tsx
     │   │   ├── BandeauDemo.tsx
-    │   │   ├── RoleSwitcher.tsx     # 5 boutons
-    │   │   └── Sidebar.tsx          # 6 entrées livret + 3 admin (conditionnel)
+    │   │   ├── RoleSwitcher.tsx    # compact mobile, libellé lg+
+    │   │   ├── Sidebar.tsx         # exporte aussi MobileMenu
+    │   │   └── BoutonReinitialiserDemo.tsx
     │   ├── common/
-    │   │   ├── ChampEditable.tsx    # wrapper droits visuels
-    │   │   ├── SelecteurNiveau.tsx  # 3 ou 4 niveaux color-coded
-    │   │   ├── SelecteurAppreciation.tsx # 4 niveaux ++/+/-/--
-    │   │   ├── BadgeEtatFiche.tsx   # 4 états avec icône
+    │   │   ├── ChampEditable.tsx
+    │   │   ├── SelecteurNiveau.tsx
+    │   │   ├── SelecteurAppreciation.tsx
+    │   │   ├── BadgeEtatFiche.tsx
     │   │   ├── BarreProgression.tsx
-    │   │   └── IndicateurEnregistrement.tsx
+    │   │   ├── IndicateurEnregistrement.tsx
+    │   │   ├── BoutonSigner.tsx    # confirmation 2 clics avant signer
+    │   │   └── BoutonSupprimer.tsx # confirmation 2 clics avant supprimer
     │   ├── livret/
     │   │   ├── SuiviGretaCfa.tsx
-    │   │   ├── TableauTriColonnes.tsx # cœur de la co-édition
+    │   │   ├── TableauTriColonnes.tsx
     │   │   ├── ZoneObservation.tsx
-    │   │   └── BlocSignatures.tsx
+    │   │   ├── BlocSignatures.tsx
+    │   │   └── DialogDeverrouillage.tsx # modale R10
     │   ├── entretien/
     │   │   ├── CaseOuiNon.tsx
     │   │   ├── EntretienHeader.tsx
@@ -305,19 +373,26 @@ livret-apprentissage/
     │   │   ├── SectionMaitre.tsx
     │   │   ├── SectionFormateur.tsx
     │   │   └── BlocSignaturesEntretien.tsx
-    │   └── evaluation/
-    │       ├── SyntheseBloc.tsx     # barres empilées par bloc
-    │       ├── GrilleCompetences.tsx
-    │       └── GrilleAttitudes.tsx
+    │   ├── evaluation/
+    │   │   ├── SyntheseBloc.tsx
+    │   │   ├── GrilleCompetences.tsx
+    │   │   ├── GrilleAttitudes.tsx
+    │   │   └── BandeauCloture.tsx  # bandeau R22 (4 états)
+    │   └── pdf/                    # export lazy
+    │       ├── styles.ts
+    │       ├── format.ts
+    │       ├── LivretPdf.tsx       # 7 sections complètes
+    │       ├── ExportPdfLazy.tsx   # PDFDownloadLink wrapper
+    │       └── BoutonExportPdf.tsx # lazy + garde-fou C14
     ├── pages/
     │   ├── TableauDeBord.tsx
     │   ├── PagePlaceholder.tsx
     │   ├── NotFound.tsx
-    │   ├── OrganisationSuivi.tsx
+    │   ├── OrganisationSuivi.tsx   # date picker + commentaire + toggle verrou
     │   ├── EntretienTripartite.tsx
     │   ├── FicheSuiviPeriodes.tsx
-    │   ├── FicheSuiviPeriodeDetail.tsx
-    │   ├── EvaluationFinale.tsx
+    │   ├── FicheSuiviPeriodeDetail.tsx # historique R10 affiché
+    │   ├── EvaluationFinale.tsx    # bouton export PDF + bandeau R22
     │   └── admin/
     │       ├── GestionUtilisateurs.tsx
     │       ├── GestionFormations.tsx
@@ -329,47 +404,34 @@ livret-apprentissage/
 
 ## 9. Reste à faire
 
-### A. Sprint 5 — CDC §26 (officiel)
-
-| Livrable | Effort estimé |
-|---|---|
-| Export PDF complet (page de garde, organisation, entretien, périodes, évaluations finales, historique) via `@react-pdf/renderer` | 1 session |
-| R22 — bouton "Clôturer le livret" (formateur, après dernière fiche verrouillée) | 0.25 session |
-| R10 — modale de déverrouillage avec motif obligatoire + traçabilité | 0.25 session |
-| Bouton "Réinitialiser les données de démonstration" (CDC §24.8) | 0.1 session |
-| Tests Playwright via `webapp-testing` skill (5 scénarios CDC §22.2.3) | 0.5 session |
-| README utilisateur final (Guillaume) | 0.25 session |
-| `DEMO.md` étoffé : script 10 minutes minuté + plan B | 0.25 session |
-| Lighthouse + Core Web Vitals (CDC §19) | 0.1 session |
-
-### B. Import des référentiels — Phases C + D
-
-| Tâche | Effort |
-|---|---|
-| `useReferentielStore` (Zustand persist) | 0.2 session |
-| Page `/admin/referentiels` : liste + bouton import | 0.3 session |
-| Modal d'import : `<input type=file>` + preview du rapport + confirmation | 0.5 session |
-| Sidebar : entrée *Référentiels* dans section Administration | 0.05 session |
-| Adapter `GrilleCompetences` pour grouper les leaves par `sousFamille` | 0.3 session |
-| Adapter le sélecteur d'ajout de compétence dans `TableauTriColonnes` | 0.2 session |
-| Support XLSX via dynamic import de SheetJS (optionnel) | 0.5 session |
-
-### C. Données de démonstration enrichies (CDC §24)
+### A. Données de démonstration enrichies (CDC §24.5)
 
 Sprint 1 ne contient qu'1 apprenti·e (Léa). Le CDC §24.5 prévoit **6 apprenti·e·s** pour la démo direction :
 
 | Apprenti·e | État démonstratif |
 |---|---|
 | MARTIN Léa (présente) | cas principal — entretien complet, 2 fiches signées, 1 en cours |
-| DUBOIS Théo | cas "bon élève" — toutes fiches signées et verrouillées |
-| PEREIRA Sofia | cas "alerte" — entretien non initié → R7 visible |
-| NGUYEN Minh | cas "démarrage" — entretien signé, aucune fiche |
-| KOUAMÉ Aya | cas "désaccord" — fiche déverrouillée avec motif (R10) |
-| BIANCHI Luca | cas "mi-parcours standard" |
+| DUBOIS Théo | cas « bon élève » — toutes fiches signées et verrouillées |
+| PEREIRA Sofia | cas « alerte » — entretien non initié → R7 visible |
+| NGUYEN Minh | cas « démarrage » — entretien signé, aucune fiche |
+| KOUAMÉ Aya | cas « désaccord » — fiche déverrouillée avec motif (R10) |
+| BIANCHI Luca | cas « mi-parcours standard » |
 
-→ ~0.5 session pour enrichir les fixtures + adapter `TableauDeBord` (liste/recherche/filtre).
+→ ~0,5 session pour enrichir les fixtures + adapter `TableauDeBord` (liste/recherche/filtre).
 
-### D. Modules administratifs réels (sprint dédié post-étape 1)
+### B. Import des référentiels — Phases C + D
+
+| Tâche | Effort |
+|---|---|
+| `useReferentielStore` (Zustand persist) | 0,2 session |
+| Page `/admin/referentiels` : liste + bouton import | 0,3 session |
+| Modal d'import : `<input type=file>` + preview du rapport + confirmation | 0,5 session |
+| Sidebar : entrée *Référentiels* dans section Administration | 0,05 session |
+| Adapter `GrilleCompetences` pour grouper les leaves par `sousFamille` | 0,3 session |
+| Adapter le sélecteur d'ajout de compétence dans `TableauTriColonnes` | 0,2 session |
+| Support XLSX via dynamic import de SheetJS (optionnel) | 0,5 session |
+
+### C. Modules administratifs réels (sprint dédié post-étape 1)
 
 Aujourd'hui placeholder dans `/admin/*`. Pour l'étape 2 :
 
@@ -378,15 +440,15 @@ Aujourd'hui placeholder dans `/admin/*`. Pour l'étape 2 :
 - Écran d'affectation apprenti·e ↔ formation/maître/formateur
 - Persistance Zustand (aujourd'hui en fixtures statiques)
 
-→ noté dans `TODO-etape-2.md` (3 entrées datées).
+→ noté dans `TODO-etape-2.md`.
 
-### E. Mise à jour formelle du cahier des charges en v1.5
+### D. Mise à jour formelle du cahier des charges en v1.5
 
 Trois changements négociés à intégrer dans le CDC officiel :
 
 - §4.1 : ajout des rôles **Coordo** et **Admin**
 - §6 : 11 nouvelles lignes de matrice (admin.* ressources)
-- §7.1 : types `Coordo`, `Admin`, `Lieu` ; `Formation` enrichi (`dateDebut`, `dateFin`, `lieu`)
+- §7.1 : types `Coordo`, `Admin`, `Lieu` ; `Formation` enrichi
 - §7.2 : `Competence.sousFamille?` (3 niveaux hiérarchiques optionnels)
 - §17.2 : entrées glossaire *Coordinateur·rice*, *Administrateur·rice*
 
@@ -397,13 +459,13 @@ Trois changements négociés à intégrer dans le CDC officiel :
 ## 10. Limites connues (CDC §3 + observations)
 
 - Pas d'authentification réelle — role switcher uniquement (étape 3)
-- Pas de RGPD / RGAA conforme — bonnes pratiques seulement
+- Pas de RGPD / RGAA strict — bonnes pratiques seulement
 - Pas de notifications email — étape 2
 - Pas de multi-établissement — un seul GRETA fictif
 - Pas d'API / import structuré CSV (sauf pour les référentiels, scope ajouté)
 - Pas de backup automatique — données vivent dans le `localStorage` de chaque navigateur
 - Pas de monitoring (Uptime Kuma, logs centralisés)
-- Pas d'historique granulaire (CDC §12) — la traçabilité minimale `modifieLe` existe mais pas le journal détaillé
+- Pas d'historique granulaire (CDC §12) — la traçabilité minimale `modifieLe` existe + historique R10 spécifique
 
 ---
 
@@ -437,14 +499,18 @@ Procédure complète dans `scripts/README.md` § *Sécurité*.
 ### Démarrage en local
 
 ```bash
-npm install            # première fois seulement
+git clone https://github.com/Worzee/livret-glm.git
+cd livret-glm
+npm install            # première fois seulement (~30 s)
 npm run dev            # serveur Vite sur http://localhost:5173
 ```
 
 ### Tests / qualité
 
 ```bash
-npm test               # 134 tests Vitest
+npm test               # 162 tests Vitest
+npm run e2e            # 30 tests E2E Playwright (build + preview + tests)
+npm run e2e:ui         # UI Playwright pour debug
 npm run typecheck      # tsc --noEmit
 npm run lint           # ESLint
 npm run format         # Prettier (écriture)
@@ -459,9 +525,11 @@ bash scripts/deploy.sh --no-build  # redéploiement rapide
 bash scripts/verifier-vps.sh       # 11 contrôles préflight
 ```
 
-### Réinitialiser les données de démo (en attendant le bouton dédié)
+### Réinitialiser les données de démo
 
-Dans la console du navigateur (DevTools > Console) :
+Depuis l'app : footer → bouton **« Réinitialiser la démo »** (2 clics).
+
+Ou en console DevTools :
 ```js
 localStorage.removeItem('livret-donnees');
 localStorage.removeItem('livret-role-actif');
@@ -472,40 +540,40 @@ location.reload();
 
 ## 13. Skills Claude Code installés
 
-Référence : CDC §22. Au démarrage du projet :
+Référence : CDC §22.
 
 - ✓ `web-artifacts-builder` (Anthropic) — patterns React + shadcn/ui
-- ✓ `webapp-testing` — Playwright (à mobiliser au sprint 5)
-- ✓ `test-driven-development` — appliqué sur `droits.ts`, transitions, validation
-- ✓ `brainstorming` (à mobiliser quand un arbitrage UX est nécessaire)
-- ✓ `impeccable` (installé en cours de projet, pas encore sollicité)
-- — `UI UX Pro Max` plugin : non installé pour l'instant
+- ✓ `webapp-testing` — Playwright (mobilisé en sprint 5 phase D)
+- ✓ `test-driven-development` — appliqué sur droits, transitions, validations, cloture, déverrouillage
+- ✓ `brainstorming` (à mobiliser pour arbitrages UX)
+- ✓ `impeccable` (installé, encore peu sollicité)
 
 ---
 
 ## 14. Décisions architecturales notables
 
 - **Pas de NextJS / SSR** : SPA suffit pour la maquette, simplicité Vite
-- **Pas de Redux / RTK** : Zustand est plus léger et adapté à la complexité actuelle
+- **Pas de Redux / RTK** : Zustand est plus léger
 - **Pas de bibliothèque de charts** : barres empilées en CSS pur (gain bundle)
 - **Pas de lib CSV externe** : parser de 50 lignes en TS pur (gain bundle)
-- **Tests TDD ciblés** : matrice droits + transitions état + validation signatures + parser CSV. Composants UI non testés pour ne pas ralentir la maquette
-- **Migration localStorage par bump de version** : v1 → v2 reset complet (pas de migration logicielle, données fictives)
-- **Coordo et Admin = extensions explicites** : pas de fonctionnalité "secrète", tout est tracé dans `TODO-etape-2.md`
-- **Bundle JS encore petit (89 KB)** : marge confortable pour ajouter `@react-pdf/renderer` (~100 KB gzippé) en sprint 5 sans dépasser la cible
+- **PDF lazy-loaded** : `@react-pdf/renderer` dans un chunk séparé (495 KB gzip), chargé uniquement au clic « Exporter ». Le bundle initial reste à 94 KB.
+- **Tests TDD ciblés** : matrice droits + transitions + validation signatures + parser CSV + cloture + déverrouillage. Composants UI testés via E2E (Playwright) plutôt qu'unitairement.
+- **Migration localStorage par bump de version** : v1 → v2 → v3 → v4 reset complet à chaque bump (pas de migration logicielle, données fictives)
+- **Cohérence du pattern de friction** : 5 actions destructrices/engageantes utilisent toutes une confirmation explicite (signature, suppression compétence, suppression ligne GRETA, clôture, réinit). Une seule modale stricte (R10 — la plus engageante avec motif obligatoire).
+- **Coordo et Admin = extensions explicites** : pas de fonctionnalité « secrète », tout est tracé dans `TODO-etape-2.md`
+- **Mobile-first responsive** : navigation par drawer, RoleSwitcher compact, audit Playwright 12 tests dédiés.
 
 ---
 
 ## 15. Prochaine étape recommandée
 
-Au choix selon priorité du pilote :
+L'étape 1 du CDC v1.3 est **livrée et fonctionnelle**. Pour la démo direction, deux pistes complémentaires :
 
-1. **Finir l'import des référentiels (Phases C + D)** — débloque la démo d'un référentiel CECRL réel, ~1 session
-2. **Sprint 5 export PDF** — livrable contractuel CDC, ~1 session
-3. **Enrichir les fixtures avec 6 apprenti·e·s** — débloque l'usage du tableau de bord et la démo R7, ~0.5 session
+1. **Enrichir les fixtures avec 6 apprenti·e·s** (CDC §24.5) — débloque les démonstrations R7 (alerte), R10 (désaccord) sur des cas variés. ~0,5 session.
+2. **Finir l'import des référentiels (Phases C + D)** — débloque la démo d'un référentiel CECRL réel. ~1 session.
 
-Recommandation : faire (3) puis (1) puis (2). Ça garantit que la démo finale est solide sans précipiter le PDF.
+Recommandation : faire (1) en priorité, puis (2). La sécurité VPS est une action côté pilote (cf. §11).
 
 ---
 
-*Fin du document.*
+*Étape 1 livrée — Sprint 5 + post-livraison (mobile + verrouillage + cohérence UX) — cahier des charges v1.3.*
