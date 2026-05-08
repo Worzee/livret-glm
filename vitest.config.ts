@@ -17,5 +17,8 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    // Vitest ne doit voir que les tests unitaires sous src/.
+    // Les tests E2E (Playwright) vivent dans e2e/ et ne sont pas exécutables ici.
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
   },
 });
