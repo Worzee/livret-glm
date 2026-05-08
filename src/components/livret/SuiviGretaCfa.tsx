@@ -1,9 +1,10 @@
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import type { FicheSuiviPeriode } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { peutEditer } from '@/lib/droits';
 import { peutEncoreEditerFiche } from '@/lib/transitions-fiche';
+import { BoutonSupprimer } from '@/components/common/BoutonSupprimer';
 import { cn } from '@/lib/utils';
 
 /**
@@ -106,14 +107,12 @@ export function SuiviGretaCfa({ livretId, fiche }: SuiviGretaCfaProps) {
                 </td>
                 {editable && (
                   <td className="px-3 py-2">
-                    <button
-                      type="button"
-                      onClick={() => supprimer(livretId, fiche.id, l.id)}
-                      className="rounded-md p-1 text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
-                      aria-label={`Supprimer la ligne ${l.nomCours || 'sans titre'}`}
-                    >
-                      <Trash2 className="h-4 w-4" aria-hidden="true" />
-                    </button>
+                    <BoutonSupprimer
+                      ariaLabel={`Supprimer la ligne ${l.nomCours || 'sans titre'}`}
+                      question={`Supprimer ${l.nomCours || 'cette ligne'} ?`}
+                      onConfirmer={() => supprimer(livretId, fiche.id, l.id)}
+                      variant="icon"
+                    />
                   </td>
                 )}
               </tr>
