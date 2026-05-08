@@ -51,10 +51,13 @@ export function RoleSwitcher() {
               'flex items-center justify-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors',
               'min-w-9 min-h-9',
               'lg:px-3',
-              'hover:bg-background',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-              actif && classeActive,
-              actif && 'hover:opacity-90',
+              // L'état hover ne doit JAMAIS écraser le fond du bouton actif :
+              //   - sur mobile, le navigateur garde le :hover après un tap, ce
+              //     qui rendait l'icône blanche sur fond clair (invisible) ;
+              //   - on applique donc `hover:bg-background` uniquement quand
+              //     le bouton est inactif.
+              actif ? cn(classeActive, 'hover:opacity-90') : 'hover:bg-background',
             )}
             title={libelleRole(role)}
           >
