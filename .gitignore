@@ -4,6 +4,9 @@ scripts/.env.deploy
 *.key
 .htpasswd*
 
+# ─── Config locale Claude Code (personnelle à chaque dev) ────────────────────
+.claude/settings.local.json
+
 # ─── Node / Vite ─────────────────────────────────────────────────────────────
 node_modules/
 dist/
