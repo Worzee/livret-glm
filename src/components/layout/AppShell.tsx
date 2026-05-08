@@ -2,7 +2,7 @@ import { Link, Outlet } from 'react-router-dom';
 import { Building2 } from 'lucide-react';
 import { BandeauDemo } from './BandeauDemo';
 import { RoleSwitcher } from './RoleSwitcher';
-import { Sidebar } from './Sidebar';
+import { Sidebar, MobileMenu } from './Sidebar';
 import { BoutonReinitialiserDemo } from './BoutonReinitialiserDemo';
 import { IndicateurEnregistrement } from '@/components/common/IndicateurEnregistrement';
 import { useUserStore } from '@/store/useUserStore';
@@ -21,7 +21,10 @@ export function AppShell() {
       <BandeauDemo />
 
       <header className="border-b border-border bg-card">
-        <div className="container flex flex-wrap items-center gap-4 py-3">
+        <div className="container flex flex-wrap items-center gap-3 py-3">
+          {/* Bouton hamburger (mobile uniquement) */}
+          <MobileMenu />
+
           <Link
             to="/"
             className="flex items-center gap-3 text-foreground hover:text-primary transition-colors"
@@ -33,14 +36,14 @@ export function AppShell() {
             >
               GLM
             </span>
-            <span className="flex flex-col leading-tight">
+            <span className="hidden sm:flex flex-col leading-tight">
               <span className="font-semibold">Livret d'apprentissage</span>
               <span className="text-xs text-muted-foreground">GRETA Lyon Métropole — Démo</span>
             </span>
           </Link>
 
           <div className="ml-auto flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="hidden lg:flex items-center gap-2 text-sm text-muted-foreground">
               <Building2 className="h-4 w-4" aria-hidden="true" />
               <span>
                 Connecté en tant que <strong className="text-foreground">{utilisateurActif.prenom} {utilisateurActif.nom}</strong>{' '}

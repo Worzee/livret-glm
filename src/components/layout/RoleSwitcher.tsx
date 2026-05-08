@@ -37,15 +37,20 @@ export function RoleSwitcher() {
     >
       {ROLES_CONFIG.map(({ role, Icon, classeActive, libelleCourt }) => {
         const actif = roleActif === role;
+        const libelle = libelleCourt ?? libelleRole(role);
         return (
           <button
             key={role}
             type="button"
             role="radio"
             aria-checked={actif}
+            aria-label={libelleRole(role)}
             onClick={() => changerRole(role)}
             className={cn(
-              'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+              // Touch target ≥ 36 px en mode compact mobile, élargi en desktop.
+              'flex items-center justify-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors',
+              'min-w-9 min-h-9',
+              'lg:px-3',
               'hover:bg-background',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               actif && classeActive,
@@ -53,8 +58,10 @@ export function RoleSwitcher() {
             )}
             title={libelleRole(role)}
           >
-            <Icon className="h-4 w-4" aria-hidden="true" />
-            <span>{libelleCourt ?? libelleRole(role)}</span>
+            <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+            {/* Sur mobile : icône seule (libellé porté par aria-label).
+                À partir de lg : libellé visible. */}
+            <span className="hidden lg:inline">{libelle}</span>
           </button>
         );
       })}

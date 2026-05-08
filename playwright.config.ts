@@ -32,6 +32,17 @@ export default defineConfig({
     {
       name: 'chromium-desktop',
       use: { ...devices['Desktop Chrome'] },
+      // Le projet desktop ne joue pas les specs mobile-only (`*.mobile.spec.ts`).
+      testIgnore: /.*\.mobile\.spec\.ts/,
+    },
+    {
+      // Émulation smartphone Android représentative (393×851, dpr=2.75).
+      // Cible le cas d'usage terrain : entretiens et visites de suivi sur mobile.
+      name: 'mobile-pixel5',
+      use: { ...devices['Pixel 5'] },
+      // Les specs spécifiquement mobiles peuvent porter le suffixe `.mobile`.
+      // Par défaut on ne joue que les audits dédiés au mobile sur ce projet.
+      testMatch: /.*\.mobile\.spec\.ts/,
     },
   ],
 
