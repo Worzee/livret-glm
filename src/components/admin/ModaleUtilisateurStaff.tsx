@@ -86,15 +86,17 @@ export function ModaleUtilisateurStaff({
   const [saisie, setSaisie] = useState<SaisieStaff>(valeurInitiale);
   const [tentativeSoumission, setTentativeSoumission] = useState(false);
 
+  // Le state est initialisé via `useState(valeurInitiale)` au mount. Pas de
+  // re-set ici : il causait une race avec les inputs sous Playwright (le
+  // setSaisie pouvait écraser un fill en cours après que la modale soit
+  // « ouverte »). Idem pour le `setTimeout(focus, 30ms)` retiré : il
+  // déclenchait des sauts de focus pendant les frappes E2E. Le focus auto
+  // initial est désormais géré via `autoFocus` directement sur l'input.
+  // Pour forcer un état frais à chaque ouverture, le parent passe une
+  // `key` distincte (cf. GestionUtilisateurs).
   useEffect(() => {
-    if (ouvert) {
-      setSaisie(valeurInitiale());
-      setTentativeSoumission(false);
-      const t = setTimeout(() => premierChampRef.current?.focus(), 30);
-      return () => clearTimeout(t);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ouvert, utilisateur?.id, role]);
+    // Hook conservé pour rester explicite sur l'absence de side-effect.
+  }, [ouvert]);
 
   useEffect(() => {
     if (!ouvert) return;
@@ -224,6 +226,8 @@ export function ModaleUtilisateurStaff({
               erreur={erreurs.prenom}
               obligatoire
               inputRef={premierChampRef}
+              testId="staff-prenom"
+              autoFocus
             />
             <Champ
               label="Nom"
@@ -232,6 +236,7 @@ export function ModaleUtilisateurStaff({
               erreur={erreurs.nom}
               obligatoire
               hint="En MAJUSCULES (normalisation auto)"
+              testId="staff-nom"
             />
             <Champ
               label="Email"
@@ -240,12 +245,14 @@ export function ModaleUtilisateurStaff({
               onChange={(v) => setSaisie((s) => ({ ...s, email: v }))}
               erreur={erreurs.email}
               obligatoire
+              testId="staff-email"
             />
             <Champ
               label="Téléphone"
               type="tel"
               valeur={saisie.telephone ?? ''}
               onChange={(v) => setSaisie((s) => ({ ...s, telephone: v }))}
+              testId="staff-telephone"
             />
             {role === 'maitre' && (
               <Champ
@@ -255,6 +262,7 @@ export function ModaleUtilisateurStaff({
                 erreur={erreurs.entrepriseId}
                 obligatoire
                 hint="Code court, ex : e-le-gourmet"
+                testId="staff-entreprise"
               />
             )}
           </div>
@@ -298,6 +306,10 @@ interface ChampProps {
   hint?: string;
   obligatoire?: boolean;
   inputRef?: React.Ref<HTMLInputElement>;
+  /** Identifiant stable pour les tests E2E (data-testid). */
+  testId?: string;
+  /** Focus auto au mount (1er champ d'un formulaire). */
+  autoFocus?: boolean;
 }
 
 function Champ({
@@ -309,6 +321,8 @@ function Champ({
   hint,
   obligatoire,
   inputRef,
+  testId,
+  autoFocus,
 }: ChampProps) {
   const id = useId();
   const erreurId = useId();
@@ -323,6 +337,8 @@ function Champ({
         ref={inputRef}
         type={type}
         value={valeur}
+        data-testid={testId}
+        autoFocus={autoFocus}
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={!!erreur}
         aria-describedby={erreur ? erreurId : undefined}

@@ -116,9 +116,16 @@ test("le changement de formateur référent est persisté", async ({ page }) => 
   await page.getByRole('button', { name: /Nouveau · nouvelle/i }).click();
   await page.getByRole('menuitem', { name: /^Formateur référent/i }).click();
   const modale = page.getByRole('dialog');
-  await modale.getByLabel(/^Prénom/).fill('Marc');
-  await modale.getByLabel(/^Nom/).fill('Hubert');
-  await modale.getByLabel(/^Email/).fill('marc.hubert@greta-demo.fr');
+  // pressSequentially au lieu de fill pour résister aux re-renders React
+  // pendant la suite full (cf. discussion bug ModaleFormation).
+  await modale.getByTestId('staff-email').waitFor({ state: 'visible' });
+  await modale.getByTestId('staff-prenom').click();
+  await modale.getByTestId('staff-prenom').pressSequentially('Marc');
+  await modale.getByTestId('staff-nom').click();
+  await modale.getByTestId('staff-nom').pressSequentially('Hubert');
+  await modale.getByTestId('staff-email').click();
+  await modale.getByTestId('staff-email').pressSequentially('marc.hubert@greta-demo.fr');
+  await expect(modale.getByTestId('staff-email')).toHaveValue('marc.hubert@greta-demo.fr');
   await modale.getByRole('button', { name: /Créer formateur/i }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 

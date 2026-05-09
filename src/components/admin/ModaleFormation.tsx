@@ -1,13 +1,13 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { GraduationCap, X } from 'lucide-react';
 import type { Formation, Lieu } from '@/types';
 import { useFormationsStore } from '@/store/useFormationsStore';
+import { useReferentielsStore } from '@/store/useReferentielsStore';
 import {
   type SaisieFormation,
   normaliserSaisieFormation,
   validerSaisieFormation,
 } from '@/lib/validation-formation';
-import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
 import { cn } from '@/lib/utils';
 
 /**
@@ -43,12 +43,6 @@ const SAISIE_VIDE: SaisieFormation = {
   lieu: LIEU_VIDE,
 };
 
-// Liste statique des référentiels connus. À remplacer par
-// `useReferentielsStore` quand l'extension 3 sera livrée.
-const REFERENTIELS_DISPONIBLES = [
-  { id: referentielCapCuisine.id, libelle: referentielCapCuisine.formation },
-];
-
 // Suggestions de niveaux courants pour le datalist (saisie libre conservée).
 const NIVEAUX_SUGGERES = ['CAP', 'BAC PRO', 'BTS', 'BP', 'MC', 'TP'];
 
@@ -60,6 +54,15 @@ export function ModaleFormation({
 }: ModaleFormationProps) {
   const ajouter = useFormationsStore((s) => s.ajouterFormation);
   const modifier = useFormationsStore((s) => s.modifierFormation);
+  const referentiels = useReferentielsStore((s) => s.referentiels);
+
+  const referentielsDisponibles = useMemo(
+    () =>
+      Object.values(referentiels)
+        .map((r) => ({ id: r.id, libelle: r.formation }))
+        .sort((a, b) => a.libelle.localeCompare(b.libelle, 'fr-FR')),
+    [referentiels],
+  );
 
   const titreId = useId();
   const premierChampRef = useRef<HTMLInputElement>(null);
@@ -87,16 +90,13 @@ export function ModaleFormation({
   const [saisie, setSaisie] = useState<SaisieFormation>(valeurInitiale);
   const [tentativeSoumission, setTentativeSoumission] = useState(false);
 
-  // Le state est initialisé via `useState(valeurInitiale)` au mount. Pas de
-  // re-set ici : il causait une race avec les inputs sous Playwright (le
-  // setSaisie pouvait écraser un fill en cours après que la modale soit
-  // « ouverte »). Pour forcer un état frais à chaque ouverture, le parent
+  // Pas de side-effect au mount : ni setSaisie (race avec les fills E2E)
+  // ni setTimeout(focus, 30ms) (race avec le focus auto qui sautait
+  // pendant les frappes). Le focus initial est géré via `autoFocus` sur
+  // l'input. Pour forcer un état frais à chaque ouverture, le parent
   // passe une `key` distincte (cf. GestionFormations).
   useEffect(() => {
-    if (ouvert) {
-      const t = setTimeout(() => premierChampRef.current?.focus(), 30);
-      return () => clearTimeout(t);
-    }
+    // Hook conservé pour rester explicite sur l'absence de side-effect.
   }, [ouvert]);
 
   useEffect(() => {
@@ -189,6 +189,8 @@ export function ModaleFormation({
               obligatoire
               inputRef={premierChampRef}
               hint="Ex : CAP Cuisine, BAC PRO Commerce…"
+              testId="formation-intitule"
+              autoFocus
             />
             <Champ
               label="Niveau"
@@ -198,6 +200,7 @@ export function ModaleFormation({
               obligatoire
               listId="liste-niveaux"
               datalist={NIVEAUX_SUGGERES}
+              testId="formation-niveau"
             />
             <Champ
               label="Année académique"
@@ -207,12 +210,13 @@ export function ModaleFormation({
               avertissement={avertissements.annee}
               obligatoire
               hint="Format : 2025-2026"
+              testId="formation-annee"
             />
             <ChampSelect
               label="Référentiel"
               valeur={saisie.referentielId}
               onChange={(v) => setSaisie((s) => ({ ...s, referentielId: v }))}
-              options={REFERENTIELS_DISPONIBLES.map((r) => ({
+              options={referentielsDisponibles.map((r) => ({
                 value: r.id,
                 libelle: r.libelle,
               }))}
@@ -229,6 +233,7 @@ export function ModaleFormation({
               onChange={(v) => setSaisie((s) => ({ ...s, dateDebut: v }))}
               erreur={erreurs.dateDebut}
               obligatoire
+              testId="formation-date-debut"
             />
             <Champ
               label="Date de fin"
@@ -237,6 +242,7 @@ export function ModaleFormation({
               onChange={(v) => setSaisie((s) => ({ ...s, dateFin: v }))}
               erreur={erreurs.dateFin}
               obligatoire
+              testId="formation-date-fin"
             />
           </Section>
 
@@ -248,6 +254,7 @@ export function ModaleFormation({
               erreur={erreurs.lieuNom}
               obligatoire
               hint="Ex : GRETA Lyon Métropole — Site Diderot"
+              testId="formation-nom-lieu"
             />
             <Champ
               label="Adresse"
@@ -318,6 +325,10 @@ interface ChampProps {
   /** Si fourni, attache un <datalist> avec ces suggestions (saisie libre conservée). */
   listId?: string;
   datalist?: string[];
+  /** Identifiant stable pour les tests E2E (data-testid). */
+  testId?: string;
+  /** Focus auto au mount (1er champ d'un formulaire). */
+  autoFocus?: boolean;
 }
 
 function Champ({
@@ -332,6 +343,8 @@ function Champ({
   inputRef,
   listId,
   datalist,
+  testId,
+  autoFocus,
 }: ChampProps) {
   const id = useId();
   const messageId = useId();
@@ -347,6 +360,8 @@ function Champ({
         type={type}
         value={valeur}
         list={listId}
+        data-testid={testId}
+        autoFocus={autoFocus}
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={!!erreur}
         aria-describedby={erreur || avertissement ? messageId : undefined}

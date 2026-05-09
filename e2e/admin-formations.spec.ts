@@ -35,9 +35,9 @@ test("le coordo accède à la page et voit la formation des fixtures", async ({ 
 });
 
 /**
- * Helper de remplissage de la modale formation. Utilise des labels exacts
- * pour éviter le strict-mode violation (le regex `/^Année académique/` peut
- * matcher d'autres champs en présence d'un datalist Niveau).
+ * Helper de remplissage de la modale formation. Utilise des `data-testid`
+ * stables pour éviter les races qu'on observait avec les sélecteurs par label
+ * (sous charge longue, le 2ᵉ fill atterrissait dans le 1ᵉʳ champ).
  */
 async function remplirModaleFormation(
   page: import('@playwright/test').Page,
@@ -51,12 +51,14 @@ async function remplirModaleFormation(
   },
 ) {
   const modale = page.getByRole('dialog');
-  await modale.getByLabel('Intitulé', { exact: false }).fill(champs.intitule);
-  await modale.getByLabel('Niveau', { exact: false }).fill(champs.niveau);
-  await modale.getByLabel('Année académique', { exact: false }).fill(champs.annee);
-  await modale.getByLabel('Date de début', { exact: false }).fill(champs.dateDebut);
-  await modale.getByLabel('Date de fin', { exact: false }).fill(champs.dateFin);
-  await modale.getByLabel('Nom du lieu', { exact: false }).fill(champs.nomLieu);
+  // Attente explicite du dernier champ (mont React complet) avant de fill.
+  await modale.getByTestId('formation-nom-lieu').waitFor({ state: 'visible' });
+  await modale.getByTestId('formation-intitule').fill(champs.intitule);
+  await modale.getByTestId('formation-niveau').fill(champs.niveau);
+  await modale.getByTestId('formation-annee').fill(champs.annee);
+  await modale.getByTestId('formation-date-debut').fill(champs.dateDebut);
+  await modale.getByTestId('formation-date-fin').fill(champs.dateFin);
+  await modale.getByTestId('formation-nom-lieu').fill(champs.nomLieu);
 }
 
 test("création d'une nouvelle formation via la modale", async ({ page }) => {
@@ -126,7 +128,7 @@ test("édition d'une formation existante (intitulé)", async ({ page }) => {
 
   const modale = page.getByRole('dialog');
   await expect(modale.getByRole('heading', { name: /Modifier CAP Cuisine/i })).toBeVisible();
-  await modale.getByLabel('Intitulé', { exact: false }).fill('CAP Cuisine Restauration');
+  await modale.getByTestId('formation-intitule').fill('CAP Cuisine Restauration');
   await modale.getByRole('button', { name: /Enregistrer les modifications/i }).click();
 
   await expect(page.getByRole('dialog')).toHaveCount(0);

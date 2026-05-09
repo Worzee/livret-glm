@@ -6,6 +6,7 @@ import {
   FileDown,
   GraduationCap,
   LayoutDashboard,
+  Library,
   Link2,
   Menu,
   Notebook,
@@ -54,6 +55,7 @@ const LIENS_ADMIN: Array<LienItem & { ressource: Ressource }> = [
   { to: '/admin/utilisateurs', label: 'Utilisateurs', Icon: Users, ressource: 'admin.utilisateurs.creer-apprenti' },
   { to: '/admin/formations', label: 'Formations', Icon: GraduationCap, ressource: 'admin.formations.creer' },
   { to: '/admin/affectations', label: 'Affectations', Icon: Link2, ressource: 'admin.affectations.gerer' },
+  { to: '/admin/referentiels', label: 'Référentiels', Icon: Library, ressource: 'admin.referentiels.gerer' },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────

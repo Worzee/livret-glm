@@ -44,10 +44,11 @@ test("création d'un maître — apparaît dans la table et dans le sélecteur d
   await page.getByRole('menuitem', { name: /^Maître d'apprentissage/i }).click();
 
   const modale = page.getByRole('dialog');
-  await modale.getByLabel(/^Prénom/).fill('Antoine');
-  await modale.getByLabel(/^Nom/).fill('Marchand');
-  await modale.getByLabel(/^Email/).fill('antoine.marchand@chez-tony.demo');
-  await modale.getByLabel(/^Identifiant entreprise/).fill('e-chez-tony');
+  await modale.getByTestId('staff-entreprise').waitFor({ state: 'visible' });
+  await modale.getByTestId('staff-prenom').fill('Antoine');
+  await modale.getByTestId('staff-nom').fill('Marchand');
+  await modale.getByTestId('staff-email').fill('antoine.marchand@chez-tony.demo');
+  await modale.getByTestId('staff-entreprise').fill('e-chez-tony');
   await modale.getByRole('button', { name: /Créer maître/i }).click();
 
   await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -80,10 +81,11 @@ test("suppression d'un maître sans apprenti·e — succès", async ({ page }) =
   await page.getByRole('button', { name: /Nouveau · nouvelle/i }).click();
   await page.getByRole('menuitem', { name: /^Maître d'apprentissage/i }).click();
   const modale = page.getByRole('dialog');
-  await modale.getByLabel(/^Prénom/).fill('Test');
-  await modale.getByLabel(/^Nom/).fill('Eph');
-  await modale.getByLabel(/^Email/).fill('test.eph@demo.fr');
-  await modale.getByLabel(/^Identifiant entreprise/).fill('e-test');
+  await modale.getByTestId('staff-entreprise').waitFor({ state: 'visible' });
+  await modale.getByTestId('staff-prenom').fill('Test');
+  await modale.getByTestId('staff-nom').fill('Eph');
+  await modale.getByTestId('staff-email').fill('test.eph@demo.fr');
+  await modale.getByTestId('staff-entreprise').fill('e-test');
   await modale.getByRole('button', { name: /Créer maître/i }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
@@ -99,9 +101,10 @@ test("création d'un formateur — accessible côté coordo", async ({ page }) =
   await page.getByRole('button', { name: /Nouveau · nouvelle/i }).click();
   await page.getByRole('menuitem', { name: /^Formateur référent/i }).click();
   const modale = page.getByRole('dialog');
-  await modale.getByLabel(/^Prénom/).fill('Marie');
-  await modale.getByLabel(/^Nom/).fill('Lefebvre');
-  await modale.getByLabel(/^Email/).fill('marie.lefebvre@greta-demo.fr');
+  await modale.getByTestId('staff-email').waitFor({ state: 'visible' });
+  await modale.getByTestId('staff-prenom').fill('Marie');
+  await modale.getByTestId('staff-nom').fill('Lefebvre');
+  await modale.getByTestId('staff-email').fill('marie.lefebvre@greta-demo.fr');
   await modale.getByRole('button', { name: /Créer formateur/i }).click();
 
   await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -115,9 +118,10 @@ test("création d'un coordo — admin uniquement", async ({ page }) => {
   await page.getByRole('button', { name: /Nouveau · nouvelle/i }).click();
   await page.getByRole('menuitem', { name: /^Coordinateur·rice/i }).click();
   const modale = page.getByRole('dialog');
-  await modale.getByLabel(/^Prénom/).fill('Paul');
-  await modale.getByLabel(/^Nom/).fill('Durand');
-  await modale.getByLabel(/^Email/).fill('paul.durand@greta-demo.fr');
+  await modale.getByTestId('staff-email').waitFor({ state: 'visible' });
+  await modale.getByTestId('staff-prenom').fill('Paul');
+  await modale.getByTestId('staff-nom').fill('Durand');
+  await modale.getByTestId('staff-email').fill('paul.durand@greta-demo.fr');
   await modale.getByRole('button', { name: /Créer coordinateur/i }).click();
 
   await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -130,7 +134,7 @@ test("édition d'un maître — modifie l'identité affichée dans la liste", as
 
   await page.getByRole('button', { name: /Modifier Hélène ROCHE/i }).click();
   const modale = page.getByRole('dialog');
-  await modale.getByLabel(/^Prénom/).fill('Héloïse');
+  await modale.getByTestId('staff-prenom').fill('Héloïse');
   await modale.getByRole('button', { name: /Enregistrer/i }).click();
 
   await expect(page.getByRole('dialog')).toHaveCount(0);

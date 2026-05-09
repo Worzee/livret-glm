@@ -353,16 +353,51 @@ function AjouterCompetence({ onAjouter, competencesPresentes }: AjouterCompetenc
       <option value="" disabled>
         + Ajouter une compétence…
       </option>
-      {referentielCapCuisine.blocs.map((bloc) => (
-        <optgroup key={bloc.id} label={`${bloc.code} — ${bloc.libelle}`}>
-          {bloc.competences.map((c) => (
-            <option key={c.id} value={c.id} disabled={competencesPresentes.includes(c.id)}>
-              {c.code} {c.libelle}
-              {competencesPresentes.includes(c.id) ? ' (déjà présente)' : ''}
-            </option>
-          ))}
-        </optgroup>
-      ))}
+      {referentielCapCuisine.blocs.flatMap((bloc) => {
+        // Si le référentiel est à 3 niveaux et que le bloc a des sous-familles,
+        // on génère un optgroup par paire (bloc, sous-famille). HTML n'autorise
+        // pas l'imbrication d'optgroups — on aplatit en utilisant un libellé
+        // composite « Bloc — Sous-famille ».
+        const aDesSousFamilles =
+          referentielCapCuisine.niveauxColonnes === 3 &&
+          bloc.competences.some((c) => c.sousFamille);
+        if (!aDesSousFamilles) {
+          return [
+            <optgroup key={bloc.id} label={`${bloc.code} — ${bloc.libelle}`}>
+              {bloc.competences.map((c) => (
+                <option key={c.id} value={c.id} disabled={competencesPresentes.includes(c.id)}>
+                  {c.code} {c.libelle}
+                  {competencesPresentes.includes(c.id) ? ' (déjà présente)' : ''}
+                </option>
+              ))}
+            </optgroup>,
+          ];
+        }
+        // Groupement par sous-famille en préservant l'ordre d'apparition
+        const groupes = new Map<string, typeof bloc.competences>();
+        for (const c of bloc.competences) {
+          const cle = c.sousFamille ?? '';
+          if (!groupes.has(cle)) groupes.set(cle, []);
+          groupes.get(cle)!.push(c);
+        }
+        return [...groupes.entries()].map(([sousFamille, comps]) => (
+          <optgroup
+            key={`${bloc.id}-${sousFamille}`}
+            label={
+              sousFamille
+                ? `${bloc.code} — ${sousFamille}`
+                : `${bloc.code} — ${bloc.libelle}`
+            }
+          >
+            {comps.map((c) => (
+              <option key={c.id} value={c.id} disabled={competencesPresentes.includes(c.id)}>
+                {c.code} {c.libelle}
+                {competencesPresentes.includes(c.id) ? ' (déjà présente)' : ''}
+              </option>
+            ))}
+          </optgroup>
+        ));
+      })}
       <option value="__libre">+ Activité libre (hors référentiel)</option>
     </select>
   );

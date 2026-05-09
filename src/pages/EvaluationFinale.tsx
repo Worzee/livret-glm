@@ -3,6 +3,7 @@ import { Activity, Target } from 'lucide-react';
 import { useUserStore } from '@/store/useUserStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
+import { useReferentielsStore } from '@/store/useReferentielsStore';
 import { peutEditer } from '@/lib/droits';
 import { libelleRole } from '@/lib/droits';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
@@ -36,11 +37,17 @@ export function EvaluationFinale() {
   const [onglet, setOnglet] = useState<Onglet>('competences');
   const roleActif = useUserStore((s) => s.roleActif);
   const formations = useFormationsStore((s) => s.formations);
+  const referentiels = useReferentielsStore((s) => s.referentiels);
   const ctx = useApprentiActif();
 
   if (!ctx) return <AucunApprentiSelectionne />;
   const { apprenti, livret } = ctx;
   const formation = formations[apprenti.formationId] ?? formationCapCuisine;
+  // Résolution du référentiel via la formation. Fallback sur le CAP Cuisine
+  // si la formation n'a pas (encore) de référentiel défini ou si l'id pointe
+  // vers un référentiel supprimé — comportement raisonnable pour la maquette.
+  const referentiel =
+    referentiels[formation.referentielId] ?? referentielCapCuisine;
   const maitre = getMaitreByIdFromStore(apprenti.maitreApprentissageId) ?? maitreKarimBenali;
 
   const aDroitEdition =
@@ -75,7 +82,7 @@ export function EvaluationFinale() {
           maitre={maitre}
           formateur={formatriceSophieDubois}
           formation={formation}
-          referentiel={referentielCapCuisine}
+          referentiel={referentiel}
         />
       </header>
 
@@ -87,8 +94,8 @@ export function EvaluationFinale() {
       </div>
 
       <div role="tabpanel">
-        {onglet === 'competences' && <GrilleCompetences referentiel={referentielCapCuisine} />}
-        {onglet === 'attitudes' && <GrilleAttitudes referentiel={referentielCapCuisine} />}
+        {onglet === 'competences' && <GrilleCompetences referentiel={referentiel} />}
+        {onglet === 'attitudes' && <GrilleAttitudes referentiel={referentiel} />}
       </div>
     </div>
   );

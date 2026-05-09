@@ -403,6 +403,9 @@ export function GestionUtilisateurs() {
       )}
 
       <ModaleApprenti
+        // `key` distincte → force un remount frais à chaque ouverture
+        // (évite la race où setSaisie pouvait écraser un fill en cours).
+        key={modaleApprentiOuverte ? apprentiEnEdition?.id ?? 'creation' : 'fermee-apprenti'}
         ouvert={modaleApprentiOuverte}
         apprenti={apprentiEnEdition}
         onAnnuler={() => {
@@ -411,6 +414,11 @@ export function GestionUtilisateurs() {
         }}
       />
       <ModaleUtilisateurStaff
+        key={
+          modaleStaffOuverte
+            ? `${roleStaffEnCours}-${staffEnEdition?.id ?? 'creation'}`
+            : 'fermee-staff'
+        }
         ouvert={modaleStaffOuverte}
         role={roleStaffEnCours}
         utilisateur={staffEnEdition}

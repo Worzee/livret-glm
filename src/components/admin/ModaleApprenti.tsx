@@ -90,16 +90,18 @@ export function ModaleApprenti({
   const [saisie, setSaisie] = useState<SaisieApprenti>(valeurInitiale);
   const [tentativeSoumission, setTentativeSoumission] = useState(false);
 
-  // Reset à chaque ouverture
+  // Le state est initialisé via `useState(valeurInitiale)` au mount. Pas de
+  // re-set ici : il causait une race avec les inputs sous Playwright (le
+  // setSaisie pouvait écraser un fill en cours après que la modale soit
+  // « ouverte »). Pour forcer un état frais à chaque ouverture, le parent
+  // passe une `key` distincte (cf. GestionUtilisateurs).
+  // Focus auto initial via `autoFocus` directement sur l'input (cf. JSX) —
+  // le setTimeout(focus, 30ms) précédent déclenchait des sauts de focus
+  // pendant les frappes Playwright, pour le même problème de race.
   useEffect(() => {
-    if (ouvert) {
-      setSaisie(valeurInitiale());
-      setTentativeSoumission(false);
-      const t = setTimeout(() => premierChampRef.current?.focus(), 30);
-      return () => clearTimeout(t);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ouvert, apprenti?.id]);
+    // Pas d'effet : conservé pour rester explicite sur le contrat de la
+    // modale (pas de side-effects au mount au-delà du render initial).
+  }, [ouvert]);
 
   // Esc pour fermer
   useEffect(() => {
@@ -206,6 +208,8 @@ export function ModaleApprenti({
               erreur={erreurs.prenom}
               obligatoire
               inputRef={premierChampRef}
+              testId="apprenti-prenom"
+              autoFocus
             />
             <Champ
               label="Nom"
@@ -214,6 +218,7 @@ export function ModaleApprenti({
               erreur={erreurs.nom}
               obligatoire
               hint="En MAJUSCULES (normalisation auto à la sauvegarde)"
+              testId="apprenti-nom"
             />
             <Champ
               label="Email"
@@ -222,12 +227,14 @@ export function ModaleApprenti({
               onChange={(v) => setSaisie((s) => ({ ...s, email: v }))}
               erreur={erreurs.email}
               obligatoire
+              testId="apprenti-email"
             />
             <Champ
               label="Téléphone"
               type="tel"
               valeur={saisie.telephone ?? ''}
               onChange={(v) => setSaisie((s) => ({ ...s, telephone: v }))}
+              testId="apprenti-telephone"
             />
             <Champ
               label="Date de naissance"
@@ -237,6 +244,7 @@ export function ModaleApprenti({
               erreur={erreurs.dateNaissance}
               avertissement={avertissements.dateNaissance}
               obligatoire
+              testId="apprenti-naissance"
             />
           </Section>
 
@@ -249,6 +257,7 @@ export function ModaleApprenti({
               onChange={(v) => setSaisie((s) => ({ ...s, contratDebut: v }))}
               erreur={erreurs.contratDebut}
               obligatoire
+              testId="apprenti-contrat-debut"
             />
             <Champ
               label="Fin de contrat"
@@ -257,6 +266,7 @@ export function ModaleApprenti({
               onChange={(v) => setSaisie((s) => ({ ...s, contratFin: v }))}
               erreur={erreurs.contratFin}
               obligatoire
+              testId="apprenti-contrat-fin"
             />
           </Section>
 
@@ -355,6 +365,10 @@ interface ChampProps {
   hint?: string;
   obligatoire?: boolean;
   inputRef?: React.Ref<HTMLInputElement>;
+  /** Identifiant stable pour les tests E2E (data-testid). */
+  testId?: string;
+  /** Focus automatique au mount (1er champ d'un formulaire). */
+  autoFocus?: boolean;
 }
 
 function Champ({
@@ -367,6 +381,8 @@ function Champ({
   hint,
   obligatoire,
   inputRef,
+  testId,
+  autoFocus,
 }: ChampProps) {
   const id = useId();
   const messageId = useId();
@@ -381,6 +397,8 @@ function Champ({
         ref={inputRef}
         type={type}
         value={valeur}
+        data-testid={testId}
+        autoFocus={autoFocus}
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={!!erreur}
         aria-describedby={erreur || avertissement ? messageId : undefined}

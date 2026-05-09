@@ -41,13 +41,14 @@ test('le coordo crée un·e nouvel·le apprenti·e — la carte apparaît au tab
   const modale = page.getByRole('dialog');
   await expect(modale).toBeVisible();
 
-  // Remplit le formulaire
-  await modale.getByLabel(/^Prénom/).fill('Sarah');
-  await modale.getByLabel(/^Nom/).fill('Turc');
-  await modale.getByLabel(/^Email/).fill('sarah.turc@demo.fr');
-  await modale.getByLabel(/^Date de naissance/).fill('2008-03-12');
-  await modale.getByLabel(/^Début de contrat/).fill('2025-09-01');
-  await modale.getByLabel(/^Fin de contrat/).fill('2027-08-31');
+  // Remplit le formulaire (data-testid pour éviter les races sous charge).
+  await modale.getByTestId('apprenti-contrat-fin').waitFor({ state: 'visible' });
+  await modale.getByTestId('apprenti-prenom').fill('Sarah');
+  await modale.getByTestId('apprenti-nom').fill('Turc');
+  await modale.getByTestId('apprenti-email').fill('sarah.turc@demo.fr');
+  await modale.getByTestId('apprenti-naissance').fill('2008-03-12');
+  await modale.getByTestId('apprenti-contrat-debut').fill('2025-09-01');
+  await modale.getByTestId('apprenti-contrat-fin').fill('2027-08-31');
   // Affectation : valeurs par défaut (1ʳᵉ formation + 1ᵉʳ maître + 1ᵉʳ formateur).
 
   // Valide
@@ -90,7 +91,7 @@ test('édition : modifier un·e apprenti·e existant·e met à jour le tableau d
   // Clic sur "Modifier" pour Léa
   await page.getByRole('button', { name: /Modifier Léa MARTIN/i }).click();
   const modale = page.getByRole('dialog');
-  await modale.getByLabel(/^Prénom/).fill('Léane');
+  await modale.getByTestId('apprenti-prenom').fill('Léane');
   await modale.getByRole('button', { name: /Enregistrer/i }).click();
 
   // La carte au tableau de bord reflète le nouveau prénom
@@ -119,12 +120,13 @@ test('suppression libre d\'un·e apprenti·e dont le contrat n\'a pas démarré'
   await page.getByRole('button', { name: /Nouveau · nouvelle/i }).click();
   await page.getByRole('menuitem', { name: /^Apprenti·e/i }).click();
   const modale = page.getByRole('dialog');
-  await modale.getByLabel(/^Prénom/).fill('Lina');
-  await modale.getByLabel(/^Nom/).fill('Test');
-  await modale.getByLabel(/^Email/).fill('lina.test@demo.fr');
-  await modale.getByLabel(/^Date de naissance/).fill('2010-01-01');
-  await modale.getByLabel(/^Début de contrat/).fill('2027-09-01');
-  await modale.getByLabel(/^Fin de contrat/).fill('2029-08-31');
+  await modale.getByTestId('apprenti-contrat-fin').waitFor({ state: 'visible' });
+  await modale.getByTestId('apprenti-prenom').fill('Lina');
+  await modale.getByTestId('apprenti-nom').fill('Test');
+  await modale.getByTestId('apprenti-email').fill('lina.test@demo.fr');
+  await modale.getByTestId('apprenti-naissance').fill('2010-01-01');
+  await modale.getByTestId('apprenti-contrat-debut').fill('2027-09-01');
+  await modale.getByTestId('apprenti-contrat-fin').fill('2029-08-31');
   await modale.getByRole('button', { name: /Créer l'apprenti·e/i }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 

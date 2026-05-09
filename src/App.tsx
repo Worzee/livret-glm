@@ -11,6 +11,7 @@ import { EvaluationFinale } from '@/pages/EvaluationFinale';
 import { GestionUtilisateurs } from '@/pages/admin/GestionUtilisateurs';
 import { GestionFormations } from '@/pages/admin/GestionFormations';
 import { GestionAffectations } from '@/pages/admin/GestionAffectations';
+import { GestionReferentiels } from '@/pages/admin/GestionReferentiels';
 
 /**
  * Composition des routes de l'application.
@@ -49,6 +50,7 @@ export function App() {
         <Route path="admin/utilisateurs" element={<GestionUtilisateurs />} />
         <Route path="admin/formations" element={<GestionFormations />} />
         <Route path="admin/affectations" element={<GestionAffectations />} />
+        <Route path="admin/referentiels" element={<GestionReferentiels />} />
 
         <Route path="*" element={<NotFound />} />
       </Route>

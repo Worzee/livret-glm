@@ -15,10 +15,10 @@
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main`) |
 | **Dernier commit déployé** | `8bf0a9e` — verrouillage des affectations quand le livret est actif |
-| **Sprints livrés** | **1, 2, 3, 4, 5** + 3 extensions hors-CDC + post-livraison (mobile, UX, 6 apprenti·e·s, tableau de bord, **administration : CRUD 4 rôles + formations + affectations + verrouillages**) |
-| **Tests unitaires** | **222 / 222 ✓** (Vitest, 17 fichiers) |
-| **Tests E2E** | **73 / 73 ✓** (Playwright — 61 desktop + 12 mobile Pixel 5) |
-| **Bundle JS gzippé** | 111 KB (cible CDC §19.1 : < 500 KB → marge × 4,5) |
+| **Sprints livrés** | **1, 2, 3, 4, 5** + 3 extensions hors-CDC (dont import référentiels phases A→D livrées) + post-livraison (mobile, UX, 6 apprenti·e·s, tableau de bord, **administration : CRUD 4 rôles + formations + affectations + référentiels + verrouillages**) |
+| **Tests unitaires** | **231 / 231 ✓** (Vitest, 19 fichiers) |
+| **Tests E2E** | **79 / 79 ✓** (Playwright — 67 desktop + 12 mobile Pixel 5) |
+| **Bundle JS gzippé** | 116 KB (cible CDC §19.1 : < 500 KB → marge × 4,3) |
 | **Bundle CSS gzippé** | 5,9 KB (cible : < 50 KB → marge × 8,5) |
 | **Chunk PDF lazy** | 495 KB (chargé uniquement au clic « Exporter ») |
 | **Préflight VPS** | 11 / 11 ✓ |
@@ -32,12 +32,13 @@
 
 - **Frontend** : Vite 6 + React 18 + TypeScript 5.7 (strict)
 - **Style** : Tailwind CSS 3 + shadcn/ui (tokens CSS variables)
-- **State** : Zustand 5 + middleware `persist` — 5 stores persistés en localStorage :
+- **State** : Zustand 5 + middleware `persist` — 6 stores persistés en localStorage :
   - `livret-donnees` (schema v5) — livrets, fiches, entretiens, évaluations
   - `livret-role-actif` (rôle + maître actif)
   - `livret-apprenti-actif` (id de l'apprenti·e affiché·e)
   - `livret-utilisateurs` (schema v1) — apprenti·e·s, maîtres, formateurs, coordos, admins
   - `livret-formations` (schema v1) — formations (intitulé, niveau, dates, lieu, référentiel)
+  - `livret-referentiels` (schema v1) — référentiels de compétences (Bloc → Sous-famille? → Compétence)
 - **Routing** : React Router v6
 - **PDF** : `@react-pdf/renderer` 4 (lazy-loaded — chargé uniquement au clic « Exporter »)
 - **Tests unitaires** : Vitest 2 + Testing Library + jsdom
@@ -272,13 +273,27 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 - **Aucun droit pédagogique** (commentaires, niveaux, signatures, observations)
 - Tests TDD complets : pas un seul faux-positif côté pédagogie
 
-### Extension 3 — Import de référentiels (Phase A + B livrées sur 4)
+### Extension 3 — Import de référentiels (Phases A → D livrées)
 
 - **Phase A** : `Competence.sousFamille?: string` + `Referentiel.niveauxColonnes?: 2 | 3` + `source?` + ressource `admin.referentiels.gerer`
 - **Phase B** : `lib/import-referentiel.ts` complet (parsing CSV maison, encodage UTF-8 / Windows-1252, séparateur auto, 24 / 24 tests TDD)
-- **Phase C** : UI page `/admin/referentiels` (liste + modal d'import) — **à faire**
-- **Phase D** : adapter `GrilleCompetences` et `TableauTriColonnes` pour grouper par `sousFamille` — **à faire**
+- **Phase C** : ✅ UI livrée
+  - Store `useReferentielsStore` (Zustand persist v1) initialisé depuis le fixture CAP Cuisine
+  - Lib `lib/validation-import-referentiel.ts` (5 tests TDD) : nom obligatoire + avertissement si trop court, contenu CSV non vide
+  - Lib `lib/referentiel-verrou.ts` (4 tests TDD) : suppression refusée si une formation y est rattachée
+  - `ModaleImportReferentiel` : input file (CSV) **OU** textarea avec contenu collé, workflow en 2 temps (Aperçu → Importer) avec stats (blocs, compétences, sous-familles, encodage, séparateur) et avertissements détaillés
+  - Page `/admin/referentiels` : grille de cartes par référentiel avec compteurs + détail des blocs en `<details>` + bouton suppression 2 clics
+  - Sidebar : entrée *Référentiels* sous Administration
+- **Phase D** : ✅ rendering 3-niveaux livré
+  - `GrilleCompetences` : groupement visuel par sous-famille (en-tête de section dans chaque bloc) quand `niveauxColonnes === 3`
+  - `TableauTriColonnes.AjouterCompetence` : optgroup par paire `Bloc — Sous-famille` quand le référentiel est à 3 niveaux
 - **Phase E** : support XLSX via dynamic import — différable
+
+#### Connexion via le store
+
+- `EvaluationFinale` résout désormais le référentiel via `formation.referentielId` → `useReferentielsStore` (fallback sur le CAP Cuisine si la formation n'a pas encore de référentiel)
+- `ModaleFormation` liste les référentiels disponibles depuis le store (plus de constante figée)
+- `BoutonReinitialiserDemo` reset également le store des référentiels
 
 ---
 
@@ -315,9 +330,9 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 
 ---
 
-## 7. Tests (222 unitaires + 73 E2E)
+## 7. Tests (231 unitaires + 79 E2E)
 
-### Tests unitaires Vitest (222 / 222 ✓ — 17 fichiers)
+### Tests unitaires Vitest (231 / 231 ✓ — 19 fichiers)
 
 | Fichier | Tests | Périmètre |
 |---|---|---|
@@ -338,8 +353,10 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | `lib/affectation-verrou.test.ts` | 7 | Verrou des affectations : fiches existantes, entretien initié, contrat démarré, priorisation |
 | `lib/validation-formation.test.ts` | 9 | Validation formation (intitulé, niveau, année avec avertissement format, dates, référentiel, lieu) |
 | `lib/formation-verrou.test.ts` | 4 | Verrou de suppression formation : aucun·e/1/N apprenti·e·s rattaché·e·s, suffixe pluriel |
+| `lib/validation-import-referentiel.test.ts` | 5 | Saisie d'import référentiel : nom obligatoire, avertissement si court, contenu CSV non vide |
+| `lib/referentiel-verrou.test.ts` | 4 | Verrou de suppression référentiel : aucune/1/N formations rattachées, pluriel |
 
-### Tests E2E Playwright (73 / 73 ✓)
+### Tests E2E Playwright (79 / 79 ✓)
 
 | Projet | Fichier | Tests | Périmètre |
 |---|---|---|---|
@@ -353,6 +370,7 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | `chromium-desktop` | `admin-utilisateurs-staff.spec.ts` | 10 | Menu de création, CRUD staff, suppression bloquée par cohérence, accès formateur partiel |
 | `chromium-desktop` | `admin-affectations.spec.ts` | 6 | Verrou par défaut, déverrouillage temporaire, réaffectation, synchronisation, déblocage suppression Karim |
 | `chromium-desktop` | `admin-formations.spec.ts` | 7 | Accès, création, suppression bloquée si rattachement, suppression libre, édition, persistance reload, visibilité dans Affectations |
+| `chromium-desktop` | `admin-referentiels.spec.ts` | 6 | Accès, fixture CAP, import via textarea (3 colonnes + sous-familles), suppression bloquée, sélection dans modale Formations, persistance reload |
 | `mobile-pixel5` | `audit-mobile.mobile.spec.ts` | 12 | Aucun débordement horizontal, hamburger, drawer, RoleSwitcher compact, modale R10 dans largeur écran |
 
 ---
@@ -388,7 +406,7 @@ LIVRET APPRENTISSAGE/
     ├── main.tsx, App.tsx, vite-env.d.ts
     ├── styles/index.css
     ├── types/index.ts              # CDC §7 + ChampOrganisationSuivi + ClotureLivret + EntreeDeverrouillage
-    ├── lib/                        # logique métier pure (17 modules + 17 fichiers tests)
+    ├── lib/                        # logique métier pure (19 modules + 19 fichiers tests)
     │   ├── droits.ts               # matrice §6 (33 ressources × 5 rôles)
     │   ├── transitions-fiche.ts    # R15/R16/R17/R21
     │   ├── validation-signature.ts # R18/R20
@@ -405,15 +423,18 @@ LIVRET APPRENTISSAGE/
     │   ├── validation-apprenti.ts  # saisie apprenti·e (avec avertissements)
     │   ├── validation-utilisateur-staff.ts # saisie maître/formateur/coordo
     │   ├── validation-formation.ts # saisie formation (intitulé, dates, lieu)
+    │   ├── validation-import-referentiel.ts # saisie d'import (nom, contenu CSV)
     │   ├── affectation-verrou.ts   # verrou affectation si livret actif
     │   ├── formation-verrou.ts     # verrou suppression formation si rattachements
+    │   ├── referentiel-verrou.ts   # verrou suppression référentiel si formations rattachées
     │   └── utils.ts                # cn() helper
-    ├── store/                      # 5 stores Zustand persistés
+    ├── store/                      # 6 stores Zustand persistés
     │   ├── useUserStore.ts         # rôle actif + maître actif
     │   ├── useLivretStore.ts       # données livret (persist v5)
     │   ├── useApprentiActifStore.ts# id apprenti·e affiché·e
     │   ├── useUtilisateursStore.ts # CRUD utilisateurs (persist v1)
-    │   └── useFormationsStore.ts   # CRUD formations (persist v1)
+    │   ├── useFormationsStore.ts   # CRUD formations (persist v1)
+    │   └── useReferentielsStore.ts # CRUD référentiels (persist v1)
     ├── fixtures/
     │   ├── utilisateurs.ts         # 6 apprenti·e·s + 2 maîtres + Sophie + Martine + Guillaume
     │   ├── formations.ts           # CAP Cuisine 2025-2026
@@ -424,7 +445,8 @@ LIVRET APPRENTISSAGE/
     │   ├── admin/
     │   │   ├── ModaleApprenti.tsx  # CRUD apprenti·e (3 sections)
     │   │   ├── ModaleUtilisateurStaff.tsx # CRUD maître/formateur/coordo
-    │   │   └── ModaleFormation.tsx # CRUD formation (3 sections)
+    │   │   ├── ModaleFormation.tsx # CRUD formation (3 sections)
+    │   │   └── ModaleImportReferentiel.tsx # import CSV avec aperçu
     │   ├── layout/
     │   │   ├── AppShell.tsx
     │   │   ├── BandeauDemo.tsx
@@ -458,7 +480,8 @@ LIVRET APPRENTISSAGE/
     │   └── admin/
     │       ├── GestionUtilisateurs.tsx # CRUD 4 rôles + verrou suppression
     │       ├── GestionFormations.tsx   # CRUD formations + verrou suppression
-    │       └── GestionAffectations.tsx # selects auto-save + verrou
+    │       ├── GestionAffectations.tsx # selects auto-save + verrou
+    │       └── GestionReferentiels.tsx # liste + import CSV + verrou suppression
     └── test/setup.ts
 ```
 
@@ -490,17 +513,20 @@ Les 6 apprenti·e·s sont en place avec leurs livrets scénarisés. Cf. section 
 | Tests TDD (validation + verrou) | ✅ 9 + 4 tests |
 | Tests E2E (`admin-formations.spec.ts`) | ✅ 7 tests |
 
-### D. Import des référentiels — Phases C + D
+### D. ~~Import des référentiels — Phases C + D~~ — ✅ livré
 
-| Tâche | Effort estimé |
+| Sous-tâche | État |
 |---|---|
-| `useReferentielStore` (Zustand persist) | 0,2 session |
-| Page `/admin/referentiels` : liste + bouton import | 0,3 session |
-| Modal d'import : `<input type=file>` + preview du rapport + confirmation | 0,5 session |
-| Sidebar : entrée *Référentiels* dans section Administration | 0,05 session |
-| Adapter `GrilleCompetences` pour grouper les leaves par `sousFamille` | 0,3 session |
-| Adapter le sélecteur d'ajout de compétence dans `TableauTriColonnes` | 0,2 session |
-| Support XLSX via dynamic import de SheetJS (optionnel) | 0,5 session |
+| `useReferentielsStore` (Zustand persist v1) | ✅ |
+| Page `/admin/referentiels` : grille de cartes + bouton import + suppression 2 clics | ✅ |
+| Modale d'import : `<input type=file>` + textarea de fallback + Aperçu / Importer | ✅ |
+| Sidebar : entrée *Référentiels* dans Administration | ✅ |
+| `GrilleCompetences` : regroupement par sous-famille si 3 niveaux | ✅ |
+| `TableauTriColonnes` : optgroup `Bloc — Sous-famille` si 3 niveaux | ✅ |
+| `EvaluationFinale` + `ModaleFormation` : résolution via store | ✅ |
+| Tests TDD (validation + verrou) | ✅ 5 + 4 tests |
+| Tests E2E (`admin-referentiels.spec.ts`) | ✅ 6 tests |
+| Support XLSX via dynamic import de SheetJS (optionnel) | différable |
 
 ### E. Mise à jour formelle du cahier des charges en v1.5
 
@@ -633,15 +659,16 @@ Référence : CDC §22.
 
 ## 15. Prochaine étape recommandée
 
-L'étape 1 du CDC v1.3 est **livrée et fonctionnelle**, et l'administration métier est complète (CRUD 4 rôles + formations + affectations + verrouillages avec cohérence référentielle).
+L'étape 1 du CDC v1.3 est **livrée et fonctionnelle**. L'administration métier est complète (CRUD 4 rôles + formations + affectations + référentiels) avec verrouillages de cohérence référentielle à toutes les couches.
 
 Reste à finir :
 
-1. **Import des référentiels (Phases C + D)** — débloque la démo d'un référentiel réel via UI. ~1 session
-2. **Formaliser CDC v1.5** — documenter les changements négociés (rôles Coordo/Admin, ressources admin, règle de verrouillage des affectations §10.4)
+1. **Formaliser CDC v1.5** — documenter les changements négociés (rôles Coordo/Admin, ressources admin, règle de verrouillage des affectations §10.4, import référentiels)
+2. **Migration usage référentiel pour les fiches de période** : `TableauTriColonnes` lit encore le fixture CAP Cuisine en dur (pour l'ajout de compétences). Quand un livret pointe vers un autre référentiel importé, il faudrait que le sélecteur d'ajout suive — refactor minute
+3. **Support import XLSX** (extension 3 phase E) — différable, dépend du besoin terrain
 
 La sécurité VPS reste une action côté pilote (cf. §11).
 
 ---
 
-*Étape 1 livrée — Sprint 5 + post-livraison (mobile + verrouillage UX + 6 apprenti·e·s + administration complète : 4 rôles + formations + affectations) — cahier des charges v1.3.*
+*Étape 1 livrée — Sprint 5 + post-livraison (mobile + verrouillage UX + 6 apprenti·e·s + administration complète : 4 rôles + formations + affectations + référentiels) — cahier des charges v1.3.*

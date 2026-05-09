@@ -1,5 +1,11 @@
 import { Sparkles } from 'lucide-react';
-import type { LigneEvaluationFinaleCompetence, NiveauMaitrise, Referentiel } from '@/types';
+import type {
+  BlocCompetences,
+  Competence,
+  LigneEvaluationFinaleCompetence,
+  NiveauMaitrise,
+  Referentiel,
+} from '@/types';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
@@ -59,78 +65,122 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
       </section>
 
       {/* ── Grilles éditables détaillées ─────────────────────────────────── */}
-      {referentiel.blocs.map((bloc) => (
-        <section key={bloc.id} className="space-y-3">
-          <h2 className="text-lg font-medium">
-            {bloc.code} — {bloc.libelle}
-          </h2>
-          <div className="overflow-x-auto rounded-lg border border-border">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary/50 text-xs uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="px-3 py-2 text-left w-1/3">Compétence</th>
-                  <th className="px-3 py-2 text-left">Acquis en entreprise</th>
-                  <th className="px-3 py-2 text-left">Acquis en centre</th>
-                  <th className="px-3 py-2 text-left">Commentaire</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {bloc.competences.map((c) => {
-                  const ligne =
-                    lignes.find((l) => l.competenceId === c.id) ??
-                    ({
-                      competenceId: c.id,
-                      acquisEntreprise: null,
-                      acquisCentre: null,
-                    } satisfies LigneEvaluationFinaleCompetence);
+      {referentiel.blocs.map((bloc) => {
+        const groupes = grouperParSousFamille(bloc);
+        const aDesSousFamilles =
+          referentiel.niveauxColonnes === 3 &&
+          groupes.some((g) => g.sousFamille !== undefined);
+        return (
+          <section key={bloc.id} className="space-y-3">
+            <h2 className="text-lg font-medium">
+              {bloc.code} — {bloc.libelle}
+            </h2>
+            <div className="overflow-x-auto rounded-lg border border-border">
+              <table className="w-full text-sm">
+                <thead className="bg-secondary/50 text-xs uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 text-left w-1/3">Compétence</th>
+                    <th className="px-3 py-2 text-left">Acquis en entreprise</th>
+                    <th className="px-3 py-2 text-left">Acquis en centre</th>
+                    <th className="px-3 py-2 text-left">Commentaire</th>
+                  </tr>
+                </thead>
+                {groupes.map((g, idxGroupe) => (
+                  <tbody
+                    key={g.sousFamille ?? `__plat-${idxGroupe}`}
+                    className="divide-y divide-border"
+                  >
+                    {aDesSousFamilles && g.sousFamille && (
+                      <tr className="bg-secondary/20">
+                        <td
+                          colSpan={4}
+                          className="px-3 py-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground"
+                        >
+                          {g.sousFamille}
+                        </td>
+                      </tr>
+                    )}
+                    {g.competences.map((c) => {
+                      const ligne =
+                        lignes.find((l) => l.competenceId === c.id) ??
+                        ({
+                          competenceId: c.id,
+                          acquisEntreprise: null,
+                          acquisCentre: null,
+                        } satisfies LigneEvaluationFinaleCompetence);
 
-                  return (
-                    <tr key={c.id} className="align-top">
-                      <td className="px-3 py-3">
-                        <div className="font-medium text-sm">{c.code}</div>
-                        <div className="text-xs text-muted-foreground">{c.libelle}</div>
-                      </td>
-                      <td className="px-3 py-3 border-l-2 border-l-role-maitre/20">
-                        <CelluleNiveau
-                          ligne={ligne}
-                          synthese={synthese}
-                          colonne="acquisEntreprise"
-                          editable={peutEditerEntreprise}
-                          onChange={(v) =>
-                            setLigne(livret.id, c.id, { acquisEntreprise: v })
-                          }
-                          ariaLabel={`Acquis en entreprise pour ${c.code}`}
-                        />
-                      </td>
-                      <td className="px-3 py-3 border-l-2 border-l-role-formateur/20">
-                        <CelluleNiveau
-                          ligne={ligne}
-                          synthese={synthese}
-                          colonne="acquisCentre"
-                          editable={peutEditerCentre}
-                          onChange={(v) =>
-                            setLigne(livret.id, c.id, { acquisCentre: v })
-                          }
-                          ariaLabel={`Acquis en centre pour ${c.code}`}
-                        />
-                      </td>
-                      <td className="px-3 py-3 min-w-[200px]">
-                        <CelluleCommentaire
-                          valeur={ligne.commentaire ?? ''}
-                          editable={peutEditerEntreprise || peutEditerCentre}
-                          onChange={(v) => setLigne(livret.id, c.id, { commentaire: v })}
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ))}
+                      return (
+                        <tr key={c.id} className="align-top">
+                          <td className="px-3 py-3">
+                            <div className="font-medium text-sm">{c.code}</div>
+                            <div className="text-xs text-muted-foreground">{c.libelle}</div>
+                          </td>
+                          <td className="px-3 py-3 border-l-2 border-l-role-maitre/20">
+                            <CelluleNiveau
+                              ligne={ligne}
+                              synthese={synthese}
+                              colonne="acquisEntreprise"
+                              editable={peutEditerEntreprise}
+                              onChange={(v) =>
+                                setLigne(livret.id, c.id, { acquisEntreprise: v })
+                              }
+                              ariaLabel={`Acquis en entreprise pour ${c.code}`}
+                            />
+                          </td>
+                          <td className="px-3 py-3 border-l-2 border-l-role-formateur/20">
+                            <CelluleNiveau
+                              ligne={ligne}
+                              synthese={synthese}
+                              colonne="acquisCentre"
+                              editable={peutEditerCentre}
+                              onChange={(v) =>
+                                setLigne(livret.id, c.id, { acquisCentre: v })
+                              }
+                              ariaLabel={`Acquis en centre pour ${c.code}`}
+                            />
+                          </td>
+                          <td className="px-3 py-3 min-w-[200px]">
+                            <CelluleCommentaire
+                              valeur={ligne.commentaire ?? ''}
+                              editable={peutEditerEntreprise || peutEditerCentre}
+                              onChange={(v) => setLigne(livret.id, c.id, { commentaire: v })}
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                ))}
+              </table>
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
+}
+
+/**
+ * Regroupe les compétences d'un bloc par sous-famille en préservant l'ordre
+ * d'apparition. Si aucune compétence n'a de sous-famille, retourne un seul
+ * groupe sans titre (équivalent au comportement plat existant).
+ */
+function grouperParSousFamille(
+  bloc: BlocCompetences,
+): Array<{ sousFamille?: string; competences: Competence[] }> {
+  const groupes: Array<{ sousFamille?: string; competences: Competence[] }> = [];
+  const indexParCle = new Map<string, number>();
+  for (const c of bloc.competences) {
+    const cle = c.sousFamille ?? '__plat';
+    let idx = indexParCle.get(cle);
+    if (idx === undefined) {
+      idx = groupes.length;
+      indexParCle.set(cle, idx);
+      groupes.push({ sousFamille: c.sousFamille, competences: [] });
+    }
+    groupes[idx].competences.push(c);
+  }
+  return groupes;
 }
 
 interface CelluleNiveauProps {
