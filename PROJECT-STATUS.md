@@ -2,7 +2,7 @@
 
 **Dernière mise à jour** : 2026-05-09
 **Version applicative** : 0.1.0
-**Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3) **livrée + administration complète post-livraison**
+**Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3) **livrée + administration complète post-livraison (CRUD 4 rôles + formations + affectations)**
 **Pilote métier** : Guillaume FERRERI
 
 ---
@@ -15,10 +15,10 @@
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main`) |
 | **Dernier commit déployé** | `8bf0a9e` — verrouillage des affectations quand le livret est actif |
-| **Sprints livrés** | **1, 2, 3, 4, 5** + 3 extensions hors-CDC + post-livraison (mobile, UX, 6 apprenti·e·s, tableau de bord, **administration : CRUD 4 rôles + affectations + verrouillage**) |
-| **Tests unitaires** | **209 / 209 ✓** (Vitest, 15 fichiers) |
-| **Tests E2E** | **66 / 66 ✓** (Playwright — 54 desktop + 12 mobile Pixel 5) |
-| **Bundle JS gzippé** | 109 KB (cible CDC §19.1 : < 500 KB → marge × 4,6) |
+| **Sprints livrés** | **1, 2, 3, 4, 5** + 3 extensions hors-CDC + post-livraison (mobile, UX, 6 apprenti·e·s, tableau de bord, **administration : CRUD 4 rôles + formations + affectations + verrouillages**) |
+| **Tests unitaires** | **222 / 222 ✓** (Vitest, 17 fichiers) |
+| **Tests E2E** | **73 / 73 ✓** (Playwright — 61 desktop + 12 mobile Pixel 5) |
+| **Bundle JS gzippé** | 111 KB (cible CDC §19.1 : < 500 KB → marge × 4,5) |
 | **Bundle CSS gzippé** | 5,9 KB (cible : < 50 KB → marge × 8,5) |
 | **Chunk PDF lazy** | 495 KB (chargé uniquement au clic « Exporter ») |
 | **Préflight VPS** | 11 / 11 ✓ |
@@ -32,11 +32,12 @@
 
 - **Frontend** : Vite 6 + React 18 + TypeScript 5.7 (strict)
 - **Style** : Tailwind CSS 3 + shadcn/ui (tokens CSS variables)
-- **State** : Zustand 5 + middleware `persist` — 4 stores persistés en localStorage :
+- **State** : Zustand 5 + middleware `persist` — 5 stores persistés en localStorage :
   - `livret-donnees` (schema v5) — livrets, fiches, entretiens, évaluations
   - `livret-role-actif` (rôle + maître actif)
   - `livret-apprenti-actif` (id de l'apprenti·e affiché·e)
   - `livret-utilisateurs` (schema v1) — apprenti·e·s, maîtres, formateurs, coordos, admins
+  - `livret-formations` (schema v1) — formations (intitulé, niveau, dates, lieu, référentiel)
 - **Routing** : React Router v6
 - **PDF** : `@react-pdf/renderer` 4 (lazy-loaded — chargé uniquement au clic « Exporter »)
 - **Tests unitaires** : Vitest 2 + Testing Library + jsdom
@@ -241,6 +242,14 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 - **Bouton « Déverrouiller temporairement »** par ligne (confirmation 2 clics, auto-annulation 10 s). État non persisté — le verrou se réactive à chaque ouverture de la page
 - Page Utilisateurs : suppression d'apprenti·e également bloquée si livret actif (cohérence)
 
+#### Étape 4 — CRUD formations (boucle l'administration)
+- Store `useFormationsStore` (Zustand persist v1) initialisé depuis les fixtures. Mutations CRUD avec cohérence référentielle : `supprimerFormation` retourne `false` si au moins un·e apprenti·e y est rattaché·e
+- Lib `lib/validation-formation.ts` (9 tests TDD) : intitulé / niveau / année (avec **avertissement non-bloquant** si format ≠ « YYYY-YYYY ») / dates (cohérence fin > début) / référentiel / nom du lieu obligatoire ; adresse / CP / ville optionnels (cas centre virtuel)
+- Lib `lib/formation-verrou.ts` (4 tests TDD) : verrou de suppression + raison lisible avec suffixe d'inclusivité cohérent
+- `ModaleFormation` (création + édition) : 3 sections (identité, période, lieu). Datalist sur Niveau pour suggestions courantes (CAP, BAC PRO, BTS…) avec saisie libre conservée. Référentiel via select (sera connecté au futur `useReferentielsStore` quand l'extension 3 phase C sera livrée)
+- Refonte `/admin/formations` : grille de cartes avec recherche multicritères (intitulé / niveau / année), édition par ligne, suppression avec confirmation 2 clics. Compteur d'apprenti·e·s rattaché·e·s par carte
+- Le bouton « Réinitialiser la démo » étend la portée du reset au store des formations
+
 ---
 
 ## 5. Extensions hors-CDC v1.3 (négociées avec le pilote)
@@ -250,7 +259,7 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 - 4ᵉ rôle dans le système, couleur `#0e7490` (cyan-700)
 - Section *Administration* dans la sidebar (Utilisateurs, Formations, Affectations)
 - 11 ressources `admin.*` dans la matrice de droits (utilisateurs/formations/affectations/référentiels)
-- Pages CRUD réelles : utilisateurs ✅ + affectations ✅ ; formations encore placeholder
+- Pages CRUD réelles : utilisateurs ✅ + formations ✅ + affectations ✅
 - Fixture : Martine LEFÈVRE
 - **Aucun droit pédagogique** (testé exhaustivement)
 
@@ -306,9 +315,9 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 
 ---
 
-## 7. Tests (209 unitaires + 66 E2E)
+## 7. Tests (222 unitaires + 73 E2E)
 
-### Tests unitaires Vitest (209 / 209 ✓ — 15 fichiers)
+### Tests unitaires Vitest (222 / 222 ✓ — 17 fichiers)
 
 | Fichier | Tests | Périmètre |
 |---|---|---|
@@ -327,8 +336,10 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | `lib/validation-apprenti.test.ts` | 9 | Saisie apprenti·e (email, dates, âge avec avertissement RQTH, affectations) |
 | `lib/validation-utilisateur-staff.test.ts` | 6 | Validation maître / formateur / coordo (champs communs + entrepriseId conditionnel) |
 | `lib/affectation-verrou.test.ts` | 7 | Verrou des affectations : fiches existantes, entretien initié, contrat démarré, priorisation |
+| `lib/validation-formation.test.ts` | 9 | Validation formation (intitulé, niveau, année avec avertissement format, dates, référentiel, lieu) |
+| `lib/formation-verrou.test.ts` | 4 | Verrou de suppression formation : aucun·e/1/N apprenti·e·s rattaché·e·s, suffixe pluriel |
 
-### Tests E2E Playwright (66 / 66 ✓)
+### Tests E2E Playwright (73 / 73 ✓)
 
 | Projet | Fichier | Tests | Périmètre |
 |---|---|---|---|
@@ -341,6 +352,7 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | `chromium-desktop` | `admin-utilisateurs.spec.ts` | 7 | Accès, création/édition apprenti·e, suppression bloquée vs libre |
 | `chromium-desktop` | `admin-utilisateurs-staff.spec.ts` | 10 | Menu de création, CRUD staff, suppression bloquée par cohérence, accès formateur partiel |
 | `chromium-desktop` | `admin-affectations.spec.ts` | 6 | Verrou par défaut, déverrouillage temporaire, réaffectation, synchronisation, déblocage suppression Karim |
+| `chromium-desktop` | `admin-formations.spec.ts` | 7 | Accès, création, suppression bloquée si rattachement, suppression libre, édition, persistance reload, visibilité dans Affectations |
 | `mobile-pixel5` | `audit-mobile.mobile.spec.ts` | 12 | Aucun débordement horizontal, hamburger, drawer, RoleSwitcher compact, modale R10 dans largeur écran |
 
 ---
@@ -376,7 +388,7 @@ LIVRET APPRENTISSAGE/
     ├── main.tsx, App.tsx, vite-env.d.ts
     ├── styles/index.css
     ├── types/index.ts              # CDC §7 + ChampOrganisationSuivi + ClotureLivret + EntreeDeverrouillage
-    ├── lib/                        # logique métier pure (15 modules + 15 fichiers tests)
+    ├── lib/                        # logique métier pure (17 modules + 17 fichiers tests)
     │   ├── droits.ts               # matrice §6 (33 ressources × 5 rôles)
     │   ├── transitions-fiche.ts    # R15/R16/R17/R21
     │   ├── validation-signature.ts # R18/R20
@@ -392,13 +404,16 @@ LIVRET APPRENTISSAGE/
     │   ├── creation-livret.ts      # livret vierge réutilisable
     │   ├── validation-apprenti.ts  # saisie apprenti·e (avec avertissements)
     │   ├── validation-utilisateur-staff.ts # saisie maître/formateur/coordo
+    │   ├── validation-formation.ts # saisie formation (intitulé, dates, lieu)
     │   ├── affectation-verrou.ts   # verrou affectation si livret actif
+    │   ├── formation-verrou.ts     # verrou suppression formation si rattachements
     │   └── utils.ts                # cn() helper
-    ├── store/                      # 4 stores Zustand persistés
+    ├── store/                      # 5 stores Zustand persistés
     │   ├── useUserStore.ts         # rôle actif + maître actif
     │   ├── useLivretStore.ts       # données livret (persist v5)
     │   ├── useApprentiActifStore.ts# id apprenti·e affiché·e
-    │   └── useUtilisateursStore.ts # CRUD utilisateurs (persist v1)
+    │   ├── useUtilisateursStore.ts # CRUD utilisateurs (persist v1)
+    │   └── useFormationsStore.ts   # CRUD formations (persist v1)
     ├── fixtures/
     │   ├── utilisateurs.ts         # 6 apprenti·e·s + 2 maîtres + Sophie + Martine + Guillaume
     │   ├── formations.ts           # CAP Cuisine 2025-2026
@@ -408,7 +423,8 @@ LIVRET APPRENTISSAGE/
     │   ├── ui/                     # vide (shadcn à la demande)
     │   ├── admin/
     │   │   ├── ModaleApprenti.tsx  # CRUD apprenti·e (3 sections)
-    │   │   └── ModaleUtilisateurStaff.tsx # CRUD maître/formateur/coordo
+    │   │   ├── ModaleUtilisateurStaff.tsx # CRUD maître/formateur/coordo
+    │   │   └── ModaleFormation.tsx # CRUD formation (3 sections)
     │   ├── layout/
     │   │   ├── AppShell.tsx
     │   │   ├── BandeauDemo.tsx
@@ -441,7 +457,7 @@ LIVRET APPRENTISSAGE/
     │   ├── EvaluationFinale.tsx
     │   └── admin/
     │       ├── GestionUtilisateurs.tsx # CRUD 4 rôles + verrou suppression
-    │       ├── GestionFormations.tsx   # placeholder
+    │       ├── GestionFormations.tsx   # CRUD formations + verrou suppression
     │       └── GestionAffectations.tsx # selects auto-save + verrou
     └── test/setup.ts
 ```
@@ -463,15 +479,16 @@ Les 6 apprenti·e·s sont en place avec leurs livrets scénarisés. Cf. section 
 | Persistance Zustand des utilisateurs | ✅ `useUtilisateursStore` |
 | Verrouillage des affectations si livret actif | ✅ `affectation-verrou` |
 
-### C. CRUD formations (`/admin/formations`) — encore placeholder
+### C. ~~CRUD formations~~ — ✅ livré
 
-| Tâche | Effort estimé |
+| Sous-tâche | État |
 |---|---|
-| Étendre `useUtilisateursStore` (ou nouveau `useFormationsStore`) avec mutations CRUD | 0,2 session |
-| Modale `ModaleFormation` : intitulé, niveau, année, dates, lieu, référentiel | 0,3 session |
-| Page `/admin/formations` : table + bouton + édition par ligne | 0,3 session |
-| Cohérence : empêcher la suppression d'une formation si des apprenti·e·s y sont rattaché·e·s | 0,1 session |
-| Tests E2E | 0,2 session |
+| Store `useFormationsStore` (Zustand persist) avec mutations CRUD | ✅ |
+| Modale `ModaleFormation` : intitulé, niveau, année, dates, lieu, référentiel | ✅ |
+| Page `/admin/formations` : grille de cartes + bouton + édition par ligne | ✅ |
+| Cohérence : suppression bloquée si des apprenti·e·s y sont rattaché·e·s | ✅ `formation-verrou` |
+| Tests TDD (validation + verrou) | ✅ 9 + 4 tests |
+| Tests E2E (`admin-formations.spec.ts`) | ✅ 7 tests |
 
 ### D. Import des référentiels — Phases C + D
 
@@ -616,16 +633,15 @@ Référence : CDC §22.
 
 ## 15. Prochaine étape recommandée
 
-L'étape 1 du CDC v1.3 est **livrée et fonctionnelle**, et l'administration métier est en place (CRUD 4 rôles + affectations + verrouillage cohérence référentielle).
+L'étape 1 du CDC v1.3 est **livrée et fonctionnelle**, et l'administration métier est complète (CRUD 4 rôles + formations + affectations + verrouillages avec cohérence référentielle).
 
 Reste à finir :
 
-1. **CRUD formations** (`/admin/formations`, dernier placeholder admin) — ~1 session. Boucle proprement la chaîne d'administration
-2. **Import des référentiels (Phases C + D)** — débloque la démo d'un référentiel CECRL réel via UI. ~1 session
-3. **Formaliser CDC v1.5** — documenter les changements négociés (rôles Coordo/Admin, ressources admin, règle de verrouillage des affectations §10.4)
+1. **Import des référentiels (Phases C + D)** — débloque la démo d'un référentiel réel via UI. ~1 session
+2. **Formaliser CDC v1.5** — documenter les changements négociés (rôles Coordo/Admin, ressources admin, règle de verrouillage des affectations §10.4)
 
 La sécurité VPS reste une action côté pilote (cf. §11).
 
 ---
 
-*Étape 1 livrée — Sprint 5 + post-livraison (mobile + verrouillage UX + 6 apprenti·e·s + administration complète) — cahier des charges v1.3.*
+*Étape 1 livrée — Sprint 5 + post-livraison (mobile + verrouillage UX + 6 apprenti·e·s + administration complète : 4 rôles + formations + affectations) — cahier des charges v1.3.*

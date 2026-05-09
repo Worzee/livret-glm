@@ -1,107 +1,105 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { GraduationCap, X } from 'lucide-react';
-import type { Apprenti, Maitre } from '@/types';
-import { useUtilisateursStore } from '@/store/useUtilisateursStore';
+import type { Formation, Lieu } from '@/types';
 import { useFormationsStore } from '@/store/useFormationsStore';
-import { useUserStore } from '@/store/useUserStore';
 import {
-  type SaisieApprenti,
-  validerSaisieApprenti,
-} from '@/lib/validation-apprenti';
+  type SaisieFormation,
+  normaliserSaisieFormation,
+  validerSaisieFormation,
+} from '@/lib/validation-formation';
+import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
 import { cn } from '@/lib/utils';
 
 /**
- * Modale de création / édition d'un·e apprenti·e.
+ * Modale de création / édition d'une formation.
  *
- * - Mode `creation` : `apprenti` est `undefined`. À la validation, ajoute un·e
- *   nouvel·le apprenti·e + crée son livret vierge.
- * - Mode `edition`  : `apprenti` est fourni. À la validation, met à jour les
- *   champs existants.
+ * - Mode `creation` : `formation` est `undefined`. Ajoute une nouvelle formation.
+ * - Mode `edition`  : `formation` est fourni. Met à jour les champs existants.
  *
- * L'affectation initiale (formation / maître / formateur / entreprise) est
- * incluse dans le formulaire — l'affectation post-création se fait dans
- * `/admin/affectations` (étape 3).
- *
- * Validation : `lib/validation-apprenti.ts`. Esc / clic arrière-plan / Annuler
+ * Validation : `lib/validation-formation.ts`. Esc / clic arrière-plan / Annuler
  * ferment sans sauvegarder.
+ *
+ * Référentiels : tant que l'UI d'import (Extension 3 phase C) n'est pas livrée,
+ * on liste statiquement les référentiels connus. Quand `useReferentielsStore`
+ * existera, on s'y branchera ici.
  */
-interface ModaleApprentiProps {
+
+interface ModaleFormationProps {
   ouvert: boolean;
-  apprenti?: Apprenti;
+  formation?: Formation;
   onAnnuler: () => void;
-  onValide?: (apprenti: Apprenti) => void;
+  onValide?: (formation: Formation) => void;
 }
 
-const SAISIE_VIDE: SaisieApprenti = {
-  prenom: '',
-  nom: '',
-  email: '',
-  telephone: '',
-  dateNaissance: '',
-  contratDebut: '',
-  contratFin: '',
-  formationId: '',
-  entrepriseId: '',
-  maitreApprentissageId: '',
-  formateurReferentId: '',
+const LIEU_VIDE: Lieu = { nom: '', adresse: '', codePostal: '', ville: '' };
+
+const SAISIE_VIDE: SaisieFormation = {
+  intitule: '',
+  niveau: '',
+  annee: '',
+  referentielId: '',
+  dateDebut: '',
+  dateFin: '',
+  lieu: LIEU_VIDE,
 };
 
-export function ModaleApprenti({
+// Liste statique des référentiels connus. À remplacer par
+// `useReferentielsStore` quand l'extension 3 sera livrée.
+const REFERENTIELS_DISPONIBLES = [
+  { id: referentielCapCuisine.id, libelle: referentielCapCuisine.formation },
+];
+
+// Suggestions de niveaux courants pour le datalist (saisie libre conservée).
+const NIVEAUX_SUGGERES = ['CAP', 'BAC PRO', 'BTS', 'BP', 'MC', 'TP'];
+
+export function ModaleFormation({
   ouvert,
-  apprenti,
+  formation,
   onAnnuler,
   onValide,
-}: ModaleApprentiProps) {
-  const ajouter = useUtilisateursStore((s) => s.ajouterApprenti);
-  const modifier = useUtilisateursStore((s) => s.modifierApprenti);
-  const maitres = useUtilisateursStore((s) => s.maitres);
-  const formateurs = useUtilisateursStore((s) => s.formateurs);
-  const formations = useFormationsStore((s) => s.formations);
-  const auteurId = useUserStore((s) => s.utilisateurActif.id);
+}: ModaleFormationProps) {
+  const ajouter = useFormationsStore((s) => s.ajouterFormation);
+  const modifier = useFormationsStore((s) => s.modifierFormation);
 
   const titreId = useId();
   const premierChampRef = useRef<HTMLInputElement>(null);
 
-  const formationsList = useMemo(() => Object.values(formations), [formations]);
-  const maitresList = useMemo(() => Object.values(maitres), [maitres]);
-  const formateursList = useMemo(() => Object.values(formateurs), [formateurs]);
-
-  // Pré-remplir avec les valeurs de l'apprenti·e à éditer ou avec des défauts
-  // sensés en création (premier·e formateur·rice + premier maître + 1ʳᵉ formation).
-  function valeurInitiale(): SaisieApprenti {
-    if (apprenti) {
-      const { id: _id, role: _role, ...rest } = apprenti;
+  function valeurInitiale(): SaisieFormation {
+    if (formation) {
+      const { id: _id, lieu, ...rest } = formation;
       void _id;
-      void _role;
-      return rest;
+      return {
+        ...rest,
+        lieu: {
+          nom: lieu.nom,
+          adresse: lieu.adresse ?? '',
+          codePostal: lieu.codePostal ?? '',
+          ville: lieu.ville ?? '',
+        },
+      };
     }
-    const formation = formationsList[0];
-    const maitre: Maitre | undefined = maitresList[0];
-    const formateur = formateursList[0];
     return {
       ...SAISIE_VIDE,
-      formationId: formation?.id ?? '',
-      maitreApprentissageId: maitre?.id ?? '',
-      formateurReferentId: formateur?.id ?? '',
-      entrepriseId: maitre?.entrepriseId ?? '',
+      // Pré-sélectionne le seul référentiel disponible si pertinent.
+      referentielId: REFERENTIELS_DISPONIBLES[0]?.id ?? '',
     };
   }
 
-  const [saisie, setSaisie] = useState<SaisieApprenti>(valeurInitiale);
+  const [saisie, setSaisie] = useState<SaisieFormation>(valeurInitiale);
   const [tentativeSoumission, setTentativeSoumission] = useState(false);
 
-  // Reset à chaque ouverture
+  // Le state est initialisé via `useState(valeurInitiale)` au mount. Pas de
+  // re-set ici : il causait une race avec les inputs sous Playwright (le
+  // setSaisie pouvait écraser un fill en cours après que la modale soit
+  // « ouverte »). Pour forcer un état frais à chaque ouverture, le parent
+  // passe une `key` distincte (cf. GestionFormations).
   useEffect(() => {
     if (ouvert) {
-      setSaisie(valeurInitiale());
-      setTentativeSoumission(false);
       const t = setTimeout(() => premierChampRef.current?.focus(), 30);
       return () => clearTimeout(t);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ouvert, apprenti?.id]);
+  }, [ouvert]);
 
-  // Esc pour fermer
   useEffect(() => {
     if (!ouvert) return;
     const onKey = (e: KeyboardEvent) => {
@@ -113,45 +111,31 @@ export function ModaleApprenti({
 
   if (!ouvert) return null;
 
-  const validation = validerSaisieApprenti(saisie);
+  const validation = validerSaisieFormation(saisie);
   const erreurs = tentativeSoumission ? validation.erreurs : {};
-  // Les avertissements sont visibles en permanence dès que l'utilisateur·rice
-  // a saisi les champs concernés — pas besoin d'attendre la soumission.
   const avertissements = validation.avertissements;
 
-  // Synchronisation entreprise ↔ maître : quand on change de maître, l'entreprise
-  // par défaut suit (modifiable via le champ entreprise lui-même).
-  function changerMaitre(id: string) {
-    const maitre = maitresList.find((m) => m.id === id);
-    setSaisie((s) => ({
-      ...s,
-      maitreApprentissageId: id,
-      entrepriseId: maitre?.entrepriseId ?? s.entrepriseId,
-    }));
+  function setLieu(patch: Partial<Lieu>) {
+    setSaisie((s) => ({ ...s, lieu: { ...s.lieu, ...patch } }));
   }
 
   function soumettre(e: React.FormEvent) {
     e.preventDefault();
     setTentativeSoumission(true);
     if (!validation.ok) return;
-    const nettoyee: SaisieApprenti = {
-      ...saisie,
-      prenom: saisie.prenom.trim(),
-      nom: saisie.nom.trim().toUpperCase(),
-      email: saisie.email.trim(),
-      telephone: saisie.telephone?.trim(),
-    };
-    if (apprenti) {
-      modifier(apprenti.id, nettoyee);
-      onValide?.({ ...apprenti, ...nettoyee });
+    const nettoyee = normaliserSaisieFormation(saisie);
+    let resultat: Formation;
+    if (formation) {
+      modifier(formation.id, nettoyee);
+      resultat = { ...formation, ...nettoyee };
     } else {
-      const cree = ajouter(nettoyee, auteurId);
-      onValide?.(cree);
+      resultat = ajouter(nettoyee);
     }
+    onValide?.(resultat);
     onAnnuler();
   }
 
-  const titre = apprenti ? `Modifier l'apprenti·e ${apprenti.prenom} ${apprenti.nom}` : 'Nouvel·le apprenti·e';
+  const titre = formation ? `Modifier ${formation.intitule}` : 'Nouvelle formation';
 
   return (
     <div
@@ -174,7 +158,7 @@ export function ModaleApprenti({
         <div className="sticky top-0 flex items-start justify-between gap-3 border-b border-border bg-card p-4">
           <div className="flex items-start gap-3">
             <GraduationCap
-              className="h-5 w-5 shrink-0 text-role-apprenti"
+              className="h-5 w-5 shrink-0 text-primary"
               aria-hidden="true"
             />
             <div>
@@ -182,7 +166,7 @@ export function ModaleApprenti({
                 {titre}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Identité, contrat et affectation initiale.
+                Intitulé, dates, lieu et référentiel de la formation.
               </p>
             </div>
           </div>
@@ -197,111 +181,89 @@ export function ModaleApprenti({
         </div>
 
         <div className="space-y-4 p-4">
-          {/* ── Identité ──────────────────────────────────────────────── */}
-          <Section titre="Identité">
+          <Section titre="Identité de la formation">
             <Champ
-              label="Prénom"
-              valeur={saisie.prenom}
-              onChange={(v) => setSaisie((s) => ({ ...s, prenom: v }))}
-              erreur={erreurs.prenom}
+              label="Intitulé"
+              valeur={saisie.intitule}
+              onChange={(v) => setSaisie((s) => ({ ...s, intitule: v }))}
+              erreur={erreurs.intitule}
               obligatoire
               inputRef={premierChampRef}
+              hint="Ex : CAP Cuisine, BAC PRO Commerce…"
             />
             <Champ
-              label="Nom"
-              valeur={saisie.nom}
-              onChange={(v) => setSaisie((s) => ({ ...s, nom: v }))}
-              erreur={erreurs.nom}
+              label="Niveau"
+              valeur={saisie.niveau}
+              onChange={(v) => setSaisie((s) => ({ ...s, niveau: v }))}
+              erreur={erreurs.niveau}
               obligatoire
-              hint="En MAJUSCULES (normalisation auto à la sauvegarde)"
+              listId="liste-niveaux"
+              datalist={NIVEAUX_SUGGERES}
             />
             <Champ
-              label="Email"
-              type="email"
-              valeur={saisie.email}
-              onChange={(v) => setSaisie((s) => ({ ...s, email: v }))}
-              erreur={erreurs.email}
+              label="Année académique"
+              valeur={saisie.annee}
+              onChange={(v) => setSaisie((s) => ({ ...s, annee: v }))}
+              erreur={erreurs.annee}
+              avertissement={avertissements.annee}
               obligatoire
+              hint="Format : 2025-2026"
             />
-            <Champ
-              label="Téléphone"
-              type="tel"
-              valeur={saisie.telephone ?? ''}
-              onChange={(v) => setSaisie((s) => ({ ...s, telephone: v }))}
-            />
-            <Champ
-              label="Date de naissance"
-              type="date"
-              valeur={saisie.dateNaissance}
-              onChange={(v) => setSaisie((s) => ({ ...s, dateNaissance: v }))}
-              erreur={erreurs.dateNaissance}
-              avertissement={avertissements.dateNaissance}
+            <ChampSelect
+              label="Référentiel"
+              valeur={saisie.referentielId}
+              onChange={(v) => setSaisie((s) => ({ ...s, referentielId: v }))}
+              options={REFERENTIELS_DISPONIBLES.map((r) => ({
+                value: r.id,
+                libelle: r.libelle,
+              }))}
+              erreur={erreurs.referentielId}
               obligatoire
             />
           </Section>
 
-          {/* ── Contrat ──────────────────────────────────────────────── */}
-          <Section titre="Contrat d'apprentissage">
+          <Section titre="Période">
             <Champ
-              label="Début de contrat"
+              label="Date de début"
               type="date"
-              valeur={saisie.contratDebut}
-              onChange={(v) => setSaisie((s) => ({ ...s, contratDebut: v }))}
-              erreur={erreurs.contratDebut}
+              valeur={saisie.dateDebut}
+              onChange={(v) => setSaisie((s) => ({ ...s, dateDebut: v }))}
+              erreur={erreurs.dateDebut}
               obligatoire
             />
             <Champ
-              label="Fin de contrat"
+              label="Date de fin"
               type="date"
-              valeur={saisie.contratFin}
-              onChange={(v) => setSaisie((s) => ({ ...s, contratFin: v }))}
-              erreur={erreurs.contratFin}
+              valeur={saisie.dateFin}
+              onChange={(v) => setSaisie((s) => ({ ...s, dateFin: v }))}
+              erreur={erreurs.dateFin}
               obligatoire
             />
           </Section>
 
-          {/* ── Affectation initiale ─────────────────────────────────── */}
-          <Section titre="Affectation initiale">
-            <ChampSelect
-              label="Formation"
-              valeur={saisie.formationId}
-              onChange={(v) => setSaisie((s) => ({ ...s, formationId: v }))}
-              options={formationsList.map((f) => ({
-                value: f.id,
-                libelle: `${f.intitule} (${f.annee})`,
-              }))}
-              erreur={erreurs.formationId}
+          <Section titre="Lieu de formation">
+            <Champ
+              label="Nom du lieu"
+              valeur={saisie.lieu.nom}
+              onChange={(v) => setLieu({ nom: v })}
+              erreur={erreurs.lieuNom}
               obligatoire
-            />
-            <ChampSelect
-              label="Maître d'apprentissage"
-              valeur={saisie.maitreApprentissageId}
-              onChange={changerMaitre}
-              options={maitresList.map((m) => ({
-                value: m.id,
-                libelle: `${m.prenom} ${m.nom}`,
-              }))}
-              erreur={erreurs.maitreApprentissageId}
-              obligatoire
+              hint="Ex : GRETA Lyon Métropole — Site Diderot"
             />
             <Champ
-              label="Identifiant entreprise"
-              valeur={saisie.entrepriseId}
-              onChange={(v) => setSaisie((s) => ({ ...s, entrepriseId: v }))}
-              erreur={erreurs.entrepriseId}
-              hint="Pré-rempli depuis le maître sélectionné"
-              obligatoire
+              label="Adresse"
+              valeur={saisie.lieu.adresse ?? ''}
+              onChange={(v) => setLieu({ adresse: v })}
             />
-            <ChampSelect
-              label="Formateur référent"
-              valeur={saisie.formateurReferentId}
-              onChange={(v) => setSaisie((s) => ({ ...s, formateurReferentId: v }))}
-              options={formateursList.map((f) => ({
-                value: f.id,
-                libelle: `${f.prenom} ${f.nom}`,
-              }))}
-              erreur={erreurs.formateurReferentId}
-              obligatoire
+            <Champ
+              label="Code postal"
+              valeur={saisie.lieu.codePostal ?? ''}
+              onChange={(v) => setLieu({ codePostal: v })}
+            />
+            <Champ
+              label="Ville"
+              valeur={saisie.lieu.ville ?? ''}
+              onChange={(v) => setLieu({ ville: v })}
             />
           </Section>
         </div>
@@ -311,7 +273,7 @@ export function ModaleApprenti({
             type="submit"
             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            {apprenti ? 'Enregistrer les modifications' : 'Créer l\'apprenti·e'}
+            {formation ? 'Enregistrer les modifications' : 'Créer la formation'}
           </button>
           <button
             type="button"
@@ -348,13 +310,15 @@ interface ChampProps {
   label: string;
   valeur: string;
   onChange: (v: string) => void;
-  type?: 'text' | 'email' | 'tel' | 'date';
+  type?: 'text' | 'date';
   erreur?: string;
-  /** Avertissement non-bloquant (affiché en ambre, pas en rouge). */
   avertissement?: string;
   hint?: string;
   obligatoire?: boolean;
   inputRef?: React.Ref<HTMLInputElement>;
+  /** Si fourni, attache un <datalist> avec ces suggestions (saisie libre conservée). */
+  listId?: string;
+  datalist?: string[];
 }
 
 function Champ({
@@ -367,6 +331,8 @@ function Champ({
   hint,
   obligatoire,
   inputRef,
+  listId,
+  datalist,
 }: ChampProps) {
   const id = useId();
   const messageId = useId();
@@ -381,6 +347,7 @@ function Champ({
         ref={inputRef}
         type={type}
         value={valeur}
+        list={listId}
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={!!erreur}
         aria-describedby={erreur || avertissement ? messageId : undefined}
@@ -391,6 +358,13 @@ function Champ({
           !erreur && !avertissement && 'border-input',
         )}
       />
+      {listId && datalist && (
+        <datalist id={listId}>
+          {datalist.map((d) => (
+            <option key={d} value={d} />
+          ))}
+        </datalist>
+      )}
       {hint && !erreur && !avertissement && (
         <p className="text-xs text-muted-foreground">{hint}</p>
       )}

@@ -2,10 +2,11 @@ import { useEffect } from 'react';
 import { ClipboardList, Plus } from 'lucide-react';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useUserStore } from '@/store/useUserStore';
+import { useFormationsStore } from '@/store/useFormationsStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { peutEditer } from '@/lib/droits';
 import { calculerAlerteR7 } from '@/lib/regles-entretien';
-import { formationsDemo, formationCapCuisine } from '@/fixtures/formations';
+import { formationCapCuisine } from '@/fixtures/formations';
 import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelectionne';
 import { EntretienHeader } from '@/components/entretien/EntretienHeader';
 import { EntretienProgression } from '@/components/entretien/EntretienProgression';
@@ -29,6 +30,7 @@ export function EntretienTripartite() {
   const ctx = useApprentiActif();
   const initialiser = useLivretStore((s) => s.initialiserEntretien);
   const roleActif = useUserStore((s) => s.roleActif);
+  const formations = useFormationsStore((s) => s.formations);
 
   // R6 : pas d'auto-initialisation. L'entretien doit être créé par un acte
   // explicite (clic « Initialiser ») pour préserver l'alerte R7 dans les cas
@@ -39,7 +41,7 @@ export function EntretienTripartite() {
 
   if (!ctx) return <AucunApprentiSelectionne />;
   const { apprenti, livret } = ctx;
-  const formation = formationsDemo[apprenti.formationId] ?? formationCapCuisine;
+  const formation = formations[apprenti.formationId] ?? formationCapCuisine;
   const entretien = livret.entretienTripartite;
   const peutInitialiser = peutEditer(roleActif, 'organisation-suivi');
 

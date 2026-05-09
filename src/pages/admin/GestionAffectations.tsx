@@ -13,6 +13,7 @@ import {
 import type { Apprenti, Livret } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
+import { useFormationsStore } from '@/store/useFormationsStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
 import {
@@ -20,7 +21,6 @@ import {
   trierApprentis,
 } from '@/lib/apprentis-accessibles';
 import { evaluerVerrouAffectation } from '@/lib/affectation-verrou';
-import { formationsDemo } from '@/fixtures/formations';
 import { cn } from '@/lib/utils';
 
 /**
@@ -44,6 +44,7 @@ export function GestionAffectations() {
   const maitres = useUtilisateursStore((s) => s.maitres);
   const formateurs = useUtilisateursStore((s) => s.formateurs);
   const modifierApprenti = useUtilisateursStore((s) => s.modifierApprenti);
+  const formations = useFormationsStore((s) => s.formations);
   const livrets = useLivretStore((s) => s.livrets);
 
   const [requete, setRequete] = useState('');
@@ -62,7 +63,7 @@ export function GestionAffectations() {
     return trierApprentis(r);
   }, [apprentis, requete, filtreFormationId]);
 
-  const formationsList = useMemo(() => Object.values(formationsDemo), []);
+  const formationsList = useMemo(() => Object.values(formations), [formations]);
   const maitresList = useMemo(() => Object.values(maitres), [maitres]);
   const formateursList = useMemo(() => Object.values(formateurs), [formateurs]);
 

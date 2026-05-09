@@ -5,8 +5,8 @@ import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useApprentiActifStore } from '@/store/useApprentiActifStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
+import { useFormationsStore } from '@/store/useFormationsStore';
 import { libelleRole } from '@/lib/droits';
-import { formationsDemo } from '@/fixtures/formations';
 import {
   apprentisAccessibles,
   filtrerApprentis,
@@ -42,6 +42,7 @@ export function TableauDeBord() {
   const setApprentiActif = useApprentiActifStore((s) => s.setApprentiActif);
   const apprentis = useUtilisateursStore((s) => s.apprentis);
   const maitres = useUtilisateursStore((s) => s.maitres);
+  const formations = useFormationsStore((s) => s.formations);
   const navigate = useNavigate();
   const [requete, setRequete] = useState('');
 
@@ -149,7 +150,7 @@ export function TableauDeBord() {
             const livret = Object.values(livrets).find(
               (l) => l.apprentiId === apprenti.id,
             );
-            const formation = formationsDemo[apprenti.formationId];
+            const formation = formations[apprenti.formationId];
             const resume = livret ? calculerResumeLivret(apprenti, livret) : null;
             return (
               <li key={apprenti.id}>

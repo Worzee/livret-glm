@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Activity, Target } from 'lucide-react';
 import { useUserStore } from '@/store/useUserStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
+import { useFormationsStore } from '@/store/useFormationsStore';
 import { peutEditer } from '@/lib/droits';
 import { libelleRole } from '@/lib/droits';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
@@ -10,7 +11,7 @@ import {
   maitreKarimBenali,
 } from '@/fixtures/utilisateurs';
 import { getMaitreByIdFromStore } from '@/store/useUtilisateursStore';
-import { formationsDemo, formationCapCuisine } from '@/fixtures/formations';
+import { formationCapCuisine } from '@/fixtures/formations';
 import { GrilleCompetences } from '@/components/evaluation/GrilleCompetences';
 import { GrilleAttitudes } from '@/components/evaluation/GrilleAttitudes';
 import { BandeauCloture } from '@/components/evaluation/BandeauCloture';
@@ -34,11 +35,12 @@ type Onglet = 'competences' | 'attitudes';
 export function EvaluationFinale() {
   const [onglet, setOnglet] = useState<Onglet>('competences');
   const roleActif = useUserStore((s) => s.roleActif);
+  const formations = useFormationsStore((s) => s.formations);
   const ctx = useApprentiActif();
 
   if (!ctx) return <AucunApprentiSelectionne />;
   const { apprenti, livret } = ctx;
-  const formation = formationsDemo[apprenti.formationId] ?? formationCapCuisine;
+  const formation = formations[apprenti.formationId] ?? formationCapCuisine;
   const maitre = getMaitreByIdFromStore(apprenti.maitreApprentissageId) ?? maitreKarimBenali;
 
   const aDroitEdition =
