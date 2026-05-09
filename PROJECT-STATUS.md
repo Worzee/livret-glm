@@ -16,7 +16,7 @@
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main`) |
 | **Sprints livrés** | **1, 2, 3, 4, 5** + 3 extensions hors-CDC + post-livraison (mobile, UX, verrouillage par champ, **6 apprenti·e·s + tableau de bord**) |
 | **Tests unitaires** | **187 / 187 ✓** (Vitest, 12 fichiers) |
-| **Tests E2E** | **40 / 40 ✓** (Playwright — 28 desktop + 12 mobile Pixel 5) |
+| **Tests E2E** | **43 / 43 ✓** (Playwright — 31 desktop + 12 mobile Pixel 5) |
 | **Bundle JS gzippé** | 101 KB (cible CDC §19.1 : < 500 KB → marge × 4,9) |
 | **Bundle CSS gzippé** | 5,2 KB (cible : < 50 KB → marge × 9,6) |
 | **Chunk PDF lazy** | 495 KB (chargé uniquement au clic « Exporter ») |
@@ -190,8 +190,9 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 - Lib `apprentis-accessibles` (18 tests TDD) — filtre selon rôle, tri canonique fr-FR, recherche normalisée
 - Lib `etat-livret` (7 tests TDD) — calcule un cas pédagogique (cloture, alerte-r7, desaccord, demarrage, toutes-signees, en-cours) pour l'affichage des badges
 - 7 pages livret + 2 grilles d'évaluation passées de `apprentiLeaMartin` en dur à `useApprentiActif()` ; composant partagé `AucunApprentiSelectionne` pour l'état dégradé
-- 10 nouveaux tests E2E `tableau-de-bord-6-apprentis` : compte par rôle, recherche, badges, navigation, cas Minh (état vide) + cas Sofia (alerte R7)
-- Bouton « Réinitialiser la démo » étendu : remet aussi l'apprenti·e actif·ve à Léa
+- Sélecteur de maître d'apprentissage dans le tableau de bord (visible en rôle maître uniquement) : bascule entre Karim BENALI (Le Gourmet — Léa, Théo, Sofia) et Hélène ROCHE (La Brasserie du Rhône — Minh, Aya, Luca). Le changement réinit l'apprenti·e actif·ve sur le 1ᵉʳ apprenti·e du nouveau maître.
+- 13 tests E2E `tableau-de-bord-6-apprentis` : compte par rôle, recherche, badges, navigation, sélecteur de maître, R3 maintenue côté apprenti
+- Bouton « Réinitialiser la démo » étendu : remet aussi l'apprenti·e actif·ve à Léa et le maître actif à Karim
 
 #### Responsive mobile (cas d'usage terrain)
 - **`MobileMenu`** : bouton hamburger + drawer overlay accessible (`role=dialog`, focus piégé, Esc, fermeture auto après navigation)
@@ -285,7 +286,7 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | `lib/apprentis-accessibles.test.ts` | 18 | Filtre par rôle (R3) + tri fr-FR + recherche normalisée |
 | `lib/etat-livret.test.ts` | 7 | Cas pédagogiques 6 apprenti·e·s (CDC §24.5) + priorisation |
 
-### Tests E2E Playwright (40 / 40 ✓)
+### Tests E2E Playwright (43 / 43 ✓)
 
 | Projet | Fichier | Tests | Périmètre |
 |---|---|---|---|
@@ -294,7 +295,7 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | `chromium-desktop` | `sprint3-droits-entretien.spec.ts` | 3 | Droits granulaires entretien |
 | `chromium-desktop` | `sprint4-evaluation-finale.spec.ts` | 5 | Grilles + synthèse + R22 |
 | `chromium-desktop` | `sprint5-bout-en-bout.spec.ts` | 3 | Parcours complet + export PDF non vide |
-| `chromium-desktop` | `tableau-de-bord-6-apprentis.spec.ts` | 10 | Liste par rôle + recherche + badges + navigation Aya/Minh/Sofia |
+| `chromium-desktop` | `tableau-de-bord-6-apprentis.spec.ts` | 13 | Liste par rôle + recherche + badges + navigation + sélecteur maître + R3 |
 | `mobile-pixel5` | `audit-mobile.mobile.spec.ts` | 12 | Aucun débordement horizontal, hamburger, drawer, RoleSwitcher compact, modale R10 dans largeur écran |
 
 ---

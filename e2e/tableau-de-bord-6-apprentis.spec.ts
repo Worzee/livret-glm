@@ -122,6 +122,38 @@ test('Sofia (cas alerte R7) : la page Entretien affiche le bandeau d\'alerte', a
   await expect(page.getByRole('button', { name: /Initialiser l'entretien/i })).toBeVisible();
 });
 
+test('le sélecteur de maître bascule entre Karim (Le Gourmet) et Hélène (La Brasserie du Rhône)', async ({ page }) => {
+  await selectRole(page, "Maître d'apprentissage");
+
+  // Karim est actif par défaut → 3 cartes : Léa, Théo, Sofia.
+  await expect(page.getByRole('button', { name: /Ouvrir le livret de Léa MARTIN/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Ouvrir le livret de Théo DUBOIS/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Ouvrir le livret de Minh NGUYEN/i })).toHaveCount(0);
+
+  // Bascule vers Hélène — l'équipe de La Brasserie du Rhône.
+  await page.getByRole('button', { name: /Hélène ROCHE/i }).click();
+
+  // Maintenant 3 cartes : Minh, Aya, Luca.
+  await expect(page.getByRole('button', { name: /Ouvrir le livret de Minh NGUYEN/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Ouvrir le livret de Aya KOUAMÉ/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Ouvrir le livret de Luca BIANCHI/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Ouvrir le livret de Léa MARTIN/i })).toHaveCount(0);
+
+  // Le header reflète l'utilisateur·rice connecté·e.
+  await expect(
+    page.locator('header').getByText(/Connecté en tant que/i).getByText(/Hélène ROCHE/i),
+  ).toBeVisible();
+});
+
+test('le sélecteur de maître n\'apparaît PAS pour les autres rôles', async ({ page }) => {
+  // Rôle formateur par défaut → pas de fieldset « Maître d'apprentissage actif ».
+  await expect(page.getByText(/Maître d'apprentissage actif/i)).toHaveCount(0);
+  // Idem en admin.
+  await selectRole(page, 'Admin');
+  await expect(page.getByText(/Maître d'apprentissage actif/i)).toHaveCount(0);
+});
+
 test('le rôle apprenti·e suit l\'apprenti·e actif·ve sélectionné·e', async ({ page }) => {
   // 1. En formateur : ouvrir le livret de Théo.
   await page.getByRole('button', { name: /Ouvrir le livret de Théo DUBOIS/i }).click();

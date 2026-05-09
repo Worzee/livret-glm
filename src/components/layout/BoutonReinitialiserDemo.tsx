@@ -3,7 +3,7 @@ import { RefreshCw } from 'lucide-react';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useApprentiActifStore } from '@/store/useApprentiActifStore';
-import { apprentiLeaMartin } from '@/fixtures/utilisateurs';
+import { apprentiLeaMartin, maitreKarimBenali } from '@/fixtures/utilisateurs';
 
 /**
  * Bouton "Réinitialiser les données de démonstration".
@@ -20,6 +20,7 @@ import { apprentiLeaMartin } from '@/fixtures/utilisateurs';
 export function BoutonReinitialiserDemo() {
   const reinitialiser = useLivretStore((s) => s.reinitialiserDemo);
   const changerRole = useUserStore((s) => s.changerRole);
+  const setMaitreActif = useUserStore((s) => s.setMaitreActif);
   const setApprentiActif = useApprentiActifStore((s) => s.setApprentiActif);
   const [confirmation, setConfirmation] = useState(false);
 
@@ -50,8 +51,12 @@ export function BoutonReinitialiserDemo() {
         type="button"
         onClick={() => {
           reinitialiser();
-          changerRole('formateur');
+          // Note : setMaitreActif réinit aussi l'apprenti·e actif·ve sur le 1er
+          // apprenti·e du maître. On le fait avant setApprentiActif pour ne pas
+          // se faire écraser, puis on force Léa explicitement.
+          setMaitreActif(maitreKarimBenali.id);
           setApprentiActif(apprentiLeaMartin.id);
+          changerRole('formateur');
           setConfirmation(false);
         }}
         className="rounded-md bg-red-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

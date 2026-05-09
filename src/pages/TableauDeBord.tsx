@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, GraduationCap, Search } from 'lucide-react';
+import { Briefcase, ChevronRight, GraduationCap, Search } from 'lucide-react';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useApprentiActifStore } from '@/store/useApprentiActifStore';
 import { libelleRole } from '@/lib/droits';
-import { apprentisDemo } from '@/fixtures/utilisateurs';
+import { apprentisDemo, maitresDemo } from '@/fixtures/utilisateurs';
 import { formationsDemo } from '@/fixtures/formations';
 import {
   apprentisAccessibles,
@@ -36,6 +36,8 @@ import { cn } from '@/lib/utils';
 export function TableauDeBord() {
   const roleActif = useUserStore((s) => s.roleActif);
   const utilisateurActif = useUserStore((s) => s.utilisateurActif);
+  const maitreActifId = useUserStore((s) => s.maitreActifId);
+  const setMaitreActif = useUserStore((s) => s.setMaitreActif);
   const livrets = useLivretStore((s) => s.livrets);
   const setApprentiActif = useApprentiActifStore((s) => s.setApprentiActif);
   const navigate = useNavigate();
@@ -71,6 +73,49 @@ export function TableauDeBord() {
               : `${apprentisVisibles.length} apprenti·e·s accessibles.`}
         </p>
       </header>
+
+      {/* Sélecteur de maître d'apprentissage — visible uniquement en rôle maître.
+          Permet de basculer entre les 2 maîtres (Karim BENALI / Hélène ROCHE)
+          pour démontrer la valeur côté chaque entreprise. */}
+      {roleActif === 'maitre' && (
+        <fieldset className="rounded-lg border border-role-maitre/40 bg-role-maitre/5 p-3">
+          <legend className="flex items-center gap-1.5 px-1.5 text-xs font-medium text-role-maitre">
+            <Briefcase className="h-3.5 w-3.5" aria-hidden="true" />
+            Maître d'apprentissage actif
+          </legend>
+          <div className="flex flex-wrap gap-2">
+            {maitresDemo.map((m) => {
+              const actif = m.id === maitreActifId;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setMaitreActif(m.id)}
+                  aria-pressed={actif}
+                  className={cn(
+                    'inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    actif
+                      ? 'border-role-maitre bg-role-maitre text-white'
+                      : 'border-input bg-background hover:bg-secondary',
+                  )}
+                >
+                  <span className="font-medium">
+                    {m.prenom} {m.nom}
+                  </span>
+                  <span
+                    className={cn(
+                      'text-xs',
+                      actif ? 'text-white/85' : 'text-muted-foreground',
+                    )}
+                  >
+                    · {m.apprentiIds.length} apprenti·e·s
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+      )}
 
       {apprentisVisibles.length > 1 && (
         <div className="relative max-w-md">
