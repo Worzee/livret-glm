@@ -119,6 +119,18 @@ export interface Competence {
    * L'évaluation se fait toujours au niveau leaf (cette Compétence elle-même).
    */
   sousFamille?: string;
+  /**
+   * Indique si la compétence est abordée en période en entreprise. Quand
+   * `false`, elle ne doit pas apparaître dans le sélecteur de la fiche
+   * « Suivi de la formation en entreprise ». Quand `true` ou `undefined`
+   * (défaut implicite, rétrocompat avec les anciens référentiels), elle
+   * est éligible à l'évaluation tri-colonnes.
+   *
+   * Le pilotage se fait depuis la page `/admin/referentiels` (case à
+   * cocher par compétence). Les imports CSV/XLSX laissent ce champ
+   * `undefined` → la compétence est par défaut abordée en entreprise.
+   */
+  evalueeEnEntreprise?: boolean;
 }
 
 export interface BlocCompetences {

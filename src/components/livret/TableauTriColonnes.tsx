@@ -1,9 +1,14 @@
-import type { FicheSuiviPeriode, LigneSuiviEntreprise } from '@/types';
+import { useMemo } from 'react';
+import type { Competence, FicheSuiviPeriode, LigneSuiviEntreprise, Referentiel } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
+import { useApprentiActif } from '@/store/useApprentiActifStore';
+import { useFormationsStore } from '@/store/useFormationsStore';
+import { useReferentielsStore } from '@/store/useReferentielsStore';
 import { peutEditer } from '@/lib/droits';
 import { peutEncoreEditerFiche } from '@/lib/transitions-fiche';
-import { competencesParId, referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
+import { estEvalueeEnEntreprise } from '@/lib/competence-entreprise';
+import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
 import { SelecteurNiveau } from '@/components/common/SelecteurNiveau';
 import { BoutonSupprimer } from '@/components/common/BoutonSupprimer';
 import { cn } from '@/lib/utils';
@@ -33,6 +38,31 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
   const setEval = useLivretStore((s) => s.setEvaluationLigne);
   const ajouter = useLivretStore((s) => s.ajouterLigneSuiviEntreprise);
   const supprimer = useLivretStore((s) => s.supprimerLigneSuiviEntreprise);
+  const ctx = useApprentiActif();
+  const formations = useFormationsStore((s) => s.formations);
+  const referentiels = useReferentielsStore((s) => s.referentiels);
+
+  // Résolution du référentiel courant via la formation de l'apprenti·e actif·ve.
+  // Fallback sur le CAP Cuisine si la formation n'a pas (encore) de référentiel
+  // — cohérent avec EvaluationFinale.
+  const referentiel: Referentiel = useMemo(() => {
+    const formation = ctx ? formations[ctx.apprenti.formationId] : undefined;
+    return (
+      (formation && referentiels[formation.referentielId]) ?? referentielCapCuisine
+    );
+  }, [ctx, formations, referentiels]);
+
+  // Lookup des compétences par id pour l'affichage des lignes existantes
+  // (calculé dynamiquement depuis le référentiel courant).
+  const competencesParId = useMemo(() => {
+    const m = new Map<string, Competence>();
+    for (const b of referentiel.blocs) {
+      for (const c of b.competences) {
+        m.set(c.id, c);
+      }
+    }
+    return m;
+  }, [referentiel]);
 
   // R21 : chaque colonne se ferme dès que le rôle propriétaire a signé,
   // pour que la signature ne porte pas sur des contenus modifiés a posteriori.
@@ -59,6 +89,7 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
         </div>
         {peutAjouterLigne && (
           <AjouterCompetence
+            referentiel={referentiel}
             onAjouter={(id) => ajouter(livretId, fiche.id, id)}
             competencesPresentes={fiche.suiviEntreprise.map((l) => l.competenceId).filter(Boolean) as string[]}
           />
@@ -92,6 +123,7 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
               <LigneTableau
                 key={l.id}
                 ligne={l}
+                competencesParId={competencesParId}
                 peutEditerGreta={peutEditerGreta}
                 peutEditerEntreprise={peutEditerEntreprise}
                 peutEditerRetour={peutEditerRetour}
@@ -123,6 +155,7 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
           <CarteCompetence
             key={l.id}
             ligne={l}
+            competencesParId={competencesParId}
             peutEditerGreta={peutEditerGreta}
             peutEditerEntreprise={peutEditerEntreprise}
             peutEditerRetour={peutEditerRetour}
@@ -150,6 +183,7 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
 
 interface CelluleProps {
   ligne: LigneSuiviEntreprise;
+  competencesParId: ReadonlyMap<string, Competence>;
   peutEditerGreta: boolean;
   peutEditerEntreprise: boolean;
   peutEditerRetour: boolean;
@@ -160,7 +194,10 @@ interface CelluleProps {
   onSupprimer: () => void;
 }
 
-function libelleCompetence(ligne: LigneSuiviEntreprise): { code: string; libelle: string } {
+function libelleCompetence(
+  ligne: LigneSuiviEntreprise,
+  competencesParId: ReadonlyMap<string, Competence>,
+): { code: string; libelle: string } {
   if (ligne.competenceId) {
     const c = competencesParId.get(ligne.competenceId);
     if (c) return { code: c.code, libelle: c.libelle };
@@ -169,8 +206,8 @@ function libelleCompetence(ligne: LigneSuiviEntreprise): { code: string; libelle
 }
 
 function LigneTableau(props: CelluleProps) {
-  const { ligne } = props;
-  const { code, libelle } = libelleCompetence(ligne);
+  const { ligne, competencesParId } = props;
+  const { code, libelle } = libelleCompetence(ligne, competencesParId);
 
   return (
     <tr className="align-top hover:bg-secondary/30">
@@ -228,8 +265,8 @@ function LigneTableau(props: CelluleProps) {
 }
 
 function CarteCompetence(props: CelluleProps) {
-  const { ligne } = props;
-  const { code, libelle } = libelleCompetence(ligne);
+  const { ligne, competencesParId } = props;
+  const { code, libelle } = libelleCompetence(ligne, competencesParId);
 
   return (
     <article className="rounded-lg border border-border bg-card p-4 space-y-3">
@@ -332,11 +369,17 @@ function Pastille({ valeur, title, mode = 'standard' }: PastilleProps) {
 
 // ── Sous-composant : ajouter une compétence depuis le référentiel ────────────
 interface AjouterCompetenceProps {
+  /** Référentiel courant — résolu côté parent depuis la formation de l'apprenti·e. */
+  referentiel: Referentiel;
   onAjouter: (competenceId: string | null) => void;
   competencesPresentes: string[];
 }
 
-function AjouterCompetence({ onAjouter, competencesPresentes }: AjouterCompetenceProps) {
+function AjouterCompetence({
+  referentiel,
+  onAjouter,
+  competencesPresentes,
+}: AjouterCompetenceProps) {
   return (
     <select
       onChange={(e) => {
@@ -353,18 +396,25 @@ function AjouterCompetence({ onAjouter, competencesPresentes }: AjouterCompetenc
       <option value="" disabled>
         + Ajouter une compétence…
       </option>
-      {referentielCapCuisine.blocs.flatMap((bloc) => {
+      {referentiel.blocs.flatMap((bloc) => {
+        // Filtrage : seules les compétences abordées en entreprise sont
+        // proposées au sélecteur (cf. lib/competence-entreprise). Les lignes
+        // déjà saisies pour des compétences devenues « non abordées » restent
+        // affichées plus haut dans le tableau.
+        const competencesAbordees = bloc.competences.filter(estEvalueeEnEntreprise);
+        if (competencesAbordees.length === 0) return [];
+
         // Si le référentiel est à 3 niveaux et que le bloc a des sous-familles,
         // on génère un optgroup par paire (bloc, sous-famille). HTML n'autorise
         // pas l'imbrication d'optgroups — on aplatit en utilisant un libellé
         // composite « Bloc — Sous-famille ».
         const aDesSousFamilles =
-          referentielCapCuisine.niveauxColonnes === 3 &&
-          bloc.competences.some((c) => c.sousFamille);
+          referentiel.niveauxColonnes === 3 &&
+          competencesAbordees.some((c) => c.sousFamille);
         if (!aDesSousFamilles) {
           return [
             <optgroup key={bloc.id} label={`${bloc.code} — ${bloc.libelle}`}>
-              {bloc.competences.map((c) => (
+              {competencesAbordees.map((c) => (
                 <option key={c.id} value={c.id} disabled={competencesPresentes.includes(c.id)}>
                   {c.code} {c.libelle}
                   {competencesPresentes.includes(c.id) ? ' (déjà présente)' : ''}
@@ -374,8 +424,8 @@ function AjouterCompetence({ onAjouter, competencesPresentes }: AjouterCompetenc
           ];
         }
         // Groupement par sous-famille en préservant l'ordre d'apparition
-        const groupes = new Map<string, typeof bloc.competences>();
-        for (const c of bloc.competences) {
+        const groupes = new Map<string, typeof competencesAbordees>();
+        for (const c of competencesAbordees) {
           const cle = c.sousFamille ?? '';
           if (!groupes.has(cle)) groupes.set(cle, []);
           groupes.get(cle)!.push(c);

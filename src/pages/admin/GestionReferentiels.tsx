@@ -8,12 +8,13 @@ import {
   Sparkles,
   Trash2,
 } from 'lucide-react';
-import type { Referentiel, Role } from '@/types';
+import type { BlocCompetences, Competence, Referentiel, Role } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useReferentielsStore } from '@/store/useReferentielsStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
 import { evaluerVerrouReferentiel } from '@/lib/referentiel-verrou';
+import { estEvalueeEnEntreprise } from '@/lib/competence-entreprise';
 import { ModaleImportReferentiel } from '@/components/admin/ModaleImportReferentiel';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +32,9 @@ export function GestionReferentiels() {
   const roleActif = useUserStore((s) => s.roleActif);
   const referentiels = useReferentielsStore((s) => s.referentiels);
   const supprimerReferentiel = useReferentielsStore((s) => s.supprimerReferentiel);
+  const setCompetenceEvalueeEnEntreprise = useReferentielsStore(
+    (s) => s.setCompetenceEvalueeEnEntreprise,
+  );
   const formations = useFormationsStore((s) => s.formations);
 
   const [modaleImportOuverte, setModaleImportOuverte] = useState(false);
@@ -174,19 +178,22 @@ export function GestionReferentiels() {
                   )}
                 </dl>
 
-                {/* Aperçu compact des blocs */}
+                {/* Détail des blocs avec checkbox « abordée en entreprise » par compétence */}
                 <details className="text-sm">
                   <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                    Voir les blocs
+                    Voir et configurer les compétences
                   </summary>
-                  <ul className="mt-2 space-y-1 pl-4 text-xs text-muted-foreground">
+                  <div className="mt-2 space-y-3 pl-2">
                     {r.blocs.map((b) => (
-                      <li key={b.id}>
-                        <strong className="text-foreground">{b.code}</strong> — {b.libelle} (
-                        {b.competences.length})
-                      </li>
+                      <BlocDetail
+                        key={b.id}
+                        bloc={b}
+                        onTogglerCompetence={(competenceId, valeur) =>
+                          setCompetenceEvalueeEnEntreprise(r.id, competenceId, valeur)
+                        }
+                      />
                     ))}
-                  </ul>
+                  </div>
                 </details>
 
                 {verrou.verrouille && (
@@ -231,6 +238,63 @@ function Statistique({
       <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
       <span>{label}</span>
     </div>
+  );
+}
+
+interface BlocDetailProps {
+  bloc: BlocCompetences;
+  onTogglerCompetence: (competenceId: string, evalueeEnEntreprise: boolean) => void;
+}
+
+function BlocDetail({ bloc, onTogglerCompetence }: BlocDetailProps) {
+  const nbAbordees = bloc.competences.filter(estEvalueeEnEntreprise).length;
+  return (
+    <div className="rounded-md border border-border bg-secondary/20 p-2">
+      <p className="text-xs font-medium text-foreground">
+        {bloc.code} — {bloc.libelle}
+        <span className="ml-2 text-muted-foreground font-normal">
+          ({nbAbordees}/{bloc.competences.length} abordée{bloc.competences.length > 1 ? 's' : ''} en entreprise)
+        </span>
+      </p>
+      <ul className="mt-1.5 space-y-0.5">
+        {bloc.competences.map((c) => (
+          <CompetenceLigne key={c.id} competence={c} onToggler={onTogglerCompetence} />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+interface CompetenceLigneProps {
+  competence: Competence;
+  onToggler: (competenceId: string, evalueeEnEntreprise: boolean) => void;
+}
+
+function CompetenceLigne({ competence, onToggler }: CompetenceLigneProps) {
+  const evaluee = estEvalueeEnEntreprise(competence);
+  return (
+    <li className="flex items-center gap-2 text-xs">
+      <input
+        type="checkbox"
+        checked={evaluee}
+        onChange={(e) => onToggler(competence.id, e.target.checked)}
+        aria-label={`Compétence ${competence.code} abordée en entreprise`}
+        data-testid={`comp-eval-${competence.id}`}
+        className="h-3.5 w-3.5 rounded border-input text-primary focus-visible:ring-2 focus-visible:ring-ring"
+      />
+      <span
+        className={cn(
+          'flex-1',
+          !evaluee && 'text-muted-foreground line-through',
+        )}
+      >
+        <strong className="font-medium">{competence.code}</strong>{' '}
+        {competence.sousFamille && (
+          <span className="text-muted-foreground">[{competence.sousFamille}]</span>
+        )}{' '}
+        {competence.libelle}
+      </span>
+    </li>
   );
 }
 

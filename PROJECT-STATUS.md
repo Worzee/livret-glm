@@ -16,8 +16,8 @@
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main`) |
 | **Dernier commit déployé** | `8bf0a9e` — verrouillage des affectations quand le livret est actif |
 | **Sprints livrés** | **1, 2, 3, 4, 5** + 3 extensions hors-CDC (dont import référentiels phases A→E livrées : CSV + XLSX) + post-livraison (mobile, UX, 6 apprenti·e·s, tableau de bord, **administration : CRUD 4 rôles + formations + affectations + référentiels + verrouillages**) |
-| **Tests unitaires** | **250 / 250 ✓** (Vitest, 20 fichiers) |
-| **Tests E2E** | **83 / 83 ✓** (Playwright — 71 desktop + 12 mobile Pixel 5) |
+| **Tests unitaires** | **256 / 256 ✓** (Vitest, 21 fichiers) |
+| **Tests E2E** | **85 / 85 ✓** (Playwright — 73 desktop + 12 mobile Pixel 5) |
 | **Bundle JS gzippé** | 116 KB (cible CDC §19.1 : < 500 KB → marge × 4,3) |
 | **Bundle CSS gzippé** | 5,9 KB (cible : < 50 KB → marge × 8,5) |
 | **Chunk PDF lazy** | 495 KB (chargé uniquement au clic « Exporter ») |
@@ -298,8 +298,20 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 #### Connexion via le store
 
 - `EvaluationFinale` résout désormais le référentiel via `formation.referentielId` → `useReferentielsStore` (fallback sur le CAP Cuisine si la formation n'a pas encore de référentiel)
+- `TableauTriColonnes` (fiche de suivi en entreprise) résout aussi le référentiel via la formation de l'apprenti·e actif·ve. Le sélecteur d'ajout filtre désormais sur `evalueeEnEntreprise` (cf. ci-dessous)
 - `ModaleFormation` liste les référentiels disponibles depuis le store (plus de constante figée)
 - `BoutonReinitialiserDemo` reset également le store des référentiels
+
+#### Compétences abordées en entreprise (mai 2026)
+
+Suite à un retour pilote, ajout d'un flag par compétence pour exclure du suivi en entreprise les compétences purement académiques :
+
+- Type `Competence.evalueeEnEntreprise?: boolean` (défaut implicite `true` pour la rétrocompatibilité)
+- Lib `lib/competence-entreprise.ts` (6 tests TDD) : helper `estEvalueeEnEntreprise` + `filtrerCompetencesEvalueesEnEntreprise`
+- Page `/admin/referentiels` : checkbox par compétence dans la `<details>` « Voir et configurer les compétences ». Compteur par bloc (`X/N abordées en entreprise`). Compétence décochée affichée en barré + grisé.
+- Action store `setCompetenceEvalueeEnEntreprise(referentielId, competenceId, valeur)` — persistée via Zustand
+- `TableauTriColonnes.AjouterCompetence` n'expose que les compétences `evalueeEnEntreprise === true`. Les lignes déjà saisies pour une compétence devenue « non abordée » restent visibles (cohérence historique, pas de suppression de travail validé)
+- 2 tests E2E : toggle persistant + filtrage du sélecteur en aval
 
 ---
 
@@ -336,9 +348,9 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 
 ---
 
-## 7. Tests (250 unitaires + 83 E2E)
+## 7. Tests (256 unitaires + 85 E2E)
 
-### Tests unitaires Vitest (250 / 250 ✓ — 20 fichiers)
+### Tests unitaires Vitest (256 / 256 ✓ — 21 fichiers)
 
 | Fichier | Tests | Périmètre |
 |---|---|---|
@@ -362,8 +374,9 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | `lib/validation-import-referentiel.test.ts` | 8 | Saisie d'import : formation cible obligatoire, source fichier/texte, génération du libellé `Referentiel_<intitulé>_<YYYY-MM-DD>` |
 | `lib/referentiel-verrou.test.ts` | 4 | Verrou de suppression référentiel : aucune/1/N formations rattachées, pluriel |
 | `lib/parser-xlsx.test.ts` | 16 | Parser XLSX (sharedStrings + sheet1) : 2/3 colonnes, sparses, entités XML, signature ZIP, pipeline complet, **tests d'intégration sur les 4 fichiers exemples du pilote** |
+| `lib/competence-entreprise.test.ts` | 6 | Flag `evalueeEnEntreprise` : défaut implicite (rétrocompat), filtre, ordre préservé |
 
-### Tests E2E Playwright (83 / 83 ✓)
+### Tests E2E Playwright (85 / 85 ✓)
 
 | Projet | Fichier | Tests | Périmètre |
 |---|---|---|---|
@@ -377,7 +390,7 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | `chromium-desktop` | `admin-utilisateurs-staff.spec.ts` | 10 | Menu de création, CRUD staff, suppression bloquée par cohérence, accès formateur partiel |
 | `chromium-desktop` | `admin-affectations.spec.ts` | 6 | Verrou par défaut, déverrouillage temporaire, réaffectation, synchronisation, déblocage suppression Karim |
 | `chromium-desktop` | `admin-formations.spec.ts` | 7 | Accès, création, suppression bloquée si rattachement, suppression libre, édition, persistance reload, visibilité dans Affectations |
-| `chromium-desktop` | `admin-referentiels.spec.ts` | 10 | Accès, fixture CAP, import textarea, **import des 4 fichiers exemples réels (CSV + XLSX, 2 et 3 niveaux)**, suppression bloquée, association auto à la formation, persistance reload |
+| `chromium-desktop` | `admin-referentiels.spec.ts` | 12 | Accès, fixture CAP, import textarea, **import des 4 fichiers exemples réels (CSV + XLSX, 2 et 3 niveaux)**, suppression bloquée, association auto à la formation, **toggle « abordée en entreprise » + filtrage en aval**, persistance reload |
 | `mobile-pixel5` | `audit-mobile.mobile.spec.ts` | 12 | Aucun débordement horizontal, hamburger, drawer, RoleSwitcher compact, modale R10 dans largeur écran |
 
 ---
@@ -413,7 +426,7 @@ LIVRET APPRENTISSAGE/
     ├── main.tsx, App.tsx, vite-env.d.ts
     ├── styles/index.css
     ├── types/index.ts              # CDC §7 + ChampOrganisationSuivi + ClotureLivret + EntreeDeverrouillage
-    ├── lib/                        # logique métier pure (20 modules + 20 fichiers tests)
+    ├── lib/                        # logique métier pure (21 modules + 21 fichiers tests)
     │   ├── droits.ts               # matrice §6 (33 ressources × 5 rôles)
     │   ├── transitions-fiche.ts    # R15/R16/R17/R21
     │   ├── validation-signature.ts # R18/R20
@@ -425,6 +438,7 @@ LIVRET APPRENTISSAGE/
     │   ├── deverrouillage-fiche.ts # R10 (motif obligatoire)
     │   ├── import-referentiel.ts   # pipelines CSV + XLSX (encodage, format auto)
     │   ├── parser-xlsx.ts          # parser XLSX maison (sharedStrings + sheet1)
+    │   ├── competence-entreprise.ts # flag « abordée en entreprise » + filtres
     │   ├── apprentis-accessibles.ts# filtre/tri/recherche par rôle
     │   ├── etat-livret.ts          # cas pédagogique pour badges tableau de bord
     │   ├── creation-livret.ts      # livret vierge réutilisable
@@ -667,12 +681,12 @@ Référence : CDC §22.
 
 ## 15. Prochaine étape recommandée
 
-L'étape 1 du CDC v1.3 est **livrée et fonctionnelle**. L'administration métier est complète (CRUD 4 rôles + formations + affectations + référentiels CSV/XLSX) avec verrouillages de cohérence référentielle à toutes les couches.
+L'étape 1 du CDC v1.3 est **livrée et fonctionnelle**. L'administration métier est complète (CRUD 4 rôles + formations + affectations + référentiels CSV/XLSX avec toggle compétences abordées en entreprise) avec verrouillages de cohérence référentielle à toutes les couches.
 
 Reste à finir :
 
-1. **Formaliser CDC v1.5** — documenter les changements négociés (rôles Coordo/Admin, ressources admin, règle de verrouillage des affectations §10.4, import référentiels CSV+XLSX)
-2. **Migration usage référentiel pour les fiches de période** : `TableauTriColonnes` lit encore le fixture CAP Cuisine en dur (pour l'ajout de compétences). Quand un livret pointe vers un autre référentiel importé, il faudrait que le sélecteur d'ajout suive — refactor minute
+1. **Formaliser CDC v1.5** — documenter les changements négociés (rôles Coordo/Admin, ressources admin, règle de verrouillage des affectations §10.4, import référentiels CSV+XLSX, flag `evalueeEnEntreprise`)
+2. **Évaluation finale et flag `evalueeEnEntreprise`** : `GrilleCompetences` montre encore la colonne « Acquis en entreprise » pour toutes les compétences. À décider avec le pilote : faut-il désactiver/masquer la colonne entreprise pour les compétences `evalueeEnEntreprise === false` ? La règle actuelle ne couvre que le tableau de suivi par période.
 
 La sécurité VPS reste une action côté pilote (cf. §11).
 

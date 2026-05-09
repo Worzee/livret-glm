@@ -41,6 +41,17 @@ interface ReferentielsStore {
    */
   supprimerReferentiel: (id: string) => boolean;
 
+  /**
+   * Bascule le flag `evalueeEnEntreprise` d'une compétence du référentiel.
+   * Quand `false`, la compétence disparaît du sélecteur de la fiche de
+   * suivi en entreprise (cf. `lib/competence-entreprise`).
+   */
+  setCompetenceEvalueeEnEntreprise: (
+    referentielId: string,
+    competenceId: string,
+    evalueeEnEntreprise: boolean,
+  ) => void;
+
   /** Réinitialise le store au fixture initial (utilisé par BoutonReinitialiserDemo). */
   reinitialiser: () => void;
 }
@@ -70,6 +81,21 @@ export const useReferentielsStore = create<ReferentielsStore>()(
           const r = s.referentiels[id];
           if (!r) return s;
           return { referentiels: { ...s.referentiels, [id]: { ...r, ...patch } } };
+        }),
+
+      setCompetenceEvalueeEnEntreprise: (referentielId, competenceId, evalueeEnEntreprise) =>
+        set((s) => {
+          const ref = s.referentiels[referentielId];
+          if (!ref) return s;
+          const blocs = ref.blocs.map((b) => ({
+            ...b,
+            competences: b.competences.map((c) =>
+              c.id === competenceId ? { ...c, evalueeEnEntreprise } : c,
+            ),
+          }));
+          return {
+            referentiels: { ...s.referentiels, [referentielId]: { ...ref, blocs } },
+          };
         }),
 
       supprimerReferentiel: (id) => {
