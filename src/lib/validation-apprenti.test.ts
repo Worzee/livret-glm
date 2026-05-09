@@ -62,16 +62,27 @@ describe('validerSaisieApprenti', () => {
       dateNaissance: '2014-01-01', // 11 ans en 2025-09
       contratDebut: '2025-09-01',
     });
+    expect(r.ok).toBe(false);
     expect(r.erreurs.dateNaissance).toContain('au moins 15 ans');
   });
 
-  it('refuse un âge supérieur à 30 ans (saisie suspecte)', () => {
+  it("avertit (sans bloquer) pour un âge supérieur à 29 ans — dérogations RQTH/sportif/etc.", () => {
     const r = validerSaisieApprenti({
       ...VALIDE,
-      dateNaissance: '1990-01-01', // 35 ans en 2025
+      dateNaissance: '1988-01-20', // 37 ans en 2025-09
       contratDebut: '2025-09-01',
     });
-    expect(r.erreurs.dateNaissance).toContain('30 ans');
+    // Pas une erreur bloquante : la sauvegarde reste possible.
+    expect(r.ok).toBe(true);
+    expect(r.erreurs.dateNaissance).toBeUndefined();
+    // Mais un avertissement explicite est levé pour vérification.
+    expect(r.avertissements.dateNaissance).toContain('29 ans');
+    expect(r.avertissements.dateNaissance).toMatch(/RQTH|dérogation/i);
+  });
+
+  it("ne lève pas d'avertissement pour un âge ∈ [15, 29] ans", () => {
+    const r = validerSaisieApprenti(VALIDE); // 17 ans en 2025-09
+    expect(r.avertissements.dateNaissance).toBeUndefined();
   });
 
   it("exige les 4 affectations à la création (formation, maître, formateur, entreprise)", () => {

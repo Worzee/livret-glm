@@ -23,18 +23,31 @@ export interface ErreursApprenti {
 }
 
 export interface ResultatValidation {
+  /** True si aucune erreur bloquante. Les avertissements n'entrent pas en compte. */
   ok: boolean;
+  /** Erreurs bloquantes — empêchent la soumission. */
   erreurs: ErreursApprenti;
+  /**
+   * Avertissements non-bloquants — affichés en ambre, n'empêchent pas la
+   * sauvegarde. Sert pour les cas atypiques mais légalement valides
+   * (ex. âge > 29 ans pour les bénéficiaires RQTH, sportifs de haut niveau,
+   * créateurs d'entreprise, reconversions, etc.).
+   */
+  avertissements: ErreursApprenti;
 }
 
 // Email : format simple suffisant pour saisie clavier (pas RFC strict).
 const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const AGE_MIN_APPRENTISSAGE = 15; // CDC : âge minimum légal 15 ans (en France)
-const AGE_MAX_RAISONNABLE = 30; // CDC : pas de limite stricte, mais > 30 c'est suspect en CAP
+const AGE_MIN_APPRENTISSAGE = 15; // Âge minimum légal en France pour l'apprentissage.
+// Limite haute « courante » de l'apprentissage (29 ans). Au-delà, plusieurs
+// dérogations existent (RQTH, sportifs de haut niveau, créateurs d'entreprise,
+// reconversion, etc.) — d'où un AVERTISSEMENT plutôt qu'une erreur bloquante.
+const AGE_MAX_COURANT = 29;
 
 export function validerSaisieApprenti(saisie: SaisieApprenti): ResultatValidation {
   const erreurs: ErreursApprenti = {};
+  const avertissements: ErreursApprenti = {};
 
   if (!saisie.prenom?.trim()) {
     erreurs.prenom = 'Le prénom est obligatoire.';
@@ -62,7 +75,7 @@ export function validerSaisieApprenti(saisie: SaisieApprenti): ResultatValidatio
   if (saisie.contratDebut && saisie.contratFin && saisie.contratFin <= saisie.contratDebut) {
     erreurs.contratFin = 'La fin de contrat doit être postérieure au début.';
   }
-  // Âge minimum/maximum à la date de début de contrat
+  // Âge à la date de début de contrat
   if (saisie.dateNaissance && saisie.contratDebut) {
     const naissance = new Date(saisie.dateNaissance);
     const debut = new Date(saisie.contratDebut);
@@ -70,9 +83,12 @@ export function validerSaisieApprenti(saisie: SaisieApprenti): ResultatValidatio
       const ageMs = debut.getTime() - naissance.getTime();
       const ageAns = ageMs / (365.25 * 24 * 60 * 60 * 1000);
       if (ageAns < AGE_MIN_APPRENTISSAGE) {
+        // Erreur bloquante : limite légale stricte.
         erreurs.dateNaissance = `L'apprenti·e doit avoir au moins ${AGE_MIN_APPRENTISSAGE} ans à la date de début de contrat.`;
-      } else if (ageAns > AGE_MAX_RAISONNABLE) {
-        erreurs.dateNaissance = `Âge supérieur à ${AGE_MAX_RAISONNABLE} ans à la date de début de contrat — vérifiez la saisie.`;
+      } else if (ageAns > AGE_MAX_COURANT) {
+        // Avertissement non-bloquant : limite courante 29 ans, mais plusieurs
+        // dérogations existent (RQTH, sportifs de haut niveau, etc.).
+        avertissements.dateNaissance = `Âge supérieur à ${AGE_MAX_COURANT} ans à la date de début de contrat. Vérifiez la dérogation applicable (RQTH, sportif de haut niveau, créateur d'entreprise, reconversion…).`;
       }
     }
   }
@@ -92,5 +108,9 @@ export function validerSaisieApprenti(saisie: SaisieApprenti): ResultatValidatio
     erreurs.entrepriseId = "L'entreprise est obligatoire.";
   }
 
-  return { ok: Object.keys(erreurs).length === 0, erreurs };
+  return {
+    ok: Object.keys(erreurs).length === 0,
+    erreurs,
+    avertissements,
+  };
 }

@@ -114,6 +114,9 @@ export function ModaleApprenti({
 
   const validation = validerSaisieApprenti(saisie);
   const erreurs = tentativeSoumission ? validation.erreurs : {};
+  // Les avertissements sont visibles en permanence dès que l'utilisateur·rice
+  // a saisi les champs concernés — pas besoin d'attendre la soumission.
+  const avertissements = validation.avertissements;
 
   // Synchronisation entreprise ↔ maître : quand on change de maître, l'entreprise
   // par défaut suit (modifiable via le champ entreprise lui-même).
@@ -231,6 +234,7 @@ export function ModaleApprenti({
               valeur={saisie.dateNaissance}
               onChange={(v) => setSaisie((s) => ({ ...s, dateNaissance: v }))}
               erreur={erreurs.dateNaissance}
+              avertissement={avertissements.dateNaissance}
               obligatoire
             />
           </Section>
@@ -345,14 +349,26 @@ interface ChampProps {
   onChange: (v: string) => void;
   type?: 'text' | 'email' | 'tel' | 'date';
   erreur?: string;
+  /** Avertissement non-bloquant (affiché en ambre, pas en rouge). */
+  avertissement?: string;
   hint?: string;
   obligatoire?: boolean;
   inputRef?: React.Ref<HTMLInputElement>;
 }
 
-function Champ({ label, valeur, onChange, type = 'text', erreur, hint, obligatoire, inputRef }: ChampProps) {
+function Champ({
+  label,
+  valeur,
+  onChange,
+  type = 'text',
+  erreur,
+  avertissement,
+  hint,
+  obligatoire,
+  inputRef,
+}: ChampProps) {
   const id = useId();
-  const erreurId = useId();
+  const messageId = useId();
   return (
     <div className="space-y-1">
       <label htmlFor={id} className="text-xs font-medium">
@@ -366,16 +382,25 @@ function Champ({ label, valeur, onChange, type = 'text', erreur, hint, obligatoi
         value={valeur}
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={!!erreur}
-        aria-describedby={erreur ? erreurId : undefined}
+        aria-describedby={erreur || avertissement ? messageId : undefined}
         className={cn(
           'w-full rounded-md border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring',
-          erreur ? 'border-red-400' : 'border-input',
+          erreur && 'border-red-400',
+          !erreur && avertissement && 'border-amber-400',
+          !erreur && !avertissement && 'border-input',
         )}
       />
-      {hint && !erreur && <p className="text-xs text-muted-foreground">{hint}</p>}
+      {hint && !erreur && !avertissement && (
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      )}
       {erreur && (
-        <p id={erreurId} role="alert" className="text-xs text-red-700">
+        <p id={messageId} role="alert" className="text-xs text-red-700">
           {erreur}
+        </p>
+      )}
+      {!erreur && avertissement && (
+        <p id={messageId} className="text-xs text-amber-700">
+          ⚠ {avertissement}
         </p>
       )}
     </div>
