@@ -1,21 +1,21 @@
 import { useState } from 'react';
 import { Activity, Target } from 'lucide-react';
-import { useLivretStore } from '@/store/useLivretStore';
 import { useUserStore } from '@/store/useUserStore';
+import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { peutEditer } from '@/lib/droits';
 import { libelleRole } from '@/lib/droits';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
-import { livretLeaMartin } from '@/fixtures/livret-demo';
 import {
-  apprentiLeaMartin,
   formatriceSophieDubois,
+  getMaitreById,
   maitreKarimBenali,
 } from '@/fixtures/utilisateurs';
-import { formationCapCuisine } from '@/fixtures/formations';
+import { formationsDemo, formationCapCuisine } from '@/fixtures/formations';
 import { GrilleCompetences } from '@/components/evaluation/GrilleCompetences';
 import { GrilleAttitudes } from '@/components/evaluation/GrilleAttitudes';
 import { BandeauCloture } from '@/components/evaluation/BandeauCloture';
 import { BoutonExportPdf } from '@/components/pdf/BoutonExportPdf';
+import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelectionne';
 import { cn } from '@/lib/utils';
 
 /**
@@ -34,7 +34,12 @@ type Onglet = 'competences' | 'attitudes';
 export function EvaluationFinale() {
   const [onglet, setOnglet] = useState<Onglet>('competences');
   const roleActif = useUserStore((s) => s.roleActif);
-  const livret = useLivretStore((s) => s.getLivret(livretLeaMartin.id));
+  const ctx = useApprentiActif();
+
+  if (!ctx) return <AucunApprentiSelectionne />;
+  const { apprenti, livret } = ctx;
+  const formation = formationsDemo[apprenti.formationId] ?? formationCapCuisine;
+  const maitre = getMaitreById(apprenti.maitreApprentissageId) ?? maitreKarimBenali;
 
   const aDroitEdition =
     peutEditer(roleActif, 'grille-competences.entreprise') ||
@@ -52,6 +57,9 @@ export function EvaluationFinale() {
             professionnelles. Les valeurs non saisies héritent des évaluations des fiches de suivi
             par période.
           </p>
+          <p className="text-xs text-muted-foreground">
+            Apprenti·e : <strong>{apprenti.prenom} {apprenti.nom}</strong>
+          </p>
           {!aDroitEdition && (
             <p className="text-xs text-muted-foreground italic">
               Vous consultez en mode <strong>{libelleRole(roleActif)}</strong> — toutes les cellules
@@ -59,19 +67,17 @@ export function EvaluationFinale() {
             </p>
           )}
         </div>
-        {livret && (
-          <BoutonExportPdf
-            livret={livret}
-            apprenti={apprentiLeaMartin}
-            maitre={maitreKarimBenali}
-            formateur={formatriceSophieDubois}
-            formation={formationCapCuisine}
-            referentiel={referentielCapCuisine}
-          />
-        )}
+        <BoutonExportPdf
+          livret={livret}
+          apprenti={apprenti}
+          maitre={maitre}
+          formateur={formatriceSophieDubois}
+          formation={formation}
+          referentiel={referentielCapCuisine}
+        />
       </header>
 
-      {livret && <BandeauCloture livret={livret} />}
+      <BandeauCloture livret={livret} />
 
       <div role="tablist" aria-label="Sections de l'évaluation finale" className="border-b border-border">
         <Onglet titre="Compétences" Icon={Target} actif={onglet === 'competences'} onClick={() => setOnglet('competences')} />

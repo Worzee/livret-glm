@@ -1,6 +1,6 @@
 # État du projet — Livret d'apprentissage GRETA Lyon Métropole
 
-**Dernière mise à jour** : 2026-05-08
+**Dernière mise à jour** : 2026-05-09
 **Version applicative** : 0.1.0
 **Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3) **livrée**
 **Pilote métier** : Guillaume FERRERI
@@ -14,10 +14,10 @@
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main`) |
-| **Sprints livrés** | **1, 2, 3, 4, 5** + 3 extensions hors-CDC + post-livraison (mobile, UX, verrouillage par champ) |
-| **Tests unitaires** | **162 / 162 ✓** (Vitest, 10 fichiers) |
-| **Tests E2E** | **30 / 30 ✓** (Playwright — 18 desktop + 12 mobile Pixel 5) |
-| **Bundle JS gzippé** | 94 KB (cible CDC §19.1 : < 500 KB → marge × 5,3) |
+| **Sprints livrés** | **1, 2, 3, 4, 5** + 3 extensions hors-CDC + post-livraison (mobile, UX, verrouillage par champ, **6 apprenti·e·s + tableau de bord**) |
+| **Tests unitaires** | **187 / 187 ✓** (Vitest, 12 fichiers) |
+| **Tests E2E** | **40 / 40 ✓** (Playwright — 28 desktop + 12 mobile Pixel 5) |
+| **Bundle JS gzippé** | 101 KB (cible CDC §19.1 : < 500 KB → marge × 4,9) |
 | **Bundle CSS gzippé** | 5,2 KB (cible : < 50 KB → marge × 9,6) |
 | **Chunk PDF lazy** | 495 KB (chargé uniquement au clic « Exporter ») |
 | **Préflight VPS** | 11 / 11 ✓ |
@@ -182,6 +182,17 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 - Schema localStorage v3 → v4 (migration = reset, cohérent avec stratégie étape 1)
 - PDF mis à jour pour afficher proprement date + commentaire
 
+#### Tableau de bord — 6 apprenti·e·s (CDC §24.5)
+- Fixtures étendues : Léa MARTIN (cas principal), Théo DUBOIS (« bon élève »), Sofia PEREIRA (« alerte R7 »), Minh NGUYEN (« démarrage »), Aya KOUAMÉ (« désaccord R10 »), Luca BIANCHI (« mi-parcours standard »)
+- 2 maîtres d'apprentissage : Karim BENALI (Le Gourmet — Léa, Théo, Sofia) + Hélène ROCHE (La Brasserie du Rhône — Minh, Aya, Luca). Sophie DUBOIS reste formatrice unique de la promo
+- Nouveau store `useApprentiActifStore` (id persisté en localStorage) + hook `useApprentiActif()` — résout l'apprenti·e affiché·e en tenant compte du rôle (R3 : un·e apprenti·e ne consulte que son propre livret)
+- Refonte `TableauDeBord` : liste filtrée par rôle (matrice §6) + recherche par nom/prénom (insensible à la casse et aux accents) + cartes avec badges démonstratifs
+- Lib `apprentis-accessibles` (18 tests TDD) — filtre selon rôle, tri canonique fr-FR, recherche normalisée
+- Lib `etat-livret` (7 tests TDD) — calcule un cas pédagogique (cloture, alerte-r7, desaccord, demarrage, toutes-signees, en-cours) pour l'affichage des badges
+- 7 pages livret + 2 grilles d'évaluation passées de `apprentiLeaMartin` en dur à `useApprentiActif()` ; composant partagé `AucunApprentiSelectionne` pour l'état dégradé
+- 10 nouveaux tests E2E `tableau-de-bord-6-apprentis` : compte par rôle, recherche, badges, navigation, cas Minh (état vide) + cas Sofia (alerte R7)
+- Bouton « Réinitialiser la démo » étendu : remet aussi l'apprenti·e actif·ve à Léa
+
 #### Responsive mobile (cas d'usage terrain)
 - **`MobileMenu`** : bouton hamburger + drawer overlay accessible (`role=dialog`, focus piégé, Esc, fermeture auto après navigation)
 - **`RoleSwitcher` compact** : icônes seules sur mobile, libellé visible à partir de `lg` (1024 px)
@@ -255,9 +266,9 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 
 ---
 
-## 7. Tests (162 unitaires + 30 E2E)
+## 7. Tests (187 unitaires + 40 E2E)
 
-### Tests unitaires Vitest (162 / 162 ✓)
+### Tests unitaires Vitest (187 / 187 ✓)
 
 | Fichier | Tests | Périmètre |
 |---|---|---|
@@ -271,8 +282,10 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | `lib/import-referentiel.test.ts` | 24 | Parsing CSV, encodage CP1252, 2/3 colonnes, robustesse |
 | `lib/cloture-livret.test.ts` | 14 | R22 (estCloture, peutCloturer, motifBlocage, creerCloture) |
 | `lib/deverrouillage-fiche.test.ts` | 8 | R10 (validation motif min/max) |
+| `lib/apprentis-accessibles.test.ts` | 18 | Filtre par rôle (R3) + tri fr-FR + recherche normalisée |
+| `lib/etat-livret.test.ts` | 7 | Cas pédagogiques 6 apprenti·e·s (CDC §24.5) + priorisation |
 
-### Tests E2E Playwright (30 / 30 ✓)
+### Tests E2E Playwright (40 / 40 ✓)
 
 | Projet | Fichier | Tests | Périmètre |
 |---|---|---|---|
@@ -281,6 +294,7 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | `chromium-desktop` | `sprint3-droits-entretien.spec.ts` | 3 | Droits granulaires entretien |
 | `chromium-desktop` | `sprint4-evaluation-finale.spec.ts` | 5 | Grilles + synthèse + R22 |
 | `chromium-desktop` | `sprint5-bout-en-bout.spec.ts` | 3 | Parcours complet + export PDF non vide |
+| `chromium-desktop` | `tableau-de-bord-6-apprentis.spec.ts` | 10 | Liste par rôle + recherche + badges + navigation Aya/Minh/Sofia |
 | `mobile-pixel5` | `audit-mobile.mobile.spec.ts` | 12 | Aucun débordement horizontal, hamburger, drawer, RoleSwitcher compact, modale R10 dans largeur écran |
 
 ---
@@ -404,20 +418,9 @@ LIVRET APPRENTISSAGE/
 
 ## 9. Reste à faire
 
-### A. Données de démonstration enrichies (CDC §24.5)
+### ~~A. Données de démonstration enrichies (CDC §24.5)~~ — ✅ livré (post-Sprint 5)
 
-Sprint 1 ne contient qu'1 apprenti·e (Léa). Le CDC §24.5 prévoit **6 apprenti·e·s** pour la démo direction :
-
-| Apprenti·e | État démonstratif |
-|---|---|
-| MARTIN Léa (présente) | cas principal — entretien complet, 2 fiches signées, 1 en cours |
-| DUBOIS Théo | cas « bon élève » — toutes fiches signées et verrouillées |
-| PEREIRA Sofia | cas « alerte » — entretien non initié → R7 visible |
-| NGUYEN Minh | cas « démarrage » — entretien signé, aucune fiche |
-| KOUAMÉ Aya | cas « désaccord » — fiche déverrouillée avec motif (R10) |
-| BIANCHI Luca | cas « mi-parcours standard » |
-
-→ ~0,5 session pour enrichir les fixtures + adapter `TableauDeBord` (liste/recherche/filtre).
+Les 6 apprenti·e·s sont en place avec leurs livrets scénarisés. Cf. section *Tableau de bord — 6 apprenti·e·s*.
 
 ### B. Import des référentiels — Phases C + D
 
@@ -567,13 +570,15 @@ Référence : CDC §22.
 
 ## 15. Prochaine étape recommandée
 
-L'étape 1 du CDC v1.3 est **livrée et fonctionnelle**. Pour la démo direction, deux pistes complémentaires :
+L'étape 1 du CDC v1.3 est **livrée et fonctionnelle**. Les 6 apprenti·e·s + tableau de bord sont en place.
 
-1. **Enrichir les fixtures avec 6 apprenti·e·s** (CDC §24.5) — débloque les démonstrations R7 (alerte), R10 (désaccord) sur des cas variés. ~0,5 session.
-2. **Finir l'import des référentiels (Phases C + D)** — débloque la démo d'un référentiel CECRL réel. ~1 session.
+Reste à faire pour enrichir la démo :
 
-Recommandation : faire (1) en priorité, puis (2). La sécurité VPS est une action côté pilote (cf. §11).
+1. **Finir l'import des référentiels (Phases C + D)** — débloque la démo d'un référentiel réel via UI. ~1 session.
+2. **Modules administratifs réels** (CRUD utilisateurs / formations / affectations) — sprint dédié post-étape 1.
+
+La sécurité VPS reste une action côté pilote (cf. §11).
 
 ---
 
-*Étape 1 livrée — Sprint 5 + post-livraison (mobile + verrouillage + cohérence UX) — cahier des charges v1.3.*
+*Étape 1 livrée — Sprint 5 + post-livraison (mobile + verrouillage + cohérence UX + 6 apprenti·e·s) — cahier des charges v1.3.*

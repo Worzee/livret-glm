@@ -1,7 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Role, Utilisateur } from '@/types';
-import { utilisateursDemo } from '@/fixtures/utilisateurs';
+import {
+  apprentiLeaMartin,
+  getApprentiById,
+  utilisateursDemo,
+} from '@/fixtures/utilisateurs';
+import { useApprentiActifStore } from './useApprentiActifStore';
 
 /**
  * Store du rôle actif.
@@ -9,15 +14,27 @@ import { utilisateursDemo } from '@/fixtures/utilisateurs';
  *
  * Le rôle est persisté dans localStorage pour survivre aux rechargements
  * (utile pendant la démo : on ne reset pas à chaque F5).
+ *
+ * En rôle `apprenti`, l'utilisateur·rice s'incarne dans l'apprenti·e actif·ve
+ * (workflow démo « regardez Sofia vue par chaque rôle »). La synchro
+ * bidirectionnelle est faite directement dans les actions des deux stores —
+ * l'import croisé avec `useApprentiActifStore` est résolu par ESM tant que
+ * les `getState()` ne sont appelés qu'au runtime (dans les actions), jamais
+ * à l'init du module.
  */
 
 interface UserStore {
-  /** Rôle actuellement incarné (apprenti / maître / formateur). */
   roleActif: Role;
-  /** Utilisateur correspondant au rôle actif. */
   utilisateurActif: Utilisateur;
-  /** Bascule vers un autre rôle. */
   changerRole: (role: Role) => void;
+}
+
+function utilisateurPourRole(role: Role): Utilisateur {
+  if (role === 'apprenti') {
+    const id = useApprentiActifStore.getState().apprentiActifId;
+    return (id && getApprentiById(id)) || apprentiLeaMartin;
+  }
+  return utilisateursDemo[role];
 }
 
 export const useUserStore = create<UserStore>()(
@@ -27,19 +44,14 @@ export const useUserStore = create<UserStore>()(
       roleActif: 'formateur',
       utilisateurActif: utilisateursDemo.formateur,
       changerRole: (role) =>
-        set({
-          roleActif: role,
-          utilisateurActif: utilisateursDemo[role],
-        }),
+        set({ roleActif: role, utilisateurActif: utilisateurPourRole(role) }),
     }),
     {
       name: 'livret-role-actif',
-      // On ne persiste que le rôle ; l'utilisateur est dérivé des fixtures.
       partialize: (state) => ({ roleActif: state.roleActif }),
       onRehydrateStorage: () => (state) => {
-        // À la réhydratation, recalculer utilisateurActif à partir du rôle persisté.
         if (state) {
-          state.utilisateurActif = utilisateursDemo[state.roleActif];
+          state.utilisateurActif = utilisateurPourRole(state.roleActif);
         }
       },
     },

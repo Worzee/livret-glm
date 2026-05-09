@@ -2,11 +2,11 @@ import { useEffect } from 'react';
 import { ClipboardList, Plus } from 'lucide-react';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useUserStore } from '@/store/useUserStore';
+import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { peutEditer } from '@/lib/droits';
 import { calculerAlerteR7 } from '@/lib/regles-entretien';
-import { livretLeaMartin } from '@/fixtures/livret-demo';
-import { apprentiLeaMartin } from '@/fixtures/utilisateurs';
-import { formationCapCuisine } from '@/fixtures/formations';
+import { formationsDemo, formationCapCuisine } from '@/fixtures/formations';
+import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelectionne';
 import { EntretienHeader } from '@/components/entretien/EntretienHeader';
 import { EntretienProgression } from '@/components/entretien/EntretienProgression';
 import { BandeauAlerteR7 } from '@/components/entretien/BandeauAlerteR7';
@@ -26,19 +26,20 @@ import { BlocSignaturesEntretien } from '@/components/entretien/BlocSignaturesEn
  *   - Barre de progression globale + par rôle
  */
 export function EntretienTripartite() {
-  const livret = useLivretStore((s) => s.getLivret(livretLeaMartin.id));
+  const ctx = useApprentiActif();
   const initialiser = useLivretStore((s) => s.initialiserEntretien);
   const roleActif = useUserStore((s) => s.roleActif);
 
-  // R6 : si pas d'entretien, l'initialiser pour rendre la saisie possible
-  // (côté UI). Idempotent côté store : ne fait rien si l'entretien existe.
-  useEffect(() => {
-    if (livret && !livret.entretienTripartite) {
-      initialiser(livret.id);
-    }
-  }, [livret, initialiser]);
+  // R6 : pas d'auto-initialisation. L'entretien doit être créé par un acte
+  // explicite (clic « Initialiser ») pour préserver l'alerte R7 dans les cas
+  // démonstratifs où l'entretien manque volontairement (ex: Sofia PEREIRA).
+  // Note : `useEffect` reste là pour respecter les règles des hooks (toujours
+  // appelé dans le même ordre), mais ne fait rien désormais.
+  useEffect(() => {}, []);
 
-  if (!livret) return null;
+  if (!ctx) return <AucunApprentiSelectionne />;
+  const { apprenti, livret } = ctx;
+  const formation = formationsDemo[apprenti.formationId] ?? formationCapCuisine;
   const entretien = livret.entretienTripartite;
   const peutInitialiser = peutEditer(roleActif, 'organisation-suivi');
 
@@ -79,7 +80,7 @@ export function EntretienTripartite() {
     entretien.signatures.formateur.signe;
 
   // R7 : alerte si délai dépassé
-  const alerteR7 = calculerAlerteR7(apprentiLeaMartin, entretien);
+  const alerteR7 = calculerAlerteR7(apprenti, entretien);
 
   return (
     <div className="space-y-6">
@@ -95,8 +96,8 @@ export function EntretienTripartite() {
 
       <EntretienHeader
         livretId={livret.id}
-        apprenti={apprentiLeaMartin}
-        formation={formationCapCuisine}
+        apprenti={apprenti}
+        formation={formation}
         entretien={entretien}
         ficheVerrouillee={ficheVerrouillee}
       />

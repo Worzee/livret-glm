@@ -1,9 +1,9 @@
 import type { LigneEvaluationFinaleAttitude, NiveauAppreciation, Referentiel } from '@/types';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useUserStore } from '@/store/useUserStore';
+import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { peutEditer } from '@/lib/droits';
 import { estCloture } from '@/lib/cloture-livret';
-import { livretLeaMartin } from '@/fixtures/livret-demo';
 import { SelecteurAppreciation } from '@/components/common/SelecteurAppreciation';
 import { cn } from '@/lib/utils';
 
@@ -20,11 +20,12 @@ interface GrilleAttitudesProps {
 }
 
 export function GrilleAttitudes({ referentiel }: GrilleAttitudesProps) {
-  const livret = useLivretStore((s) => s.getLivret(livretLeaMartin.id));
+  const ctx = useApprentiActif();
   const setLigne = useLivretStore((s) => s.setLigneAttitudeFinale);
   const roleActif = useUserStore((s) => s.roleActif);
 
-  if (!livret) return null;
+  if (!ctx) return null;
+  const { livret } = ctx;
 
   // R22 — la clôture rend toutes les cellules en lecture seule.
   const livretFige = estCloture(livret);

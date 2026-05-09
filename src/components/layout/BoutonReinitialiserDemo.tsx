@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useUserStore } from '@/store/useUserStore';
+import { useApprentiActifStore } from '@/store/useApprentiActifStore';
+import { apprentiLeaMartin } from '@/fixtures/utilisateurs';
 
 /**
  * Bouton "Réinitialiser les données de démonstration".
@@ -18,6 +20,7 @@ import { useUserStore } from '@/store/useUserStore';
 export function BoutonReinitialiserDemo() {
   const reinitialiser = useLivretStore((s) => s.reinitialiserDemo);
   const changerRole = useUserStore((s) => s.changerRole);
+  const setApprentiActif = useApprentiActifStore((s) => s.setApprentiActif);
   const [confirmation, setConfirmation] = useState(false);
 
   useEffect(() => {
@@ -48,6 +51,7 @@ export function BoutonReinitialiserDemo() {
         onClick={() => {
           reinitialiser();
           changerRole('formateur');
+          setApprentiActif(apprentiLeaMartin.id);
           setConfirmation(false);
         }}
         className="rounded-md bg-red-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

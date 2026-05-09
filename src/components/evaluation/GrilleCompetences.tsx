@@ -2,11 +2,11 @@ import { Sparkles } from 'lucide-react';
 import type { LigneEvaluationFinaleCompetence, NiveauMaitrise, Referentiel } from '@/types';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useUserStore } from '@/store/useUserStore';
+import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { peutEditer } from '@/lib/droits';
 import { estCloture } from '@/lib/cloture-livret';
 import { synthetiserCompetences, valeurEffective } from '@/lib/synthese-evaluation';
 import { calculerStatsParBloc } from '@/lib/stats-bloc';
-import { livretLeaMartin } from '@/fixtures/livret-demo';
 import { SelecteurNiveau } from '@/components/common/SelecteurNiveau';
 import { SyntheseBloc } from './SyntheseBloc';
 import { cn } from '@/lib/utils';
@@ -28,11 +28,12 @@ interface GrilleCompetencesProps {
 }
 
 export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
-  const livret = useLivretStore((s) => s.getLivret(livretLeaMartin.id));
+  const ctx = useApprentiActif();
   const setLigne = useLivretStore((s) => s.setLigneCompetenceFinale);
   const roleActif = useUserStore((s) => s.roleActif);
 
-  if (!livret) return null;
+  if (!ctx) return null;
+  const { livret } = ctx;
 
   // R22 — la clôture rend toutes les cellules en lecture seule.
   const livretFige = estCloture(livret);

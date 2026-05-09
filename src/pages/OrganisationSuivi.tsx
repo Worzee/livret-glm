@@ -1,13 +1,14 @@
 import { CalendarDays, Lock, LockOpen, MessageSquare } from 'lucide-react';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
+import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
-import { livretLeaMartin } from '@/fixtures/livret-demo';
 import type {
   ChampOrganisationSuivi,
   OrganisationSuivi as OrgSuiviType,
 } from '@/types';
 import { cn } from '@/lib/utils';
+import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelectionne';
 
 /**
  * Module — Organisation du suivi (CDC §5.1).
@@ -81,19 +82,19 @@ const CHAMPS: ChampSuivi[] = [
 ];
 
 export function OrganisationSuivi() {
-  const livret = useLivretStore((s) => s.getLivret(livretLeaMartin.id));
+  const ctx = useApprentiActif();
   const setOrganisation = useLivretStore((s) => s.setOrganisationSuivi);
   const roleActif = useUserStore((s) => s.roleActif);
   const utilisateurActif = useUserStore((s) => s.utilisateurActif);
 
-  if (!livret) return null;
+  if (!ctx) return <AucunApprentiSelectionne />;
+  const { apprenti, livret } = ctx;
 
   const editable = peutEditer(roleActif, 'organisation-suivi');
   const org = livret.organisationSuivi;
 
   /** Met à jour un seul sous-champ (date OU commentaire) en préservant l'autre. */
   function patcherChamp(cle: CleChamp, patch: Partial<ChampOrganisationSuivi>) {
-    if (!livret) return;
     const valeurCourante = livret.organisationSuivi[cle];
     setOrganisation(livret.id, utilisateurActif.id, {
       [cle]: { ...valeurCourante, ...patch },
@@ -107,6 +108,9 @@ export function OrganisationSuivi() {
         <p className="text-muted-foreground">
           Cadre de suivi de la promo, défini par le formateur référent. Consultable par
           l'apprenti·e et le maître d'apprentissage.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Apprenti·e : <strong>{apprenti.prenom} {apprenti.nom}</strong>
         </p>
       </header>
 

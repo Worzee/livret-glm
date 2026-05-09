@@ -3,8 +3,9 @@ import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, History, Lock, Unlock } from 'lucide-react';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useUserStore } from '@/store/useUserStore';
-import { livretLeaMartin } from '@/fixtures/livret-demo';
+import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { peutEditer, libelleRole } from '@/lib/droits';
+import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelectionne';
 import { BadgeEtatFiche } from '@/components/common/BadgeEtatFiche';
 import { SuiviGretaCfa } from '@/components/livret/SuiviGretaCfa';
 import { TableauTriColonnes } from '@/components/livret/TableauTriColonnes';
@@ -28,15 +29,17 @@ import { NotFound } from '@/pages/NotFound';
  */
 export function FicheSuiviPeriodeDetail() {
   const { ficheId } = useParams();
-  const livret = useLivretStore((s) => s.getLivret(livretLeaMartin.id));
-  const fiche = useLivretStore((s) => s.getFiche(livretLeaMartin.id, ficheId ?? ''));
+  const ctx = useApprentiActif();
   const setEtat = useLivretStore((s) => s.setEtatFiche);
   const deverrouiller = useLivretStore((s) => s.deverrouillerFiche);
   const roleActif = useUserStore((s) => s.roleActif);
   const utilisateurActif = useUserStore((s) => s.utilisateurActif);
   const [dialogOuvert, setDialogOuvert] = useState(false);
 
-  if (!livret || !fiche) return <NotFound />;
+  if (!ctx) return <AucunApprentiSelectionne />;
+  const { livret } = ctx;
+  const fiche = livret.fichesSuivi.find((f) => f.id === ficheId);
+  if (!fiche) return <NotFound />;
 
   const peutVerrouiller = peutEditer(roleActif, 'fiche.deverrouiller');
   const debut = new Date(fiche.dateDebut).toLocaleDateString('fr-FR');
@@ -104,11 +107,17 @@ export function FicheSuiviPeriodeDetail() {
       {fiche.historiqueDeverrouillages.length > 0 && (
         <section
           aria-labelledby={`hist-deverr-${fiche.id}`}
-          className="space-y-2 rounded-lg border border-border bg-secondary/30 p-4"
+          className="space-y-2 rounded-lg border-l-4 border-l-amber-500 border border-amber-300 bg-amber-50 p-4"
         >
-          <h2 id={`hist-deverr-${fiche.id}`} className="flex items-center gap-2 text-sm font-medium">
-            <History className="h-4 w-4" aria-hidden="true" />
+          <h2
+            id={`hist-deverr-${fiche.id}`}
+            className="flex items-center gap-2 text-sm font-semibold text-amber-900"
+          >
+            <History className="h-4 w-4 text-amber-700" aria-hidden="true" />
             Historique des déverrouillages
+            <span className="ml-auto text-xs font-normal text-amber-800">
+              R10 · traçabilité
+            </span>
           </h2>
           <ul className="space-y-2 text-sm">
             {[...fiche.historiqueDeverrouillages]
@@ -116,16 +125,16 @@ export function FicheSuiviPeriodeDetail() {
               .map((entree) => (
                 <li
                   key={entree.id}
-                  className="rounded-md border border-border bg-card p-3"
+                  className="rounded-md border border-amber-200 bg-white p-3"
                 >
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-amber-900/80">
                     {new Date(entree.dateIso).toLocaleString('fr-FR', {
                       dateStyle: 'long',
                       timeStyle: 'short',
                     })}{' '}
                     — {entree.auteurNom} ({libelleRole(entree.auteurRole)})
                   </p>
-                  <p className="mt-1">{entree.motif}</p>
+                  <p className="mt-1 text-amber-950">{entree.motif}</p>
                 </li>
               ))}
           </ul>

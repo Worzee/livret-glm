@@ -41,8 +41,10 @@ import { creerCloture } from '@/lib/cloture-livret';
  * pas ici — le store accepte chaque appel et écrit immédiatement.
  */
 
-// Bumpé post-sprint 5 : refonte `OrganisationSuivi` (date + commentaire structurés).
-const VERSION_SCHEMA = 4;
+// Bumpé post-sprint 5 :
+//   v4 — refonte `OrganisationSuivi` (date + commentaire structurés)
+//   v5 — passage à 6 apprenti·e·s + livrets scénarisés (CDC §24.5)
+const VERSION_SCHEMA = 5;
 
 interface LivretStore {
   livrets: Record<string, Livret>;
