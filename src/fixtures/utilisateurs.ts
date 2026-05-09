@@ -216,12 +216,7 @@ export const utilisateursDemo = {
   admin: adminGuillaumeFerreri,
 } as const;
 
-/** Lookup d'un apprenti·e par id. Retourne `undefined` si introuvable. */
-export function getApprentiById(id: string): Apprenti | undefined {
-  return apprentisDemo.find((a) => a.id === id);
-}
-
-/** Lookup d'un maître par id. Retourne `undefined` si introuvable. */
-export function getMaitreById(id: string): Maitre | undefined {
-  return maitresDemo.find((m) => m.id === id);
-}
+// Note : `getApprentiById` / `getMaitreById` ont été déplacés vers
+// `useUtilisateursStore` (sous `getApprentiByIdFromStore` / `getMaitreByIdFromStore`).
+// La résolution passe désormais par le store live, qui inclut les utilisateurs
+// créés à la volée via /admin/utilisateurs (et pas seulement les fixtures).

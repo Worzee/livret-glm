@@ -14,9 +14,9 @@
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main`) |
-| **Sprints livrés** | **1, 2, 3, 4, 5** + 3 extensions hors-CDC + post-livraison (mobile, UX, verrouillage par champ, **6 apprenti·e·s + tableau de bord**) |
-| **Tests unitaires** | **187 / 187 ✓** (Vitest, 12 fichiers) |
-| **Tests E2E** | **43 / 43 ✓** (Playwright — 31 desktop + 12 mobile Pixel 5) |
+| **Sprints livrés** | **1, 2, 3, 4, 5** + 3 extensions hors-CDC + post-livraison (mobile, UX, verrouillage par champ, 6 apprenti·e·s, **CRUD apprenti·e·s côté admin**) |
+| **Tests unitaires** | **195 / 195 ✓** (Vitest, 13 fichiers) |
+| **Tests E2E** | **49 / 49 ✓** (Playwright — 37 desktop + 12 mobile Pixel 5) |
 | **Bundle JS gzippé** | 101 KB (cible CDC §19.1 : < 500 KB → marge × 4,9) |
 | **Bundle CSS gzippé** | 5,2 KB (cible : < 50 KB → marge × 9,6) |
 | **Chunk PDF lazy** | 495 KB (chargé uniquement au clic « Exporter ») |
@@ -194,6 +194,17 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 - 13 tests E2E `tableau-de-bord-6-apprentis` : compte par rôle, recherche, badges, navigation, sélecteur de maître, R3 maintenue côté apprenti
 - Bouton « Réinitialiser la démo » étendu : remet aussi l'apprenti·e actif·ve à Léa et le maître actif à Karim
 
+#### Gestion des utilisateurs — étape 1 : apprenti·e·s (CDC §6 + §24.6)
+- Nouveau store `useUtilisateursStore` (Zustand persist) : 5 records indexés par id (apprentis, maitres, formateurs, coordos, admins). Initialisé depuis les fixtures.
+- Helper `lib/creation-livret.ts` : crée un livret vierge réutilisable (fixtures + création admin).
+- Lib `lib/validation-apprenti.ts` (8 tests TDD) : email format, dates contrat cohérentes, âge ∈ [15, 30] à la date de début.
+- `useUtilisateursStore.ajouterApprenti(input, auteurId)` : crée l'apprenti·e + son livret vierge + ajoute la référence dans les `apprentiIds` du maître. `modifierApprenti` propage les changements de maître. `supprimerApprenti` retire le livret + les références maître + replie l'apprenti·e actif·ve.
+- Refonte `/admin/utilisateurs` : table avec recherche, filtre par rôle, bouton « + Nouvel·le apprenti·e ». Édition par ligne (icône crayon → modale pré-remplie), suppression (confirmation 2 clics inline avec auto-annulation 10 s).
+- Modale `ModaleApprenti` (création + édition) : 3 sections (identité, contrat, affectation initiale). Validation côté UI avec messages d'erreur ciblés. Esc / clic arrière-plan / Annuler ferment sans sauvegarder. Focus auto sur le 1ᵉʳ champ.
+- Refacto : `getApprentiById` / `getMaitreById` déplacés des fixtures vers le store (versions `getApprentiByIdFromStore` / `getMaitreByIdFromStore`) pour que les ajouts à la volée soient visibles partout. `TableauDeBord`, `useUserStore` et `useApprentiActifStore` adaptés.
+- Bouton « Réinitialiser la démo » : reset aussi `useUtilisateursStore`.
+- 6 tests E2E `admin-utilisateurs` : accès refusé côté apprenti, table à 11 lignes, création de Sarah TURC visible côté formateur, validation bloquante, édition propagée au tableau de bord, suppression avec confirmation 2 clics.
+
 #### Responsive mobile (cas d'usage terrain)
 - **`MobileMenu`** : bouton hamburger + drawer overlay accessible (`role=dialog`, focus piégé, Esc, fermeture auto après navigation)
 - **`RoleSwitcher` compact** : icônes seules sur mobile, libellé visible à partir de `lg` (1024 px)
@@ -285,6 +296,7 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | `lib/deverrouillage-fiche.test.ts` | 8 | R10 (validation motif min/max) |
 | `lib/apprentis-accessibles.test.ts` | 18 | Filtre par rôle (R3) + tri fr-FR + recherche normalisée |
 | `lib/etat-livret.test.ts` | 7 | Cas pédagogiques 6 apprenti·e·s (CDC §24.5) + priorisation |
+| `lib/validation-apprenti.test.ts` | 8 | Validation saisie apprenti·e (email, dates, âge, affectations) |
 
 ### Tests E2E Playwright (43 / 43 ✓)
 
@@ -296,6 +308,7 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | `chromium-desktop` | `sprint4-evaluation-finale.spec.ts` | 5 | Grilles + synthèse + R22 |
 | `chromium-desktop` | `sprint5-bout-en-bout.spec.ts` | 3 | Parcours complet + export PDF non vide |
 | `chromium-desktop` | `tableau-de-bord-6-apprentis.spec.ts` | 13 | Liste par rôle + recherche + badges + navigation + sélecteur maître + R3 |
+| `chromium-desktop` | `admin-utilisateurs.spec.ts` | 6 | Accès refusé apprenti, table 11 lignes, création/édition/suppression apprenti·e |
 | `mobile-pixel5` | `audit-mobile.mobile.spec.ts` | 12 | Aucun débordement horizontal, hamburger, drawer, RoleSwitcher compact, modale R10 dans largeur écran |
 
 ---

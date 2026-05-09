@@ -2,9 +2,13 @@ import { useMemo } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Apprenti, Livret } from '@/types';
-import { apprentiLeaMartin, getApprentiById } from '@/fixtures/utilisateurs';
+import { apprentiLeaMartin } from '@/fixtures/utilisateurs';
 import { useLivretStore } from './useLivretStore';
 import { useUserStore } from './useUserStore';
+import {
+  getApprentiByIdFromStore,
+  useUtilisateursStore,
+} from './useUtilisateursStore';
 
 /**
  * Store de l'apprenti·e affiché·e dans les pages livret.
@@ -38,7 +42,7 @@ export const useApprentiActifStore = create<ApprentiActifStore>()(
         // Synchro : si le rôle actif est `apprenti`, l'utilisateur·rice
         // « connecté·e » s'incarne dans l'apprenti·e actif·ve.
         if (useUserStore.getState().roleActif === 'apprenti') {
-          const apprenti = (id && getApprentiById(id)) || apprentiLeaMartin;
+          const apprenti = (id && getApprentiByIdFromStore(id)) || apprentiLeaMartin;
           useUserStore.setState({ utilisateurActif: apprenti });
         }
       },
@@ -62,13 +66,14 @@ export const useApprentiActifStore = create<ApprentiActifStore>()(
 export function useApprentiActif(): { apprenti: Apprenti; livret: Livret } | null {
   const apprentiActifId = useApprentiActifStore((s) => s.apprentiActifId);
   const livrets = useLivretStore((s) => s.livrets);
+  const apprentis = useUtilisateursStore((s) => s.apprentis);
 
   return useMemo(() => {
     if (!apprentiActifId) return null;
-    const apprenti = getApprentiById(apprentiActifId);
+    const apprenti = apprentis[apprentiActifId];
     if (!apprenti) return null;
     const livret = Object.values(livrets).find((l) => l.apprentiId === apprenti.id);
     if (!livret) return null;
     return { apprenti, livret };
-  }, [apprentiActifId, livrets]);
+  }, [apprentiActifId, livrets, apprentis]);
 }

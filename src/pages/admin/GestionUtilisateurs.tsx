@@ -1,55 +1,92 @@
-import { Construction, GraduationCap, HardHat, Lock, Plus, ShieldCheck, UserCog } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  GraduationCap,
+  HardHat,
+  Lock,
+  Pencil,
+  Plus,
+  Search,
+  ShieldCheck,
+  Trash2,
+  UserCog,
+} from 'lucide-react';
+import type { Apprenti, Role, Utilisateur } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
-import { libelleRole, peutEditer, type Ressource } from '@/lib/droits';
-import { utilisateursDemo } from '@/fixtures/utilisateurs';
-import type { Role } from '@/types';
+import { useUtilisateursStore } from '@/store/useUtilisateursStore';
+import { libelleRole, peutEditer } from '@/lib/droits';
+import { filtrerApprentis } from '@/lib/apprentis-accessibles';
+import { ModaleApprenti } from '@/components/admin/ModaleApprenti';
+import { cn } from '@/lib/utils';
 
 /**
  * Page d'administration — gestion des utilisateurs.
- * Accessible aux rôles coordo et admin. Les autres voient un écran d'accès refusé.
+ * Référence : cahier des charges v1.3, section 6 (matrice droits) et §24.6.
  *
- * Coordo : peut créer apprenti·e, maître, formateur (PAS coordo).
- * Admin  : peut créer les 4 rôles, dont les coordos (droit exclusif).
+ * Étape 1 (livrée) : CRUD complet sur les apprenti·e·s.
+ * Étape 2 (à venir) : maître / formateur / coordo.
  *
- * Sprint 1 : placeholder + liste des fixtures + boutons "Créer" désactivés.
- * Les vrais formulaires CRUD viendront dans un sprint dédié.
+ * Accessible aux rôles coordo et admin uniquement (matrice §6). Les autres
+ * voient un écran d'accès refusé.
  */
 
-const ROLES_GERABLES: Array<{
-  role: Role;
-  Icon: typeof GraduationCap;
-  couleur: string;
-  ressource: Ressource;
-}> = [
-  {
-    role: 'apprenti',
-    Icon: GraduationCap,
-    couleur: 'text-role-apprenti',
-    ressource: 'admin.utilisateurs.creer-apprenti',
-  },
-  {
-    role: 'maitre',
-    Icon: HardHat,
-    couleur: 'text-role-maitre',
-    ressource: 'admin.utilisateurs.creer-maitre',
-  },
-  {
-    role: 'formateur',
-    Icon: UserCog,
-    couleur: 'text-role-formateur',
-    ressource: 'admin.utilisateurs.creer-formateur',
-  },
-  {
-    role: 'coordo',
-    Icon: ShieldCheck,
-    couleur: 'text-role-coordo',
-    ressource: 'admin.utilisateurs.creer-coordo',
-  },
-];
+type FiltreRole = 'tous' | Role;
 
 export function GestionUtilisateurs() {
   const roleActif = useUserStore((s) => s.roleActif);
-  // Accès à la page si on peut créer au moins un type d'utilisateur.
+  const apprentis = useUtilisateursStore((s) => s.apprentis);
+  const maitres = useUtilisateursStore((s) => s.maitres);
+  const formateurs = useUtilisateursStore((s) => s.formateurs);
+  const coordos = useUtilisateursStore((s) => s.coordos);
+  const admins = useUtilisateursStore((s) => s.admins);
+  const supprimerApprenti = useUtilisateursStore((s) => s.supprimerApprenti);
+
+  const [requete, setRequete] = useState('');
+  const [filtreRole, setFiltreRole] = useState<FiltreRole>('tous');
+  const [modaleOuverte, setModaleOuverte] = useState(false);
+  const [apprentiEnEdition, setApprentiEnEdition] = useState<Apprenti | undefined>();
+  // Confirmation 2 clics pour suppression — id du compte en cours, ou null.
+  const [confirmationSuppression, setConfirmationSuppression] = useState<string | null>(null);
+
+  // Auto-annulation de la confirmation après 10 s (pattern cohérent avec les
+  // autres confirmations de l'app).
+  useEffect(() => {
+    if (!confirmationSuppression) return;
+    const t = setTimeout(() => setConfirmationSuppression(null), 10_000);
+    return () => clearTimeout(t);
+  }, [confirmationSuppression]);
+
+  // Liste plate de tous les utilisateurs (toutes catégories) pour la table.
+  const tousUtilisateurs: Utilisateur[] = useMemo(
+    () => [
+      ...Object.values(apprentis),
+      ...Object.values(maitres),
+      ...Object.values(formateurs),
+      ...Object.values(coordos),
+      ...Object.values(admins),
+    ],
+    [apprentis, maitres, formateurs, coordos, admins],
+  );
+
+  const filtres = useMemo(() => {
+    let r = tousUtilisateurs;
+    if (filtreRole !== 'tous') r = r.filter((u) => u.role === filtreRole);
+    if (requete.trim()) {
+      // Réutilise le helper apprentis-accessibles (filtre nom/prénom normalisé).
+      r = filtrerApprentis(
+        r as Apprenti[], // typage permissif — la fonction n'utilise que prenom/nom.
+        requete,
+      );
+    }
+    return [...r].sort(
+      (a, b) =>
+        a.role.localeCompare(b.role) ||
+        a.nom.localeCompare(b.nom, 'fr-FR') ||
+        a.prenom.localeCompare(b.prenom, 'fr-FR'),
+    );
+  }, [tousUtilisateurs, requete, filtreRole]);
+
+  // Accès — coordo ou admin (vérification après les hooks pour respecter
+  // les rules-of-hooks)
   const peutVoirPage =
     peutEditer(roleActif, 'admin.utilisateurs.creer-apprenti') ||
     peutEditer(roleActif, 'admin.utilisateurs.creer-coordo');
@@ -58,100 +95,223 @@ export function GestionUtilisateurs() {
     return <AccesRefuse roleActif={roleActif} />;
   }
 
+  const peutCreerApprenti = peutEditer(roleActif, 'admin.utilisateurs.creer-apprenti');
+  const peutModifier = peutEditer(roleActif, 'admin.utilisateurs.modifier');
+  const peutSupprimer = peutEditer(roleActif, 'admin.utilisateurs.supprimer');
+
+  function ouvrirCreation() {
+    setApprentiEnEdition(undefined);
+    setModaleOuverte(true);
+  }
+
+  function ouvrirEdition(apprenti: Apprenti) {
+    setApprentiEnEdition(apprenti);
+    setModaleOuverte(true);
+  }
+
+  function fermerModale() {
+    setModaleOuverte(false);
+    setApprentiEnEdition(undefined);
+  }
+
+  function declencherSuppression(id: string) {
+    if (confirmationSuppression === id) {
+      supprimerApprenti(id);
+      setConfirmationSuppression(null);
+    } else {
+      setConfirmationSuppression(id);
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold">Gestion des utilisateurs</h1>
-        <p className="text-muted-foreground">
-          Création et administration des comptes utilisateurs des 4 rôles.
-        </p>
-      </header>
-
-      <section className="rounded-lg border border-border bg-card p-6">
-        <div className="flex items-start gap-3">
-          <Construction className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" aria-hidden="true" />
-          <p className="text-sm">
-            Sprint 1 — placeholder. Les formulaires de création/édition/suppression seront
-            implémentés dans un sprint dédié à l'administration.
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-semibold">Gestion des utilisateurs</h1>
+          <p className="text-muted-foreground">
+            Création et administration des comptes des 4 rôles métier.
           </p>
         </div>
-      </section>
+        {peutCreerApprenti && (
+          <button
+            type="button"
+            onClick={ouvrirCreation}
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            Nouvel·le apprenti·e
+          </button>
+        )}
+      </header>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-medium">Créer un nouvel utilisateur</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {ROLES_GERABLES.map(({ role, Icon, couleur, ressource }) => {
-            const autorise = peutEditer(roleActif, ressource);
-            return (
-              <button
-                key={role}
-                type="button"
-                disabled
-                className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-secondary disabled:opacity-60 disabled:cursor-not-allowed"
-                title={
-                  autorise
-                    ? 'Formulaire à venir dans un sprint dédié'
-                    : `Réservé : seul l'administrateur·rice peut créer des ${libelleRole(role).toLowerCase()}s`
-                }
-              >
-                <Icon className={`h-5 w-5 shrink-0 mt-0.5 ${couleur}`} aria-hidden="true" />
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    {autorise ? (
-                      <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-                    ) : (
-                      <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-                    )}
-                    <span className="font-medium text-sm">{libelleRole(role)}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {autorise ? 'À venir' : 'Réservé administrateur·rice'}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
+      {/* Filtres */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[16rem] max-w-md">
+          <Search
+            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <input
+            type="search"
+            value={requete}
+            onChange={(e) => setRequete(e.target.value)}
+            placeholder="Filtrer par nom ou prénom"
+            aria-label="Filtrer la liste des utilisateurs"
+            className="w-full rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          />
         </div>
-      </section>
+        <FiltreRoleSelect valeur={filtreRole} onChange={setFiltreRole} />
+      </div>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-medium">Utilisateurs existants (fixtures de démonstration)</h2>
-        <div className="rounded-lg border border-border bg-card overflow-hidden">
+      {/* Liste */}
+      {filtres.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
+          Aucun utilisateur ne correspond à vos critères.
+        </div>
+      ) : (
+        <div className="rounded-lg border border-border bg-card overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-secondary/50 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="px-4 py-2 text-left">Nom</th>
                 <th className="px-4 py-2 text-left">Rôle</th>
                 <th className="px-4 py-2 text-left">Email</th>
+                <th className="px-4 py-2 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {Object.values(utilisateursDemo).map((u) => (
-                <tr key={u.id}>
-                  <td className="px-4 py-2 font-medium">
-                    {u.prenom} {u.nom}
-                  </td>
-                  <td className="px-4 py-2 text-muted-foreground">{libelleRole(u.role)}</td>
-                  <td className="px-4 py-2 text-muted-foreground">{u.email}</td>
-                </tr>
-              ))}
+              {filtres.map((u) => {
+                const estApprenti = u.role === 'apprenti';
+                const enConfirmation = confirmationSuppression === u.id;
+                return (
+                  <tr key={u.id} className={cn(enConfirmation && 'bg-red-50')}>
+                    <td className="px-4 py-2 font-medium">
+                      <span className="inline-flex items-center gap-2">
+                        <IconeRole role={u.role} />
+                        {u.prenom} {u.nom}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 text-muted-foreground">
+                      {libelleRole(u.role)}
+                    </td>
+                    <td className="px-4 py-2 text-muted-foreground">{u.email}</td>
+                    <td className="px-4 py-2 text-right">
+                      {estApprenti ? (
+                        <div className="inline-flex items-center gap-1">
+                          {peutModifier && (
+                            <button
+                              type="button"
+                              onClick={() => ouvrirEdition(u as Apprenti)}
+                              aria-label={`Modifier ${u.prenom} ${u.nom}`}
+                              className="rounded-md border border-input bg-background p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                            >
+                              <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                            </button>
+                          )}
+                          {peutSupprimer && (
+                            <button
+                              type="button"
+                              onClick={() => declencherSuppression(u.id)}
+                              aria-label={
+                                enConfirmation
+                                  ? `Confirmer la suppression de ${u.prenom} ${u.nom}`
+                                  : `Supprimer ${u.prenom} ${u.nom}`
+                              }
+                              className={cn(
+                                'inline-flex items-center gap-1 rounded-md p-1.5 transition-colors',
+                                enConfirmation
+                                  ? 'border border-red-300 bg-red-600 text-white hover:bg-red-700'
+                                  : 'border border-input bg-background text-muted-foreground hover:bg-secondary hover:text-foreground',
+                              )}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                              {enConfirmation && (
+                                <span className="text-xs font-medium">Confirmer</span>
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs italic text-muted-foreground">
+                          Étape 2
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
-      </section>
+      )}
+
+      <ModaleApprenti
+        ouvert={modaleOuverte}
+        apprenti={apprentiEnEdition}
+        onAnnuler={fermerModale}
+      />
     </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sous-composants
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ICONES_ROLE = {
+  apprenti: { Icon: GraduationCap, classe: 'text-role-apprenti' },
+  maitre: { Icon: HardHat, classe: 'text-role-maitre' },
+  formateur: { Icon: UserCog, classe: 'text-role-formateur' },
+  coordo: { Icon: ShieldCheck, classe: 'text-role-coordo' },
+  admin: { Icon: ShieldCheck, classe: 'text-role-admin' },
+} as const;
+
+function IconeRole({ role }: { role: Role }) {
+  const { Icon, classe } = ICONES_ROLE[role];
+  return <Icon className={cn('h-4 w-4 shrink-0', classe)} aria-hidden="true" />;
+}
+
+interface FiltreRoleSelectProps {
+  valeur: FiltreRole;
+  onChange: (v: FiltreRole) => void;
+}
+
+function FiltreRoleSelect({ valeur, onChange }: FiltreRoleSelectProps) {
+  return (
+    <select
+      value={valeur}
+      onChange={(e) => onChange(e.target.value as FiltreRole)}
+      aria-label="Filtrer par rôle"
+      className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+    >
+      <option value="tous">Tous les rôles</option>
+      <option value="apprenti">Apprenti·e·s</option>
+      <option value="maitre">Maîtres d'apprentissage</option>
+      <option value="formateur">Formateurs référents</option>
+      <option value="coordo">Coordinateur·rice·s</option>
+      <option value="admin">Administrateur·rice·s</option>
+    </select>
   );
 }
 
 function AccesRefuse({ roleActif }: { roleActif: Role }) {
   return (
     <div className="rounded-lg border border-amber-300 bg-amber-50 p-6">
-      <h1 className="text-lg font-medium text-amber-900">Accès réservé au coordinateur·rice</h1>
-      <p className="mt-2 text-sm text-amber-900/80">
-        Vous êtes actuellement connecté·e en tant que <strong>{libelleRole(roleActif)}</strong>.
-        La gestion des utilisateurs est réservée au rôle <strong>Coordinateur·rice</strong>.
-        Utilisez le sélecteur de rôle en haut à droite pour basculer.
-      </p>
+      <div className="flex items-start gap-3">
+        <Lock className="h-5 w-5 shrink-0 text-amber-700 mt-0.5" aria-hidden="true" />
+        <div>
+          <h1 className="text-lg font-medium text-amber-900">
+            Accès réservé à l'administration
+          </h1>
+          <p className="mt-2 text-sm text-amber-900/80">
+            Vous êtes actuellement connecté·e en tant que{' '}
+            <strong>{libelleRole(roleActif)}</strong>. La gestion des utilisateurs
+            est réservée aux rôles <strong>Coordinateur·rice</strong> et{' '}
+            <strong>Administrateur·rice</strong>. Utilisez le sélecteur de rôle en
+            haut à droite pour basculer.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

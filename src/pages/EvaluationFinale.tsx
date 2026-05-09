@@ -7,9 +7,9 @@ import { libelleRole } from '@/lib/droits';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
 import {
   formatriceSophieDubois,
-  getMaitreById,
   maitreKarimBenali,
 } from '@/fixtures/utilisateurs';
+import { getMaitreByIdFromStore } from '@/store/useUtilisateursStore';
 import { formationsDemo, formationCapCuisine } from '@/fixtures/formations';
 import { GrilleCompetences } from '@/components/evaluation/GrilleCompetences';
 import { GrilleAttitudes } from '@/components/evaluation/GrilleAttitudes';
@@ -39,7 +39,7 @@ export function EvaluationFinale() {
   if (!ctx) return <AucunApprentiSelectionne />;
   const { apprenti, livret } = ctx;
   const formation = formationsDemo[apprenti.formationId] ?? formationCapCuisine;
-  const maitre = getMaitreById(apprenti.maitreApprentissageId) ?? maitreKarimBenali;
+  const maitre = getMaitreByIdFromStore(apprenti.maitreApprentissageId) ?? maitreKarimBenali;
 
   const aDroitEdition =
     peutEditer(roleActif, 'grille-competences.entreprise') ||

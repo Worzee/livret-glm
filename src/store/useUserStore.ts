@@ -3,12 +3,14 @@ import { persist } from 'zustand/middleware';
 import type { Role, Utilisateur } from '@/types';
 import {
   apprentiLeaMartin,
-  getApprentiById,
-  getMaitreById,
   maitreKarimBenali,
   utilisateursDemo,
 } from '@/fixtures/utilisateurs';
 import { useApprentiActifStore } from './useApprentiActifStore';
+import {
+  getApprentiByIdFromStore,
+  getMaitreByIdFromStore,
+} from './useUtilisateursStore';
 
 /**
  * Store du rôle actif.
@@ -42,10 +44,10 @@ interface UserStore {
 function utilisateurPourRole(role: Role, maitreActifId: string): Utilisateur {
   if (role === 'apprenti') {
     const id = useApprentiActifStore.getState().apprentiActifId;
-    return (id && getApprentiById(id)) || apprentiLeaMartin;
+    return (id && getApprentiByIdFromStore(id)) || apprentiLeaMartin;
   }
   if (role === 'maitre') {
-    return getMaitreById(maitreActifId) || maitreKarimBenali;
+    return getMaitreByIdFromStore(maitreActifId) || maitreKarimBenali;
   }
   return utilisateursDemo[role];
 }
@@ -63,7 +65,7 @@ export const useUserStore = create<UserStore>()(
           utilisateurActif: utilisateurPourRole(role, get().maitreActifId),
         }),
       setMaitreActif: (id) => {
-        const maitre = getMaitreById(id) ?? maitreKarimBenali;
+        const maitre = getMaitreByIdFromStore(id) ?? maitreKarimBenali;
         set({
           maitreActifId: maitre.id,
           // Si le rôle actif est maitre, l'utilisateur·rice connecté·e suit.

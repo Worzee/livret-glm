@@ -4,8 +4,8 @@ import { Briefcase, ChevronRight, GraduationCap, Search } from 'lucide-react';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useApprentiActifStore } from '@/store/useApprentiActifStore';
+import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { libelleRole } from '@/lib/droits';
-import { apprentisDemo, maitresDemo } from '@/fixtures/utilisateurs';
 import { formationsDemo } from '@/fixtures/formations';
 import {
   apprentisAccessibles,
@@ -40,13 +40,16 @@ export function TableauDeBord() {
   const setMaitreActif = useUserStore((s) => s.setMaitreActif);
   const livrets = useLivretStore((s) => s.livrets);
   const setApprentiActif = useApprentiActifStore((s) => s.setApprentiActif);
+  const apprentis = useUtilisateursStore((s) => s.apprentis);
+  const maitres = useUtilisateursStore((s) => s.maitres);
   const navigate = useNavigate();
   const [requete, setRequete] = useState('');
 
   const apprentisVisibles = useMemo(
-    () => trierApprentis(apprentisAccessibles(utilisateurActif, apprentisDemo)),
-    [utilisateurActif],
+    () => trierApprentis(apprentisAccessibles(utilisateurActif, Object.values(apprentis))),
+    [utilisateurActif, apprentis],
   );
+  const maitresList = useMemo(() => Object.values(maitres), [maitres]);
   const apprentisFiltres = useMemo(
     () => filtrerApprentis(apprentisVisibles, requete),
     [apprentisVisibles, requete],
@@ -84,7 +87,7 @@ export function TableauDeBord() {
             Maître d'apprentissage actif
           </legend>
           <div className="flex flex-wrap gap-2">
-            {maitresDemo.map((m) => {
+            {maitresList.map((m) => {
               const actif = m.id === maitreActifId;
               return (
                 <button
