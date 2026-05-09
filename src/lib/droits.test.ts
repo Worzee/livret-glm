@@ -90,13 +90,28 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('maitre', 'fiche.observation-formateur')).toBe(false);
     });
 
-    it("seul le formateur peut créer une nouvelle période et déverrouiller (R10, R13)", () => {
+    it("formateur et coordo peuvent créer / modifier / supprimer une période", () => {
+      // Gestion calendaire (création / renommage / suppression) : ouverte au
+      // coordo également (besoin terrain — il/elle peut piloter le calendrier
+      // des périodes en lieu et place du formateur).
       expect(peutEditer('formateur', 'fiche.creer-periode')).toBe(true);
-      expect(peutEditer('formateur', 'fiche.deverrouiller')).toBe(true);
+      expect(peutEditer('coordo', 'fiche.creer-periode')).toBe(true);
+      expect(peutEditer('formateur', 'fiche.modifier-periode')).toBe(true);
+      expect(peutEditer('coordo', 'fiche.modifier-periode')).toBe(true);
+      expect(peutEditer('formateur', 'fiche.supprimer-periode')).toBe(true);
+      expect(peutEditer('coordo', 'fiche.supprimer-periode')).toBe(true);
+      // Apprenti·e et maître restent en lecture seule
       expect(peutEditer('apprenti', 'fiche.creer-periode')).toBe(false);
       expect(peutEditer('maitre', 'fiche.creer-periode')).toBe(false);
+      expect(peutEditer('apprenti', 'fiche.supprimer-periode')).toBe(false);
+      expect(peutEditer('maitre', 'fiche.supprimer-periode')).toBe(false);
+    });
+
+    it("seul le formateur peut déverrouiller une fiche signée (R10)", () => {
+      expect(peutEditer('formateur', 'fiche.deverrouiller')).toBe(true);
       expect(peutEditer('apprenti', 'fiche.deverrouiller')).toBe(false);
       expect(peutEditer('maitre', 'fiche.deverrouiller')).toBe(false);
+      expect(peutEditer('coordo', 'fiche.deverrouiller')).toBe(false);
     });
   });
 
@@ -169,7 +184,11 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
         'fiche.signature-apprenti',
         'fiche.signature-maitre',
         'fiche.signature-formateur',
-        'fiche.creer-periode',
+        // Note : fiche.creer-periode / modifier-periode / supprimer-periode
+        // ne sont PAS purement pédagogiques — ils relèvent de la gestion
+        // calendaire et sont ouverts au coordo (besoin terrain : le coordo
+        // peut ouvrir/fermer le calendrier des périodes en lieu et place
+        // du formateur référent).
         'fiche.deverrouiller',
         'grille-competences.entreprise',
         'grille-competences.centre',

@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, History, Lock, Unlock } from 'lucide-react';
+import { ArrowLeft, History, Lock, Pencil, Unlock } from 'lucide-react';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { peutEditer, libelleRole } from '@/lib/droits';
+import { libelleFichePeriode } from '@/lib/validation-fiche-periode';
 import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelectionne';
 import { BadgeEtatFiche } from '@/components/common/BadgeEtatFiche';
 import { SuiviGretaCfa } from '@/components/livret/SuiviGretaCfa';
@@ -12,6 +13,7 @@ import { TableauTriColonnes } from '@/components/livret/TableauTriColonnes';
 import { ZoneObservation } from '@/components/livret/ZoneObservation';
 import { BlocSignatures } from '@/components/livret/BlocSignatures';
 import { DialogDeverrouillage } from '@/components/livret/DialogDeverrouillage';
+import { ModaleFichePeriode } from '@/components/livret/ModaleFichePeriode';
 import { NotFound } from '@/pages/NotFound';
 
 /**
@@ -35,6 +37,7 @@ export function FicheSuiviPeriodeDetail() {
   const roleActif = useUserStore((s) => s.roleActif);
   const utilisateurActif = useUserStore((s) => s.utilisateurActif);
   const [dialogOuvert, setDialogOuvert] = useState(false);
+  const [modaleEditOuverte, setModaleEditOuverte] = useState(false);
 
   if (!ctx) return <AucunApprentiSelectionne />;
   const { livret } = ctx;
@@ -42,6 +45,7 @@ export function FicheSuiviPeriodeDetail() {
   if (!fiche) return <NotFound />;
 
   const peutVerrouiller = peutEditer(roleActif, 'fiche.deverrouiller');
+  const peutModifierEnveloppe = peutEditer(roleActif, 'fiche.modifier-periode');
   const debut = new Date(fiche.dateDebut).toLocaleDateString('fr-FR');
   const fin = new Date(fiche.dateFin).toLocaleDateString('fr-FR');
 
@@ -56,8 +60,19 @@ export function FicheSuiviPeriodeDetail() {
 
       <header className="space-y-2">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold">Période {fiche.numeroPeriode}</h1>
+          <h1 className="text-2xl font-semibold">{libelleFichePeriode(fiche)}</h1>
           <BadgeEtatFiche etat={fiche.etat} />
+          {peutModifierEnveloppe && fiche.etat !== 'verrouillee' && (
+            <button
+              type="button"
+              onClick={() => setModaleEditOuverte(true)}
+              aria-label="Modifier le titre et les dates de la période"
+              className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              <Pencil className="h-3 w-3" aria-hidden="true" />
+              Modifier
+            </button>
+          )}
         </div>
         <p className="text-muted-foreground">
           Du {debut} au {fin}
@@ -140,6 +155,16 @@ export function FicheSuiviPeriodeDetail() {
           </ul>
         </section>
       )}
+
+      <ModaleFichePeriode
+        key={modaleEditOuverte ? `edit-${fiche.id}` : 'fermee-edit'}
+        ouvert={modaleEditOuverte}
+        livretId={livret.id}
+        fiche={fiche}
+        fichesExistantes={livret.fichesSuivi}
+        entretienExiste={livret.entretienTripartite !== null}
+        onAnnuler={() => setModaleEditOuverte(false)}
+      />
 
       <DialogDeverrouillage
         ouvert={dialogOuvert}

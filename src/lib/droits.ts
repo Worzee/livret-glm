@@ -41,6 +41,8 @@ export type Ressource =
   | 'fiche.signature-maitre'
   | 'fiche.signature-formateur'
   | 'fiche.creer-periode'
+  | 'fiche.modifier-periode' // titre / dates
+  | 'fiche.supprimer-periode'
   | 'fiche.deverrouiller' // R10
   // Grilles d'évaluation finales (CDC §5.4-5.5)
   | 'grille-competences.entreprise'
@@ -98,7 +100,12 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'fiche.signature-apprenti': ['apprenti'],
   'fiche.signature-maitre': ['maitre'],
   'fiche.signature-formateur': ['formateur'],
-  'fiche.creer-periode': ['formateur'],
+  // Création / suppression / modification de l'enveloppe d'une fiche de
+  // période : formateur référent et coordo (besoin terrain : le coordo peut
+  // ouvrir/fermer le calendrier des périodes en lieu et place du formateur).
+  'fiche.creer-periode': ['formateur', 'coordo'],
+  'fiche.modifier-periode': ['formateur', 'coordo'],
+  'fiche.supprimer-periode': ['formateur', 'coordo'],
   'fiche.deverrouiller': ['formateur'],
 
   // Grilles d'évaluation finales

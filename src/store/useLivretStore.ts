@@ -110,6 +110,28 @@ interface LivretStore {
   /** Verrouille/déverrouille une fiche (formateur uniquement, validation côté UI). */
   setEtatFiche: (livretId: string, ficheId: string, etat: EtatFiche) => void;
 
+  /**
+   * Crée une nouvelle fiche de suivi par période. Le numéro est auto-attribué
+   * (max(numeroPeriode existants) + 1). La validation R11/R12/R13 est faite
+   * côté UI via `validerSaisieFichePeriode`.
+   * @returns l'id de la fiche créée.
+   */
+  ajouterFichePeriode: (
+    livretId: string,
+    input: { titre?: string; dateDebut: string; dateFin: string },
+  ) => string;
+  /** Met à jour le titre, la date de début et/ou la date de fin d'une fiche. */
+  modifierFichePeriode: (
+    livretId: string,
+    ficheId: string,
+    patch: { titre?: string; dateDebut?: string; dateFin?: string },
+  ) => void;
+  /**
+   * Supprime une fiche. Validation `peutSupprimerFichePeriode` faite côté UI ;
+   * le store applique le retrait sans contrôle pour rester déterministe.
+   */
+  supprimerFichePeriode: (livretId: string, ficheId: string) => void;
+
   // ── Mutations sur l'organisation du suivi (CDC §5.1) ─────────────────────
   setOrganisationSuivi: (
     livretId: string,
@@ -377,6 +399,59 @@ export const useLivretStore = create<LivretStore>()(
       setEtatFiche: (livretId, ficheId, etat) =>
         set((s) =>
           muterFiche(s, livretId, ficheId, (f) => ({ ...f, etat })),
+        ),
+
+      ajouterFichePeriode: (livretId, input) => {
+        const id = `fp-${crypto.randomUUID().slice(0, 8)}`;
+        set((s) =>
+          muterLivret(s, livretId, (l) => {
+            const numeroMax = l.fichesSuivi.reduce(
+              (m, f) => Math.max(m, f.numeroPeriode),
+              0,
+            );
+            const nouvelle: FicheSuiviPeriode = {
+              id,
+              numeroPeriode: numeroMax + 1,
+              titre: input.titre?.trim() || undefined,
+              dateDebut: input.dateDebut,
+              dateFin: input.dateFin,
+              suiviGretaCfa: [],
+              suiviEntreprise: [],
+              observations: {},
+              signatures: {
+                apprenti: { signe: false },
+                maitre: { signe: false },
+                formateur: { signe: false },
+              },
+              etat: 'brouillon',
+              historiqueDeverrouillages: [],
+            };
+            return { ...l, fichesSuivi: [...l.fichesSuivi, nouvelle] };
+          }),
+        );
+        return id;
+      },
+
+      modifierFichePeriode: (livretId, ficheId, patch) =>
+        set((s) =>
+          muterFiche(s, livretId, ficheId, (f) => ({
+            ...f,
+            // Trim+vide → undefined pour garder le champ propre.
+            titre:
+              patch.titre === undefined
+                ? f.titre
+                : patch.titre.trim() || undefined,
+            dateDebut: patch.dateDebut ?? f.dateDebut,
+            dateFin: patch.dateFin ?? f.dateFin,
+          })),
+        ),
+
+      supprimerFichePeriode: (livretId, ficheId) =>
+        set((s) =>
+          muterLivret(s, livretId, (l) => ({
+            ...l,
+            fichesSuivi: l.fichesSuivi.filter((f) => f.id !== ficheId),
+          })),
         ),
 
       // ── Organisation du suivi ─────────────────────────────────────────────

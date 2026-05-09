@@ -306,6 +306,13 @@ export interface ObservationsFiche {
 export interface FicheSuiviPeriode {
   id: string;
   numeroPeriode: number;
+  /**
+   * Titre libre optionnel. Quand renseigné, l'UI affiche
+   * « Période N — <titre> » (ex. « Période 2 — Stage automne »). Quand vide
+   * ou absent, l'UI affiche « Période N » seul. Édité par le formateur
+   * référent ou le coordo.
+   */
+  titre?: string;
   dateDebut: string;
   dateFin: string;
   suiviGretaCfa: LigneSuiviGreta[];

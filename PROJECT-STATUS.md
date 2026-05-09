@@ -16,8 +16,8 @@
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main`) |
 | **Dernier commit déployé** | `8bf0a9e` — verrouillage des affectations quand le livret est actif |
 | **Sprints livrés** | **1, 2, 3, 4, 5** + 3 extensions hors-CDC (dont import référentiels phases A→E livrées : CSV + XLSX) + post-livraison (mobile, UX, 6 apprenti·e·s, tableau de bord, **administration : CRUD 4 rôles + formations + affectations + référentiels + verrouillages**) |
-| **Tests unitaires** | **256 / 256 ✓** (Vitest, 21 fichiers) |
-| **Tests E2E** | **85 / 85 ✓** (Playwright — 73 desktop + 12 mobile Pixel 5) |
+| **Tests unitaires** | **272 / 272 ✓** (Vitest, 22 fichiers) |
+| **Tests E2E** | **93 / 93 ✓** (Playwright — 81 desktop + 12 mobile Pixel 5) |
 | **Bundle JS gzippé** | 116 KB (cible CDC §19.1 : < 500 KB → marge × 4,3) |
 | **Bundle CSS gzippé** | 5,9 KB (cible : < 50 KB → marge × 8,5) |
 | **Chunk PDF lazy** | 495 KB (chargé uniquement au clic « Exporter ») |
@@ -302,6 +302,19 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 - `ModaleFormation` liste les référentiels disponibles depuis le store (plus de constante figée)
 - `BoutonReinitialiserDemo` reset également le store des référentiels
 
+#### Gestion des fiches de période par le formateur ou le coordo (mai 2026)
+
+Suite à un retour pilote, le formateur référent (ou le coordo) peut **créer**, **renommer** et **supprimer** des fiches de suivi par période :
+
+- Type `FicheSuiviPeriode.titre?: string` (optionnel) — affichage `Période N — <titre>` quand renseigné, `Période N` seul sinon
+- Droits : `fiche.creer-periode` étendu au coordo + nouvelles ressources `fiche.modifier-periode` et `fiche.supprimer-periode` (formateur + coordo)
+- Lib `lib/validation-fiche-periode.ts` (15 tests TDD) : valide la saisie en réutilisant les règles R11/R12/R13/R14, gère le mode édition (chevauchement avec soi-même ignoré), `peutSupprimerFichePeriode` (refuse si fiche verrouillée ou signée), helper `libelleFichePeriode`
+- Mutations store : `ajouterFichePeriode` (numéro auto-attribué = max+1), `modifierFichePeriode` (titre + dates), `supprimerFichePeriode`
+- `ModaleFichePeriode` (création + édition) : titre optionnel + dates, validation côté UI, `key` au remount frais (cohérent avec les autres modales admin)
+- Page `FicheSuiviPeriodes` refondue : bouton « + Nouvelle période » (visible si droit), boutons modifier/supprimer par carte, confirmation 2 clics avec auto-annulation 10 s, message d'erreur visuel quand suppression bloquée
+- Page `FicheSuiviPeriodeDetail` : affiche le titre custom dans le `<h1>`, bouton « Modifier » dans l'en-tête (ouvre la même modale)
+- 8 tests E2E `fiches-periodes.spec.ts` : création coordo + formateur, droits apprenti·e, renommage, suppression bloquée signée, suppression libre brouillon, R13 (entretien non initialisé), titre custom dans le détail
+
 #### Compétences abordées en entreprise (mai 2026)
 
 Suite à un retour pilote, ajout d'un flag par compétence pour exclure du suivi en entreprise les compétences purement académiques :
@@ -348,9 +361,9 @@ Suite à un retour pilote, ajout d'un flag par compétence pour exclure du suivi
 
 ---
 
-## 7. Tests (256 unitaires + 85 E2E)
+## 7. Tests (272 unitaires + 93 E2E)
 
-### Tests unitaires Vitest (256 / 256 ✓ — 21 fichiers)
+### Tests unitaires Vitest (272 / 272 ✓ — 22 fichiers)
 
 | Fichier | Tests | Périmètre |
 |---|---|---|
@@ -375,8 +388,9 @@ Suite à un retour pilote, ajout d'un flag par compétence pour exclure du suivi
 | `lib/referentiel-verrou.test.ts` | 4 | Verrou de suppression référentiel : aucune/1/N formations rattachées, pluriel |
 | `lib/parser-xlsx.test.ts` | 16 | Parser XLSX (sharedStrings + sheet1) : 2/3 colonnes, sparses, entités XML, signature ZIP, pipeline complet, **tests d'intégration sur les 4 fichiers exemples du pilote** |
 | `lib/competence-entreprise.test.ts` | 6 | Flag `evalueeEnEntreprise` : défaut implicite (rétrocompat), filtre, ordre préservé |
+| `lib/validation-fiche-periode.test.ts` | 15 | Saisie d'une fiche : titre optionnel, dates, R11 (fin > début), R12 (chevauchement), R13 (entretien + dernière fiche signée), édition (auto-chevauchement ignoré), `peutSupprimerFichePeriode`, `libelleFichePeriode` |
 
-### Tests E2E Playwright (85 / 85 ✓)
+### Tests E2E Playwright (93 / 93 ✓)
 
 | Projet | Fichier | Tests | Périmètre |
 |---|---|---|---|
@@ -391,6 +405,7 @@ Suite à un retour pilote, ajout d'un flag par compétence pour exclure du suivi
 | `chromium-desktop` | `admin-affectations.spec.ts` | 6 | Verrou par défaut, déverrouillage temporaire, réaffectation, synchronisation, déblocage suppression Karim |
 | `chromium-desktop` | `admin-formations.spec.ts` | 7 | Accès, création, suppression bloquée si rattachement, suppression libre, édition, persistance reload, visibilité dans Affectations |
 | `chromium-desktop` | `admin-referentiels.spec.ts` | 12 | Accès, fixture CAP, import textarea, **import des 4 fichiers exemples réels (CSV + XLSX, 2 et 3 niveaux)**, suppression bloquée, association auto à la formation, **toggle « abordée en entreprise » + filtrage en aval**, persistance reload |
+| `chromium-desktop` | `fiches-periodes.spec.ts` | 8 | Création/renommage/suppression : droits formateur+coordo, blocage apprenti·e, R13 (entretien non initialisé), suppression bloquée si signée, suppression libre brouillon, titre custom dans le détail |
 | `mobile-pixel5` | `audit-mobile.mobile.spec.ts` | 12 | Aucun débordement horizontal, hamburger, drawer, RoleSwitcher compact, modale R10 dans largeur écran |
 
 ---
@@ -426,7 +441,7 @@ LIVRET APPRENTISSAGE/
     ├── main.tsx, App.tsx, vite-env.d.ts
     ├── styles/index.css
     ├── types/index.ts              # CDC §7 + ChampOrganisationSuivi + ClotureLivret + EntreeDeverrouillage
-    ├── lib/                        # logique métier pure (21 modules + 21 fichiers tests)
+    ├── lib/                        # logique métier pure (22 modules + 22 fichiers tests)
     │   ├── droits.ts               # matrice §6 (33 ressources × 5 rôles)
     │   ├── transitions-fiche.ts    # R15/R16/R17/R21
     │   ├── validation-signature.ts # R18/R20
@@ -439,6 +454,7 @@ LIVRET APPRENTISSAGE/
     │   ├── import-referentiel.ts   # pipelines CSV + XLSX (encodage, format auto)
     │   ├── parser-xlsx.ts          # parser XLSX maison (sharedStrings + sheet1)
     │   ├── competence-entreprise.ts # flag « abordée en entreprise » + filtres
+    │   ├── validation-fiche-periode.ts # saisie fiche (titre + dates + R11/R12/R13), peutSupprimer, libelle
     │   ├── apprentis-accessibles.ts# filtre/tri/recherche par rôle
     │   ├── etat-livret.ts          # cas pédagogique pour badges tableau de bord
     │   ├── creation-livret.ts      # livret vierge réutilisable
