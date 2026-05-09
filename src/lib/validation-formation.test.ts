@@ -69,10 +69,13 @@ describe('validerSaisieFormation', () => {
     expect(r.erreurs.dateFin).toMatch(/postérieure/i);
   });
 
-  it('exige le référentiel', () => {
-    expect(
-      validerSaisieFormation({ ...FORMATION_VALIDE, referentielId: '' }).erreurs.referentielId,
-    ).toBeDefined();
+  it("n'exige PAS le référentiel mais signale un avertissement quand absent", () => {
+    // Le référentiel peut être créé après la formation (cf. UX feedback) :
+    // on n'empêche pas la sauvegarde, mais on prévient l'utilisateur·rice.
+    const r = validerSaisieFormation({ ...FORMATION_VALIDE, referentielId: '' });
+    expect(r.ok).toBe(true);
+    expect(r.erreurs.referentielId).toBeUndefined();
+    expect(r.avertissements.referentielId).toBeDefined();
   });
 
   it('exige le nom du lieu (le reste est optionnel)', () => {

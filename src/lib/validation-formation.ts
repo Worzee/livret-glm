@@ -47,8 +47,13 @@ export function validerSaisieFormation(saisie: SaisieFormation): ResultatValidat
   } else if (!REGEX_ANNEE.test(saisie.annee.trim())) {
     avertissements.annee = "Format inhabituel — le format conseillé est « YYYY-YYYY » (ex : 2025-2026).";
   }
+  // Le référentiel peut ne pas exister encore au moment de créer la formation
+  // (cas où on l'importe plus tard). On ne bloque donc pas la sauvegarde, mais
+  // on émet un avertissement explicite : sans référentiel, les grilles
+  // d'évaluation finales n'auront pas de compétences à afficher.
   if (!saisie.referentielId?.trim()) {
-    erreurs.referentielId = 'Le référentiel est obligatoire.';
+    avertissements.referentielId =
+      'Aucun référentiel sélectionné. Vous pourrez en associer un plus tard ; les grilles d\'évaluation resteront vides en attendant.';
   }
 
   if (!saisie.dateDebut) {

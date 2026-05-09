@@ -78,11 +78,10 @@ export function ModaleFormation({
         },
       };
     }
-    return {
-      ...SAISIE_VIDE,
-      // Pré-sélectionne le seul référentiel disponible si pertinent.
-      referentielId: REFERENTIELS_DISPONIBLES[0]?.id ?? '',
-    };
+    // En création, on laisse le référentiel vide par défaut : il peut ne pas
+    // encore avoir été créé/importé au moment où l'utilisateur·rice définit
+    // la formation. Le select propose explicitement « Aucun ».
+    return SAISIE_VIDE;
   }
 
   const [saisie, setSaisie] = useState<SaisieFormation>(valeurInitiale);
@@ -217,8 +216,8 @@ export function ModaleFormation({
                 value: r.id,
                 libelle: r.libelle,
               }))}
-              erreur={erreurs.referentielId}
-              obligatoire
+              optionVideLibelle="— Aucun (à définir plus tard) —"
+              avertissement={avertissements.referentielId}
             />
           </Section>
 
@@ -388,12 +387,29 @@ interface ChampSelectProps {
   onChange: (v: string) => void;
   options: Array<{ value: string; libelle: string }>;
   erreur?: string;
+  /** Avertissement non-bloquant (affiché en ambre, pas en rouge). */
+  avertissement?: string;
   obligatoire?: boolean;
+  /**
+   * Libellé de l'option `value=""`. Si fourni, l'option est sélectionnable
+   * (cas où aucune valeur est un choix valide). Sinon (défaut), l'option
+   * « — Choisir — » reste affichée mais désactivée.
+   */
+  optionVideLibelle?: string;
 }
 
-function ChampSelect({ label, valeur, onChange, options, erreur, obligatoire }: ChampSelectProps) {
+function ChampSelect({
+  label,
+  valeur,
+  onChange,
+  options,
+  erreur,
+  avertissement,
+  obligatoire,
+  optionVideLibelle,
+}: ChampSelectProps) {
   const id = useId();
-  const erreurId = useId();
+  const messageId = useId();
   return (
     <div className="space-y-1">
       <label htmlFor={id} className="text-xs font-medium">
@@ -405,15 +421,21 @@ function ChampSelect({ label, valeur, onChange, options, erreur, obligatoire }: 
         value={valeur}
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={!!erreur}
-        aria-describedby={erreur ? erreurId : undefined}
+        aria-describedby={erreur || avertissement ? messageId : undefined}
         className={cn(
           'w-full rounded-md border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring',
-          erreur ? 'border-red-400' : 'border-input',
+          erreur && 'border-red-400',
+          !erreur && avertissement && 'border-amber-400',
+          !erreur && !avertissement && 'border-input',
         )}
       >
-        <option value="" disabled>
-          — Choisir —
-        </option>
+        {optionVideLibelle ? (
+          <option value="">{optionVideLibelle}</option>
+        ) : (
+          <option value="" disabled>
+            — Choisir —
+          </option>
+        )}
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.libelle}
@@ -421,8 +443,13 @@ function ChampSelect({ label, valeur, onChange, options, erreur, obligatoire }: 
         ))}
       </select>
       {erreur && (
-        <p id={erreurId} role="alert" className="text-xs text-red-700">
+        <p id={messageId} role="alert" className="text-xs text-red-700">
           {erreur}
+        </p>
+      )}
+      {!erreur && avertissement && (
+        <p id={messageId} className="text-xs text-amber-700">
+          ⚠ {avertissement}
         </p>
       )}
     </div>
