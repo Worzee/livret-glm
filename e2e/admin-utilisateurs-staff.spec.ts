@@ -137,6 +137,32 @@ test("édition d'un maître — modifie l'identité affichée dans la liste", as
   await expect(page.locator('tbody tr', { hasText: /Héloïse ROCHE/ })).toBeVisible();
 });
 
+test("le formateur référent peut créer un·e apprenti·e et un maître (pas formateur ni coordo)", async ({ page }) => {
+  await selectRole(page, 'Formateur référent');
+  // L'entrée « Utilisateurs » doit apparaître dans la sidebar Administration.
+  await expect(page.getByRole('link', { name: /^Utilisateurs/i })).toBeVisible();
+  // Mais Formations et Affectations restent réservés coordo + admin.
+  await expect(page.getByRole('link', { name: /^Formations/i })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: /^Affectations/i })).toHaveCount(0);
+
+  await page.goto('/admin/utilisateurs');
+  // Pas d'écran « Accès refusé » — la page s'affiche.
+  await expect(page.getByRole('heading', { name: /^Gestion des utilisateurs/i })).toBeVisible();
+
+  // Le menu de création propose Apprenti·e + Maître, mais pas Formateur ni Coordo.
+  await page.getByRole('button', { name: /Nouveau · nouvelle/i }).click();
+  await expect(page.getByRole('menuitem', { name: /^Apprenti·e/i })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: /^Maître d'apprentissage/i })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: /^Formateur référent/i })).toHaveCount(0);
+  await expect(page.getByRole('menuitem', { name: /^Coordinateur·rice/i })).toHaveCount(0);
+
+  // Le formateur n'a pas le droit de modifier ni supprimer — boutons absents.
+  await page.keyboard.press('Escape');
+  const ligneLea = page.locator('tbody tr', { hasText: /Léa MARTIN/ });
+  await expect(ligneLea.getByRole('button', { name: /^Modifier/i })).toHaveCount(0);
+  await expect(ligneLea.getByRole('button', { name: /^Supprimer/i })).toHaveCount(0);
+});
+
 test("le compte admin n'est ni modifiable ni supprimable depuis la page", async ({ page }) => {
   await selectRole(page, 'Admin');
   await page.goto('/admin/utilisateurs');

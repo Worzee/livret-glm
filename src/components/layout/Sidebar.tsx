@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUserStore } from '@/store/useUserStore';
-import type { Role } from '@/types';
+import { peutEditer, type Ressource } from '@/lib/droits';
 
 /**
  * Navigation principale du livret — version desktop ET mobile.
@@ -44,15 +44,17 @@ const LIENS_LIVRET: LienItem[] = [
   { to: '/livret/export', label: 'Export PDF', Icon: FileDown },
 ];
 
-const LIENS_ADMIN: LienItem[] = [
-  { to: '/admin/utilisateurs', label: 'Utilisateurs', Icon: Users },
-  { to: '/admin/formations', label: 'Formations', Icon: GraduationCap },
-  { to: '/admin/affectations', label: 'Affectations', Icon: Link2 },
+/**
+ * Liens admin avec leur ressource gardienne. Le lien apparaît si le rôle
+ * actif a le droit d'éditer la ressource. Permet au formateur référent
+ * de voir « Utilisateurs » (création apprenti·e / maître) sans pour autant
+ * accéder aux formations ou affectations.
+ */
+const LIENS_ADMIN: Array<LienItem & { ressource: Ressource }> = [
+  { to: '/admin/utilisateurs', label: 'Utilisateurs', Icon: Users, ressource: 'admin.utilisateurs.creer-apprenti' },
+  { to: '/admin/formations', label: 'Formations', Icon: GraduationCap, ressource: 'admin.formations.creer' },
+  { to: '/admin/affectations', label: 'Affectations', Icon: Link2, ressource: 'admin.affectations.gerer' },
 ];
-
-function rolesAvecAdmin(role: Role): boolean {
-  return role === 'coordo' || role === 'admin';
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Lien de navigation (commun desktop / mobile)
@@ -87,7 +89,7 @@ function LienNav({ to, label, Icon, onClick }: LienItem & { onClick?: () => void
 
 function NavContenu({ onNavigate }: { onNavigate?: () => void }) {
   const roleActif = useUserStore((s) => s.roleActif);
-  const voitAdministration = rolesAvecAdmin(roleActif);
+  const liensAdminVisibles = LIENS_ADMIN.filter((l) => peutEditer(roleActif, l.ressource));
 
   return (
     <nav aria-label="Navigation du livret" className="p-3 space-y-6">
@@ -102,13 +104,13 @@ function NavContenu({ onNavigate }: { onNavigate?: () => void }) {
         </ul>
       </div>
 
-      {voitAdministration && (
+      {liensAdminVisibles.length > 0 && (
         <div>
           <h2 className="px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Administration
           </h2>
           <ul className="space-y-1">
-            {LIENS_ADMIN.map((lien) => (
+            {liensAdminVisibles.map((lien) => (
               <LienNav key={lien.to} {...lien} onClick={onNavigate} />
             ))}
           </ul>

@@ -187,20 +187,28 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
 });
 
 describe('Administration — droits du rôle coordo', () => {
-  it("seul le coordo peut créer un·e apprenti·e", () => {
+  it("coordo, admin et formateur peuvent créer un·e apprenti·e", () => {
     expect(peutEditer('coordo', 'admin.utilisateurs.creer-apprenti')).toBe(true);
+    expect(peutEditer('admin', 'admin.utilisateurs.creer-apprenti')).toBe(true);
+    // Le formateur référent peut enregistrer un nouveau contrat sans
+    // attendre une intervention coordo (besoin terrain).
+    expect(peutEditer('formateur', 'admin.utilisateurs.creer-apprenti')).toBe(true);
+    // L'apprenti·e et le maître ne peuvent pas créer.
     expect(peutEditer('apprenti', 'admin.utilisateurs.creer-apprenti')).toBe(false);
     expect(peutEditer('maitre', 'admin.utilisateurs.creer-apprenti')).toBe(false);
-    expect(peutEditer('formateur', 'admin.utilisateurs.creer-apprenti')).toBe(false);
   });
 
-  it("seul le coordo peut créer un maître d'apprentissage", () => {
+  it("coordo, admin et formateur peuvent créer un maître d'apprentissage", () => {
     expect(peutEditer('coordo', 'admin.utilisateurs.creer-maitre')).toBe(true);
-    expect(peutEditer('formateur', 'admin.utilisateurs.creer-maitre')).toBe(false);
+    expect(peutEditer('admin', 'admin.utilisateurs.creer-maitre')).toBe(true);
+    expect(peutEditer('formateur', 'admin.utilisateurs.creer-maitre')).toBe(true);
+    expect(peutEditer('apprenti', 'admin.utilisateurs.creer-maitre')).toBe(false);
+    expect(peutEditer('maitre', 'admin.utilisateurs.creer-maitre')).toBe(false);
   });
 
-  it('seul le coordo peut créer un formateur référent', () => {
+  it('seuls coordo et admin peuvent créer un formateur référent (pas le formateur)', () => {
     expect(peutEditer('coordo', 'admin.utilisateurs.creer-formateur')).toBe(true);
+    expect(peutEditer('admin', 'admin.utilisateurs.creer-formateur')).toBe(true);
     expect(peutEditer('formateur', 'admin.utilisateurs.creer-formateur')).toBe(false);
   });
 
@@ -309,8 +317,21 @@ describe('Admin — droits administratifs uniquement (pas de pédagogie)', () =>
     expect(peutEditer('admin', 'grille-attitudes.maitre')).toBe(false);
   });
 
-  it("rolesAutorises mentionne admin sur les ressources d'administration", () => {
-    expect(rolesAutorises('admin.utilisateurs.creer-apprenti')).toEqual(['coordo', 'admin']);
+  it("rolesAutorises liste correctement les rôles admin par ressource", () => {
+    // Création apprenti·e + maître ouverte au formateur (besoin terrain).
+    expect(rolesAutorises('admin.utilisateurs.creer-apprenti')).toEqual([
+      'coordo',
+      'admin',
+      'formateur',
+    ]);
+    expect(rolesAutorises('admin.utilisateurs.creer-maitre')).toEqual([
+      'coordo',
+      'admin',
+      'formateur',
+    ]);
+    // Création formateur reste réservée coordo + admin.
+    expect(rolesAutorises('admin.utilisateurs.creer-formateur')).toEqual(['coordo', 'admin']);
+    // Création coordo : exclusif admin.
     expect(rolesAutorises('admin.utilisateurs.creer-coordo')).toEqual(['admin']);
     expect(rolesAutorises('admin.formations.creer')).toEqual(['coordo', 'admin']);
   });

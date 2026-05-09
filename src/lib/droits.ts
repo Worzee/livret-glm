@@ -114,11 +114,15 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'export-pdf': ['formateur'],
   'cloturer-livret': ['formateur'],
 
-  // ── Administration (rôles coordo et admin) ──────────────────────────────
-  // Coordo et admin partagent la gestion administrative ; seul l'admin peut
-  // créer un autre coordo (et reste l'autorité supérieure du dispositif).
-  'admin.utilisateurs.creer-apprenti': ['coordo', 'admin'],
-  'admin.utilisateurs.creer-maitre': ['coordo', 'admin'],
+  // ── Administration (rôles coordo, admin et formateur partiel) ──────────
+  // Coordo et admin partagent la gestion administrative complète.
+  // Le formateur référent peut **créer** un·e apprenti·e ou un maître
+  // d'apprentissage (besoin terrain : enregistrer un nouveau contrat sans
+  // attendre une intervention coordo). Il ne peut ni modifier ni supprimer
+  // les comptes existants — c'est le coordo qui assure la maintenance.
+  // Seul l'admin peut créer un autre coordo (et reste l'autorité supérieure).
+  'admin.utilisateurs.creer-apprenti': ['coordo', 'admin', 'formateur'],
+  'admin.utilisateurs.creer-maitre': ['coordo', 'admin', 'formateur'],
   'admin.utilisateurs.creer-formateur': ['coordo', 'admin'],
   'admin.utilisateurs.creer-coordo': ['admin'], // exclusif admin
   'admin.utilisateurs.modifier': ['coordo', 'admin'],
