@@ -1,4 +1,5 @@
 import type { BlocCompetences, Competence, Referentiel } from '@/types';
+import { parserXlsxBuffer } from './parser-xlsx';
 
 /**
  * Import de référentiels de compétences depuis un fichier CSV.
@@ -151,6 +152,12 @@ export interface OptionsImport {
   separateur?: string;
   /** Force la profondeur (sinon auto-détectée). */
   niveauxColonnes?: 2 | 3;
+  /**
+   * Trace l'origine du référentiel pour la traçabilité (visible dans
+   * l'admin). Par défaut `'import-csv'` ; le pipeline XLSX passe
+   * `'import-xlsx'`.
+   */
+  source?: Referentiel['source'];
 }
 
 export interface RapportImport {
@@ -266,7 +273,7 @@ export function construireReferentiel(
     blocs: [...blocsMap.values()],
     attitudes: [],
     niveauxColonnes: niveaux,
-    source: 'import-csv',
+    source: options.source ?? 'import-csv',
   };
 
   const nbCompetences = referentiel.blocs.reduce((n, b) => n + b.competences.length, 0);
@@ -308,4 +315,36 @@ export function importerReferentielDepuisTexte(
   const separateur = options.separateur ?? detecterSeparateur(texte);
   const lignes = parserCsv(texte, separateur);
   return construireReferentiel(lignes, options, 'utf-8', separateur);
+}
+
+/**
+ * Pipeline d'import depuis un buffer XLSX (.xlsx).
+ * Délègue la décompression ZIP + parsing XML à `parserXlsxBuffer`.
+ *
+ * Le séparateur reporté dans `stats.separateurUtilise` est le caractère
+ * tabulation (cohérent avec le « pas de séparateur explicite » d'un xlsx) ;
+ * l'encodage est `utf-8` (les xlsx encodent toujours les chaînes en UTF-8).
+ */
+export function importerReferentielDepuisXlsxBuffer(
+  buffer: ArrayBuffer,
+  options: OptionsImport,
+): RapportImport {
+  const lignes = parserXlsxBuffer(buffer);
+  return construireReferentiel(
+    lignes,
+    { ...options, source: options.source ?? 'import-xlsx' },
+    'utf-8',
+    '\t',
+  );
+}
+
+/**
+ * Détecte si un buffer est un .xlsx (signature ZIP `PK\x03\x04`).
+ * Permet à l'UI de router automatiquement vers le bon pipeline d'import
+ * sans dépendre uniquement de l'extension du fichier.
+ */
+export function estXlsxBuffer(buffer: ArrayBuffer): boolean {
+  if (buffer.byteLength < 4) return false;
+  const bytes = new Uint8Array(buffer, 0, 4);
+  return bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04;
 }

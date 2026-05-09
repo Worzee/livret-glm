@@ -15,9 +15,9 @@
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main`) |
 | **Dernier commit déployé** | `8bf0a9e` — verrouillage des affectations quand le livret est actif |
-| **Sprints livrés** | **1, 2, 3, 4, 5** + 3 extensions hors-CDC (dont import référentiels phases A→D livrées) + post-livraison (mobile, UX, 6 apprenti·e·s, tableau de bord, **administration : CRUD 4 rôles + formations + affectations + référentiels + verrouillages**) |
-| **Tests unitaires** | **231 / 231 ✓** (Vitest, 19 fichiers) |
-| **Tests E2E** | **79 / 79 ✓** (Playwright — 67 desktop + 12 mobile Pixel 5) |
+| **Sprints livrés** | **1, 2, 3, 4, 5** + 3 extensions hors-CDC (dont import référentiels phases A→E livrées : CSV + XLSX) + post-livraison (mobile, UX, 6 apprenti·e·s, tableau de bord, **administration : CRUD 4 rôles + formations + affectations + référentiels + verrouillages**) |
+| **Tests unitaires** | **250 / 250 ✓** (Vitest, 20 fichiers) |
+| **Tests E2E** | **83 / 83 ✓** (Playwright — 71 desktop + 12 mobile Pixel 5) |
 | **Bundle JS gzippé** | 116 KB (cible CDC §19.1 : < 500 KB → marge × 4,3) |
 | **Bundle CSS gzippé** | 5,9 KB (cible : < 50 KB → marge × 8,5) |
 | **Chunk PDF lazy** | 495 KB (chargé uniquement au clic « Exporter ») |
@@ -273,21 +273,27 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 - **Aucun droit pédagogique** (commentaires, niveaux, signatures, observations)
 - Tests TDD complets : pas un seul faux-positif côté pédagogie
 
-### Extension 3 — Import de référentiels (Phases A → D livrées)
+### Extension 3 — Import de référentiels (Phases A → E livrées)
 
 - **Phase A** : `Competence.sousFamille?: string` + `Referentiel.niveauxColonnes?: 2 | 3` + `source?` + ressource `admin.referentiels.gerer`
-- **Phase B** : `lib/import-referentiel.ts` complet (parsing CSV maison, encodage UTF-8 / Windows-1252, séparateur auto, 24 / 24 tests TDD)
+- **Phase B** : `lib/import-referentiel.ts` complet (parsing CSV maison, encodage UTF-8 / Windows-1252, séparateur auto, 24 tests TDD)
 - **Phase C** : ✅ UI livrée
   - Store `useReferentielsStore` (Zustand persist v1) initialisé depuis le fixture CAP Cuisine
-  - Lib `lib/validation-import-referentiel.ts` (5 tests TDD) : nom obligatoire + avertissement si trop court, contenu CSV non vide
+  - Lib `lib/validation-import-referentiel.ts` (8 tests TDD) : formation cible obligatoire, source (fichier ou texte) non vide, génération du libellé `Referentiel_<intituléFormation>_<YYYY-MM-DD>`
   - Lib `lib/referentiel-verrou.ts` (4 tests TDD) : suppression refusée si une formation y est rattachée
-  - `ModaleImportReferentiel` : input file (CSV) **OU** textarea avec contenu collé, workflow en 2 temps (Aperçu → Importer) avec stats (blocs, compétences, sous-familles, encodage, séparateur) et avertissements détaillés
+  - `ModaleImportReferentiel` : **select de la formation cible** (pas de saisie libre du nom), input file (CSV ou XLSX) **OU** textarea avec contenu collé, workflow en 2 temps (Aperçu → Importer) avec stats (blocs, compétences, sous-familles, encodage, format) + avertissement explicite si la formation est déjà rattachée à un autre référentiel
+  - À l'import : la formation est **automatiquement mise à jour** (`formation.referentielId`) pour pointer vers le nouveau référentiel
   - Page `/admin/referentiels` : grille de cartes par référentiel avec compteurs + détail des blocs en `<details>` + bouton suppression 2 clics
   - Sidebar : entrée *Référentiels* sous Administration
 - **Phase D** : ✅ rendering 3-niveaux livré
   - `GrilleCompetences` : groupement visuel par sous-famille (en-tête de section dans chaque bloc) quand `niveauxColonnes === 3`
   - `TableauTriColonnes.AjouterCompetence` : optgroup par paire `Bloc — Sous-famille` quand le référentiel est à 3 niveaux
-- **Phase E** : support XLSX via dynamic import — différable
+- **Phase E** : ✅ support XLSX livré
+  - Dépendance `fflate` (~12 KB minifié) pour la décompression ZIP
+  - `lib/parser-xlsx.ts` : parser XLSX maison (`sharedStrings.xml` + `sheet1.xml`, regex robustes ; pas de DOMParser pour rester léger), 11 tests TDD
+  - `importerReferentielDepuisXlsxBuffer` (3 tests TDD) + détection automatique du format via signature ZIP (`PK\x03\x04`) côté UI
+  - 5 tests d'intégration sur les **vrais fichiers exemples du pilote** (`exemple-{1,2}.{csv,xlsx}` dans `src/lib/__fixtures__/`) : 2 et 3 niveaux × CSV et XLSX
+  - 4 tests E2E qui chargent ces vrais fichiers via `setInputFiles` et vérifient l'aperçu + l'import effectif
 
 #### Connexion via le store
 
@@ -330,9 +336,9 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 
 ---
 
-## 7. Tests (231 unitaires + 79 E2E)
+## 7. Tests (250 unitaires + 83 E2E)
 
-### Tests unitaires Vitest (231 / 231 ✓ — 19 fichiers)
+### Tests unitaires Vitest (250 / 250 ✓ — 20 fichiers)
 
 | Fichier | Tests | Périmètre |
 |---|---|---|
@@ -353,10 +359,11 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | `lib/affectation-verrou.test.ts` | 7 | Verrou des affectations : fiches existantes, entretien initié, contrat démarré, priorisation |
 | `lib/validation-formation.test.ts` | 9 | Validation formation (intitulé, niveau, année avec avertissement format, dates, référentiel, lieu) |
 | `lib/formation-verrou.test.ts` | 4 | Verrou de suppression formation : aucun·e/1/N apprenti·e·s rattaché·e·s, suffixe pluriel |
-| `lib/validation-import-referentiel.test.ts` | 5 | Saisie d'import référentiel : nom obligatoire, avertissement si court, contenu CSV non vide |
+| `lib/validation-import-referentiel.test.ts` | 8 | Saisie d'import : formation cible obligatoire, source fichier/texte, génération du libellé `Referentiel_<intitulé>_<YYYY-MM-DD>` |
 | `lib/referentiel-verrou.test.ts` | 4 | Verrou de suppression référentiel : aucune/1/N formations rattachées, pluriel |
+| `lib/parser-xlsx.test.ts` | 16 | Parser XLSX (sharedStrings + sheet1) : 2/3 colonnes, sparses, entités XML, signature ZIP, pipeline complet, **tests d'intégration sur les 4 fichiers exemples du pilote** |
 
-### Tests E2E Playwright (79 / 79 ✓)
+### Tests E2E Playwright (83 / 83 ✓)
 
 | Projet | Fichier | Tests | Périmètre |
 |---|---|---|---|
@@ -370,7 +377,7 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | `chromium-desktop` | `admin-utilisateurs-staff.spec.ts` | 10 | Menu de création, CRUD staff, suppression bloquée par cohérence, accès formateur partiel |
 | `chromium-desktop` | `admin-affectations.spec.ts` | 6 | Verrou par défaut, déverrouillage temporaire, réaffectation, synchronisation, déblocage suppression Karim |
 | `chromium-desktop` | `admin-formations.spec.ts` | 7 | Accès, création, suppression bloquée si rattachement, suppression libre, édition, persistance reload, visibilité dans Affectations |
-| `chromium-desktop` | `admin-referentiels.spec.ts` | 6 | Accès, fixture CAP, import via textarea (3 colonnes + sous-familles), suppression bloquée, sélection dans modale Formations, persistance reload |
+| `chromium-desktop` | `admin-referentiels.spec.ts` | 10 | Accès, fixture CAP, import textarea, **import des 4 fichiers exemples réels (CSV + XLSX, 2 et 3 niveaux)**, suppression bloquée, association auto à la formation, persistance reload |
 | `mobile-pixel5` | `audit-mobile.mobile.spec.ts` | 12 | Aucun débordement horizontal, hamburger, drawer, RoleSwitcher compact, modale R10 dans largeur écran |
 
 ---
@@ -406,7 +413,7 @@ LIVRET APPRENTISSAGE/
     ├── main.tsx, App.tsx, vite-env.d.ts
     ├── styles/index.css
     ├── types/index.ts              # CDC §7 + ChampOrganisationSuivi + ClotureLivret + EntreeDeverrouillage
-    ├── lib/                        # logique métier pure (19 modules + 19 fichiers tests)
+    ├── lib/                        # logique métier pure (20 modules + 20 fichiers tests)
     │   ├── droits.ts               # matrice §6 (33 ressources × 5 rôles)
     │   ├── transitions-fiche.ts    # R15/R16/R17/R21
     │   ├── validation-signature.ts # R18/R20
@@ -416,7 +423,8 @@ LIVRET APPRENTISSAGE/
     │   ├── stats-bloc.ts           # agrégation par bloc
     │   ├── cloture-livret.ts       # R22 (clôture)
     │   ├── deverrouillage-fiche.ts # R10 (motif obligatoire)
-    │   ├── import-referentiel.ts   # parsing CSV (encodage, 2/3 cols)
+    │   ├── import-referentiel.ts   # pipelines CSV + XLSX (encodage, format auto)
+    │   ├── parser-xlsx.ts          # parser XLSX maison (sharedStrings + sheet1)
     │   ├── apprentis-accessibles.ts# filtre/tri/recherche par rôle
     │   ├── etat-livret.ts          # cas pédagogique pour badges tableau de bord
     │   ├── creation-livret.ts      # livret vierge réutilisable
@@ -659,13 +667,12 @@ Référence : CDC §22.
 
 ## 15. Prochaine étape recommandée
 
-L'étape 1 du CDC v1.3 est **livrée et fonctionnelle**. L'administration métier est complète (CRUD 4 rôles + formations + affectations + référentiels) avec verrouillages de cohérence référentielle à toutes les couches.
+L'étape 1 du CDC v1.3 est **livrée et fonctionnelle**. L'administration métier est complète (CRUD 4 rôles + formations + affectations + référentiels CSV/XLSX) avec verrouillages de cohérence référentielle à toutes les couches.
 
 Reste à finir :
 
-1. **Formaliser CDC v1.5** — documenter les changements négociés (rôles Coordo/Admin, ressources admin, règle de verrouillage des affectations §10.4, import référentiels)
+1. **Formaliser CDC v1.5** — documenter les changements négociés (rôles Coordo/Admin, ressources admin, règle de verrouillage des affectations §10.4, import référentiels CSV+XLSX)
 2. **Migration usage référentiel pour les fiches de période** : `TableauTriColonnes` lit encore le fixture CAP Cuisine en dur (pour l'ajout de compétences). Quand un livret pointe vers un autre référentiel importé, il faudrait que le sélecteur d'ajout suive — refactor minute
-3. **Support import XLSX** (extension 3 phase E) — différable, dépend du besoin terrain
 
 La sécurité VPS reste une action côté pilote (cf. §11).
 

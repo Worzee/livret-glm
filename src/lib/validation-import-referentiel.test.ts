@@ -1,49 +1,106 @@
 import { describe, expect, it } from 'vitest';
+import type { Formation } from '@/types';
 import {
   type SaisieImportReferentiel,
+  genererNomReferentiel,
   validerSaisieImportReferentiel,
 } from './validation-import-referentiel';
 
 const SAISIE_VALIDE: SaisieImportReferentiel = {
-  nomFormation: 'CECRL Anglais B2',
-  contenuCsv: 'Domaine;Compétence;Sous-compétence\nA1.1;CO;Reconnaître des mots',
+  formationId: 'f-cap-cuisine-2025',
+  source: 'fichier',
+  nomFichier: 'cap-cuisine.csv',
+  contenuCsv: 'BLOC;COMPETENCE\nA;1',
 };
 
 describe('validerSaisieImportReferentiel', () => {
-  it('valide une saisie correcte (nom + contenu CSV non vide)', () => {
+  it('valide une saisie correcte (formation choisie + fichier sélectionné)', () => {
     const r = validerSaisieImportReferentiel(SAISIE_VALIDE);
     expect(r.ok).toBe(true);
     expect(r.erreurs).toEqual({});
   });
 
-  it('exige un nom de formation non vide', () => {
-    expect(
-      validerSaisieImportReferentiel({ ...SAISIE_VALIDE, nomFormation: '' }).erreurs.nomFormation,
-    ).toBeDefined();
-    expect(
-      validerSaisieImportReferentiel({ ...SAISIE_VALIDE, nomFormation: '   ' }).erreurs.nomFormation,
-    ).toBeDefined();
-  });
-
-  it('exige un contenu CSV non vide', () => {
-    expect(
-      validerSaisieImportReferentiel({ ...SAISIE_VALIDE, contenuCsv: '' }).erreurs.contenuCsv,
-    ).toBeDefined();
-    expect(
-      validerSaisieImportReferentiel({ ...SAISIE_VALIDE, contenuCsv: '   \n  ' }).erreurs.contenuCsv,
-    ).toBeDefined();
-  });
-
-  it("avertit si le nom est très court (< 3 caractères) sans bloquer", () => {
-    const r = validerSaisieImportReferentiel({ ...SAISIE_VALIDE, nomFormation: 'AB' });
-    expect(r.ok).toBe(true);
-    expect(r.avertissements.nomFormation).toBeDefined();
-  });
-
-  it('accumule plusieurs erreurs', () => {
-    const r = validerSaisieImportReferentiel({ nomFormation: '', contenuCsv: '' });
+  it("exige une formation sélectionnée (formationId non vide)", () => {
+    const r = validerSaisieImportReferentiel({ ...SAISIE_VALIDE, formationId: '' });
     expect(r.ok).toBe(false);
-    expect(r.erreurs.nomFormation).toBeDefined();
-    expect(r.erreurs.contenuCsv).toBeDefined();
+    expect(r.erreurs.formationId).toBeDefined();
+  });
+
+  it("exige une source de données (fichier OU texte non vide)", () => {
+    // Source = fichier mais pas de fichier sélectionné
+    expect(
+      validerSaisieImportReferentiel({
+        ...SAISIE_VALIDE,
+        source: 'fichier',
+        nomFichier: '',
+        contenuCsv: '',
+      }).erreurs.contenuCsv,
+    ).toBeDefined();
+    // Source = texte mais textarea vide
+    expect(
+      validerSaisieImportReferentiel({
+        ...SAISIE_VALIDE,
+        source: 'texte',
+        nomFichier: '',
+        contenuCsv: '   \n  ',
+      }).erreurs.contenuCsv,
+    ).toBeDefined();
+  });
+
+  it("accepte source=texte si seulement le contenu CSV est rempli", () => {
+    const r = validerSaisieImportReferentiel({
+      formationId: 'f-x',
+      source: 'texte',
+      nomFichier: '',
+      contenuCsv: 'BLOC;COMPETENCE\nA;1',
+    });
+    expect(r.ok).toBe(true);
+  });
+
+  it("accepte source=fichier si seulement nomFichier est défini (le buffer est tenu côté UI)", () => {
+    const r = validerSaisieImportReferentiel({
+      formationId: 'f-x',
+      source: 'fichier',
+      nomFichier: 'mon.xlsx',
+      contenuCsv: '',
+    });
+    expect(r.ok).toBe(true);
+  });
+});
+
+describe('genererNomReferentiel', () => {
+  const formation = (intitule: string): Formation => ({
+    id: 'f-test',
+    intitule,
+    niveau: 'CAP',
+    annee: '2025-2026',
+    referentielId: '',
+    dateDebut: '2025-09-01',
+    dateFin: '2026-08-31',
+    lieu: { nom: 'GRETA' },
+  });
+
+  it("compose le libellé `Referentiel_<intitulé>_<YYYY-MM-DD>`", () => {
+    const dateImport = new Date('2026-05-09T12:00:00Z');
+    expect(genererNomReferentiel(formation('CAP Cuisine'), dateImport)).toBe(
+      'Referentiel_CAP Cuisine_2026-05-09',
+    );
+  });
+
+  it("respecte les espaces et accents de l'intitulé (visible humain)", () => {
+    const dateImport = new Date('2026-05-09T00:00:00Z');
+    expect(genererNomReferentiel(formation('Bac Pro Cuisinier·ère'), dateImport)).toBe(
+      'Referentiel_Bac Pro Cuisinier·ère_2026-05-09',
+    );
+  });
+
+  it("utilise la date du jour quand aucune date n'est fournie", () => {
+    const aujourdhui = new Date();
+    const yyyy = aujourdhui.getFullYear();
+    const mm = String(aujourdhui.getMonth() + 1).padStart(2, '0');
+    const dd = String(aujourdhui.getDate()).padStart(2, '0');
+    expect(genererNomReferentiel(formation('X'))).toBe(
+      `Referentiel_X_${yyyy}-${mm}-${dd}`,
+    );
   });
 });

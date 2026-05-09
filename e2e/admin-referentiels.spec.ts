@@ -1,18 +1,31 @@
 import { expect, test } from '@playwright/test';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { resetState, selectRole } from './helpers';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 /**
- * Extension 3 phase C — Gestion des référentiels (CDC §6, ressource
+ * Extension 3 phases C+D — Gestion des référentiels (CDC §6, ressource
  * `admin.referentiels.gerer`).
  *
- * Couvre :
- *   - Accès refusé pour les rôles non-coordo/admin
- *   - Présence du référentiel CAP Cuisine livré dans les fixtures
- *   - Import via textarea (CSV 3 colonnes — détection automatique)
- *   - Aperçu (stats) puis import effectif → la nouvelle entrée apparaît
- *   - Suppression bloquée tant qu'une formation rattachée existe
- *   - Apparition du nouveau référentiel dans le select de la modale Formations
+ * Workflow finalisé :
+ *   - On choisit une formation existante (et non un nom libre).
+ *   - Le référentiel est nommé `Referentiel_<intituléFormation>_<YYYY-MM-DD>`.
+ *   - Le contenu vient d'un fichier (CSV ou XLSX, séparateur `;`) ou d'un
+ *     copier-coller dans le textarea (cas test rapide).
+ *   - À l'import, la formation pointe automatiquement vers le nouveau
+ *     référentiel (`formation.referentielId` mis à jour).
+ *
+ * Les vrais fichiers exemples du pilote sont disponibles dans
+ * `src/lib/__fixtures__/exemple-{1,2}.{csv,xlsx}`.
  */
+
+const FIXTURES_DIR = path.resolve(__dirname, '..', 'src', 'lib', '__fixtures__');
+const EXEMPLE_1_CSV = path.join(FIXTURES_DIR, 'exemple-1.csv');
+const EXEMPLE_1_XLSX = path.join(FIXTURES_DIR, 'exemple-1.xlsx');
+const EXEMPLE_2_CSV = path.join(FIXTURES_DIR, 'exemple-2.csv');
+const EXEMPLE_2_XLSX = path.join(FIXTURES_DIR, 'exemple-2.xlsx');
 
 test.beforeEach(async ({ page }) => {
   await resetState(page);
@@ -34,49 +47,107 @@ test('le coordo voit la page et le référentiel CAP Cuisine des fixtures', asyn
   await expect(carte.getByText(/10 compétences/i)).toBeVisible();
 });
 
-test('import via textarea : aperçu puis création effective du référentiel', async ({ page }) => {
+test('import via textarea (3 colonnes) → aperçu, association et nom auto-généré', async ({ page }) => {
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/referentiels');
   await page.getByRole('button', { name: /Importer un référentiel/i }).click();
 
   const modale = page.getByRole('dialog');
   await expect(modale.getByRole('heading', { name: /Importer un référentiel/i })).toBeVisible();
-  // Attente explicite sur le textarea pour éviter une race avec le mount React
-  // (sinon le 2ᵉ fill pouvait atterrir dans l'input nom).
-  await modale.getByTestId('import-ref-csv').waitFor({ state: 'visible' });
-  await modale.getByTestId('import-ref-nom').fill('CECRL Anglais B2');
-  // 3 colonnes : Bloc;Sous-famille;Compétence
+  // Choix de la formation cible (CAP Cuisine 2025-2026 dans la fixture)
+  await modale.getByTestId('import-ref-formation').selectOption({ value: "f-cap-cuisine-2025" });
+  // Le libellé auto-généré est affiché à droite du select
+  await expect(modale.getByText(/Referentiel_CAP Cuisine_\d{4}-\d{2}-\d{2}/)).toBeVisible();
+
   await modale.getByTestId('import-ref-csv').fill(
     [
-      'Domaine;Compétence;Sous-compétence',
-      'B2.1;Compréhension orale;Comprendre conférences',
-      'B2.1;Compréhension orale;Comprendre films récents',
-      'B2.1;Compréhension écrite;Lire articles spécialisés',
-      'B2.2;Production écrite;Rédiger essai argumenté',
-      'B2.2;Production écrite;Synthétiser sources multiples',
+      'BLOC;COMPETENCE;SOUS-COMPETENCE',
+      'BLOC 1;COMPETENCE 1;Reconnaître mots',
+      'BLOC 1;COMPETENCE 1;Comprendre consignes',
+      'BLOC 1;COMPETENCE 2;Lire articles',
+      'BLOC 2;COMPETENCE 3;Rédiger essai',
     ].join('\n'),
   );
-  // Vérifie que le textarea contient bien le CSV (sinon le test continue avec
-  // un état incohérent qui produit une erreur cryptique sur l'aperçu).
-  await expect(modale.getByTestId('import-ref-csv')).toHaveValue(/Domaine;Compétence/);
+  await expect(modale.getByTestId('import-ref-csv')).toHaveValue(/COMPETENCE/);
 
   // Aperçu — affiche les stats
   await modale.getByRole('button', { name: /^Aperçu$/i }).click();
-  await expect(modale.getByText(/Aperçu prêt — CECRL Anglais B2/i)).toBeVisible();
-  // Cible les <li> de la liste de stats — évite la collision avec le libellé
-  // du bouton « Importer (5 compétences) ».
+  await expect(modale.getByText(/Aperçu prêt — Referentiel_CAP Cuisine_/)).toBeVisible();
   await expect(modale.locator('li', { hasText: /^2 blocs?$/i })).toBeVisible();
-  await expect(modale.locator('li', { hasText: /^5 compétences?$/i })).toBeVisible();
-  await expect(modale.locator('li', { hasText: /^3 sous-familles?$/i })).toBeVisible();
+  await expect(modale.locator('li', { hasText: /^4 compétences?$/i })).toBeVisible();
+  // Avertissement de remplacement (la formation CAP Cuisine est déjà rattachée
+  // au référentiel des fixtures)
+  await expect(modale.getByText(/L'import remplacera ce rattachement/i)).toBeVisible();
 
   // Import effectif
-  await modale.getByRole('button', { name: /Importer \(5 compétences\)/i }).click();
+  await modale.getByRole('button', { name: /Importer \(4 compétences\)/i }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
-  // La carte du nouveau référentiel apparaît
-  const carteNouveau = page.locator('article', { hasText: 'CECRL Anglais B2' });
-  await expect(carteNouveau).toBeVisible();
-  await expect(carteNouveau.getByText(/référentiel à 3 niveaux/i)).toBeVisible();
+  // La carte du nouveau référentiel apparaît avec le nom auto-généré
+  await expect(page.locator('article').filter({ hasText: /Referentiel_CAP Cuisine_/ })).toBeVisible();
+});
+
+test("import d'un fichier CSV réel — exemple-1 (3 colonnes, 16 sous-compétences)", async ({
+  page,
+}) => {
+  await selectRole(page, 'Coordinateur·rice');
+  await page.goto('/admin/referentiels');
+  await page.getByRole('button', { name: /Importer un référentiel/i }).click();
+  const modale = page.getByRole('dialog');
+  await modale.getByTestId('import-ref-formation').selectOption({ value: "f-cap-cuisine-2025" });
+  await modale.locator('input[type="file"]').setInputFiles(EXEMPLE_1_CSV);
+  await modale.getByRole('button', { name: /^Aperçu$/i }).click();
+  await expect(modale.locator('li', { hasText: /^2 blocs?$/i })).toBeVisible();
+  await expect(modale.locator('li', { hasText: /^16 compétences?$/i })).toBeVisible();
+  await expect(modale.locator('li', { hasText: /^3 sous-familles?$/i })).toBeVisible();
+  await modale.getByRole('button', { name: /Importer \(16 compétences\)/i }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+test("import d'un fichier XLSX réel — exemple-1 (3 colonnes, format détecté automatiquement)", async ({
+  page,
+}) => {
+  await selectRole(page, 'Coordinateur·rice');
+  await page.goto('/admin/referentiels');
+  await page.getByRole('button', { name: /Importer un référentiel/i }).click();
+  const modale = page.getByRole('dialog');
+  await modale.getByTestId('import-ref-formation').selectOption({ value: "f-cap-cuisine-2025" });
+  await modale.locator('input[type="file"]').setInputFiles(EXEMPLE_1_XLSX);
+  await modale.getByRole('button', { name: /^Aperçu$/i }).click();
+  await expect(modale.locator('li', { hasText: /^16 compétences?$/i })).toBeVisible();
+  // Format détecté = XLSX
+  await expect(modale.locator('li', { hasText: /XLSX/ })).toBeVisible();
+  await modale.getByRole('button', { name: /Importer \(16 compétences\)/i }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+test("import d'un fichier XLSX 2 colonnes — exemple-2 (référentiel plat)", async ({ page }) => {
+  await selectRole(page, 'Coordinateur·rice');
+  await page.goto('/admin/referentiels');
+  await page.getByRole('button', { name: /Importer un référentiel/i }).click();
+  const modale = page.getByRole('dialog');
+  await modale.getByTestId('import-ref-formation').selectOption({ value: "f-cap-cuisine-2025" });
+  await modale.locator('input[type="file"]').setInputFiles(EXEMPLE_2_XLSX);
+  await modale.getByRole('button', { name: /^Aperçu$/i }).click();
+  // 2 niveaux : pas de ligne « sous-familles » dans l'aperçu
+  await expect(modale.locator('li', { hasText: /^2 blocs?$/i })).toBeVisible();
+  await expect(modale.locator('li', { hasText: /^16 compétences?$/i })).toBeVisible();
+  await expect(modale.locator('li', { hasText: /sous-familles?/i })).toHaveCount(0);
+  await modale.getByRole('button', { name: /Importer \(16 compétences\)/i }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+test("import d'un fichier CSV 2 colonnes — exemple-2 (Pronote, séparateur ;)", async ({ page }) => {
+  await selectRole(page, 'Coordinateur·rice');
+  await page.goto('/admin/referentiels');
+  await page.getByRole('button', { name: /Importer un référentiel/i }).click();
+  const modale = page.getByRole('dialog');
+  await modale.getByTestId('import-ref-formation').selectOption({ value: "f-cap-cuisine-2025" });
+  await modale.locator('input[type="file"]').setInputFiles(EXEMPLE_2_CSV);
+  await modale.getByRole('button', { name: /^Aperçu$/i }).click();
+  await expect(modale.locator('li', { hasText: /^16 compétences?$/i })).toBeVisible();
+  await modale.getByRole('button', { name: /Importer \(/i }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
 test("la suppression d'un référentiel rattaché à une formation est bloquée", async ({ page }) => {
@@ -89,28 +160,27 @@ test("la suppression d'un référentiel rattaché à une formation est bloquée"
   await expect(carte.getByText(/réaffectez le référentiel avant suppression/i)).toBeVisible();
 });
 
-test("le référentiel importé est sélectionnable dans la modale Formations", async ({ page }) => {
+test('après import, la formation est rattachée au nouveau référentiel (auto-update)', async ({
+  page,
+}) => {
   await selectRole(page, 'Coordinateur·rice');
-
-  // 1) Importer un référentiel
+  // 1) Importer un référentiel et l'associer à CAP Cuisine
   await page.goto('/admin/referentiels');
   await page.getByRole('button', { name: /Importer un référentiel/i }).click();
   const modaleRef = page.getByRole('dialog');
-  await modaleRef.getByTestId('import-ref-nom').fill('Titre Pro Boulanger');
-  await modaleRef
-    .getByTestId('import-ref-csv')
-    .fill('Bloc;Compétence\nB1;Maîtriser fermentation\nB1;Sélectionner farines');
+  await modaleRef.getByTestId('import-ref-formation').selectOption({ value: "f-cap-cuisine-2025" });
+  await modaleRef.locator('input[type="file"]').setInputFiles(EXEMPLE_2_CSV);
   await modaleRef.getByRole('button', { name: /^Aperçu$/i }).click();
   await modaleRef.getByRole('button', { name: /Importer \(/i }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
-  // 2) Aller sur la page Formations et ouvrir la modale de création
+  // 2) Sur la page Formations, ouvrir l'édition de CAP Cuisine et vérifier
+  //    que le select Référentiel pointe désormais vers le nouveau libellé
   await page.goto('/admin/formations');
-  await page.getByRole('button', { name: /Nouvelle formation/i }).click();
+  await page.getByRole('button', { name: /^Modifier CAP Cuisine/ }).click();
   const modaleForm = page.getByRole('dialog');
-  // Le select Référentiel doit contenir l'option fraîchement importée
   const selectRef = modaleForm.getByLabel('Référentiel', { exact: false });
-  await expect(selectRef).toContainText(/Titre Pro Boulanger/);
+  await expect(selectRef).toContainText(/Referentiel_CAP Cuisine_/);
 });
 
 test('persistance après reload : le référentiel importé survit', async ({ page }) => {
@@ -118,15 +188,13 @@ test('persistance après reload : le référentiel importé survit', async ({ pa
   await page.goto('/admin/referentiels');
   await page.getByRole('button', { name: /Importer un référentiel/i }).click();
   const modale = page.getByRole('dialog');
-  await modale.getByTestId('import-ref-nom').fill('CAP Pâtisserie');
-  await modale
-    .getByTestId('import-ref-csv')
-    .fill('Bloc;Compétence\nP1;Réaliser pâtes de base\nP1;Réaliser crèmes');
+  await modale.getByTestId('import-ref-formation').selectOption({ value: "f-cap-cuisine-2025" });
+  await modale.locator('input[type="file"]').setInputFiles(EXEMPLE_1_CSV);
   await modale.getByRole('button', { name: /^Aperçu$/i }).click();
   await modale.getByRole('button', { name: /Importer \(/i }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.locator('article', { hasText: 'CAP Pâtisserie' })).toBeVisible();
+  await expect(page.locator('article').filter({ hasText: /Referentiel_CAP Cuisine_/ })).toBeVisible();
 
   await page.reload();
-  await expect(page.locator('article', { hasText: 'CAP Pâtisserie' })).toBeVisible();
+  await expect(page.locator('article').filter({ hasText: /Referentiel_CAP Cuisine_/ })).toBeVisible();
 });
