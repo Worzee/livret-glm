@@ -1,13 +1,25 @@
-import { useMemo, useState } from 'react';
-import { Building2, GraduationCap, HardHat, Link2, Lock, Search, UserCog } from 'lucide-react';
-import type { Apprenti } from '@/types';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  AlertTriangle,
+  Building2,
+  GraduationCap,
+  HardHat,
+  Link2,
+  Lock,
+  LockOpen,
+  Search,
+  UserCog,
+} from 'lucide-react';
+import type { Apprenti, Livret } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
+import { useLivretStore } from '@/store/useLivretStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
 import {
   filtrerApprentis,
   trierApprentis,
 } from '@/lib/apprentis-accessibles';
+import { evaluerVerrouAffectation } from '@/lib/affectation-verrou';
 import { formationsDemo } from '@/fixtures/formations';
 import { cn } from '@/lib/utils';
 
@@ -32,9 +44,14 @@ export function GestionAffectations() {
   const maitres = useUtilisateursStore((s) => s.maitres);
   const formateurs = useUtilisateursStore((s) => s.formateurs);
   const modifierApprenti = useUtilisateursStore((s) => s.modifierApprenti);
+  const livrets = useLivretStore((s) => s.livrets);
 
   const [requete, setRequete] = useState('');
   const [filtreFormationId, setFiltreFormationId] = useState<string>('toutes');
+  // Set d'apprenti·e·s « déverrouillé·e·s temporairement » par l'utilisateur·rice
+  // pour corriger une erreur de saisie. Non persisté — re-verrou à chaque
+  // ouverture de la page.
+  const [deverrouillesTemp, setDeverrouillesTemp] = useState<Set<string>>(new Set());
 
   const liste = useMemo(() => {
     let r = Object.values(apprentis);
@@ -49,10 +66,25 @@ export function GestionAffectations() {
   const maitresList = useMemo(() => Object.values(maitres), [maitres]);
   const formateursList = useMemo(() => Object.values(formateurs), [formateurs]);
 
+  function basculerDeverrouTemp(apprentiId: string) {
+    setDeverrouillesTemp((s) => {
+      const next = new Set(s);
+      if (next.has(apprentiId)) next.delete(apprentiId);
+      else next.add(apprentiId);
+      return next;
+    });
+  }
+
   // Vérification d'accès — placée après les hooks pour respecter rules-of-hooks.
   if (!peutEditer(roleActif, 'admin.affectations.gerer')) {
     return <AccesRefuse roleActif={roleActif} />;
   }
+
+  // Compteur des apprenti·e·s dont les affectations sont verrouillées (livret actif).
+  const nbVerrouilles = liste.filter((a) => {
+    const livret = Object.values(livrets).find((l) => l.apprentiId === a.id);
+    return livret ? evaluerVerrouAffectation(a, livret).verrouille : true;
+  }).length;
 
   return (
     <div className="space-y-6">
@@ -66,6 +98,22 @@ export function GestionAffectations() {
           Les modifications sont enregistrées immédiatement.
         </p>
       </header>
+
+      {nbVerrouilles > 0 && (
+        <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+          <div className="flex items-start gap-2">
+            <Lock className="h-4 w-4 shrink-0 mt-0.5 text-blue-700" aria-hidden="true" />
+            <div>
+              <strong>{nbVerrouilles} apprenti·e{nbVerrouilles > 1 ? 's' : ''} verrouillé·e{nbVerrouilles > 1 ? 's' : ''} par défaut.</strong>{' '}
+              Les affectations sont protégées dès que le contrat a démarré, qu'une
+              fiche de période existe ou que l'entretien tripartite est initialisé
+              — pour éviter d'effacer du travail en cours. Utilisez{' '}
+              <em>Déverrouiller</em> sur une ligne pour corriger une erreur de
+              saisie initiale (le verrou se réactive à la prochaine ouverture).
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filtres */}
       <div className="flex flex-wrap items-center gap-3">
@@ -133,19 +181,26 @@ export function GestionAffectations() {
                     Entreprise
                   </span>
                 </th>
+                <th className="px-4 py-2 text-right">État</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {liste.map((a) => (
-                <LigneAffectation
-                  key={a.id}
-                  apprenti={a}
-                  formations={formationsList}
-                  maitres={maitresList}
-                  formateurs={formateursList}
-                  onChange={(patch) => modifierApprenti(a.id, patch)}
-                />
-              ))}
+              {liste.map((a) => {
+                const livret = Object.values(livrets).find((l) => l.apprentiId === a.id);
+                return (
+                  <LigneAffectation
+                    key={a.id}
+                    apprenti={a}
+                    livret={livret}
+                    formations={formationsList}
+                    maitres={maitresList}
+                    formateurs={formateursList}
+                    deverrouilleTemp={deverrouillesTemp.has(a.id)}
+                    onBasculerVerrou={() => basculerDeverrouTemp(a.id)}
+                    onChange={(patch) => modifierApprenti(a.id, patch)}
+                  />
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -160,21 +215,41 @@ export function GestionAffectations() {
 
 interface LigneAffectationProps {
   apprenti: Apprenti;
+  livret: Livret | undefined;
   formations: Array<{ id: string; intitule: string; annee: string }>;
   maitres: Array<{ id: string; prenom: string; nom: string; entrepriseId: string }>;
   formateurs: Array<{ id: string; prenom: string; nom: string }>;
+  deverrouilleTemp: boolean;
+  onBasculerVerrou: () => void;
   onChange: (patch: Partial<Apprenti>) => void;
 }
 
 function LigneAffectation({
   apprenti,
+  livret,
   formations,
   maitres,
   formateurs,
+  deverrouilleTemp,
+  onBasculerVerrou,
   onChange,
 }: LigneAffectationProps) {
-  // Indicateur visuel ponctuel "Enregistré" sur le champ qui vient d'être modifié.
   const [champFlash, setChampFlash] = useState<string | null>(null);
+  // Confirmation 2 clics pour le bouton « Déverrouiller temporairement ».
+  const [confirmationDeverrou, setConfirmationDeverrou] = useState(false);
+
+  // Auto-annulation 10 s de la confirmation (cohérent avec les autres patterns).
+  useEffect(() => {
+    if (!confirmationDeverrou) return;
+    const t = setTimeout(() => setConfirmationDeverrou(false), 10_000);
+    return () => clearTimeout(t);
+  }, [confirmationDeverrou]);
+
+  // Évalue le verrou (livret manquant = traité comme verrouillé pour rester sûr).
+  const verrou = livret
+    ? evaluerVerrouAffectation(apprenti, livret)
+    : { verrouille: true, raison: 'Livret indisponible.' };
+  const editable = !verrou.verrouille || deverrouilleTemp;
 
   function patcher(patch: Partial<Apprenti>, champ: string) {
     onChange(patch);
@@ -184,7 +259,6 @@ function LigneAffectation({
 
   function changerMaitre(nouveauId: string) {
     const m = maitres.find((mm) => mm.id === nouveauId);
-    // Le changement de maître propage l'entreprise par défaut.
     patcher(
       {
         maitreApprentissageId: nouveauId,
@@ -194,8 +268,17 @@ function LigneAffectation({
     );
   }
 
+  function declencherDeverrou() {
+    if (confirmationDeverrou) {
+      onBasculerVerrou();
+      setConfirmationDeverrou(false);
+    } else {
+      setConfirmationDeverrou(true);
+    }
+  }
+
   return (
-    <tr>
+    <tr className={cn(verrou.verrouille && !deverrouilleTemp && 'bg-blue-50/40')}>
       <td className="px-4 py-2 font-medium whitespace-nowrap">
         {apprenti.prenom} {apprenti.nom}
       </td>
@@ -204,6 +287,7 @@ function LigneAffectation({
           valeur={apprenti.formationId}
           onChange={(v) => patcher({ formationId: v }, 'formation')}
           aDestinationDuFlash={champFlash === 'formation'}
+          desactive={!editable}
           ariaLabel={`Formation de ${apprenti.prenom} ${apprenti.nom}`}
         >
           {formations.map((f) => (
@@ -218,6 +302,7 @@ function LigneAffectation({
           valeur={apprenti.maitreApprentissageId}
           onChange={changerMaitre}
           aDestinationDuFlash={champFlash === 'maitre'}
+          desactive={!editable}
           ariaLabel={`Maître d'apprentissage de ${apprenti.prenom} ${apprenti.nom}`}
         >
           {maitres.map((m) => (
@@ -232,6 +317,7 @@ function LigneAffectation({
           valeur={apprenti.formateurReferentId}
           onChange={(v) => patcher({ formateurReferentId: v }, 'formateur')}
           aDestinationDuFlash={champFlash === 'formateur'}
+          desactive={!editable}
           ariaLabel={`Formateur référent de ${apprenti.prenom} ${apprenti.nom}`}
         >
           {formateurs.map((f) => (
@@ -244,6 +330,61 @@ function LigneAffectation({
       <td className="px-4 py-2 text-muted-foreground text-xs">
         {apprenti.entrepriseId}
       </td>
+      <td className="px-2 py-2 text-right">
+        {verrou.verrouille && !deverrouilleTemp && (
+          <div className="inline-flex flex-col items-end gap-1">
+            <span
+              className="inline-flex items-center gap-1 rounded-full border border-blue-300 bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-900"
+              title={verrou.raison}
+            >
+              <Lock className="h-3 w-3" aria-hidden="true" />
+              Verrouillées
+            </span>
+            <button
+              type="button"
+              onClick={declencherDeverrou}
+              aria-label={
+                confirmationDeverrou
+                  ? `Confirmer le déverrouillage temporaire de ${apprenti.prenom} ${apprenti.nom}`
+                  : `Déverrouiller temporairement les affectations de ${apprenti.prenom} ${apprenti.nom}`
+              }
+              title={verrou.raison}
+              className={cn(
+                'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors',
+                confirmationDeverrou
+                  ? 'border-amber-400 bg-amber-500 text-white hover:bg-amber-600'
+                  : 'border-input bg-background text-muted-foreground hover:bg-secondary hover:text-foreground',
+              )}
+            >
+              <LockOpen className="h-3 w-3" aria-hidden="true" />
+              {confirmationDeverrou ? 'Confirmer' : 'Déverrouiller'}
+            </button>
+          </div>
+        )}
+        {deverrouilleTemp && (
+          <div className="inline-flex flex-col items-end gap-1">
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-400 bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-900">
+              <AlertTriangle className="h-3 w-3" aria-hidden="true" />
+              Déverrouillées
+            </span>
+            <button
+              type="button"
+              onClick={onBasculerVerrou}
+              aria-label={`Re-verrouiller les affectations de ${apprenti.prenom} ${apprenti.nom}`}
+              className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-2 py-0.5 text-[10px] font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              <Lock className="h-3 w-3" aria-hidden="true" />
+              Re-verrouiller
+            </button>
+          </div>
+        )}
+        {!verrou.verrouille && !deverrouilleTemp && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-900">
+            <LockOpen className="h-3 w-3" aria-hidden="true" />
+            Modifiables
+          </span>
+        )}
+      </td>
     </tr>
   );
 }
@@ -252,6 +393,7 @@ interface SelectAutoSaveProps {
   valeur: string;
   onChange: (v: string) => void;
   aDestinationDuFlash: boolean;
+  desactive?: boolean;
   ariaLabel: string;
   children: React.ReactNode;
 }
@@ -260,6 +402,7 @@ function SelectAutoSave({
   valeur,
   onChange,
   aDestinationDuFlash,
+  desactive,
   ariaLabel,
   children,
 }: SelectAutoSaveProps) {
@@ -268,10 +411,13 @@ function SelectAutoSave({
       <select
         value={valeur}
         onChange={(e) => onChange(e.target.value)}
+        disabled={desactive}
         aria-label={ariaLabel}
         className={cn(
           'w-full rounded-md border bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-colors',
-          aDestinationDuFlash ? 'border-emerald-400 bg-emerald-50' : 'border-input',
+          aDestinationDuFlash && 'border-emerald-400 bg-emerald-50',
+          !aDestinationDuFlash && desactive && 'border-input bg-muted/40 text-muted-foreground cursor-not-allowed',
+          !aDestinationDuFlash && !desactive && 'border-input',
         )}
       >
         {children}

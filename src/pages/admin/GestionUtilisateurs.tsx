@@ -21,8 +21,10 @@ import type {
 } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
+import { useLivretStore } from '@/store/useLivretStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
 import { filtrerApprentis } from '@/lib/apprentis-accessibles';
+import { evaluerVerrouAffectation } from '@/lib/affectation-verrou';
 import { ModaleApprenti } from '@/components/admin/ModaleApprenti';
 import {
   ModaleUtilisateurStaff,
@@ -54,6 +56,7 @@ export function GestionUtilisateurs() {
   const coordos = useUtilisateursStore((s) => s.coordos);
   const admins = useUtilisateursStore((s) => s.admins);
   const supprimerApprenti = useUtilisateursStore((s) => s.supprimerApprenti);
+  const livrets = useLivretStore((s) => s.livrets);
   const supprimerMaitre = useUtilisateursStore((s) => s.supprimerMaitre);
   const supprimerFormateur = useUtilisateursStore((s) => s.supprimerFormateur);
   const supprimerCoordo = useUtilisateursStore((s) => s.supprimerCoordo);
@@ -184,6 +187,19 @@ export function GestionUtilisateurs() {
   function suppressionBloquee(u: Utilisateur): { bloque: boolean; raison?: string } {
     // Suffixe d'inclusivité au pluriel : « apprenti·e·s » (cohérent CDC).
     const sfx = (n: number) => (n > 1 ? '·s' : '');
+    if (u.role === 'apprenti') {
+      // Verrouillage si le contrat a démarré, fiches existent, ou entretien
+      // initialisé — éviter d'effacer du travail pédagogique. Cohérent avec
+      // le verrou de la page Affectations.
+      const apprenti = u as Apprenti;
+      const livret = Object.values(livrets).find((l) => l.apprentiId === apprenti.id);
+      if (livret) {
+        const v = evaluerVerrouAffectation(apprenti, livret);
+        if (v.verrouille) {
+          return { bloque: true, raison: v.raison };
+        }
+      }
+    }
     if (u.role === 'maitre') {
       const nb = (u as Maitre).apprentiIds.length;
       if (nb > 0) {

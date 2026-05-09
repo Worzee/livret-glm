@@ -15,8 +15,8 @@
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main`) |
 | **Sprints livrés** | **1, 2, 3, 4, 5** + 3 extensions hors-CDC + post-livraison (mobile, UX, verrouillage par champ, 6 apprenti·e·s, **CRUD admin + page affectations**) |
-| **Tests unitaires** | **202 / 202 ✓** (Vitest, 14 fichiers) |
-| **Tests E2E** | **64 / 64 ✓** (Playwright — 52 desktop + 12 mobile Pixel 5) |
+| **Tests unitaires** | **209 / 209 ✓** (Vitest, 15 fichiers) |
+| **Tests E2E** | **66 / 66 ✓** (Playwright — 54 desktop + 12 mobile Pixel 5) |
 | **Bundle JS gzippé** | 101 KB (cible CDC §19.1 : < 500 KB → marge × 4,9) |
 | **Bundle CSS gzippé** | 5,2 KB (cible : < 50 KB → marge × 9,6) |
 | **Chunk PDF lazy** | 495 KB (chargé uniquement au clic « Exporter ») |
@@ -232,6 +232,14 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 - Accessible coordo + admin uniquement (matrice `admin.affectations.gerer`).
 - 5 tests E2E `admin-affectations` : accès refusé côté formateur, table à 6 lignes, réaffectation Léa Karim → Hélène avec compteurs synchronisés, **scénario complet « déplacer les 3 apprenti·e·s de Karim débloque sa suppression »**, persistance d'un changement de formateur après recharge.
 
+#### Verrouillage des affectations (CDC §10.4 — note de gouvernance)
+- Lib `lib/affectation-verrou.ts` (7 tests TDD) : verrou actif si **au moins une fiche de période existe**, **l'entretien tripartite est initialisé**, ou **le contrat a démarré** (date courante ≥ contratDebut). Priorisation : fiches > entretien > contrat.
+- Page Affectations : selects désactivés et fond bleu pâle pour les lignes verrouillées. Bandeau d'info global indiquant le nombre d'apprenti·e·s verrouillé·e·s. Badge « Verrouillées » avec icône cadenas + tooltip explicitant la raison.
+- **Bouton « Déverrouiller temporairement »** par ligne (confirmation 2 clics, auto-annulation 10 s). État non persisté — le verrou se réactive à chaque ouverture de la page (les corrections d'erreur initiale doivent être faites en une session).
+- Page Utilisateurs : suppression d'un·e apprenti·e également bloquée si son livret est actif (cohérence avec la page Affectations). Le bouton supprimer est désactivé avec message explicatif.
+- Adaptation des tests E2E `admin-utilisateurs` : 2 scénarios (suppression bloquée vs. suppression libre pour un contrat futur). Test précédent « suppression de Luca » remplacé par « suppression de Lina avec contrat 2027-09 ».
+- 1 nouveau test E2E `admin-affectations` : « tous les apprenti·e·s des fixtures sont verrouillé·e·s par défaut » + déverrouillage temporaire utilisé dans les autres scénarios.
+
 #### Responsive mobile (cas d'usage terrain)
 - **`MobileMenu`** : bouton hamburger + drawer overlay accessible (`role=dialog`, focus piégé, Esc, fermeture auto après navigation)
 - **`RoleSwitcher` compact** : icônes seules sur mobile, libellé visible à partir de `lg` (1024 px)
@@ -325,6 +333,7 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | `lib/etat-livret.test.ts` | 7 | Cas pédagogiques 6 apprenti·e·s (CDC §24.5) + priorisation |
 | `lib/validation-apprenti.test.ts` | 9 | Validation saisie apprenti·e (email, dates, âge avec avertissement RQTH, affectations) |
 | `lib/validation-utilisateur-staff.test.ts` | 6 | Validation maître / formateur / coordo (champs communs + entrepriseId conditionnel) |
+| `lib/affectation-verrou.test.ts` | 7 | Verrou des affectations : fiches existantes, entretien initié, contrat démarré, priorisation des raisons |
 
 ### Tests E2E Playwright (43 / 43 ✓)
 
@@ -338,7 +347,7 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | `chromium-desktop` | `tableau-de-bord-6-apprentis.spec.ts` | 13 | Liste par rôle + recherche + badges + navigation + sélecteur maître + R3 |
 | `chromium-desktop` | `admin-utilisateurs.spec.ts` | 6 | Accès refusé apprenti, table 11 lignes, création/édition/suppression apprenti·e |
 | `chromium-desktop` | `admin-utilisateurs-staff.spec.ts` | 10 | Menu de création, CRUD staff, suppression bloquée par cohérence, accès formateur partiel |
-| `chromium-desktop` | `admin-affectations.spec.ts` | 5 | Réaffectation maître/formateur, synchronisation compteurs, déblocage suppression |
+| `chromium-desktop` | `admin-affectations.spec.ts` | 6 | Verrou par défaut, déverrouillage temporaire, réaffectation, synchronisation, déblocage suppression Karim |
 | `mobile-pixel5` | `audit-mobile.mobile.spec.ts` | 12 | Aucun débordement horizontal, hamburger, drawer, RoleSwitcher compact, modale R10 dans largeur écran |
 
 ---

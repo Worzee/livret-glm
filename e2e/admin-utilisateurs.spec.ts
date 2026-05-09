@@ -100,20 +100,37 @@ test('édition : modifier un·e apprenti·e existant·e met à jour le tableau d
   ).toBeVisible();
 });
 
-test('suppression : confirmation 2 clics + retrait de la liste et du tableau de bord', async ({ page }) => {
+test('suppression d\'un·e apprenti·e bloquée tant que le contrat est démarré', async ({ page }) => {
+  // Luca a un contrat démarré dans la fixture (2025-09 → 2027-09) — le verrou
+  // empêche sa suppression accidentelle.
+  await selectRole(page, 'Coordinateur·rice');
+  await page.goto('/admin/utilisateurs');
+  const ligneLuca = page.locator('tbody tr', { hasText: /Luca BIANCHI/ });
+  const boutonSupprimer = ligneLuca.getByRole('button', { name: /^Supprimer Luca BIANCHI/i });
+  await expect(boutonSupprimer).toBeDisabled();
+  await expect(ligneLuca.getByText(/Contrat démarré le|fiche|Entretien/i)).toBeVisible();
+});
+
+test('suppression libre d\'un·e apprenti·e dont le contrat n\'a pas démarré', async ({ page }) => {
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/utilisateurs');
 
-  // 1ᵉʳ clic sur Supprimer Luca → bouton passe en "Confirmer"
-  await page.getByRole('button', { name: /^Supprimer Luca BIANCHI/i }).click();
-  // 2ᵉ clic → suppression effective
-  await page.getByRole('button', { name: /Confirmer la suppression de Luca BIANCHI/i }).click();
+  // Crée une apprenti·e avec contrat futur (verrou inactif).
+  await page.getByRole('button', { name: /Nouveau · nouvelle/i }).click();
+  await page.getByRole('menuitem', { name: /^Apprenti·e/i }).click();
+  const modale = page.getByRole('dialog');
+  await modale.getByLabel(/^Prénom/).fill('Lina');
+  await modale.getByLabel(/^Nom/).fill('Test');
+  await modale.getByLabel(/^Email/).fill('lina.test@demo.fr');
+  await modale.getByLabel(/^Date de naissance/).fill('2010-01-01');
+  await modale.getByLabel(/^Début de contrat/).fill('2027-09-01');
+  await modale.getByLabel(/^Fin de contrat/).fill('2029-08-31');
+  await modale.getByRole('button', { name: /Créer l'apprenti·e/i }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 
-  // Plus dans la table (passage de 11 à 10)
-  await expect(page.locator('tbody tr')).toHaveCount(10);
-  // Plus de carte au tableau de bord
-  await page.goto('/');
-  await expect(
-    page.getByRole('button', { name: /Ouvrir le livret de Luca BIANCHI/i }),
-  ).toHaveCount(0);
+  // Suppression libre : 2 clics, livret pas encore actif (contrat futur).
+  const ligneLina = page.locator('tbody tr', { hasText: /Lina TEST/ });
+  await ligneLina.getByRole('button', { name: /^Supprimer Lina TEST/i }).click();
+  await ligneLina.getByRole('button', { name: /Confirmer la suppression de Lina TEST/i }).click();
+  await expect(page.locator('tbody tr', { hasText: /Lina TEST/ })).toHaveCount(0);
 });

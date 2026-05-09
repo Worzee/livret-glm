@@ -29,9 +29,35 @@ test('le coordo accède à la page et voit les 6 apprenti·e·s', async ({ page 
   await expect(page.locator('tbody tr')).toHaveCount(6);
 });
 
+/**
+ * Déverrouille temporairement la ligne d'un·e apprenti·e (verrou actif quand
+ * son contrat a démarré ou des fiches existent — fixtures démo).
+ * 2 clics : « Déverrouiller » puis « Confirmer ».
+ */
+async function deverrouillerLigne(page: import('@playwright/test').Page, nomComplet: string | RegExp) {
+  const ligne = page.locator('tbody tr', { hasText: nomComplet });
+  await ligne.getByRole('button', { name: /^Déverrouiller temporairement/i }).click();
+  await ligne.getByRole('button', { name: /^Confirmer le déverrouillage/i }).click();
+}
+
+test('verrou par défaut : tous les apprenti·e·s des fixtures sont verrouillé·e·s', async ({ page }) => {
+  await selectRole(page, 'Coordinateur·rice');
+  await page.goto('/admin/affectations');
+  // Bandeau d'info global.
+  await expect(page.getByText(/6 apprenti·es verrouillé·es par défaut/i)).toBeVisible();
+  // Les selects de Léa sont disabled.
+  const selectMaitreLea = page
+    .locator('tbody tr', { hasText: /Léa MARTIN/ })
+    .getByLabel(/Maître d'apprentissage de Léa MARTIN/i);
+  await expect(selectMaitreLea).toBeDisabled();
+});
+
 test('réaffecter Léa de Karim vers Hélène — synchronisation des compteurs', async ({ page }) => {
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/affectations');
+
+  // Verrou actif : déverrouiller Léa avant modification.
+  await deverrouillerLigne(page, /Léa MARTIN/);
 
   // Ligne de Léa : on change son maître pour Hélène
   const ligneLea = page.locator('tbody tr', { hasText: /Léa MARTIN/ });
@@ -60,8 +86,9 @@ test('cas final : déplacer tous les apprenti·e·s de Karim débloque sa suppre
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/affectations');
 
-  // Réaffecte les 3 apprenti·e·s de Karim vers Hélène
+  // Réaffecte les 3 apprenti·e·s de Karim vers Hélène (verrou levé pour chacun·e)
   for (const nom of ['Léa MARTIN', 'Théo DUBOIS', 'Sofia PEREIRA']) {
+    await deverrouillerLigne(page, new RegExp(nom));
     await page
       .locator('tbody tr', { hasText: nom })
       .getByLabel(new RegExp(`Maître d'apprentissage de ${nom}`, 'i'))
@@ -97,6 +124,7 @@ test("le changement de formateur référent est persisté", async ({ page }) => 
 
   // Retour aux affectations : on peut maintenant choisir Marc HUBERT pour Léa.
   await page.goto('/admin/affectations');
+  await deverrouillerLigne(page, /Léa MARTIN/);
   await page
     .locator('tbody tr', { hasText: /Léa MARTIN/ })
     .getByLabel(/Formateur référent de Léa MARTIN/i)
