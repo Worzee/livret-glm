@@ -57,6 +57,33 @@ interface UtilisateursStore {
    */
   supprimerApprenti: (id: string) => void;
 
+  // ── Maîtres d'apprentissage ──────────────────────────────────────────────
+  ajouterMaitre: (input: Omit<Maitre, 'id' | 'role' | 'apprentiIds'>) => Maitre;
+  modifierMaitre: (id: string, patch: Partial<Omit<Maitre, 'id' | 'role' | 'apprentiIds'>>) => void;
+  /**
+   * Supprime un maître. **Empêche la suppression** si des apprenti·e·s sont
+   * encore rattaché·e·s à lui (cohérence référentielle). L'UI doit afficher
+   * un message demandant la réaffectation préalable.
+   * @returns true si supprimé, false si bloqué.
+   */
+  supprimerMaitre: (id: string) => boolean;
+
+  // ── Formateurs référents ─────────────────────────────────────────────────
+  ajouterFormateur: (input: Omit<Formateur, 'id' | 'role' | 'promoIds'>) => Formateur;
+  modifierFormateur: (id: string, patch: Partial<Omit<Formateur, 'id' | 'role' | 'promoIds'>>) => void;
+  /**
+   * Supprime un formateur. Empêche la suppression si des apprenti·e·s le
+   * référencent encore via `formateurReferentId`.
+   */
+  supprimerFormateur: (id: string) => boolean;
+
+  // ── Coordo (administratif·ve) ────────────────────────────────────────────
+  /** Création réservée au rôle admin (matrice §6). Vérification UI préalable. */
+  ajouterCoordo: (input: Omit<Coordo, 'id' | 'role' | 'formationIds'>) => Coordo;
+  modifierCoordo: (id: string, patch: Partial<Omit<Coordo, 'id' | 'role' | 'formationIds'>>) => void;
+  /** Suppression libre — aucune référence vers le coordo dans les autres types. */
+  supprimerCoordo: (id: string) => void;
+
   /** Réinitialise le store aux fixtures (utilisé par BoutonReinitialiserDemo). */
   reinitialiser: () => void;
 }
@@ -181,6 +208,74 @@ export const useUtilisateursStore = create<UtilisateursStore>()(
           useApprentiActifStore.getState().setApprentiActif(restants[0] ?? null);
         }
       },
+
+      // ── Maîtres ────────────────────────────────────────────────────────
+      ajouterMaitre: (input) => {
+        const id = `u-maitre-${crypto.randomUUID().slice(0, 8)}`;
+        const maitre: Maitre = { id, role: 'maitre', apprentiIds: [], ...input };
+        set({ maitres: { ...get().maitres, [id]: maitre } });
+        return maitre;
+      },
+      modifierMaitre: (id, patch) =>
+        set((s) => {
+          const maitre = s.maitres[id];
+          if (!maitre) return s;
+          return { maitres: { ...s.maitres, [id]: { ...maitre, ...patch } } };
+        }),
+      supprimerMaitre: (id) => {
+        const maitre = get().maitres[id];
+        if (!maitre) return false;
+        // Cohérence référentielle : pas de suppression tant qu'il/elle a des apprenti·e·s.
+        if (maitre.apprentiIds.length > 0) return false;
+        const { [id]: _retire, ...maitresSansLui } = get().maitres;
+        void _retire;
+        set({ maitres: maitresSansLui });
+        return true;
+      },
+
+      // ── Formateurs ────────────────────────────────────────────────────
+      ajouterFormateur: (input) => {
+        const id = `u-formateur-${crypto.randomUUID().slice(0, 8)}`;
+        const formateur: Formateur = { id, role: 'formateur', promoIds: [], ...input };
+        set({ formateurs: { ...get().formateurs, [id]: formateur } });
+        return formateur;
+      },
+      modifierFormateur: (id, patch) =>
+        set((s) => {
+          const f = s.formateurs[id];
+          if (!f) return s;
+          return { formateurs: { ...s.formateurs, [id]: { ...f, ...patch } } };
+        }),
+      supprimerFormateur: (id) => {
+        const apprentisLies = Object.values(get().apprentis).filter(
+          (a) => a.formateurReferentId === id,
+        );
+        if (apprentisLies.length > 0) return false;
+        const { [id]: _retire, ...sansLui } = get().formateurs;
+        void _retire;
+        set({ formateurs: sansLui });
+        return true;
+      },
+
+      // ── Coordo ────────────────────────────────────────────────────────
+      ajouterCoordo: (input) => {
+        const id = `u-coordo-${crypto.randomUUID().slice(0, 8)}`;
+        const coordo: Coordo = { id, role: 'coordo', formationIds: [], ...input };
+        set({ coordos: { ...get().coordos, [id]: coordo } });
+        return coordo;
+      },
+      modifierCoordo: (id, patch) =>
+        set((s) => {
+          const c = s.coordos[id];
+          if (!c) return s;
+          return { coordos: { ...s.coordos, [id]: { ...c, ...patch } } };
+        }),
+      supprimerCoordo: (id) =>
+        set((s) => {
+          const { [id]: _retire, ...sansLui } = s.coordos;
+          void _retire;
+          return { coordos: sansLui };
+        }),
 
       reinitialiser: () => set(etatInitial()),
     }),

@@ -14,9 +14,9 @@
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main`) |
-| **Sprints livrés** | **1, 2, 3, 4, 5** + 3 extensions hors-CDC + post-livraison (mobile, UX, verrouillage par champ, 6 apprenti·e·s, **CRUD apprenti·e·s côté admin**) |
-| **Tests unitaires** | **195 / 195 ✓** (Vitest, 13 fichiers) |
-| **Tests E2E** | **49 / 49 ✓** (Playwright — 37 desktop + 12 mobile Pixel 5) |
+| **Sprints livrés** | **1, 2, 3, 4, 5** + 3 extensions hors-CDC + post-livraison (mobile, UX, verrouillage par champ, 6 apprenti·e·s, **CRUD complet 4 rôles côté admin**) |
+| **Tests unitaires** | **208 / 208 ✓** (Vitest, 14 fichiers) |
+| **Tests E2E** | **58 / 58 ✓** (Playwright — 46 desktop + 12 mobile Pixel 5) |
 | **Bundle JS gzippé** | 101 KB (cible CDC §19.1 : < 500 KB → marge × 4,9) |
 | **Bundle CSS gzippé** | 5,2 KB (cible : < 50 KB → marge × 9,6) |
 | **Chunk PDF lazy** | 495 KB (chargé uniquement au clic « Exporter ») |
@@ -205,6 +205,18 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 - Bouton « Réinitialiser la démo » : reset aussi `useUtilisateursStore`.
 - 6 tests E2E `admin-utilisateurs` : accès refusé côté apprenti, table à 11 lignes, création de Sarah TURC visible côté formateur, validation bloquante, édition propagée au tableau de bord, suppression avec confirmation 2 clics.
 
+#### Gestion des utilisateurs — étape 2 : maître / formateur / coordo
+- Store étendu avec mutations CRUD pour les 3 rôles staff. Création : id auto, listes d'affectation (`apprentiIds` / `promoIds` / `formationIds`) initialisées à vide.
+- **Suppression intelligente avec cohérence référentielle** :
+  - Maître : refusée si `apprentiIds.length > 0` (le store retourne `false`, l'UI désactive le bouton et affiche le compte « N apprenti·e·s rattaché·e·s »).
+  - Formateur : refusée si des apprenti·e·s référencent ce formateur via `formateurReferentId`.
+  - Coordo : suppression libre (aucune référence inverse).
+- Lib `lib/validation-utilisateur-staff.ts` (6 tests TDD) : validation partagée pour les 3 rôles ; `entrepriseId` obligatoire seulement pour le maître.
+- Composant `ModaleUtilisateurStaff` (modale unique paramétrée par `role`) : 4 champs communs (prénom, nom, email, téléphone) + 1 champ conditionnel (entrepriseId pour maître). Évite la duplication de code entre les 3 modales.
+- UI page admin transformée : le bouton « + Nouvel·le apprenti·e » devient un menu déroulant « Nouveau · nouvelle… » avec 4 entrées (apprenti·e / maître / formateur / coordo). L'entrée Coordo n'apparaît que pour l'admin (droit exclusif §6).
+- Édition par ligne fonctionnelle pour les 4 rôles. Le compte admin (Guillaume FERRERI, pilote unique) n'est ni modifiable ni supprimable depuis l'UI.
+- 9 tests E2E `admin-utilisateurs-staff` : menu de création par rôle, création d'un maître + apparition dans le sélecteur de tableau de bord, suppression bloquée pour Karim (3 apprenti·e·s rattaché·e·s), création d'un formateur, création d'un coordo réservée admin, édition d'un maître, immuabilité du compte admin.
+
 #### Responsive mobile (cas d'usage terrain)
 - **`MobileMenu`** : bouton hamburger + drawer overlay accessible (`role=dialog`, focus piégé, Esc, fermeture auto après navigation)
 - **`RoleSwitcher` compact** : icônes seules sur mobile, libellé visible à partir de `lg` (1024 px)
@@ -296,7 +308,8 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | `lib/deverrouillage-fiche.test.ts` | 8 | R10 (validation motif min/max) |
 | `lib/apprentis-accessibles.test.ts` | 18 | Filtre par rôle (R3) + tri fr-FR + recherche normalisée |
 | `lib/etat-livret.test.ts` | 7 | Cas pédagogiques 6 apprenti·e·s (CDC §24.5) + priorisation |
-| `lib/validation-apprenti.test.ts` | 8 | Validation saisie apprenti·e (email, dates, âge, affectations) |
+| `lib/validation-apprenti.test.ts` | 9 | Validation saisie apprenti·e (email, dates, âge avec avertissement RQTH, affectations) |
+| `lib/validation-utilisateur-staff.test.ts` | 6 | Validation maître / formateur / coordo (champs communs + entrepriseId conditionnel) |
 
 ### Tests E2E Playwright (43 / 43 ✓)
 
@@ -309,6 +322,7 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | `chromium-desktop` | `sprint5-bout-en-bout.spec.ts` | 3 | Parcours complet + export PDF non vide |
 | `chromium-desktop` | `tableau-de-bord-6-apprentis.spec.ts` | 13 | Liste par rôle + recherche + badges + navigation + sélecteur maître + R3 |
 | `chromium-desktop` | `admin-utilisateurs.spec.ts` | 6 | Accès refusé apprenti, table 11 lignes, création/édition/suppression apprenti·e |
+| `chromium-desktop` | `admin-utilisateurs-staff.spec.ts` | 9 | Menu de création, CRUD maître/formateur/coordo, suppression bloquée par cohérence |
 | `mobile-pixel5` | `audit-mobile.mobile.spec.ts` | 12 | Aucun débordement horizontal, hamburger, drawer, RoleSwitcher compact, modale R10 dans largeur écran |
 
 ---

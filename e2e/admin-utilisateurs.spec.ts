@@ -35,8 +35,9 @@ test('le coordo crée un·e nouvel·le apprenti·e — la carte apparaît au tab
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/utilisateurs');
 
-  // Ouvre la modale
-  await page.getByRole('button', { name: /Nouvel·le apprenti·e/i }).click();
+  // Ouvre la modale via le menu de création
+  await page.getByRole('button', { name: /Nouveau · nouvelle/i }).click();
+  await page.getByRole('menuitem', { name: /^Apprenti·e/i }).click();
   const modale = page.getByRole('dialog');
   await expect(modale).toBeVisible();
 
@@ -73,7 +74,8 @@ test('le coordo crée un·e nouvel·le apprenti·e — la carte apparaît au tab
 test('validation : prénom obligatoire bloque la soumission', async ({ page }) => {
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/utilisateurs');
-  await page.getByRole('button', { name: /Nouvel·le apprenti·e/i }).click();
+  await page.getByRole('button', { name: /Nouveau · nouvelle/i }).click();
+  await page.getByRole('menuitem', { name: /^Apprenti·e/i }).click();
   // Submit sans rien remplir : l'erreur s'affiche
   await page.getByRole('button', { name: /Créer l'apprenti·e/i }).click();
   await expect(page.getByText(/Le prénom est obligatoire/i)).toBeVisible();

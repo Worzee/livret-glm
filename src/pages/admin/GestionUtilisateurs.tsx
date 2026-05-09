@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  ChevronDown,
   GraduationCap,
   HardHat,
   Lock,
@@ -10,23 +11,37 @@ import {
   Trash2,
   UserCog,
 } from 'lucide-react';
-import type { Apprenti, Role, Utilisateur } from '@/types';
+import type {
+  Apprenti,
+  Coordo,
+  Formateur,
+  Maitre,
+  Role,
+  Utilisateur,
+} from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
 import { filtrerApprentis } from '@/lib/apprentis-accessibles';
 import { ModaleApprenti } from '@/components/admin/ModaleApprenti';
+import {
+  ModaleUtilisateurStaff,
+  type RoleStaff,
+} from '@/components/admin/ModaleUtilisateurStaff';
 import { cn } from '@/lib/utils';
 
 /**
  * Page d'administration — gestion des utilisateurs.
  * Référence : cahier des charges v1.3, section 6 (matrice droits) et §24.6.
  *
- * Étape 1 (livrée) : CRUD complet sur les apprenti·e·s.
- * Étape 2 (à venir) : maître / formateur / coordo.
+ * CRUD complet sur les 4 rôles métier :
+ *   - apprenti·e  : coordo + admin
+ *   - maître      : coordo + admin
+ *   - formateur   : coordo + admin
+ *   - coordo      : admin uniquement (droit exclusif)
  *
- * Accessible aux rôles coordo et admin uniquement (matrice §6). Les autres
- * voient un écran d'accès refusé.
+ * La suppression d'un maître/formateur est bloquée s'il/elle a encore des
+ * apprenti·e·s rattaché·e·s — l'UI le signale et désactive le bouton.
  */
 
 type FiltreRole = 'tous' | Role;
@@ -39,23 +54,30 @@ export function GestionUtilisateurs() {
   const coordos = useUtilisateursStore((s) => s.coordos);
   const admins = useUtilisateursStore((s) => s.admins);
   const supprimerApprenti = useUtilisateursStore((s) => s.supprimerApprenti);
+  const supprimerMaitre = useUtilisateursStore((s) => s.supprimerMaitre);
+  const supprimerFormateur = useUtilisateursStore((s) => s.supprimerFormateur);
+  const supprimerCoordo = useUtilisateursStore((s) => s.supprimerCoordo);
 
   const [requete, setRequete] = useState('');
   const [filtreRole, setFiltreRole] = useState<FiltreRole>('tous');
-  const [modaleOuverte, setModaleOuverte] = useState(false);
+  const [menuCreationOuvert, setMenuCreationOuvert] = useState(false);
+  // Modale apprenti·e (création/édition).
+  const [modaleApprentiOuverte, setModaleApprentiOuverte] = useState(false);
   const [apprentiEnEdition, setApprentiEnEdition] = useState<Apprenti | undefined>();
-  // Confirmation 2 clics pour suppression — id du compte en cours, ou null.
+  // Modale staff (maître/formateur/coordo).
+  const [modaleStaffOuverte, setModaleStaffOuverte] = useState(false);
+  const [roleStaffEnCours, setRoleStaffEnCours] = useState<RoleStaff>('maitre');
+  const [staffEnEdition, setStaffEnEdition] = useState<Maitre | Formateur | Coordo | undefined>();
+  // Confirmation 2 clics pour suppression — id en cours, ou null.
   const [confirmationSuppression, setConfirmationSuppression] = useState<string | null>(null);
 
-  // Auto-annulation de la confirmation après 10 s (pattern cohérent avec les
-  // autres confirmations de l'app).
   useEffect(() => {
     if (!confirmationSuppression) return;
     const t = setTimeout(() => setConfirmationSuppression(null), 10_000);
     return () => clearTimeout(t);
   }, [confirmationSuppression]);
 
-  // Liste plate de tous les utilisateurs (toutes catégories) pour la table.
+  // Liste plate de tous les utilisateurs pour la table.
   const tousUtilisateurs: Utilisateur[] = useMemo(
     () => [
       ...Object.values(apprentis),
@@ -71,11 +93,7 @@ export function GestionUtilisateurs() {
     let r = tousUtilisateurs;
     if (filtreRole !== 'tous') r = r.filter((u) => u.role === filtreRole);
     if (requete.trim()) {
-      // Réutilise le helper apprentis-accessibles (filtre nom/prénom normalisé).
-      r = filtrerApprentis(
-        r as Apprenti[], // typage permissif — la fonction n'utilise que prenom/nom.
-        requete,
-      );
+      r = filtrerApprentis(r as Apprenti[], requete);
     }
     return [...r].sort(
       (a, b) =>
@@ -85,8 +103,17 @@ export function GestionUtilisateurs() {
     );
   }, [tousUtilisateurs, requete, filtreRole]);
 
-  // Accès — coordo ou admin (vérification après les hooks pour respecter
-  // les rules-of-hooks)
+  // Pré-calcul du nombre d'apprenti·e·s rattaché·e·s à chaque formateur,
+  // pour signaler la suppression bloquée.
+  const formateursAvecApprentis = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const a of Object.values(apprentis)) {
+      counts[a.formateurReferentId] = (counts[a.formateurReferentId] ?? 0) + 1;
+    }
+    return counts;
+  }, [apprentis]);
+
+  // Accès page
   const peutVoirPage =
     peutEditer(roleActif, 'admin.utilisateurs.creer-apprenti') ||
     peutEditer(roleActif, 'admin.utilisateurs.creer-coordo');
@@ -96,31 +123,86 @@ export function GestionUtilisateurs() {
   }
 
   const peutCreerApprenti = peutEditer(roleActif, 'admin.utilisateurs.creer-apprenti');
+  const peutCreerMaitre = peutEditer(roleActif, 'admin.utilisateurs.creer-maitre');
+  const peutCreerFormateur = peutEditer(roleActif, 'admin.utilisateurs.creer-formateur');
+  const peutCreerCoordo = peutEditer(roleActif, 'admin.utilisateurs.creer-coordo');
   const peutModifier = peutEditer(roleActif, 'admin.utilisateurs.modifier');
   const peutSupprimer = peutEditer(roleActif, 'admin.utilisateurs.supprimer');
 
-  function ouvrirCreation() {
+  function ouvrirCreationApprenti() {
     setApprentiEnEdition(undefined);
-    setModaleOuverte(true);
+    setModaleApprentiOuverte(true);
+    setMenuCreationOuvert(false);
   }
-
-  function ouvrirEdition(apprenti: Apprenti) {
-    setApprentiEnEdition(apprenti);
-    setModaleOuverte(true);
+  function ouvrirCreationStaff(role: RoleStaff) {
+    setRoleStaffEnCours(role);
+    setStaffEnEdition(undefined);
+    setModaleStaffOuverte(true);
+    setMenuCreationOuvert(false);
   }
-
-  function fermerModale() {
-    setModaleOuverte(false);
-    setApprentiEnEdition(undefined);
-  }
-
-  function declencherSuppression(id: string) {
-    if (confirmationSuppression === id) {
-      supprimerApprenti(id);
-      setConfirmationSuppression(null);
-    } else {
-      setConfirmationSuppression(id);
+  function ouvrirEdition(u: Utilisateur) {
+    if (u.role === 'apprenti') {
+      setApprentiEnEdition(u as Apprenti);
+      setModaleApprentiOuverte(true);
+    } else if (u.role === 'maitre' || u.role === 'formateur' || u.role === 'coordo') {
+      setRoleStaffEnCours(u.role);
+      setStaffEnEdition(u as Maitre | Formateur | Coordo);
+      setModaleStaffOuverte(true);
     }
+  }
+
+  function declencherSuppression(u: Utilisateur) {
+    if (confirmationSuppression !== u.id) {
+      setConfirmationSuppression(u.id);
+      return;
+    }
+    // 2ᵉ clic : suppression effective.
+    let ok = true;
+    switch (u.role) {
+      case 'apprenti':
+        supprimerApprenti(u.id);
+        break;
+      case 'maitre':
+        ok = supprimerMaitre(u.id);
+        break;
+      case 'formateur':
+        ok = supprimerFormateur(u.id);
+        break;
+      case 'coordo':
+        supprimerCoordo(u.id);
+        break;
+    }
+    setConfirmationSuppression(null);
+    if (!ok) {
+      // Le store a refusé la suppression (références non vides). Note : le
+      // bouton est censé être désactivé en amont — ce cas ne doit pas arriver
+      // en pratique, mais on garde un fallback silencieux.
+    }
+  }
+
+  /** Le bouton supprimer doit-il être désactivé pour cet·te utilisateur·rice ? */
+  function suppressionBloquee(u: Utilisateur): { bloque: boolean; raison?: string } {
+    // Suffixe d'inclusivité au pluriel : « apprenti·e·s » (cohérent CDC).
+    const sfx = (n: number) => (n > 1 ? '·s' : '');
+    if (u.role === 'maitre') {
+      const nb = (u as Maitre).apprentiIds.length;
+      if (nb > 0) {
+        return {
+          bloque: true,
+          raison: `${nb} apprenti·e${sfx(nb)} rattaché·e${sfx(nb)} — réaffectez-les avant suppression.`,
+        };
+      }
+    }
+    if (u.role === 'formateur') {
+      const nb = formateursAvecApprentis[u.id] ?? 0;
+      if (nb > 0) {
+        return {
+          bloque: true,
+          raison: `${nb} apprenti·e${sfx(nb)} référence${nb > 1 ? 'nt' : ''} ce formateur — réaffectez avant suppression.`,
+        };
+      }
+    }
+    return { bloque: false };
   }
 
   return (
@@ -132,16 +214,69 @@ export function GestionUtilisateurs() {
             Création et administration des comptes des 4 rôles métier.
           </p>
         </div>
-        {peutCreerApprenti && (
+        {/* Menu de création — un dropdown qui propose tous les rôles autorisés. */}
+        <div className="relative">
           <button
             type="button"
-            onClick={ouvrirCreation}
+            onClick={() => setMenuCreationOuvert((o) => !o)}
+            aria-haspopup="menu"
+            aria-expanded={menuCreationOuvert}
             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
-            Nouvel·le apprenti·e
+            Nouveau · nouvelle…
+            <ChevronDown className="h-4 w-4" aria-hidden="true" />
           </button>
-        )}
+          {menuCreationOuvert && (
+            <>
+              {/* Backdrop pour fermer en cliquant à côté */}
+              <button
+                type="button"
+                aria-label="Fermer le menu"
+                className="fixed inset-0 z-10"
+                onClick={() => setMenuCreationOuvert(false)}
+              />
+              <div
+                role="menu"
+                className="absolute right-0 top-full z-20 mt-1 min-w-[16rem] rounded-md border border-border bg-card shadow-lg"
+              >
+                {peutCreerApprenti && (
+                  <OptionCreation
+                    Icon={GraduationCap}
+                    couleur="text-role-apprenti"
+                    label="Apprenti·e"
+                    onClick={ouvrirCreationApprenti}
+                  />
+                )}
+                {peutCreerMaitre && (
+                  <OptionCreation
+                    Icon={HardHat}
+                    couleur="text-role-maitre"
+                    label="Maître d'apprentissage"
+                    onClick={() => ouvrirCreationStaff('maitre')}
+                  />
+                )}
+                {peutCreerFormateur && (
+                  <OptionCreation
+                    Icon={UserCog}
+                    couleur="text-role-formateur"
+                    label="Formateur référent"
+                    onClick={() => ouvrirCreationStaff('formateur')}
+                  />
+                )}
+                {peutCreerCoordo && (
+                  <OptionCreation
+                    Icon={ShieldCheck}
+                    couleur="text-role-coordo"
+                    label="Coordinateur·rice"
+                    hint="Réservé administrateur·rice"
+                    onClick={() => ouvrirCreationStaff('coordo')}
+                  />
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </header>
 
       {/* Filtres */}
@@ -181,8 +316,12 @@ export function GestionUtilisateurs() {
             </thead>
             <tbody className="divide-y divide-border">
               {filtres.map((u) => {
-                const estApprenti = u.role === 'apprenti';
                 const enConfirmation = confirmationSuppression === u.id;
+                const blocage = suppressionBloquee(u);
+                // Le rôle admin n'est pas modifiable depuis cette page (compte
+                // pilote unique). Tout le reste l'est si le rôle actif a les droits.
+                const editable = u.role !== 'admin' && peutModifier;
+                const supprimable = u.role !== 'admin' && peutSupprimer && !blocage.bloque;
                 return (
                   <tr key={u.id} className={cn(enConfirmation && 'bg-red-50')}>
                     <td className="px-4 py-2 font-medium">
@@ -196,45 +335,47 @@ export function GestionUtilisateurs() {
                     </td>
                     <td className="px-4 py-2 text-muted-foreground">{u.email}</td>
                     <td className="px-4 py-2 text-right">
-                      {estApprenti ? (
-                        <div className="inline-flex items-center gap-1">
-                          {peutModifier && (
-                            <button
-                              type="button"
-                              onClick={() => ouvrirEdition(u as Apprenti)}
-                              aria-label={`Modifier ${u.prenom} ${u.nom}`}
-                              className="rounded-md border border-input bg-background p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                            >
-                              <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                            </button>
-                          )}
-                          {peutSupprimer && (
-                            <button
-                              type="button"
-                              onClick={() => declencherSuppression(u.id)}
-                              aria-label={
-                                enConfirmation
-                                  ? `Confirmer la suppression de ${u.prenom} ${u.nom}`
-                                  : `Supprimer ${u.prenom} ${u.nom}`
-                              }
-                              className={cn(
-                                'inline-flex items-center gap-1 rounded-md p-1.5 transition-colors',
-                                enConfirmation
-                                  ? 'border border-red-300 bg-red-600 text-white hover:bg-red-700'
-                                  : 'border border-input bg-background text-muted-foreground hover:bg-secondary hover:text-foreground',
-                              )}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                              {enConfirmation && (
-                                <span className="text-xs font-medium">Confirmer</span>
-                              )}
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-xs italic text-muted-foreground">
-                          Étape 2
-                        </span>
+                      <div className="inline-flex items-center gap-1">
+                        {editable && (
+                          <button
+                            type="button"
+                            onClick={() => ouvrirEdition(u)}
+                            aria-label={`Modifier ${u.prenom} ${u.nom}`}
+                            className="rounded-md border border-input bg-background p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                          >
+                            <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                          </button>
+                        )}
+                        {peutSupprimer && u.role !== 'admin' && (
+                          <button
+                            type="button"
+                            disabled={!supprimable}
+                            onClick={() => declencherSuppression(u)}
+                            aria-label={
+                              enConfirmation
+                                ? `Confirmer la suppression de ${u.prenom} ${u.nom}`
+                                : `Supprimer ${u.prenom} ${u.nom}`
+                            }
+                            title={blocage.raison}
+                            className={cn(
+                              'inline-flex items-center gap-1 rounded-md p-1.5 transition-colors',
+                              enConfirmation
+                                ? 'border border-red-300 bg-red-600 text-white hover:bg-red-700'
+                                : 'border border-input bg-background text-muted-foreground hover:bg-secondary hover:text-foreground',
+                              !supprimable && 'opacity-40 cursor-not-allowed hover:bg-background',
+                            )}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                            {enConfirmation && (
+                              <span className="text-xs font-medium">Confirmer</span>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                      {blocage.bloque && (
+                        <p className="mt-0.5 text-[10px] text-amber-700 italic">
+                          {blocage.raison}
+                        </p>
                       )}
                     </td>
                   </tr>
@@ -246,9 +387,21 @@ export function GestionUtilisateurs() {
       )}
 
       <ModaleApprenti
-        ouvert={modaleOuverte}
+        ouvert={modaleApprentiOuverte}
         apprenti={apprentiEnEdition}
-        onAnnuler={fermerModale}
+        onAnnuler={() => {
+          setModaleApprentiOuverte(false);
+          setApprentiEnEdition(undefined);
+        }}
+      />
+      <ModaleUtilisateurStaff
+        ouvert={modaleStaffOuverte}
+        role={roleStaffEnCours}
+        utilisateur={staffEnEdition}
+        onAnnuler={() => {
+          setModaleStaffOuverte(false);
+          setStaffEnEdition(undefined);
+        }}
       />
     </div>
   );
@@ -269,6 +422,32 @@ const ICONES_ROLE = {
 function IconeRole({ role }: { role: Role }) {
   const { Icon, classe } = ICONES_ROLE[role];
   return <Icon className={cn('h-4 w-4 shrink-0', classe)} aria-hidden="true" />;
+}
+
+interface OptionCreationProps {
+  Icon: typeof GraduationCap;
+  couleur: string;
+  label: string;
+  hint?: string;
+  onClick: () => void;
+}
+
+function OptionCreation({ Icon, couleur, label, hint, onClick }: OptionCreationProps) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-secondary focus-visible:outline-none focus-visible:bg-secondary"
+    >
+      <Icon className={cn('h-4 w-4 shrink-0', couleur)} aria-hidden="true" />
+      <div className="flex-1 min-w-0">
+        <p className="font-medium">{label}</p>
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      </div>
+      <Plus className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+    </button>
+  );
 }
 
 interface FiltreRoleSelectProps {
