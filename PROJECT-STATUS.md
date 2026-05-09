@@ -14,9 +14,9 @@
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main`) |
-| **Sprints livrés** | **1, 2, 3, 4, 5** + 3 extensions hors-CDC + post-livraison (mobile, UX, verrouillage par champ, 6 apprenti·e·s, **CRUD complet 4 rôles côté admin**) |
-| **Tests unitaires** | **208 / 208 ✓** (Vitest, 14 fichiers) |
-| **Tests E2E** | **58 / 58 ✓** (Playwright — 46 desktop + 12 mobile Pixel 5) |
+| **Sprints livrés** | **1, 2, 3, 4, 5** + 3 extensions hors-CDC + post-livraison (mobile, UX, verrouillage par champ, 6 apprenti·e·s, **CRUD admin + page affectations**) |
+| **Tests unitaires** | **202 / 202 ✓** (Vitest, 14 fichiers) |
+| **Tests E2E** | **64 / 64 ✓** (Playwright — 52 desktop + 12 mobile Pixel 5) |
 | **Bundle JS gzippé** | 101 KB (cible CDC §19.1 : < 500 KB → marge × 4,9) |
 | **Bundle CSS gzippé** | 5,2 KB (cible : < 50 KB → marge × 9,6) |
 | **Chunk PDF lazy** | 495 KB (chargé uniquement au clic « Exporter ») |
@@ -217,6 +217,21 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 - Édition par ligne fonctionnelle pour les 4 rôles. Le compte admin (Guillaume FERRERI, pilote unique) n'est ni modifiable ni supprimable depuis l'UI.
 - 9 tests E2E `admin-utilisateurs-staff` : menu de création par rôle, création d'un maître + apparition dans le sélecteur de tableau de bord, suppression bloquée pour Karim (3 apprenti·e·s rattaché·e·s), création d'un formateur, création d'un coordo réservée admin, édition d'un maître, immuabilité du compte admin.
 
+#### Droits admin élargis au formateur référent
+- Matrice §6 mise à jour : `creer-apprenti` et `creer-maitre` ouverts au formateur (besoin terrain : enregistrer un nouveau contrat sans attendre une intervention coordo). `creer-formateur` reste coordo + admin ; `creer-coordo` reste exclusif admin.
+- Sidebar : la section « Administration » filtre désormais lien par lien selon les droits. Le formateur voit « Utilisateurs » mais pas « Formations » ni « Affectations ».
+- Modification / suppression restent réservées coordo + admin (le formateur peut créer mais pas maintenir).
+- 1 test E2E supplémentaire (`admin-utilisateurs-staff`) : accès limité du formateur.
+
+#### Gestion des affectations — étape 3 (CDC §10.4)
+- Refonte de `/admin/affectations` : table avec une ligne par apprenti·e, selects auto-save pour formation / maître / formateur. Indicateur visuel ✓ vert pendant 1,5 s à chaque sauvegarde.
+- Recherche par nom + filtre par formation.
+- Synchronisation automatique des `apprentiIds` du maître à la réaffectation (l'ancien perd la référence, le nouveau la reçoit). Le store déjà capable depuis l'étape 1.
+- Le changement de maître propage l'`entrepriseId` par défaut.
+- Le changement de formation propage le `formationId` au livret correspondant (cohérence avec le référentiel des évaluations finales).
+- Accessible coordo + admin uniquement (matrice `admin.affectations.gerer`).
+- 5 tests E2E `admin-affectations` : accès refusé côté formateur, table à 6 lignes, réaffectation Léa Karim → Hélène avec compteurs synchronisés, **scénario complet « déplacer les 3 apprenti·e·s de Karim débloque sa suppression »**, persistance d'un changement de formateur après recharge.
+
 #### Responsive mobile (cas d'usage terrain)
 - **`MobileMenu`** : bouton hamburger + drawer overlay accessible (`role=dialog`, focus piégé, Esc, fermeture auto après navigation)
 - **`RoleSwitcher` compact** : icônes seules sur mobile, libellé visible à partir de `lg` (1024 px)
@@ -322,7 +337,8 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | `chromium-desktop` | `sprint5-bout-en-bout.spec.ts` | 3 | Parcours complet + export PDF non vide |
 | `chromium-desktop` | `tableau-de-bord-6-apprentis.spec.ts` | 13 | Liste par rôle + recherche + badges + navigation + sélecteur maître + R3 |
 | `chromium-desktop` | `admin-utilisateurs.spec.ts` | 6 | Accès refusé apprenti, table 11 lignes, création/édition/suppression apprenti·e |
-| `chromium-desktop` | `admin-utilisateurs-staff.spec.ts` | 9 | Menu de création, CRUD maître/formateur/coordo, suppression bloquée par cohérence |
+| `chromium-desktop` | `admin-utilisateurs-staff.spec.ts` | 10 | Menu de création, CRUD staff, suppression bloquée par cohérence, accès formateur partiel |
+| `chromium-desktop` | `admin-affectations.spec.ts` | 5 | Réaffectation maître/formateur, synchronisation compteurs, déblocage suppression |
 | `mobile-pixel5` | `audit-mobile.mobile.spec.ts` | 12 | Aucun débordement horizontal, hamburger, drawer, RoleSwitcher compact, modale R10 dans largeur écran |
 
 ---
@@ -462,16 +478,14 @@ Les 6 apprenti·e·s sont en place avec leurs livrets scénarisés. Cf. section 
 | Adapter le sélecteur d'ajout de compétence dans `TableauTriColonnes` | 0,2 session |
 | Support XLSX via dynamic import de SheetJS (optionnel) | 0,5 session |
 
-### C. Modules administratifs réels (sprint dédié post-étape 1)
+### C. Modules administratifs réels — partiellement livré
 
-Aujourd'hui placeholder dans `/admin/*`. Pour l'étape 2 :
-
-- Formulaires CRUD utilisateurs (création apprenti / maître / formateur / coordo)
-- Formulaires CRUD formations (création + édition + suppression)
-- Écran d'affectation apprenti·e ↔ formation/maître/formateur
-- Persistance Zustand (aujourd'hui en fixtures statiques)
-
-→ noté dans `TODO-etape-2.md`.
+| Sous-tâche | État |
+|---|---|
+| CRUD utilisateurs (4 rôles) | ✅ livré (étapes 1 + 2) |
+| Page d'affectation apprenti·e ↔ formation/maître/formateur | ✅ livré (étape 3) |
+| Persistance Zustand des utilisateurs | ✅ livré (`useUtilisateursStore`) |
+| Formulaires CRUD formations (`/admin/formations`) | ⏳ encore placeholder |
 
 ### D. Mise à jour formelle du cahier des charges en v1.5
 

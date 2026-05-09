@@ -137,37 +137,58 @@ export const useUtilisateursStore = create<UtilisateursStore>()(
         return apprenti;
       },
 
-      modifierApprenti: (id, patch) =>
-        set((s) => {
-          const apprenti = s.apprentis[id];
-          if (!apprenti) return s;
-          const nouveau: Apprenti = { ...apprenti, ...patch };
-          const updates: Partial<UtilisateursStore> = {
-            apprentis: { ...s.apprentis, [id]: nouveau },
-          };
-          // Si le maître a changé, mettre à jour les `apprentiIds` des deux maîtres concernés.
-          if (patch.maitreApprentissageId && patch.maitreApprentissageId !== apprenti.maitreApprentissageId) {
-            const ancien = s.maitres[apprenti.maitreApprentissageId];
-            const nouveauMaitre = s.maitres[patch.maitreApprentissageId];
-            const nouveauxMaitres = { ...s.maitres };
-            if (ancien) {
-              nouveauxMaitres[ancien.id] = {
-                ...ancien,
-                apprentiIds: ancien.apprentiIds.filter((aid) => aid !== id),
-              };
-            }
-            if (nouveauMaitre) {
-              nouveauxMaitres[nouveauMaitre.id] = {
-                ...nouveauMaitre,
-                apprentiIds: nouveauMaitre.apprentiIds.includes(id)
-                  ? nouveauMaitre.apprentiIds
-                  : [...nouveauMaitre.apprentiIds, id],
-              };
-            }
-            updates.maitres = nouveauxMaitres;
+      modifierApprenti: (id, patch) => {
+        const s = get();
+        const apprenti = s.apprentis[id];
+        if (!apprenti) return;
+        const nouveau: Apprenti = { ...apprenti, ...patch };
+        const updates: Partial<UtilisateursStore> = {
+          apprentis: { ...s.apprentis, [id]: nouveau },
+        };
+        // Si le maître a changé, mettre à jour les `apprentiIds` des deux maîtres concernés.
+        if (patch.maitreApprentissageId && patch.maitreApprentissageId !== apprenti.maitreApprentissageId) {
+          const ancien = s.maitres[apprenti.maitreApprentissageId];
+          const nouveauMaitre = s.maitres[patch.maitreApprentissageId];
+          const nouveauxMaitres = { ...s.maitres };
+          if (ancien) {
+            nouveauxMaitres[ancien.id] = {
+              ...ancien,
+              apprentiIds: ancien.apprentiIds.filter((aid) => aid !== id),
+            };
           }
-          return updates;
-        }),
+          if (nouveauMaitre) {
+            nouveauxMaitres[nouveauMaitre.id] = {
+              ...nouveauMaitre,
+              apprentiIds: nouveauMaitre.apprentiIds.includes(id)
+                ? nouveauMaitre.apprentiIds
+                : [...nouveauMaitre.apprentiIds, id],
+            };
+          }
+          updates.maitres = nouveauxMaitres;
+        }
+        set(updates);
+        // Propagation au livret : `formationId` est dupliqué entre `Apprenti` et
+        // `Livret` (le livret est lié à un référentiel de formation). Si la
+        // formation change, on doit mettre à jour le livret aussi pour que les
+        // évaluations restent cohérentes avec le bon référentiel.
+        if (patch.formationId && patch.formationId !== apprenti.formationId) {
+          useLivretStore.setState((sl) => {
+            const livret = Object.values(sl.livrets).find((l) => l.apprentiId === id);
+            if (!livret) return sl;
+            return {
+              livrets: {
+                ...sl.livrets,
+                [livret.id]: {
+                  ...livret,
+                  formationId: patch.formationId!,
+                  modifieLe: new Date().toISOString(),
+                },
+              },
+              derniereModification: new Date().toISOString(),
+            };
+          });
+        }
+      },
 
       supprimerApprenti: (id) => {
         const s = get();
