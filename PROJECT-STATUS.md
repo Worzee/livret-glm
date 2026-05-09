@@ -2,7 +2,7 @@
 
 **Dernière mise à jour** : 2026-05-09
 **Version applicative** : 0.1.0
-**Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3) **livrée**
+**Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3) **livrée + administration complète post-livraison**
 **Pilote métier** : Guillaume FERRERI
 
 ---
@@ -14,11 +14,12 @@
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main`) |
-| **Sprints livrés** | **1, 2, 3, 4, 5** + 3 extensions hors-CDC + post-livraison (mobile, UX, verrouillage par champ, 6 apprenti·e·s, **CRUD admin + page affectations**) |
+| **Dernier commit déployé** | `8bf0a9e` — verrouillage des affectations quand le livret est actif |
+| **Sprints livrés** | **1, 2, 3, 4, 5** + 3 extensions hors-CDC + post-livraison (mobile, UX, 6 apprenti·e·s, tableau de bord, **administration : CRUD 4 rôles + affectations + verrouillage**) |
 | **Tests unitaires** | **209 / 209 ✓** (Vitest, 15 fichiers) |
 | **Tests E2E** | **66 / 66 ✓** (Playwright — 54 desktop + 12 mobile Pixel 5) |
-| **Bundle JS gzippé** | 101 KB (cible CDC §19.1 : < 500 KB → marge × 4,9) |
-| **Bundle CSS gzippé** | 5,2 KB (cible : < 50 KB → marge × 9,6) |
+| **Bundle JS gzippé** | 109 KB (cible CDC §19.1 : < 500 KB → marge × 4,6) |
+| **Bundle CSS gzippé** | 5,9 KB (cible : < 50 KB → marge × 8,5) |
 | **Chunk PDF lazy** | 495 KB (chargé uniquement au clic « Exporter ») |
 | **Préflight VPS** | 11 / 11 ✓ |
 | **TTFB VPS** | ~80 ms |
@@ -31,7 +32,11 @@
 
 - **Frontend** : Vite 6 + React 18 + TypeScript 5.7 (strict)
 - **Style** : Tailwind CSS 3 + shadcn/ui (tokens CSS variables)
-- **State** : Zustand 5 + middleware `persist` (localStorage, schema **v4**)
+- **State** : Zustand 5 + middleware `persist` — 4 stores persistés en localStorage :
+  - `livret-donnees` (schema v5) — livrets, fiches, entretiens, évaluations
+  - `livret-role-actif` (rôle + maître actif)
+  - `livret-apprenti-actif` (id de l'apprenti·e affiché·e)
+  - `livret-utilisateurs` (schema v1) — apprenti·e·s, maîtres, formateurs, coordos, admins
 - **Routing** : React Router v6
 - **PDF** : `@react-pdf/renderer` 4 (lazy-loaded — chargé uniquement au clic « Exporter »)
 - **Tests unitaires** : Vitest 2 + Testing Library + jsdom
@@ -134,119 +139,107 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 ### Sprint 5 — Export PDF + polish + démo
 
 #### Phase A — Briques métier
-- **R22 Clôture livret** : type `ClotureLivret`, lib `cloture-livret.ts` (4 fonctions, 14 tests TDD), composant `BandeauCloture` 4 états (gris / vert avec bouton / vert avec confirmation / bleu si clôturé), R22 appliquée dans grilles compétences + attitudes
-- **R10 Déverrouillage motivé** : type `EntreeDeverrouillage`, lib `deverrouillage-fiche.ts` (validation motif ≥ 10 caractères, 8 tests TDD), composant `DialogDeverrouillage` (modale a11y, focus piégé, Esc), historique consultable sous chaque fiche
-- **Bouton « Réinitialiser la démo »** : footer, confirmation 2 clics + auto-annulation 10 s + reset rôle vers formateur
+- **R22 Clôture livret** : type `ClotureLivret`, lib `cloture-livret.ts` (4 fonctions, 14 tests TDD), composant `BandeauCloture` 4 états, R22 appliquée dans grilles compétences + attitudes
+- **R10 Déverrouillage motivé** : type `EntreeDeverrouillage`, lib `deverrouillage-fiche.ts` (validation motif ≥ 10 caractères, 8 tests TDD), composant `DialogDeverrouillage` (modale a11y), historique consultable sous chaque fiche
+- **Bouton « Réinitialiser la démo »** : footer, confirmation 2 clics + auto-annulation 10 s
 
 #### Phase B — Export PDF
-- `npm install @react-pdf/renderer`
 - `components/pdf/LivretPdf.tsx` (7 pages : garde, organisation, entretien, fiches × 3, évaluations, annexes)
-- `components/pdf/styles.ts` + `format.ts` (helpers de formatage)
-- `components/pdf/BoutonExportPdf.tsx` + `ExportPdfLazy.tsx` (lazy via `React.lazy`)
+- Lazy-loading via `React.lazy` (chunk séparé 495 KB gzip, chargé au clic)
 - Garde-fou C14 (avertissement si livret > 50 pages estimées)
 - Nom de fichier : `livret-apprentissage-NOM-Prenom-AAAA-MM-JJ.pdf`
 - Visible uniquement pour le formateur (matrice droits `export-pdf`)
 
 #### Phase C — Polish
-- **`DEMO.md`** étoffé : script minuté 10 min + mode 5 min + plan B + checklist post-démo
-- **`README.md`** utilisateur final (9 sections : démarrage, commandes, structure, sécurité…)
-- **`perf-sprint-5.md`** : mesures bundle + TTFB + procédure Lighthouse manuelle + cibles CDC
+- `DEMO.md` étoffé : script minuté 10 min + mode 5 min + plan B + checklist post-démo
+- `README.md` utilisateur final
+- `perf-sprint-5.md` : mesures bundle + procédure Lighthouse + cibles CDC
 
-#### Phase D — Tests E2E Playwright (5 scénarios CDC §22.2.3)
-- `e2e/sprint1-role-switcher.spec.ts` (4 tests) : bandeau démo, role switcher 5 rôles
-- `e2e/sprint2-coedition.spec.ts` (3 tests) : co-édition tri-colonnes + R21
-- `e2e/sprint3-droits-entretien.spec.ts` (3 tests) : droits granulaires entretien
-- `e2e/sprint4-evaluation-finale.spec.ts` (5 tests) : grilles + synthèse + R22
-- `e2e/sprint5-bout-en-bout.spec.ts` (3 tests) : parcours complet + export PDF non vide
-- Total : **18 tests desktop ✓** en ~10 s
+#### Phase D — Tests E2E Playwright initiaux
+- 5 specs couvrant les sprints 1 à 5 (18 tests desktop)
 
-### Améliorations post-Sprint 5
+### Améliorations post-Sprint 5 — UX et cohérence
 
 #### Cohérence des actions destructrices (5 actions, 1 pattern)
-- **`BoutonSigner`** (composant commun) : confirmation 2 clics avant signature (apposée à chaque slot, fiche + entretien)
-- **`BoutonSupprimer`** (composant commun) : confirmation 2 clics avant suppression d'une ligne — appliqué au tableau tri-colonnes (variants `icon` / `text`) ET au Suivi GRETA CFA
+- `BoutonSigner` : confirmation 2 clics avant signature (chaque slot, fiche + entretien)
+- `BoutonSupprimer` : confirmation 2 clics avant suppression d'une ligne (variants `icon` / `text`)
 - Bandeau R22 : confirmation 2 clics avec récapitulatif
 - Modale R10 : motif obligatoire ≥ 10 caractères
 - Réinitialisation démo : confirmation 2 clics + auto-annulation 10 s
 
-#### Bugfix R21 (régression silencieuse découverte en revue)
+#### Bugfix R21 (régression silencieuse)
 - Avant : un rôle pouvait modifier ses zones (observation, colonnes du tableau) **après** avoir signé, ce qui invalidait sa signature *par effet de bord*
 - Helper `peutEncoreEditerFiche(fiche, role)` dans `lib/transitions-fiche.ts` (6 tests TDD)
 - Appliqué dans `ZoneObservation`, `TableauTriColonnes`, `SuiviGretaCfa`
-- Mention UI explicite : « Figée par signature » au lieu de simple « Lecture seule »
+- Mention UI explicite : « Figée par signature »
 
 #### Refonte UX « Organisation du suivi »
-- Modèle de données : `string` libre → `ChampOrganisationSuivi { date?, commentaire?, verrouille? }`
+- Modèle : `string` libre → `ChampOrganisationSuivi { date?, commentaire?, verrouille? }`
 - UI : chaque carte coupée en deux (date picker natif + commentaire libre)
 - **Toggle verrouiller / déverrouiller par champ** (sans modale, sans motif — simple toggle)
 - Schema localStorage v3 → v4 (migration = reset, cohérent avec stratégie étape 1)
-- PDF mis à jour pour afficher proprement date + commentaire
+
+#### Responsive mobile (cas d'usage terrain)
+- `MobileMenu` : hamburger + drawer accessible (`role=dialog`, focus piégé, Esc, fermeture auto)
+- `RoleSwitcher` compact : icônes seules sur mobile, libellé visible à partir de `lg`
+- Touch targets ≥ 44 px (norme WCAG 2.5.5)
+- Audit Playwright dédié `e2e/audit-mobile.mobile.spec.ts` (12 tests sur Pixel 5)
+
+### Améliorations post-Sprint 5 — Tableau de bord et fixtures
 
 #### Tableau de bord — 6 apprenti·e·s (CDC §24.5)
 - Fixtures étendues : Léa MARTIN (cas principal), Théo DUBOIS (« bon élève »), Sofia PEREIRA (« alerte R7 »), Minh NGUYEN (« démarrage »), Aya KOUAMÉ (« désaccord R10 »), Luca BIANCHI (« mi-parcours standard »)
 - 2 maîtres d'apprentissage : Karim BENALI (Le Gourmet — Léa, Théo, Sofia) + Hélène ROCHE (La Brasserie du Rhône — Minh, Aya, Luca). Sophie DUBOIS reste formatrice unique de la promo
-- Nouveau store `useApprentiActifStore` (id persisté en localStorage) + hook `useApprentiActif()` — résout l'apprenti·e affiché·e en tenant compte du rôle (R3 : un·e apprenti·e ne consulte que son propre livret)
-- Refonte `TableauDeBord` : liste filtrée par rôle (matrice §6) + recherche par nom/prénom (insensible à la casse et aux accents) + cartes avec badges démonstratifs
+- Store `useApprentiActifStore` (id persisté) + hook `useApprentiActif()`
+- Refonte `TableauDeBord` : liste filtrée par rôle (matrice §6) + recherche par nom/prénom (insensible casse + accents) + cartes avec badges démonstratifs
 - Lib `apprentis-accessibles` (18 tests TDD) — filtre selon rôle, tri canonique fr-FR, recherche normalisée
-- Lib `etat-livret` (7 tests TDD) — calcule un cas pédagogique (cloture, alerte-r7, desaccord, demarrage, toutes-signees, en-cours) pour l'affichage des badges
-- 7 pages livret + 2 grilles d'évaluation passées de `apprentiLeaMartin` en dur à `useApprentiActif()` ; composant partagé `AucunApprentiSelectionne` pour l'état dégradé
-- Sélecteur de maître d'apprentissage dans le tableau de bord (visible en rôle maître uniquement) : bascule entre Karim BENALI (Le Gourmet — Léa, Théo, Sofia) et Hélène ROCHE (La Brasserie du Rhône — Minh, Aya, Luca). Le changement réinit l'apprenti·e actif·ve sur le 1ᵉʳ apprenti·e du nouveau maître.
-- 13 tests E2E `tableau-de-bord-6-apprentis` : compte par rôle, recherche, badges, navigation, sélecteur de maître, R3 maintenue côté apprenti
-- Bouton « Réinitialiser la démo » étendu : remet aussi l'apprenti·e actif·ve à Léa et le maître actif à Karim
+- Lib `etat-livret` (7 tests TDD) — calcule un cas pédagogique pour les badges
+- 7 pages livret + 2 grilles passées de `apprentiLeaMartin` en dur à `useApprentiActif()`
+- Sélecteur de maître d'apprentissage en mode maître (bascule Karim ↔ Hélène, réinit l'apprenti·e actif·ve sur le 1ᵉʳ apprenti·e du nouveau maître)
+- En rôle apprenti·e : on s'incarne dans l'apprenti·e actif·ve (workflow démo « regardez Sofia vue par chaque rôle ») — R3 toujours respectée
 
-#### Gestion des utilisateurs — étape 1 : apprenti·e·s (CDC §6 + §24.6)
-- Nouveau store `useUtilisateursStore` (Zustand persist) : 5 records indexés par id (apprentis, maitres, formateurs, coordos, admins). Initialisé depuis les fixtures.
-- Helper `lib/creation-livret.ts` : crée un livret vierge réutilisable (fixtures + création admin).
-- Lib `lib/validation-apprenti.ts` (8 tests TDD) : email format, dates contrat cohérentes, âge ∈ [15, 30] à la date de début.
-- `useUtilisateursStore.ajouterApprenti(input, auteurId)` : crée l'apprenti·e + son livret vierge + ajoute la référence dans les `apprentiIds` du maître. `modifierApprenti` propage les changements de maître. `supprimerApprenti` retire le livret + les références maître + replie l'apprenti·e actif·ve.
-- Refonte `/admin/utilisateurs` : table avec recherche, filtre par rôle, bouton « + Nouvel·le apprenti·e ». Édition par ligne (icône crayon → modale pré-remplie), suppression (confirmation 2 clics inline avec auto-annulation 10 s).
-- Modale `ModaleApprenti` (création + édition) : 3 sections (identité, contrat, affectation initiale). Validation côté UI avec messages d'erreur ciblés. Esc / clic arrière-plan / Annuler ferment sans sauvegarder. Focus auto sur le 1ᵉʳ champ.
-- Refacto : `getApprentiById` / `getMaitreById` déplacés des fixtures vers le store (versions `getApprentiByIdFromStore` / `getMaitreByIdFromStore`) pour que les ajouts à la volée soient visibles partout. `TableauDeBord`, `useUserStore` et `useApprentiActifStore` adaptés.
-- Bouton « Réinitialiser la démo » : reset aussi `useUtilisateursStore`.
-- 6 tests E2E `admin-utilisateurs` : accès refusé côté apprenti, table à 11 lignes, création de Sarah TURC visible côté formateur, validation bloquante, édition propagée au tableau de bord, suppression avec confirmation 2 clics.
+### Administration (post-livraison étape 1)
 
-#### Gestion des utilisateurs — étape 2 : maître / formateur / coordo
-- Store étendu avec mutations CRUD pour les 3 rôles staff. Création : id auto, listes d'affectation (`apprentiIds` / `promoIds` / `formationIds`) initialisées à vide.
+#### Étape 1 — CRUD apprenti·e·s
+- Store `useUtilisateursStore` (Zustand persist) : 5 records indexés par id (apprentis / maitres / formateurs / coordos / admins). Initialisé depuis les fixtures.
+- Helper `lib/creation-livret.ts` : crée un livret vierge réutilisable
+- Lib `lib/validation-apprenti.ts` (9 tests TDD) : email, dates contrat, âge ∈ [15, 29] avec **avertissement non-bloquant > 29 ans** (RQTH, sportifs de haut niveau, créateurs d'entreprise, reconversion)
+- `ajouterApprenti` crée l'apprenti·e + son livret vierge + propage la référence au maître
+- `modifierApprenti` propage les changements de maître + de formation (vers le livret)
+- `supprimerApprenti` retire le livret + les références maître + replie l'apprenti·e actif·ve
+- Refonte `/admin/utilisateurs` : table avec recherche + filtre par rôle, édition par ligne, suppression avec confirmation 2 clics
+- Modale `ModaleApprenti` (création + édition) : 3 sections (identité, contrat, affectation initiale). Validation côté UI, focus auto, Esc / clic arrière-plan / Annuler
+- Bouton « Réinitialiser la démo » étend la portée du reset au store des utilisateurs
+
+#### Étape 2 — CRUD maître / formateur / coordo
+- Store étendu avec mutations CRUD pour les 3 rôles staff
 - **Suppression intelligente avec cohérence référentielle** :
-  - Maître : refusée si `apprentiIds.length > 0` (le store retourne `false`, l'UI désactive le bouton et affiche le compte « N apprenti·e·s rattaché·e·s »).
-  - Formateur : refusée si des apprenti·e·s référencent ce formateur via `formateurReferentId`.
-  - Coordo : suppression libre (aucune référence inverse).
-- Lib `lib/validation-utilisateur-staff.ts` (6 tests TDD) : validation partagée pour les 3 rôles ; `entrepriseId` obligatoire seulement pour le maître.
-- Composant `ModaleUtilisateurStaff` (modale unique paramétrée par `role`) : 4 champs communs (prénom, nom, email, téléphone) + 1 champ conditionnel (entrepriseId pour maître). Évite la duplication de code entre les 3 modales.
-- UI page admin transformée : le bouton « + Nouvel·le apprenti·e » devient un menu déroulant « Nouveau · nouvelle… » avec 4 entrées (apprenti·e / maître / formateur / coordo). L'entrée Coordo n'apparaît que pour l'admin (droit exclusif §6).
-- Édition par ligne fonctionnelle pour les 4 rôles. Le compte admin (Guillaume FERRERI, pilote unique) n'est ni modifiable ni supprimable depuis l'UI.
-- 9 tests E2E `admin-utilisateurs-staff` : menu de création par rôle, création d'un maître + apparition dans le sélecteur de tableau de bord, suppression bloquée pour Karim (3 apprenti·e·s rattaché·e·s), création d'un formateur, création d'un coordo réservée admin, édition d'un maître, immuabilité du compte admin.
+  - Maître : refusée si `apprentiIds.length > 0`
+  - Formateur : refusée si des apprenti·e·s référencent ce formateur
+  - Coordo : suppression libre
+- Lib `lib/validation-utilisateur-staff.ts` (6 tests TDD) : validation partagée pour les 3 rôles ; `entrepriseId` obligatoire seulement pour le maître
+- `ModaleUtilisateurStaff` (modale unique paramétrée par `role`) — évite la duplication entre les 3 modales
+- Le bouton « + Nouvel·le apprenti·e » devient un menu déroulant « Nouveau · nouvelle… » avec 4 entrées. L'option Coordo n'apparaît que pour l'admin (droit exclusif)
+- Édition par ligne fonctionnelle pour les 4 rôles ; le compte admin pilote (Guillaume FERRERI) n'est ni modifiable ni supprimable
 
 #### Droits admin élargis au formateur référent
-- Matrice §6 mise à jour : `creer-apprenti` et `creer-maitre` ouverts au formateur (besoin terrain : enregistrer un nouveau contrat sans attendre une intervention coordo). `creer-formateur` reste coordo + admin ; `creer-coordo` reste exclusif admin.
-- Sidebar : la section « Administration » filtre désormais lien par lien selon les droits. Le formateur voit « Utilisateurs » mais pas « Formations » ni « Affectations ».
-- Modification / suppression restent réservées coordo + admin (le formateur peut créer mais pas maintenir).
-- 1 test E2E supplémentaire (`admin-utilisateurs-staff`) : accès limité du formateur.
+- Matrice §6 mise à jour : `creer-apprenti` et `creer-maitre` ouverts au formateur (besoin terrain : enregistrer un nouveau contrat sans attendre une intervention coordo)
+- Sidebar : la section « Administration » filtre désormais lien par lien selon les droits. Le formateur voit « Utilisateurs » mais pas « Formations » ni « Affectations »
+- Modification / suppression restent réservées coordo + admin
 
-#### Gestion des affectations — étape 3 (CDC §10.4)
-- Refonte de `/admin/affectations` : table avec une ligne par apprenti·e, selects auto-save pour formation / maître / formateur. Indicateur visuel ✓ vert pendant 1,5 s à chaque sauvegarde.
-- Recherche par nom + filtre par formation.
-- Synchronisation automatique des `apprentiIds` du maître à la réaffectation (l'ancien perd la référence, le nouveau la reçoit). Le store déjà capable depuis l'étape 1.
-- Le changement de maître propage l'`entrepriseId` par défaut.
-- Le changement de formation propage le `formationId` au livret correspondant (cohérence avec le référentiel des évaluations finales).
-- Accessible coordo + admin uniquement (matrice `admin.affectations.gerer`).
-- 5 tests E2E `admin-affectations` : accès refusé côté formateur, table à 6 lignes, réaffectation Léa Karim → Hélène avec compteurs synchronisés, **scénario complet « déplacer les 3 apprenti·e·s de Karim débloque sa suppression »**, persistance d'un changement de formateur après recharge.
+#### Étape 3 — Page d'affectations (CDC §10.4)
+- Refonte de `/admin/affectations` : table avec une ligne par apprenti·e, selects auto-save pour formation / maître / formateur. Indicateur visuel ✓ vert pendant 1,5 s à chaque sauvegarde
+- Recherche par nom + filtre par formation
+- Synchronisation automatique des `apprentiIds` du maître à la réaffectation (l'ancien perd la référence, le nouveau la reçoit)
+- Le changement de maître propage l'`entrepriseId` par défaut
+- Le changement de formation propage le `formationId` au livret correspondant (cohérence référentiel)
+- Accessible coordo + admin uniquement
 
-#### Verrouillage des affectations (CDC §10.4 — note de gouvernance)
-- Lib `lib/affectation-verrou.ts` (7 tests TDD) : verrou actif si **au moins une fiche de période existe**, **l'entretien tripartite est initialisé**, ou **le contrat a démarré** (date courante ≥ contratDebut). Priorisation : fiches > entretien > contrat.
-- Page Affectations : selects désactivés et fond bleu pâle pour les lignes verrouillées. Bandeau d'info global indiquant le nombre d'apprenti·e·s verrouillé·e·s. Badge « Verrouillées » avec icône cadenas + tooltip explicitant la raison.
-- **Bouton « Déverrouiller temporairement »** par ligne (confirmation 2 clics, auto-annulation 10 s). État non persisté — le verrou se réactive à chaque ouverture de la page (les corrections d'erreur initiale doivent être faites en une session).
-- Page Utilisateurs : suppression d'un·e apprenti·e également bloquée si son livret est actif (cohérence avec la page Affectations). Le bouton supprimer est désactivé avec message explicatif.
-- Adaptation des tests E2E `admin-utilisateurs` : 2 scénarios (suppression bloquée vs. suppression libre pour un contrat futur). Test précédent « suppression de Luca » remplacé par « suppression de Lina avec contrat 2027-09 ».
-- 1 nouveau test E2E `admin-affectations` : « tous les apprenti·e·s des fixtures sont verrouillé·e·s par défaut » + déverrouillage temporaire utilisé dans les autres scénarios.
-
-#### Responsive mobile (cas d'usage terrain)
-- **`MobileMenu`** : bouton hamburger + drawer overlay accessible (`role=dialog`, focus piégé, Esc, fermeture auto après navigation)
-- **`RoleSwitcher` compact** : icônes seules sur mobile, libellé visible à partir de `lg` (1024 px)
-- Header simplifié sur petit écran (logo + role switcher en icônes + hamburger)
-- Touch targets ≥ 44 px (norme WCAG 2.5.5)
-- Audit Playwright dédié `e2e/audit-mobile.mobile.spec.ts` (12 tests sur Pixel 5 393×851) : aucun débordement horizontal sur les 5 pages principales, navigation mobile validée
-- **Fix bug** : icônes du rôle actif devenaient invisibles sur mobile après tap (le `:hover` mobile écrasait `bg-role-X`) — `hover:bg-background` retiré de l'état actif
+#### Verrouillage des affectations (note de gouvernance)
+- Lib `lib/affectation-verrou.ts` (7 tests TDD) : verrou actif si **au moins une fiche de période existe**, **l'entretien tripartite est initialisé**, ou **le contrat a démarré** (date courante ≥ contratDebut). Priorisation : fiches > entretien > contrat
+- Page Affectations : selects désactivés + fond bleu pâle pour les lignes verrouillées. Bandeau d'info global indiquant le nombre d'apprenti·e·s protégé·e·s. Badge cadenas + tooltip raison
+- **Bouton « Déverrouiller temporairement »** par ligne (confirmation 2 clics, auto-annulation 10 s). État non persisté — le verrou se réactive à chaque ouverture de la page
+- Page Utilisateurs : suppression d'apprenti·e également bloquée si livret actif (cohérence)
 
 ---
 
@@ -256,21 +249,21 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 
 - 4ᵉ rôle dans le système, couleur `#0e7490` (cyan-700)
 - Section *Administration* dans la sidebar (Utilisateurs, Formations, Affectations)
-- 10 nouvelles ressources `admin.*` dans la matrice de droits
-- Pages placeholder (formulaires CRUD à venir en sprint dédié)
+- 11 ressources `admin.*` dans la matrice de droits (utilisateurs/formations/affectations/référentiels)
+- Pages CRUD réelles : utilisateurs ✅ + affectations ✅ ; formations encore placeholder
 - Fixture : Martine LEFÈVRE
 - **Aucun droit pédagogique** (testé exhaustivement)
 
 ### Extension 2 — Rôle Admin (super-utilisateur, vous)
 
-- 5ᵉ rôle, couleur `#4338ca` (indigo-700) + icône 👑
+- 5ᵉ rôle, couleur `#4338ca` (indigo-700)
 - Fixture : Guillaume FERRERI
 - Partage avec coordo : créer apprenti·e/maître/formateur, modifier/supprimer utilisateurs, gérer formations + affectations
 - **Droit exclusif** : créer un coordo
 - **Aucun droit pédagogique** (commentaires, niveaux, signatures, observations)
-- Tests TDD complets (10 cas) : pas un seul faux-positif côté pédagogie
+- Tests TDD complets : pas un seul faux-positif côté pédagogie
 
-### Extension 3 — Import de référentiels (Phase A + B sur 4)
+### Extension 3 — Import de référentiels (Phase A + B livrées sur 4)
 
 - **Phase A** : `Competence.sousFamille?: string` + `Referentiel.niveauxColonnes?: 2 | 3` + `source?` + ressource `admin.referentiels.gerer`
 - **Phase B** : `lib/import-referentiel.ts` complet (parsing CSV maison, encodage UTF-8 / Windows-1252, séparateur auto, 24 / 24 tests TDD)
@@ -285,15 +278,15 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | Règle | Sujet | État | Tests |
 |---|---|---|---|
 | R1 | 1 livret par apprenti·e | ✓ | implicite (modèle) |
-| R2 | `contratFin > contratDebut` | ✓ | type-level |
-| R3 | Apprenti·e voit son livret seul | ✓ | matrice droits |
+| R2 | `contratFin > contratDebut` | ✓ | type-level + validation modale |
+| R3 | Apprenti·e voit son livret seul | ✓ | matrice droits + `apprentis-accessibles` |
 | R4 | Maître voit ses apprenti·e·s | ✓ | matrice droits |
 | R5 | Formateur voit sa promo | ✓ | matrice droits |
 | R6 | 1 entretien par livret | ✓ | `initialiserEntretien` idempotent |
 | R7 | Alerte si > 60 j sans entretien | ✓ | 5 tests |
 | R8 | Verrouillage progressif entretien | ✓ | 2 tests (`peutEncoreEditer`) |
 | R9 | 3 signatures = tout figé | ✓ | 1 test |
-| **R10** | **Déverrouillage formateur + motif** | ✓ | **8 tests TDD + modale UI + traçabilité** |
+| **R10** | **Déverrouillage formateur + motif** | ✓ | 8 tests TDD + modale UI + traçabilité |
 | R11 | `dateFin > dateDebut` période | ✓ | 3 tests |
 | R12 | Pas de chevauchement | ✓ | 4 tests |
 | R13 | Création période N | ✓ | 5 tests |
@@ -304,8 +297,8 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | R18 | Signer son propre slot | ✓ | testé matrice |
 | R19 | Horodatage ISO 8601 au clic | ✓ | dans `signer()` du store |
 | R20 | Champs requis avant signature | ✓ | 7 tests `validerSignature` |
-| **R21** | **Retrait signature impossible** | ✓ | **6 tests TDD `peutEncoreEditerFiche` + bugfix UI** |
-| **R22** | **Clôture livret** | ✓ | **14 tests TDD + bandeau 4 états + grilles figées** |
+| **R21** | **Retrait signature impossible** | ✓ | 6 tests TDD `peutEncoreEditerFiche` + bugfix UI |
+| **R22** | **Clôture livret** | ✓ | 14 tests TDD + bandeau 4 états + grilles figées |
 | R23 | Synthèse temps réel | ✓ | recalcul à chaque render |
 | R24 | Apprenti·e consulte à tout moment | ✓ | matrice droits + bandeau lecture |
 
@@ -313,9 +306,9 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 
 ---
 
-## 7. Tests (187 unitaires + 40 E2E)
+## 7. Tests (209 unitaires + 66 E2E)
 
-### Tests unitaires Vitest (187 / 187 ✓)
+### Tests unitaires Vitest (209 / 209 ✓ — 15 fichiers)
 
 | Fichier | Tests | Périmètre |
 |---|---|---|
@@ -331,11 +324,11 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | `lib/deverrouillage-fiche.test.ts` | 8 | R10 (validation motif min/max) |
 | `lib/apprentis-accessibles.test.ts` | 18 | Filtre par rôle (R3) + tri fr-FR + recherche normalisée |
 | `lib/etat-livret.test.ts` | 7 | Cas pédagogiques 6 apprenti·e·s (CDC §24.5) + priorisation |
-| `lib/validation-apprenti.test.ts` | 9 | Validation saisie apprenti·e (email, dates, âge avec avertissement RQTH, affectations) |
+| `lib/validation-apprenti.test.ts` | 9 | Saisie apprenti·e (email, dates, âge avec avertissement RQTH, affectations) |
 | `lib/validation-utilisateur-staff.test.ts` | 6 | Validation maître / formateur / coordo (champs communs + entrepriseId conditionnel) |
-| `lib/affectation-verrou.test.ts` | 7 | Verrou des affectations : fiches existantes, entretien initié, contrat démarré, priorisation des raisons |
+| `lib/affectation-verrou.test.ts` | 7 | Verrou des affectations : fiches existantes, entretien initié, contrat démarré, priorisation |
 
-### Tests E2E Playwright (43 / 43 ✓)
+### Tests E2E Playwright (66 / 66 ✓)
 
 | Projet | Fichier | Tests | Périmètre |
 |---|---|---|---|
@@ -345,7 +338,7 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 | `chromium-desktop` | `sprint4-evaluation-finale.spec.ts` | 5 | Grilles + synthèse + R22 |
 | `chromium-desktop` | `sprint5-bout-en-bout.spec.ts` | 3 | Parcours complet + export PDF non vide |
 | `chromium-desktop` | `tableau-de-bord-6-apprentis.spec.ts` | 13 | Liste par rôle + recherche + badges + navigation + sélecteur maître + R3 |
-| `chromium-desktop` | `admin-utilisateurs.spec.ts` | 6 | Accès refusé apprenti, table 11 lignes, création/édition/suppression apprenti·e |
+| `chromium-desktop` | `admin-utilisateurs.spec.ts` | 7 | Accès, création/édition apprenti·e, suppression bloquée vs libre |
 | `chromium-desktop` | `admin-utilisateurs-staff.spec.ts` | 10 | Menu de création, CRUD staff, suppression bloquée par cohérence, accès formateur partiel |
 | `chromium-desktop` | `admin-affectations.spec.ts` | 6 | Verrou par défaut, déverrouillage temporaire, réaffectation, synchronisation, déblocage suppression Karim |
 | `mobile-pixel5` | `audit-mobile.mobile.spec.ts` | 12 | Aucun débordement horizontal, hamburger, drawer, RoleSwitcher compact, modale R10 dans largeur écran |
@@ -365,31 +358,27 @@ LIVRET APPRENTISSAGE/
 ├── cahier-des-charges-livret-apprentissage-v1.3.md
 ├── design-system/MASTER.md
 ├── scripts/                        # déploiement VPS
-│   ├── .env.deploy.example
-│   ├── setup-vps.sh, deploy.sh, verifier-vps.sh
-│   ├── docker-compose.livret.yml, nginx-livret.conf
-│   └── README.md
-├── e2e/                            # tests Playwright
+├── e2e/                            # tests Playwright (10 specs)
 │   ├── helpers.ts                  # resetState + selectRole
 │   ├── sprint1-role-switcher.spec.ts
 │   ├── sprint2-coedition.spec.ts
 │   ├── sprint3-droits-entretien.spec.ts
 │   ├── sprint4-evaluation-finale.spec.ts
 │   ├── sprint5-bout-en-bout.spec.ts
+│   ├── tableau-de-bord-6-apprentis.spec.ts
+│   ├── admin-utilisateurs.spec.ts
+│   ├── admin-utilisateurs-staff.spec.ts
+│   ├── admin-affectations.spec.ts
 │   └── audit-mobile.mobile.spec.ts # projet mobile-pixel5 uniquement
 ├── playwright.config.ts            # 2 projets (desktop + mobile)
 ├── package.json                    # scripts: dev, test, e2e, e2e:ui, lint…
-├── vite.config.ts, vitest.config.ts, tsconfig*.json
-├── tailwind.config.ts, postcss.config.js, components.json
-├── eslint.config.js, .prettierrc.json, .gitignore
-├── index.html
 └── src/
     ├── main.tsx, App.tsx, vite-env.d.ts
     ├── styles/index.css
     ├── types/index.ts              # CDC §7 + ChampOrganisationSuivi + ClotureLivret + EntreeDeverrouillage
-    ├── lib/                        # logique métier pure
-    │   ├── droits.ts               # matrice §6 (32 ressources × 5 rôles)
-    │   ├── transitions-fiche.ts    # R15/R16/R17/R21 (machine + non-régression)
+    ├── lib/                        # logique métier pure (15 modules + 15 fichiers tests)
+    │   ├── droits.ts               # matrice §6 (33 ressources × 5 rôles)
+    │   ├── transitions-fiche.ts    # R15/R16/R17/R21
     │   ├── validation-signature.ts # R18/R20
     │   ├── regles-periode.ts       # R11/R12/R13/R14
     │   ├── regles-entretien.ts     # R6/R7/R8/R9 + progression
@@ -398,72 +387,62 @@ LIVRET APPRENTISSAGE/
     │   ├── cloture-livret.ts       # R22 (clôture)
     │   ├── deverrouillage-fiche.ts # R10 (motif obligatoire)
     │   ├── import-referentiel.ts   # parsing CSV (encodage, 2/3 cols)
-    │   ├── utils.ts                # cn() helper
-    │   └── *.test.ts               # 10 fichiers de tests, 162 tests
-    ├── store/
-    │   ├── useUserStore.ts         # rôle actif (persist)
-    │   └── useLivretStore.ts       # données livret (persist v4)
+    │   ├── apprentis-accessibles.ts# filtre/tri/recherche par rôle
+    │   ├── etat-livret.ts          # cas pédagogique pour badges tableau de bord
+    │   ├── creation-livret.ts      # livret vierge réutilisable
+    │   ├── validation-apprenti.ts  # saisie apprenti·e (avec avertissements)
+    │   ├── validation-utilisateur-staff.ts # saisie maître/formateur/coordo
+    │   ├── affectation-verrou.ts   # verrou affectation si livret actif
+    │   └── utils.ts                # cn() helper
+    ├── store/                      # 4 stores Zustand persistés
+    │   ├── useUserStore.ts         # rôle actif + maître actif
+    │   ├── useLivretStore.ts       # données livret (persist v5)
+    │   ├── useApprentiActifStore.ts# id apprenti·e affiché·e
+    │   └── useUtilisateursStore.ts # CRUD utilisateurs (persist v1)
     ├── fixtures/
-    │   ├── utilisateurs.ts         # 5 utilisateurs (1 par rôle)
+    │   ├── utilisateurs.ts         # 6 apprenti·e·s + 2 maîtres + Sophie + Martine + Guillaume
     │   ├── formations.ts           # CAP Cuisine 2025-2026
     │   ├── referentiel-cap-cuisine.ts
-    │   └── livret-demo.ts          # Léa : 3 périodes + entretien signé
+    │   └── livret-demo.ts          # 6 livrets scénarisés (CDC §24.5)
     ├── components/
     │   ├── ui/                     # vide (shadcn à la demande)
+    │   ├── admin/
+    │   │   ├── ModaleApprenti.tsx  # CRUD apprenti·e (3 sections)
+    │   │   └── ModaleUtilisateurStaff.tsx # CRUD maître/formateur/coordo
     │   ├── layout/
     │   │   ├── AppShell.tsx
     │   │   ├── BandeauDemo.tsx
-    │   │   ├── RoleSwitcher.tsx    # compact mobile, libellé lg+
-    │   │   ├── Sidebar.tsx         # exporte aussi MobileMenu
+    │   │   ├── RoleSwitcher.tsx
+    │   │   ├── Sidebar.tsx         # filtre admin par lien selon droits
     │   │   └── BoutonReinitialiserDemo.tsx
     │   ├── common/
     │   │   ├── ChampEditable.tsx
-    │   │   ├── SelecteurNiveau.tsx
-    │   │   ├── SelecteurAppreciation.tsx
-    │   │   ├── BadgeEtatFiche.tsx
-    │   │   ├── BarreProgression.tsx
+    │   │   ├── SelecteurNiveau.tsx, SelecteurAppreciation.tsx
+    │   │   ├── BadgeEtatFiche.tsx, BarreProgression.tsx
     │   │   ├── IndicateurEnregistrement.tsx
-    │   │   ├── BoutonSigner.tsx    # confirmation 2 clics avant signer
-    │   │   └── BoutonSupprimer.tsx # confirmation 2 clics avant supprimer
+    │   │   ├── BoutonSigner.tsx, BoutonSupprimer.tsx
+    │   │   └── AucunApprentiSelectionne.tsx
     │   ├── livret/
-    │   │   ├── SuiviGretaCfa.tsx
-    │   │   ├── TableauTriColonnes.tsx
-    │   │   ├── ZoneObservation.tsx
-    │   │   ├── BlocSignatures.tsx
-    │   │   └── DialogDeverrouillage.tsx # modale R10
-    │   ├── entretien/
-    │   │   ├── CaseOuiNon.tsx
-    │   │   ├── EntretienHeader.tsx
-    │   │   ├── EntretienProgression.tsx
-    │   │   ├── BandeauAlerteR7.tsx
-    │   │   ├── SectionApprenti.tsx
-    │   │   ├── SectionMaitre.tsx
-    │   │   ├── SectionFormateur.tsx
-    │   │   └── BlocSignaturesEntretien.tsx
+    │   │   ├── SuiviGretaCfa.tsx, TableauTriColonnes.tsx
+    │   │   ├── ZoneObservation.tsx, BlocSignatures.tsx
+    │   │   └── DialogDeverrouillage.tsx
+    │   ├── entretien/              # 8 sous-composants entretien tripartite
     │   ├── evaluation/
     │   │   ├── SyntheseBloc.tsx
-    │   │   ├── GrilleCompetences.tsx
-    │   │   ├── GrilleAttitudes.tsx
-    │   │   └── BandeauCloture.tsx  # bandeau R22 (4 états)
-    │   └── pdf/                    # export lazy
-    │       ├── styles.ts
-    │       ├── format.ts
-    │       ├── LivretPdf.tsx       # 7 sections complètes
-    │       ├── ExportPdfLazy.tsx   # PDFDownloadLink wrapper
-    │       └── BoutonExportPdf.tsx # lazy + garde-fou C14
+    │   │   ├── GrilleCompetences.tsx, GrilleAttitudes.tsx
+    │   │   └── BandeauCloture.tsx
+    │   └── pdf/                    # export lazy (LivretPdf 7 sections)
     ├── pages/
-    │   ├── TableauDeBord.tsx
-    │   ├── PagePlaceholder.tsx
-    │   ├── NotFound.tsx
-    │   ├── OrganisationSuivi.tsx   # date picker + commentaire + toggle verrou
+    │   ├── TableauDeBord.tsx       # 6 cartes + recherche + sélecteur maître
+    │   ├── PagePlaceholder.tsx, NotFound.tsx
+    │   ├── OrganisationSuivi.tsx
     │   ├── EntretienTripartite.tsx
-    │   ├── FicheSuiviPeriodes.tsx
-    │   ├── FicheSuiviPeriodeDetail.tsx # historique R10 affiché
-    │   ├── EvaluationFinale.tsx    # bouton export PDF + bandeau R22
+    │   ├── FicheSuiviPeriodes.tsx, FicheSuiviPeriodeDetail.tsx
+    │   ├── EvaluationFinale.tsx
     │   └── admin/
-    │       ├── GestionUtilisateurs.tsx
-    │       ├── GestionFormations.tsx
-    │       └── GestionAffectations.tsx
+    │       ├── GestionUtilisateurs.tsx # CRUD 4 rôles + verrou suppression
+    │       ├── GestionFormations.tsx   # placeholder
+    │       └── GestionAffectations.tsx # selects auto-save + verrou
     └── test/setup.ts
 ```
 
@@ -471,13 +450,32 @@ LIVRET APPRENTISSAGE/
 
 ## 9. Reste à faire
 
-### ~~A. Données de démonstration enrichies (CDC §24.5)~~ — ✅ livré (post-Sprint 5)
+### A. ~~Données de démonstration enrichies (CDC §24.5)~~ — ✅ livré
 
 Les 6 apprenti·e·s sont en place avec leurs livrets scénarisés. Cf. section *Tableau de bord — 6 apprenti·e·s*.
 
-### B. Import des référentiels — Phases C + D
+### B. ~~CRUD utilisateurs + page d'affectations~~ — ✅ livré
 
-| Tâche | Effort |
+| Sous-tâche | État |
+|---|---|
+| CRUD utilisateurs (4 rôles) | ✅ étapes 1 + 2 |
+| Page d'affectation apprenti·e ↔ formation/maître/formateur | ✅ étape 3 |
+| Persistance Zustand des utilisateurs | ✅ `useUtilisateursStore` |
+| Verrouillage des affectations si livret actif | ✅ `affectation-verrou` |
+
+### C. CRUD formations (`/admin/formations`) — encore placeholder
+
+| Tâche | Effort estimé |
+|---|---|
+| Étendre `useUtilisateursStore` (ou nouveau `useFormationsStore`) avec mutations CRUD | 0,2 session |
+| Modale `ModaleFormation` : intitulé, niveau, année, dates, lieu, référentiel | 0,3 session |
+| Page `/admin/formations` : table + bouton + édition par ligne | 0,3 session |
+| Cohérence : empêcher la suppression d'une formation si des apprenti·e·s y sont rattaché·e·s | 0,1 session |
+| Tests E2E | 0,2 session |
+
+### D. Import des référentiels — Phases C + D
+
+| Tâche | Effort estimé |
 |---|---|
 | `useReferentielStore` (Zustand persist) | 0,2 session |
 | Page `/admin/referentiels` : liste + bouton import | 0,3 session |
@@ -487,23 +485,15 @@ Les 6 apprenti·e·s sont en place avec leurs livrets scénarisés. Cf. section 
 | Adapter le sélecteur d'ajout de compétence dans `TableauTriColonnes` | 0,2 session |
 | Support XLSX via dynamic import de SheetJS (optionnel) | 0,5 session |
 
-### C. Modules administratifs réels — partiellement livré
+### E. Mise à jour formelle du cahier des charges en v1.5
 
-| Sous-tâche | État |
-|---|---|
-| CRUD utilisateurs (4 rôles) | ✅ livré (étapes 1 + 2) |
-| Page d'affectation apprenti·e ↔ formation/maître/formateur | ✅ livré (étape 3) |
-| Persistance Zustand des utilisateurs | ✅ livré (`useUtilisateursStore`) |
-| Formulaires CRUD formations (`/admin/formations`) | ⏳ encore placeholder |
-
-### D. Mise à jour formelle du cahier des charges en v1.5
-
-Trois changements négociés à intégrer dans le CDC officiel :
+Changements négociés à intégrer dans le CDC officiel :
 
 - §4.1 : ajout des rôles **Coordo** et **Admin**
-- §6 : 11 nouvelles lignes de matrice (admin.* ressources)
+- §6 : 11 nouvelles lignes de matrice (admin.* ressources). Mise à jour : `creer-apprenti` et `creer-maitre` ouverts au formateur référent
 - §7.1 : types `Coordo`, `Admin`, `Lieu` ; `Formation` enrichi
 - §7.2 : `Competence.sousFamille?` (3 niveaux hiérarchiques optionnels)
+- §10.4 : règle de gouvernance — affectations verrouillées dès le démarrage du contrat / fiches existantes / entretien initialisé
 - §17.2 : entrées glossaire *Coordinateur·rice*, *Administrateur·rice*
 
 → noté dans `TODO-etape-2.md`.
@@ -512,14 +502,15 @@ Trois changements négociés à intégrer dans le CDC officiel :
 
 ## 10. Limites connues (CDC §3 + observations)
 
-- Pas d'authentification réelle — role switcher uniquement (étape 3)
+- Pas d'authentification réelle — role switcher uniquement (étape 3 du programme)
 - Pas de RGPD / RGAA strict — bonnes pratiques seulement
-- Pas de notifications email — étape 2
+- Pas de notifications email — étape 2 du programme
 - Pas de multi-établissement — un seul GRETA fictif
-- Pas d'API / import structuré CSV (sauf pour les référentiels, scope ajouté)
+- Pas d'API / import structuré CSV (sauf pour les référentiels — UI à venir)
 - Pas de backup automatique — données vivent dans le `localStorage` de chaque navigateur
 - Pas de monitoring (Uptime Kuma, logs centralisés)
 - Pas d'historique granulaire (CDC §12) — la traçabilité minimale `modifieLe` existe + historique R10 spécifique
+- Le déverrouillage temporaire des affectations n'est pas tracé (pas d'audit log) — décision pragmatique pour la maquette
 
 ---
 
@@ -534,7 +525,7 @@ Trois changements négociés à intégrer dans le CDC officiel :
   - `PasswordAuthentication no`
   - `PermitRootLogin no` (ou `prohibit-password`)
   - `systemctl restart sshd`
-- [ ] Vérifier que le mot de passe Basic Auth est partagé via canal sécurisé (gestionnaire de mots de passe, Signal — jamais en clair par mail)
+- [ ] Vérifier que le mot de passe Basic Auth est partagé via canal sécurisé
 - [ ] Avant chaque démo importante : `bash scripts/verifier-vps.sh` doit retourner 11/11 OK
 
 Procédure complète dans `scripts/README.md` § *Sécurité*.
@@ -562,8 +553,8 @@ npm run dev            # serveur Vite sur http://localhost:5173
 ### Tests / qualité
 
 ```bash
-npm test               # 162 tests Vitest
-npm run e2e            # 30 tests E2E Playwright (build + preview + tests)
+npm test               # 209 tests Vitest
+npm run e2e            # 66 tests E2E Playwright (build + preview + tests)
 npm run e2e:ui         # UI Playwright pour debug
 npm run typecheck      # tsc --noEmit
 npm run lint           # ESLint
@@ -587,6 +578,8 @@ Ou en console DevTools :
 ```js
 localStorage.removeItem('livret-donnees');
 localStorage.removeItem('livret-role-actif');
+localStorage.removeItem('livret-apprenti-actif');
+localStorage.removeItem('livret-utilisateurs');
 location.reload();
 ```
 
@@ -597,10 +590,10 @@ location.reload();
 Référence : CDC §22.
 
 - ✓ `web-artifacts-builder` (Anthropic) — patterns React + shadcn/ui
-- ✓ `webapp-testing` — Playwright (mobilisé en sprint 5 phase D)
-- ✓ `test-driven-development` — appliqué sur droits, transitions, validations, cloture, déverrouillage
+- ✓ `webapp-testing` — Playwright (mobilisé en sprint 5 phase D + post-livraison)
+- ✓ `test-driven-development` — appliqué sur droits, transitions, validations, cloture, déverrouillage, accessibles, état livret, validation apprenti·e/staff, affectation-verrou
 - ✓ `brainstorming` (à mobiliser pour arbitrages UX)
-- ✓ `impeccable` (installé, encore peu sollicité)
+- ✓ `impeccable` (installé)
 
 ---
 
@@ -610,26 +603,29 @@ Référence : CDC §22.
 - **Pas de Redux / RTK** : Zustand est plus léger
 - **Pas de bibliothèque de charts** : barres empilées en CSS pur (gain bundle)
 - **Pas de lib CSV externe** : parser de 50 lignes en TS pur (gain bundle)
-- **PDF lazy-loaded** : `@react-pdf/renderer` dans un chunk séparé (495 KB gzip), chargé uniquement au clic « Exporter ». Le bundle initial reste à 94 KB.
-- **Tests TDD ciblés** : matrice droits + transitions + validation signatures + parser CSV + cloture + déverrouillage. Composants UI testés via E2E (Playwright) plutôt qu'unitairement.
-- **Migration localStorage par bump de version** : v1 → v2 → v3 → v4 reset complet à chaque bump (pas de migration logicielle, données fictives)
-- **Cohérence du pattern de friction** : 5 actions destructrices/engageantes utilisent toutes une confirmation explicite (signature, suppression compétence, suppression ligne GRETA, clôture, réinit). Une seule modale stricte (R10 — la plus engageante avec motif obligatoire).
+- **PDF lazy-loaded** : `@react-pdf/renderer` dans un chunk séparé (495 KB gzip), chargé uniquement au clic « Exporter ». Le bundle initial reste à 109 KB
+- **Tests TDD ciblés** : matrice droits, transitions, validation signatures, parser CSV, clôture, déverrouillage, filtres tableau de bord, état livret, validation modales, verrou affectation. Composants UI testés via E2E (Playwright) plutôt qu'unitairement
+- **Migration localStorage par bump de version** : reset complet à chaque bump (pas de migration logicielle, données fictives). `livret-donnees` v5, `livret-utilisateurs` v1, `livret-apprenti-actif` v1
+- **Cohérence du pattern de friction** : 8 actions destructrices/engageantes utilisent toutes une confirmation explicite (signature, suppression compétence, suppression ligne GRETA, clôture, réinit, suppression compte, déverrouillage temporaire affectation, retrait apprenti·e du store). Une seule modale stricte (R10 — la plus engageante avec motif obligatoire ≥ 10 caractères)
+- **Stores Zustand multiples + import croisé** : `useUserStore`, `useLivretStore`, `useApprentiActifStore`, `useUtilisateursStore`. Synchronisations cross-store dans les actions (cycle d'import résolu par ESM, jamais à l'init du module)
+- **Cohérence référentielle protectrice** : la suppression d'un maître / formateur / apprenti·e en cours de contrat est bloquée. Toute modification d'affectation après démarrage du contrat est verrouillée par défaut, déverrouillage temporaire possible mais non persisté
 - **Coordo et Admin = extensions explicites** : pas de fonctionnalité « secrète », tout est tracé dans `TODO-etape-2.md`
-- **Mobile-first responsive** : navigation par drawer, RoleSwitcher compact, audit Playwright 12 tests dédiés.
+- **Mobile-first responsive** : navigation par drawer, RoleSwitcher compact, audit Playwright 12 tests dédiés
 
 ---
 
 ## 15. Prochaine étape recommandée
 
-L'étape 1 du CDC v1.3 est **livrée et fonctionnelle**. Les 6 apprenti·e·s + tableau de bord sont en place.
+L'étape 1 du CDC v1.3 est **livrée et fonctionnelle**, et l'administration métier est en place (CRUD 4 rôles + affectations + verrouillage cohérence référentielle).
 
-Reste à faire pour enrichir la démo :
+Reste à finir :
 
-1. **Finir l'import des référentiels (Phases C + D)** — débloque la démo d'un référentiel réel via UI. ~1 session.
-2. **Modules administratifs réels** (CRUD utilisateurs / formations / affectations) — sprint dédié post-étape 1.
+1. **CRUD formations** (`/admin/formations`, dernier placeholder admin) — ~1 session. Boucle proprement la chaîne d'administration
+2. **Import des référentiels (Phases C + D)** — débloque la démo d'un référentiel CECRL réel via UI. ~1 session
+3. **Formaliser CDC v1.5** — documenter les changements négociés (rôles Coordo/Admin, ressources admin, règle de verrouillage des affectations §10.4)
 
 La sécurité VPS reste une action côté pilote (cf. §11).
 
 ---
 
-*Étape 1 livrée — Sprint 5 + post-livraison (mobile + verrouillage + cohérence UX + 6 apprenti·e·s) — cahier des charges v1.3.*
+*Étape 1 livrée — Sprint 5 + post-livraison (mobile + verrouillage UX + 6 apprenti·e·s + administration complète) — cahier des charges v1.3.*
