@@ -14,14 +14,13 @@
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main`) |
-| **Dernier commit déployé** | `785db9a` — création/renommage/suppression de fiches de période |
+| **Dernier commit déployé** | `35f895d` — précisions workflow d'import référentiels |
 | **Tests unitaires** | **272 / 272 ✓** (Vitest, 22 fichiers) |
 | **Tests E2E** | **93 / 93 ✓** (Playwright — 81 desktop + 12 mobile Pixel 5) |
 | **Bundle JS gzippé** | 125 KB (cible CDC §19.1 : < 500 KB → marge × 4) |
 | **Bundle CSS gzippé** | 6,2 KB (cible : < 50 KB → marge × 8) |
 | **Chunk PDF lazy** | 493 KB (chargé uniquement au clic « Exporter ») |
 | **Préflight VPS** | 11 / 11 ✓ |
-| **TTFB VPS** | ~80 ms |
 | **TypeScript** | strict, sans erreur |
 | **ESLint** | sans erreur |
 
@@ -109,13 +108,13 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 - **Phases A + B** : type `Competence.sousFamille?` + `Referentiel.niveauxColonnes?: 2 | 3` + parser CSV (encodage UTF-8/CP1252 auto, séparateur auto, 24 tests TDD)
 - **Phase C** (UI) : `useReferentielsStore`, `ModaleImportReferentiel` (file ou textarea, workflow Aperçu → Importer avec stats détaillées + avertissement de remplacement), page `/admin/referentiels`, sidebar
 - **Phase D** (rendering 3 niveaux) : `GrilleCompetences` groupe par sous-famille, `TableauTriColonnes.AjouterCompetence` optgroup `Bloc — Sous-famille`
-- **Phase E** (XLSX) : dépendance `fflate`, parser XLSX maison (sharedStrings + sheet1, regex robustes, 11 tests TDD), détection automatique CSV vs XLSX par signature ZIP
+- **Phase E** (XLSX) : dépendance `fflate`, parser XLSX maison (sharedStrings + sheet1, regex robustes, 16 tests TDD dont 4 d'intégration sur les fichiers du pilote), détection automatique CSV vs XLSX par signature ZIP
 - **Workflow finalisé pilote** :
   - L'utilisateur·rice **choisit une formation existante** (et non un nom libre)
   - Helper `genererNomReferentiel(formation, date)` → libellé canonique `Referentiel_<intitulé>_<YYYY-MM-DD>`
   - À l'import, `formation.referentielId` est **mis à jour automatiquement** pour rattacher la nouvelle entrée
   - Le `Referentiel.source` est typé `'import-csv'` ou `'import-xlsx'` selon le format détecté (utile dans l'admin et en debug)
-- **5 tests d'intégration** sur les fichiers exemples réels du pilote (`exemple-{1,2}.{csv,xlsx}` dans `src/lib/__fixtures__/`) + 4 tests E2E qui chargent ces fichiers via `setInputFiles`
+- **Tests d'intégration sur les fichiers exemples réels du pilote** (`exemple-{1,2}.{csv,xlsx}` dans `src/lib/__fixtures__/`) côté unitaire ET côté E2E (chargement via `setInputFiles`)
 
 ### Administration métier (post-livraison)
 
@@ -131,7 +130,7 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 
 #### Cohérence des actions destructrices
 
-8 actions destructrices/engageantes utilisent toutes une confirmation explicite : signature, suppression compétence, suppression ligne GRETA, clôture R22, réinit démo, suppression compte, déverrouillage temporaire affectation, retrait apprenti·e du store, suppression de fiche de période. Une seule modale stricte : R10 (déverrouillage avec motif obligatoire ≥ 10 caractères).
+9 actions destructrices/engageantes utilisent toutes une confirmation explicite : signature, suppression de compétence, suppression de ligne GRETA, clôture R22, réinit démo, suppression de compte, déverrouillage temporaire d'affectation, suppression de fiche de période, suppression de référentiel/formation. Une seule modale stricte : R10 (déverrouillage avec motif obligatoire ≥ 10 caractères).
 
 #### Bugfix R21 (régression silencieuse)
 
@@ -209,7 +208,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées :
 
 | Fichier | Tests | Périmètre |
 |---|---|---|
-| `lib/droits.test.ts` | 37 | Matrice 36 ressources × 5 rôles, cohérence transverse |
+| `lib/droits.test.ts` | 37 | Matrice 44 ressources × 5 rôles, cohérence transverse |
 | `lib/transitions-fiche.test.ts` | 20 | R15/R16/R17/R21 |
 | `lib/validation-signature.test.ts` | 11 | R18/R20 par rôle |
 | `lib/regles-periode.test.ts` | 15 | R11/R12/R13 |
@@ -232,7 +231,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées :
 | `lib/competence-entreprise.test.ts` | 6 | Flag `evalueeEnEntreprise` |
 | `lib/validation-fiche-periode.test.ts` | 15 | Saisie fiche + `peutSupprimer` + `libelleFichePeriode` |
 
-### Tests E2E Playwright (10 specs)
+### Tests E2E Playwright (13 specs)
 
 | Projet | Fichier | Tests | Périmètre |
 |---|---|---|---|
@@ -458,36 +457,19 @@ location.reload();
 
 ## 11. Décisions architecturales notables
 
-- **Pas de NextJS / SSR** : SPA suffit pour la maquette, simplicité Vite
-- **Pas de Redux / RTK** : Zustand est plus léger
-- **Pas de bibliothèque de charts** : barres empilées en CSS pur (gain bundle)
-- **Pas de lib CSV externe** : parser de 50 lignes en TS pur (gain bundle)
-- **XLSX via `fflate`** (~12 KB) : décompression ZIP native + parser XML maison sur regex robustes (vs. SheetJS qui pèse 300+ KB)
-- **PDF lazy-loaded** : `@react-pdf/renderer` dans un chunk séparé (493 KB gzip), chargé uniquement au clic « Exporter ». Le bundle initial reste à 125 KB
-- **Tests TDD ciblés** : matrice droits, transitions, validations, parser CSV/XLSX, clôture, déverrouillage, filtres tableau de bord, état livret, validation modales, verrous (formation/référentiel/affectation), flag entreprise, validation fiche-periode. Composants UI testés via E2E plutôt qu'unitairement
+- **SPA Vite** (pas de SSR), **Zustand** (pas de Redux/RTK), **CSS pur** pour les charts (pas de biblio), **parser CSV/XLSX maison** (pas de SheetJS) — choix dictés par la cible bundle de la maquette
+- **XLSX via `fflate`** (~12 KB) pour la décompression ZIP, parser XML maison sur regex robustes
+- **PDF lazy-loaded** : `@react-pdf/renderer` dans un chunk séparé (493 KB gzip), chargé uniquement au clic « Exporter » → bundle initial 125 KB
+- **Tests TDD ciblés** sur la logique métier pure (`lib/`) ; les composants UI sont testés via Playwright E2E
 - **Migration localStorage par bump de version** : reset complet à chaque bump (pas de migration logicielle, données fictives)
-- **Cohérence du pattern de friction** : 9+ actions destructrices/engageantes utilisent toutes une confirmation explicite. Une seule modale stricte (R10 — la plus engageante)
-- **Stores Zustand multiples + import croisé** : 6 stores avec synchronisations cross-store dans les actions (cycle d'import résolu par ESM)
-- **Cohérence référentielle protectrice** : suppressions bloquées en cascade — apprenti·e si livret actif, maître si apprenti·e·s, formateur si apprenti·e·s, formation si apprenti·e·s, référentiel si formations rattachées, fiche-periode si verrouillée ou signée
-- **Coordo et Admin = extensions explicites** : pas de fonctionnalité « secrète », tout est tracé dans `TODO-etape-2.md`
-- **Mobile-first responsive** : navigation par drawer, RoleSwitcher compact, audit Playwright 12 tests dédiés
-- **Sélecteurs E2E stables via `data-testid`** sur les modales admin (suite à un bug de race-condition tenace observé sous suite full Playwright avec les sélecteurs `getByLabel(/regex/)`)
+- **6 stores Zustand persistés avec import croisé** : synchronisations cross-store dans les actions, cycle résolu par ESM
+- **Cohérence référentielle protectrice** : suppressions bloquées en cascade (apprenti·e si livret actif, maître/formateur si rattachements, formation si apprenti·e·s, référentiel si formations rattachées, fiche-période si verrouillée ou signée)
+- **Mobile-first responsive** : drawer + RoleSwitcher compact + audit Playwright dédié 12 tests
+- **Sélecteurs E2E stables via `data-testid`** sur les modales admin (corrige une race-condition observée avec `getByLabel(/regex/)` sous suite full Playwright)
 
 ---
 
-## 12. Skills Claude Code installés
-
-Référence : CDC §22.
-
-- ✓ `web-artifacts-builder` (Anthropic) — patterns React + shadcn/ui
-- ✓ `webapp-testing` — Playwright (mobilisé en sprint 5 phase D + post-livraison)
-- ✓ `test-driven-development` — appliqué sur droits, transitions, validations, clôture, déverrouillage, accessibles, état livret, validations modales, verrous (formation/référentiel/affectation), parsers (CSV/XLSX), flag entreprise, validation fiche-periode
-- ✓ `brainstorming` (à mobiliser pour arbitrages UX)
-- ✓ `impeccable` (installé)
-
----
-
-## 13. Prochaine étape recommandée
+## 12. Prochaine étape recommandée
 
 L'étape 1 du CDC v1.3 est **livrée et fonctionnelle**. L'administration métier est complète (CRUD 4 rôles + formations + affectations + référentiels CSV/XLSX) avec :
 - verrouillages de cohérence référentielle à toutes les couches,
