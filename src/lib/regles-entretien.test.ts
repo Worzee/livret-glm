@@ -24,8 +24,25 @@ const apprenti = (contratDebut: string): Apprenti => ({
 });
 
 const entretienVide = (): EntretienTripartite => ({
+  // Refonte mai 2026 : on simule la sélection par défaut (toutes les
+  // questions de la banque) — équivalent fonctionnel à l'ancien format.
+  questionsApprentiSelectionnees: [
+    'q-app-motivations',
+    'q-app-contact-entreprise',
+    'q-app-connaissance-entreprise',
+    'q-app-metier-representation',
+    'q-app-difficultes-formation',
+    'q-app-difficultes-autres',
+    'q-app-ressenti-equipe',
+  ],
+  questionsMaitreSelectionnees: [
+    'q-mai-deja-forme',
+    'q-mai-diplomes-deja-formes',
+    'q-mai-objectifs-embauche',
+    'q-mai-organisation-tutorat',
+  ],
   reponsesApprenti: {},
-  reponsesMaitre: { dejaFormeApprenti: null },
+  reponsesMaitre: {},
   appreciationMaitre: {},
   demarchesAdministratives: {
     contratSigne: null,
@@ -130,29 +147,21 @@ describe('validerSignatureEntretien', () => {
 
   it("apprenti·e peut signer avec au moins une réponse renseignée", () => {
     const e = entretienVide();
-    e.reponsesApprenti.motivations = "Devenir cuisinier·ère.";
+    e.reponsesApprenti['q-app-motivations'] = 'Mon projet professionnel.';
     expect(validerSignatureEntretien(e, 'apprenti').peutSigner).toBe(true);
   });
 
-  it("maître ne peut pas signer sans avoir indiqué dejaFormeApprenti", () => {
-    const e = entretienVide();
-    e.appreciationMaitre.ponctualite = 'plus';
-    const r = validerSignatureEntretien(e, 'maitre');
-    expect(r.peutSigner).toBe(false);
-    expect(r.raisons.some((m) => m.includes('apprenti·e'))).toBe(true);
-  });
-
+  // Refonte mai 2026 : la signature maître exige uniquement au moins un
+  // critère d'appréciation. La saisie des questions est laissée libre.
   it("maître ne peut pas signer sans aucun critère d'appréciation", () => {
     const e = entretienVide();
-    e.reponsesMaitre.dejaFormeApprenti = false;
     const r = validerSignatureEntretien(e, 'maitre');
     expect(r.peutSigner).toBe(false);
     expect(r.raisons.some((m) => m.includes('appréciation'))).toBe(true);
   });
 
-  it("maître peut signer avec dejaFormeApprenti + au moins un critère", () => {
+  it("maître peut signer dès qu'un critère d'appréciation est renseigné", () => {
     const e = entretienVide();
-    e.reponsesMaitre.dejaFormeApprenti = true;
     e.appreciationMaitre.qualiteTravail = 'plusplus';
     expect(validerSignatureEntretien(e, 'maitre').peutSigner).toBe(true);
   });
@@ -187,8 +196,8 @@ describe('calculerProgression', () => {
 
   it("incrémente le score apprenti·e au fur et à mesure", () => {
     const e = entretienVide();
-    e.reponsesApprenti.motivations = 'X';
-    e.reponsesApprenti.contactEntreprise = 'Y';
+    e.reponsesApprenti['q-app-motivations'] = 'X';
+    e.reponsesApprenti['q-app-contact-entreprise'] = 'Y';
     const r = calculerProgression(e);
     // 2 / 7 ≈ 29 %
     expect(r.parRole.apprenti).toBeGreaterThan(20);

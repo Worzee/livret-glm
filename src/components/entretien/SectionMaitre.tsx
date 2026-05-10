@@ -1,17 +1,24 @@
-import type { AppreciationMaitre, EntretienTripartite } from '@/types';
+import { useState } from 'react';
+import { ListChecks } from 'lucide-react';
+import type { AppreciationMaitre, EntretienTripartite, QuestionBanque } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
+import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
 import { peutEditer } from '@/lib/droits';
 import { peutEncoreEditer } from '@/lib/regles-entretien';
 import { CaseOuiNon } from './CaseOuiNon';
 import { SelecteurAppreciation } from '@/components/common/SelecteurAppreciation';
+import { SelecteurQuestions } from './SelecteurQuestions';
 import { cn } from '@/lib/utils';
 
 /**
- * Sections de l'entretien réservées au maître d'apprentissage (CDC §5.2).
- *   - 3 questions textuelles + case oui/non "déjà formé un·e apprenti·e"
- *   - Grille d'appréciation : 4 critères × 4 niveaux (++, +, -, --)
- *   - Commentaire libre du maître
+ * Sections de l'entretien réservées au maître d'apprentissage (CDC §5.2,
+ * refonte mai 2026).
+ *
+ *   - Questions sélectionnées par le formateur référent depuis la banque
+ *     (cf. `useBanqueQuestionsStore`). Le maître y répond ici.
+ *   - Grille d'appréciation 4×4 (en dur — élément standardisé du livret).
+ *   - Commentaire libre du maître.
  */
 
 interface SectionMaitreProps {
@@ -31,9 +38,13 @@ const CRITERES_APPRECIATION: Array<{
 
 export function SectionMaitre({ livretId, entretien }: SectionMaitreProps) {
   const roleActif = useUserStore((s) => s.roleActif);
-  const setReponses = useLivretStore((s) => s.setReponsesMaitre);
+  const setReponse = useLivretStore((s) => s.setReponseEntretien);
+  const setQuestions = useLivretStore((s) => s.setQuestionsSelectionnees);
   const setAppreciation = useLivretStore((s) => s.setAppreciationMaitre);
   const setCommentaire = useLivretStore((s) => s.setCommentaireEntretien);
+  const banque = useBanqueQuestionsStore((s) => s.questions);
+
+  const [selecteurOuvert, setSelecteurOuvert] = useState(false);
 
   const editableQuestions =
     peutEditer(roleActif, 'entretien.questions-maitre') &&
@@ -44,61 +55,63 @@ export function SectionMaitre({ livretId, entretien }: SectionMaitreProps) {
   const editableCommentaire =
     peutEditer(roleActif, 'entretien.commentaires-maitre') &&
     peutEncoreEditer('maitre', entretien);
+  const peutChoisirQuestions = roleActif === 'formateur';
+
+  const questions: QuestionBanque[] = entretien.questionsMaitreSelectionnees
+    .map((id) => banque[id])
+    .filter((q): q is QuestionBanque => !!q && q.cible === 'maitre');
 
   return (
     <section className="rounded-lg border border-border border-l-4 border-l-role-maitre bg-card p-4 space-y-5">
-      <header>
-        <h2 className="text-lg font-medium">Maître d'apprentissage</h2>
-        <p className="text-xs text-muted-foreground">
-          Réservé au maître d'apprentissage. Verrouillé après votre signature.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h2 className="text-lg font-medium">Maître d'apprentissage</h2>
+          <p className="text-xs text-muted-foreground">
+            Réservé au maître d'apprentissage. Verrouillé après votre signature.
+          </p>
+        </div>
+        {peutChoisirQuestions && (
+          <button
+            type="button"
+            onClick={() => setSelecteurOuvert(true)}
+            data-testid="maitre-choisir-questions"
+            className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <ListChecks className="h-3.5 w-3.5" aria-hidden="true" />
+            Choisir les questions ({questions.length})
+          </button>
+        )}
       </header>
 
-      {/* ── Questions ───────────────────────────────────────────────────────── */}
+      {/* ── Questions sélectionnées ──────────────────────────────────────────── */}
       <div className="space-y-3">
         <h3 className="text-sm font-medium">Questions</h3>
-
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-sm">Avez-vous déjà formé un·e apprenti·e auparavant ?</span>
-          <CaseOuiNon
-            editable={editableQuestions}
-            valeur={entretien.reponsesMaitre.dejaFormeApprenti}
-            onChange={(v) => setReponses(livretId, { dejaFormeApprenti: v })}
-            ariaLabel="Avez-vous déjà formé un·e apprenti·e ?"
-          />
-        </div>
-
-        {entretien.reponsesMaitre.dejaFormeApprenti === true && (
-          <ChampTexte
-            label="Si oui, quels diplômes / combien d'apprenti·e·s ?"
-            valeur={entretien.reponsesMaitre.siOuiDiplomes ?? ''}
-            editable={editableQuestions}
-            onChange={(v) => setReponses(livretId, { siOuiDiplomes: v })}
-            placeholder="Ex : 3 CAP Cuisine sur 8 ans"
-          />
+        {questions.length === 0 ? (
+          <p className="text-sm italic text-muted-foreground">
+            {peutChoisirQuestions
+              ? "Aucune question sélectionnée. Cliquez sur « Choisir les questions » pour démarrer."
+              : "Le formateur référent n'a pas encore sélectionné de questions."}
+          </p>
+        ) : (
+          questions.map((q) => (
+            <ChampQuestion
+              key={q.id}
+              question={q}
+              valeur={entretien.reponsesMaitre[q.id]}
+              editable={editableQuestions}
+              onChange={(valeur) => setReponse(livretId, 'maitre', q.id, valeur)}
+            />
+          ))
         )}
-
-        <ChampTexte
-          label="Objectifs en termes d'embauche à l'issue du contrat"
-          valeur={entretien.reponsesMaitre.objectifsEmbauche ?? ''}
-          editable={editableQuestions}
-          onChange={(v) => setReponses(livretId, { objectifsEmbauche: v })}
-          placeholder="Embauche envisagée, conditions…"
-        />
-
-        <ChampTexte
-          label="Organisation prévue de l'accueil et du tutorat"
-          valeur={entretien.reponsesMaitre.organisationAccueil ?? ''}
-          editable={editableQuestions}
-          onChange={(v) => setReponses(livretId, { organisationAccueil: v })}
-          placeholder="Tuteur·rice·s désigné·e·s, fréquence des points…"
-        />
       </div>
 
-      {/* ── Grille d'appréciation 4×4 ───────────────────────────────────────── */}
+      {/* ── Grille d'appréciation 4×4 (en dur — standardisée CDC §5.2) ──────── */}
       <div className="space-y-3 border-t border-border pt-4">
         <h3 className="text-sm font-medium">
-          Appréciation générale <span className="text-xs text-muted-foreground font-normal">(++ très bien · + bien · – à améliorer · – – insuffisant)</span>
+          Appréciation générale{' '}
+          <span className="text-xs text-muted-foreground font-normal">
+            (++ très bien · + bien · – à améliorer · – – insuffisant)
+          </span>
         </h3>
         <div className="space-y-2">
           {CRITERES_APPRECIATION.map((c) => (
@@ -136,7 +149,80 @@ export function SectionMaitre({ livretId, entretien }: SectionMaitreProps) {
           rows={3}
         />
       </div>
+
+      {/* Modale de sélection des questions — visible uniquement pour le formateur. */}
+      <SelecteurQuestions
+        ouvert={selecteurOuvert}
+        cible="maitre"
+        selectionInitiale={entretien.questionsMaitreSelectionnees}
+        onAnnuler={() => setSelecteurOuvert(false)}
+        onValider={(ids) => {
+          setQuestions(livretId, 'maitre', ids);
+          setSelecteurOuvert(false);
+        }}
+      />
     </section>
+  );
+}
+
+interface ChampQuestionProps {
+  question: QuestionBanque;
+  valeur: string | boolean | null | undefined;
+  editable: boolean;
+  onChange: (valeur: string | boolean | null) => void;
+}
+
+function ChampQuestion({ question, valeur, editable, onChange }: ChampQuestionProps) {
+  const id = `entretien-q-${question.id}`;
+
+  if (question.type === 'oui-non') {
+    return (
+      <div className="flex items-center gap-3 flex-wrap">
+        <span className="text-sm">{question.libelle}</span>
+        <CaseOuiNon
+          editable={editable}
+          valeur={typeof valeur === 'boolean' ? valeur : null}
+          onChange={(v) => onChange(v)}
+          ariaLabel={question.libelle}
+        />
+      </div>
+    );
+  }
+
+  const valeurTexte = typeof valeur === 'string' ? valeur : '';
+  const rows = question.type === 'texte-long' ? 2 : 1;
+
+  return (
+    <div className="space-y-1">
+      <label htmlFor={id} className="text-sm font-medium block">
+        {question.libelle}
+      </label>
+      {editable ? (
+        question.type === 'texte-long' ? (
+          <textarea
+            id={id}
+            rows={rows}
+            value={valeurTexte}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={question.placeholder}
+            className="w-full resize-y rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        ) : (
+          <input
+            id={id}
+            type="text"
+            value={valeurTexte}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={question.placeholder}
+            className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        )
+      ) : (
+        <p className={cn('text-sm whitespace-pre-wrap', !valeurTexte && 'text-muted-foreground italic')}>
+          {valeurTexte || 'Non renseigné'}
+        </p>
+      )}
+    </div>
   );
 }
 

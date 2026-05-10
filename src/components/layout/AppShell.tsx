@@ -1,11 +1,13 @@
 import { Link, Outlet } from 'react-router-dom';
-import { Building2 } from 'lucide-react';
+import { Building2, GraduationCap, HardHat, UserCog } from 'lucide-react';
 import { BandeauDemo } from './BandeauDemo';
 import { RoleSwitcher } from './RoleSwitcher';
 import { Sidebar, MobileMenu } from './Sidebar';
 import { BoutonReinitialiserDemo } from './BoutonReinitialiserDemo';
 import { IndicateurEnregistrement } from '@/components/common/IndicateurEnregistrement';
 import { useUserStore } from '@/store/useUserStore';
+import { useApprentiActif } from '@/store/useApprentiActifStore';
+import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { libelleRole } from '@/lib/droits';
 
 /**
@@ -15,6 +17,20 @@ import { libelleRole } from '@/lib/droits';
 export function AppShell() {
   const utilisateurActif = useUserStore((s) => s.utilisateurActif);
   const roleActif = useUserStore((s) => s.roleActif);
+  const ctxApprenti = useApprentiActif();
+  const maitres = useUtilisateursStore((s) => s.maitres);
+  const formateurs = useUtilisateursStore((s) => s.formateurs);
+
+  // Trio contextuel — visible uniquement quand un·e apprenti·e est actif·ve
+  // (donc pas sur les pages /admin/...). Aide à comprendre « qui voit quoi »
+  // au-delà du rôle de démonstration.
+  const trio = ctxApprenti
+    ? {
+        apprenti: ctxApprenti.apprenti,
+        maitre: maitres[ctxApprenti.apprenti.maitreApprentissageId],
+        formateur: formateurs[ctxApprenti.apprenti.formateurReferentId],
+      }
+    : null;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -43,16 +59,38 @@ export function AppShell() {
           </Link>
 
           <div className="ml-auto flex items-center gap-4">
-            <div className="hidden lg:flex items-center gap-2 text-sm text-muted-foreground">
-              <Building2 className="h-4 w-4" aria-hidden="true" />
-              <span>
-                Connecté en tant que <strong className="text-foreground">{utilisateurActif.prenom} {utilisateurActif.nom}</strong>{' '}
-                <span className="text-xs">({libelleRole(roleActif)})</span>
-              </span>
+            <div className="hidden lg:flex flex-col items-end gap-1 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4" aria-hidden="true" />
+                <span>
+                  Connecté en tant que{' '}
+                  <strong className="text-foreground">
+                    {utilisateurActif.prenom} {utilisateurActif.nom}
+                  </strong>{' '}
+                  <span className="text-xs">({libelleRole(roleActif)})</span>
+                </span>
+              </div>
+              {trio && (
+                <TrioContextuel trio={trio} testid="header-trio-contextuel" />
+              )}
             </div>
             <RoleSwitcher />
           </div>
         </div>
+
+        {/* Bandeau contextuel mobile — apparaît sous le header, visible
+            uniquement sur < lg quand un·e apprenti·e est actif·ve.
+            Évite la duplication avec le bloc desktop ci-dessus. */}
+        {trio && (
+          <div className="lg:hidden border-t border-border/60 bg-card/60">
+            <div className="container py-1.5">
+              <TrioContextuel
+                trio={trio}
+                testid="header-trio-contextuel-mobile"
+              />
+            </div>
+          </div>
+        )}
       </header>
 
       <div className="flex flex-1">
@@ -75,6 +113,60 @@ export function AppShell() {
       </footer>
 
       <IndicateurEnregistrement />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Trio contextuel — apprenti·e / maître / formateur référent du livret consulté
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface TrioContextuelProps {
+  trio: {
+    apprenti: { prenom: string; nom: string };
+    maitre?: { prenom: string; nom: string };
+    formateur?: { prenom: string; nom: string };
+  };
+  /** Permet d'instancier 2× le composant (desktop + mobile) sans collision E2E. */
+  testid: string;
+}
+
+function TrioContextuel({ trio, testid }: TrioContextuelProps) {
+  const fmt = (p?: { prenom: string; nom: string }) =>
+    p ? `${p.prenom} ${p.nom}` : '—';
+  // `flex-wrap` permet le wrap gracieux sur mobile (Pixel 5 = 393px) ; sur
+  // desktop tout tient sur une ligne.
+  return (
+    <div
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs"
+      data-testid={testid}
+    >
+      <span className="inline-flex items-center gap-1" title="Apprenti·e">
+        <GraduationCap
+          className="h-3.5 w-3.5 shrink-0 text-role-apprenti"
+          aria-hidden="true"
+        />
+        <span className="sr-only">Apprenti·e :</span>
+        <strong className="font-medium text-foreground">{fmt(trio.apprenti)}</strong>
+      </span>
+      <span aria-hidden="true" className="text-muted-foreground/40">·</span>
+      <span className="inline-flex items-center gap-1" title="Maître d'apprentissage">
+        <HardHat
+          className="h-3.5 w-3.5 shrink-0 text-role-maitre"
+          aria-hidden="true"
+        />
+        <span className="sr-only">Maître d'apprentissage :</span>
+        <strong className="font-medium text-foreground">{fmt(trio.maitre)}</strong>
+      </span>
+      <span aria-hidden="true" className="text-muted-foreground/40">·</span>
+      <span className="inline-flex items-center gap-1" title="Formateur référent">
+        <UserCog
+          className="h-3.5 w-3.5 shrink-0 text-role-formateur"
+          aria-hidden="true"
+        />
+        <span className="sr-only">Formateur référent :</span>
+        <strong className="font-medium text-foreground">{fmt(trio.formateur)}</strong>
+      </span>
     </div>
   );
 }

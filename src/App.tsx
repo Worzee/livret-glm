@@ -12,6 +12,7 @@ import { GestionUtilisateurs } from '@/pages/admin/GestionUtilisateurs';
 import { GestionFormations } from '@/pages/admin/GestionFormations';
 import { GestionAffectations } from '@/pages/admin/GestionAffectations';
 import { GestionReferentiels } from '@/pages/admin/GestionReferentiels';
+import { GestionBanqueQuestions } from '@/pages/admin/GestionBanqueQuestions';
 
 /**
  * Composition des routes de l'application.
@@ -51,6 +52,7 @@ export function App() {
         <Route path="admin/formations" element={<GestionFormations />} />
         <Route path="admin/affectations" element={<GestionAffectations />} />
         <Route path="admin/referentiels" element={<GestionReferentiels />} />
+        <Route path="admin/banque-questions" element={<GestionBanqueQuestions />} />
 
         <Route path="*" element={<NotFound />} />
       </Route>

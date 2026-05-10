@@ -5,6 +5,7 @@ import type {
   Formation,
   Livret,
   Maitre,
+  QuestionBanque,
   Referentiel,
 } from '@/types';
 import { LivretPdf } from './LivretPdf';
@@ -25,6 +26,7 @@ interface ExportPdfLazyProps {
   formateur: Formateur;
   formation: Formation;
   referentiel: Referentiel;
+  banqueQuestions: Record<string, QuestionBanque>;
 }
 
 export default function ExportPdfLazy({
@@ -34,6 +36,7 @@ export default function ExportPdfLazy({
   formateur,
   formation,
   referentiel,
+  banqueQuestions,
 }: ExportPdfLazyProps) {
   const document = (
     <LivretPdf
@@ -43,6 +46,7 @@ export default function ExportPdfLazy({
       formateur={formateur}
       formation={formation}
       referentiel={referentiel}
+      banqueQuestions={banqueQuestions}
     />
   );
 

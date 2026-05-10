@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   BookOpen,
+  GraduationCap,
   Layers,
   Library,
   Lock,
@@ -8,7 +9,7 @@ import {
   Sparkles,
   Trash2,
 } from 'lucide-react';
-import type { BlocCompetences, Competence, Referentiel, Role } from '@/types';
+import type { BlocCompetences, Competence, Formation, Referentiel, Role } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useReferentielsStore } from '@/store/useReferentielsStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
@@ -108,6 +109,9 @@ export function GestionReferentiels() {
                 if (c.sousFamille) sousFamilles.add(c.sousFamille);
               }
             }
+            const formationsRattachees = formationsListe
+              .filter((f) => f.referentielId === r.id)
+              .sort((a, b) => a.intitule.localeCompare(b.intitule, 'fr-FR'));
             return (
               <article
                 key={r.id}
@@ -178,6 +182,8 @@ export function GestionReferentiels() {
                   )}
                 </dl>
 
+                <FormationsRattachees formations={formationsRattachees} />
+
                 {/* Détail des blocs avec checkbox « abordée en entreprise » par compétence */}
                 <details className="text-sm">
                   <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
@@ -238,6 +244,45 @@ function Statistique({
       <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
       <span>{label}</span>
     </div>
+  );
+}
+
+/**
+ * Affiche en une ligne la (les) formation(s) actuellement rattachée(s) au
+ * référentiel — relation N:1 portée par `Formation.referentielId`.
+ * Lecture seule : le rattachement se modifie depuis la page Formations.
+ */
+function FormationsRattachees({ formations }: { formations: ReadonlyArray<Formation> }) {
+  if (formations.length === 0) {
+    return (
+      <p
+        className="flex items-start gap-2 rounded-md bg-secondary/30 px-2 py-1.5 text-xs italic text-muted-foreground"
+        data-testid="ref-formations-rattachees"
+      >
+        <GraduationCap className="h-3.5 w-3.5 shrink-0 mt-0.5" aria-hidden="true" />
+        <span>
+          Aucune formation rattachée — à rattacher depuis la page <em>Formations</em>.
+        </span>
+      </p>
+    );
+  }
+  const libelles = formations.map((f) => `${f.intitule} (${f.annee})`).join(', ');
+  return (
+    <p
+      className="flex items-start gap-2 rounded-md bg-secondary/30 px-2 py-1.5 text-xs"
+      data-testid="ref-formations-rattachees"
+    >
+      <GraduationCap
+        className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary"
+        aria-hidden="true"
+      />
+      <span>
+        <span className="font-medium">
+          Utilisé par {formations.length} formation{formations.length > 1 ? 's' : ''} :
+        </span>{' '}
+        {libelles}
+      </span>
+    </p>
   );
 }
 

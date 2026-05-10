@@ -7,12 +7,14 @@ import type {
   Formation,
   Livret,
   Maitre,
+  QuestionBanque,
   Referentiel,
   SignaturesTripartite,
 } from '@/types';
 import { libelleRole } from '@/lib/droits';
 import { synthetiserCompetences, valeurEffective } from '@/lib/synthese-evaluation';
 import { calculerStatsParBloc } from '@/lib/stats-bloc';
+import { libelleEvenement } from '@/lib/organisation-suivi';
 import { COULEURS, styles } from './styles';
 import {
   couleurEtatFiche,
@@ -48,6 +50,12 @@ interface LivretPdfProps {
   formateur: Formateur;
   formation: Formation;
   referentiel: Referentiel;
+  /**
+   * Banque indexée des questions de l'entretien (refonte mai 2026).
+   * Permet au PDF de résoudre les libellés depuis les questionId stockées
+   * dans `entretien.reponses{Apprenti,Maitre}`.
+   */
+  banqueQuestions: Record<string, QuestionBanque>;
   /** ISO de la date d'export (test injectable). */
   dateExport?: string;
 }
@@ -59,6 +67,7 @@ export function LivretPdf({
   formateur,
   formation,
   referentiel,
+  banqueQuestions,
   dateExport,
 }: LivretPdfProps) {
   const date = dateExport ?? new Date().toISOString();
@@ -85,6 +94,7 @@ export function LivretPdf({
         apprenti={apprenti}
         maitre={maitre}
         formateur={formateur}
+        banqueQuestions={banqueQuestions}
       />
       {livret.fichesSuivi.map((fiche) => (
         <PageFiche
@@ -321,12 +331,15 @@ function PageOrganisation({ livret }: { livret: Livret }) {
         <Text style={[styles.italique, { marginBottom: 12 }]}>
           Cette section détaille l'organisation pédagogique mise en place pour la promotion.
         </Text>
-        <Champ label="Réunion de rentrée" valeur={fmt(o.reunionRentree)} />
-        <Champ label="Entretien individuel" valeur={fmt(o.entretienIndividuel)} />
-        <Champ label="Accueil des tuteurs" valeur={fmt(o.accueilTuteurs)} />
-        <Champ label="Visites en entreprise" valeur={fmt(o.visitesEntreprise)} />
-        <Champ label="Restitution d'activités" valeur={fmt(o.restitutionActivites)} />
-        <Champ label="Bilans de formation" valeur={fmt(o.bilansFormation)} />
+        {o.evenements.length === 0 ? (
+          <Text style={styles.italique}>
+            Aucun événement n'a encore été ajouté à l'organisation du suivi.
+          </Text>
+        ) : (
+          o.evenements.map((evt) => (
+            <Champ key={evt.id} label={libelleEvenement(evt)} valeur={fmt(evt)} />
+          ))
+        )}
         <View style={[styles.encart, { marginTop: 12 }]}>
           <Text>
             Dernière modification : {formaterDateHeure(o.modifieLe)} · auteur : {o.modifiePar}
@@ -346,11 +359,13 @@ function PageEntretien({
   apprenti,
   maitre,
   formateur,
+  banqueQuestions,
 }: {
   entretien: EntretienTripartite | null;
   apprenti: Apprenti;
   maitre: Maitre;
   formateur: Formateur;
+  banqueQuestions: Record<string, QuestionBanque>;
 }) {
   if (!entretien) {
     return (
@@ -361,13 +376,43 @@ function PageEntretien({
       </Page>
     );
   }
-  const a = entretien.reponsesApprenti;
-  const m = entretien.reponsesMaitre;
   const ap = entretien.appreciationMaitre;
   const da = entretien.demarchesAdministratives;
   const cp = entretien.conditionsPratiques;
   const ai = entretien.aidesDemandees;
   const c = entretien.commentaires;
+
+  /** Restitue chaque question sélectionnée + sa réponse (texte ou oui/non). */
+  const renduQuestions = (
+    ids: ReadonlyArray<string>,
+    reponses: Record<string, string | boolean | null>,
+    cible: 'apprenti' | 'maitre',
+  ) => {
+    const items = ids
+      .map((id) => banqueQuestions[id])
+      .filter((q): q is QuestionBanque => !!q && q.cible === cible);
+    if (items.length === 0) {
+      return (
+        <Text style={styles.vide}>
+          Aucune question sélectionnée pour {cible === 'apprenti' ? "l'apprenti·e" : 'le maître'}.
+        </Text>
+      );
+    }
+    return items.map((q) => {
+      const v = reponses[q.id];
+      if (q.type === 'oui-non') {
+        return (
+          <Champ
+            key={q.id}
+            label={q.libelle}
+            valeur={libelleOuiNon(typeof v === 'boolean' ? v : null)}
+          />
+        );
+      }
+      const txt = typeof v === 'string' ? v : '';
+      return <ParagrapheLibre key={q.id} titre={q.libelle} valeur={txt} />;
+    });
+  };
 
   return (
     <Page size="A4" style={styles.page}>
@@ -380,22 +425,18 @@ function PageEntretien({
         />
 
         <Text style={styles.h2}>Apprenti·e</Text>
-        <ParagrapheLibre titre="Motivations" valeur={a.motivations} />
-        <ParagrapheLibre titre="Contact avec l'entreprise" valeur={a.contactEntreprise} />
-        <ParagrapheLibre titre="Connaissance de l'entreprise" valeur={a.connaissanceEntreprise} />
-        <ParagrapheLibre
-          titre="Métier vs représentation initiale"
-          valeur={a.metierVsRepresentation}
-        />
-        <ParagrapheLibre titre="Difficultés / disciplines" valeur={a.difficultesDisciplines} />
-        <ParagrapheLibre titre="Difficultés / autres" valeur={a.difficultesAutres} />
-        <ParagrapheLibre titre="Ressenti général" valeur={a.ressenti} />
+        {renduQuestions(
+          entretien.questionsApprentiSelectionnees,
+          entretien.reponsesApprenti,
+          'apprenti',
+        )}
 
         <Text style={styles.h2}>Maître d'apprentissage</Text>
-        <Champ label="Déjà formé un·e apprenti·e ?" valeur={libelleOuiNon(m.dejaFormeApprenti)} />
-        {m.dejaFormeApprenti && <ParagrapheLibre titre="Si oui, diplômes" valeur={m.siOuiDiplomes} />}
-        <ParagrapheLibre titre="Objectifs d'embauche" valeur={m.objectifsEmbauche} />
-        <ParagrapheLibre titre="Organisation de l'accueil" valeur={m.organisationAccueil} />
+        {renduQuestions(
+          entretien.questionsMaitreSelectionnees,
+          entretien.reponsesMaitre,
+          'maitre',
+        )}
 
         <Text style={styles.h3}>Appréciations (maître)</Text>
         <Champ label="Ponctualité" valeur={libelleAppreciation(ap.ponctualite)} />

@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Library,
   Link2,
+  ListChecks,
   Menu,
   Notebook,
   Target,
@@ -56,6 +57,7 @@ const LIENS_ADMIN: Array<LienItem & { ressource: Ressource }> = [
   { to: '/admin/formations', label: 'Formations', Icon: GraduationCap, ressource: 'admin.formations.creer' },
   { to: '/admin/affectations', label: 'Affectations', Icon: Link2, ressource: 'admin.affectations.gerer' },
   { to: '/admin/referentiels', label: 'Référentiels', Icon: Library, ressource: 'admin.referentiels.gerer' },
+  { to: '/admin/banque-questions', label: 'Banque de questions', Icon: ListChecks, ressource: 'admin.banque-questions.gerer' },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────

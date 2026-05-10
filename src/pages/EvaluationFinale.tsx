@@ -4,6 +4,7 @@ import { useUserStore } from '@/store/useUserStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { useReferentielsStore } from '@/store/useReferentielsStore';
+import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
 import { peutEditer } from '@/lib/droits';
 import { libelleRole } from '@/lib/droits';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
@@ -38,6 +39,7 @@ export function EvaluationFinale() {
   const roleActif = useUserStore((s) => s.roleActif);
   const formations = useFormationsStore((s) => s.formations);
   const referentiels = useReferentielsStore((s) => s.referentiels);
+  const banqueQuestions = useBanqueQuestionsStore((s) => s.questions);
   const ctx = useApprentiActif();
 
   if (!ctx) return <AucunApprentiSelectionne />;
@@ -83,6 +85,7 @@ export function EvaluationFinale() {
           formateur={formatriceSophieDubois}
           formation={formation}
           referentiel={referentiel}
+          banqueQuestions={banqueQuestions}
         />
       </header>
 

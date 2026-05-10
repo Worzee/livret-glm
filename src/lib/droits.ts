@@ -65,7 +65,9 @@ export type Ressource =
   /** Associer un·e apprenti·e à une formation, un maître, un formateur. */
   | 'admin.affectations.gerer'
   /** Importer / supprimer / éditer les référentiels de compétences. */
-  | 'admin.referentiels.gerer';
+  | 'admin.referentiels.gerer'
+  /** CRUD sur la banque de questions de l'entretien tripartite. */
+  | 'admin.banque-questions.gerer';
 
 /**
  * Matrice statique : pour chaque ressource, l'ensemble des rôles autorisés.
@@ -139,6 +141,7 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'admin.formations.supprimer': ['coordo', 'admin'],
   'admin.affectations.gerer': ['coordo', 'admin'],
   'admin.referentiels.gerer': ['coordo', 'admin'],
+  'admin.banque-questions.gerer': ['coordo', 'admin'],
 };
 
 /**

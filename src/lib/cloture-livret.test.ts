@@ -37,12 +37,7 @@ const livretBase = (fiches: FicheSuiviPeriode[], cloture: ClotureLivret | null =
   apprentiId: 'u-app',
   formationId: 'f-test',
   organisationSuivi: {
-    reunionRentree: {},
-    entretienIndividuel: {},
-    accueilTuteurs: {},
-    visitesEntreprise: {},
-    restitutionActivites: {},
-    bilansFormation: {},
+    evenements: [],
     modifieLe: '2025-09-01T08:00:00.000Z',
     modifiePar: 'u-form',
   },

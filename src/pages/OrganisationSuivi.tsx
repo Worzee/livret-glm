@@ -1,104 +1,81 @@
-import { CalendarDays, Lock, LockOpen, MessageSquare } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import {
+  CalendarDays,
+  Lock,
+  LockOpen,
+  MessageSquare,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
+import {
+  MOTIFS_ORGANISATION_SUIVI,
+  metadonneesMotif,
+  peutSupprimerEvenement,
+} from '@/lib/organisation-suivi';
 import type {
-  ChampOrganisationSuivi,
-  OrganisationSuivi as OrgSuiviType,
+  EvenementOrganisationSuivi,
+  MotifOrganisationSuivi,
 } from '@/types';
 import { cn } from '@/lib/utils';
 import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelectionne';
 
 /**
- * Module — Organisation du suivi (CDC §5.1).
+ * Module — Organisation du suivi (CDC §5.1, refonte modulaire mai 2026).
  *
- * Formulaire éditable uniquement par le formateur référent. Lecture seule pour
- * l'apprenti·e et le maître. Les rôles admin et coordo n'ont pas accès en
- * édition (ils peuvent consulter, comme tout livret).
+ * Le formateur référent ajoute à la demande chaque événement (réunion de
+ * rentrée, visites en entreprise multiples, conseil de classe, etc.) en
+ * choisissant un motif parmi le catalogue (`MOTIFS_ORGANISATION_SUIVI`).
  *
- * Chaque carte est désormais structurée en deux zones :
- *   - un sélecteur de date (input type="date" — calendrier natif du navigateur)
- *   - un commentaire libre (textarea)
+ * Lecture seule pour l'apprenti·e et le maître. Les rôles admin et coordo
+ * n'ont pas accès en édition (ils peuvent consulter, comme tout livret).
  *
  * Auto-save : chaque modification est persistée immédiatement dans le store.
  */
 
-type CleChamp = keyof Omit<OrgSuiviType, 'modifieLe' | 'modifiePar'>;
-
-interface ChampSuivi {
-  cle: CleChamp;
-  libelle: string;
-  description: string;
-  /** Indique à l'utilisateur quoi écrire dans le commentaire (lieu, fréquence…). */
-  placeholderCommentaire: string;
-  /** True si la date principale est généralement attendue (pour aide visuelle). */
-  dateAttendue: boolean;
-}
-
-const CHAMPS: ChampSuivi[] = [
-  {
-    cle: 'reunionRentree',
-    libelle: 'Réunion de rentrée',
-    description: 'Présentation de la promo, des intervenant·e·s, des modalités générales.',
-    placeholderCommentaire: 'Lieu, horaires, intervenants…',
-    dateAttendue: true,
-  },
-  {
-    cle: 'entretienIndividuel',
-    libelle: 'Entretien individuel',
-    description: 'Premier entretien individuel avec chaque apprenti·e.',
-    placeholderCommentaire: 'Modalités (RDV individuel, semaine type…)',
-    dateAttendue: false,
-  },
-  {
-    cle: 'accueilTuteurs',
-    libelle: 'Accueil des tuteurs (journée tuteur)',
-    description: "Journée d'information dédiée aux maîtres d'apprentissage.",
-    placeholderCommentaire: 'Lieu, horaires, programme abrégé…',
-    dateAttendue: true,
-  },
-  {
-    cle: 'visitesEntreprise',
-    libelle: 'Visites en entreprise',
-    description: 'Calendrier prévisionnel des visites du formateur référent en entreprise.',
-    placeholderCommentaire: 'Première visite ci-contre. Détailler les autres ici.',
-    dateAttendue: true,
-  },
-  {
-    cle: 'restitutionActivites',
-    libelle: 'Restitution des activités',
-    description: 'Modalités de restitution périodique en classe.',
-    placeholderCommentaire: 'Fréquence et format (ex : oral toutes les 6 semaines).',
-    dateAttendue: false,
-  },
-  {
-    cle: 'bilansFormation',
-    libelle: 'Bilans de formation',
-    description: 'Périodes des bilans intermédiaires et finaux.',
-    placeholderCommentaire: 'Périodes (ex : bilan mi-parcours en janvier, final en juin).',
-    dateAttendue: false,
-  },
-];
-
 export function OrganisationSuivi() {
   const ctx = useApprentiActif();
-  const setOrganisation = useLivretStore((s) => s.setOrganisationSuivi);
+  const ajouterEvt = useLivretStore((s) => s.ajouterEvenementOrganisation);
+  const modifierEvt = useLivretStore((s) => s.modifierEvenementOrganisation);
+  const supprimerEvt = useLivretStore((s) => s.supprimerEvenementOrganisation);
   const roleActif = useUserStore((s) => s.roleActif);
   const utilisateurActif = useUserStore((s) => s.utilisateurActif);
+
+  // Le motif sélectionné dans le sélecteur d'ajout — réinitialisé après ajout.
+  const [motifAAjouter, setMotifAAjouter] = useState<MotifOrganisationSuivi | ''>('');
+  const [confirmationSuppression, setConfirmationSuppression] = useState<string | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!confirmationSuppression) return;
+    const t = setTimeout(() => setConfirmationSuppression(null), 10_000);
+    return () => clearTimeout(t);
+  }, [confirmationSuppression]);
 
   if (!ctx) return <AucunApprentiSelectionne />;
   const { apprenti, livret } = ctx;
 
   const editable = peutEditer(roleActif, 'organisation-suivi');
   const org = livret.organisationSuivi;
+  const evenements = org.evenements;
 
-  /** Met à jour un seul sous-champ (date OU commentaire) en préservant l'autre. */
-  function patcherChamp(cle: CleChamp, patch: Partial<ChampOrganisationSuivi>) {
-    const valeurCourante = livret.organisationSuivi[cle];
-    setOrganisation(livret.id, utilisateurActif.id, {
-      [cle]: { ...valeurCourante, ...patch },
-    });
+  function ajouter() {
+    if (!motifAAjouter) return;
+    ajouterEvt(livret.id, utilisateurActif.id, motifAAjouter);
+    setMotifAAjouter('');
+  }
+
+  function supprimer(evtId: string) {
+    if (confirmationSuppression !== evtId) {
+      setConfirmationSuppression(evtId);
+      return;
+    }
+    supprimerEvt(livret.id, utilisateurActif.id, evtId);
+    setConfirmationSuppression(null);
   }
 
   return (
@@ -122,26 +99,86 @@ export function OrganisationSuivi() {
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {CHAMPS.map((champ) => {
-          const valeur = org[champ.cle];
-          return (
-            <CarteOrganisation
-              key={champ.cle}
-              champ={champ}
-              valeur={valeur}
+      {/* Sélecteur d'ajout — formateur référent uniquement */}
+      {editable && (
+        <div
+          className="flex flex-col gap-2 rounded-lg border border-dashed border-border bg-secondary/30 p-3 sm:flex-row sm:items-end"
+          data-testid="ajout-evenement"
+        >
+          <div className="flex-1 space-y-1">
+            <label
+              htmlFor="org-motif-ajout"
+              className="text-xs font-medium text-muted-foreground"
+            >
+              Ajouter un événement
+            </label>
+            <select
+              id="org-motif-ajout"
+              data-testid="org-motif-ajout"
+              value={motifAAjouter}
+              onChange={(e) =>
+                setMotifAAjouter(e.target.value as MotifOrganisationSuivi | '')
+              }
+              className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="">— Choisir un motif —</option>
+              {MOTIFS_ORGANISATION_SUIVI.map((m) => (
+                <option key={m.motif} value={m.motif}>
+                  {m.libelle}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="button"
+            onClick={ajouter}
+            disabled={!motifAAjouter}
+            data-testid="org-ajouter-evt"
+            className={cn(
+              'inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition-opacity',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              motifAAjouter ? 'hover:opacity-90' : 'cursor-not-allowed opacity-50',
+            )}
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            Ajouter
+          </button>
+        </div>
+      )}
+
+      {evenements.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
+          {editable
+            ? 'Aucun événement pour le moment. Choisissez un motif ci-dessus pour ajouter votre premier événement.'
+            : "Le formateur référent n'a pas encore ajouté d'événement à l'organisation du suivi."}
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {evenements.map((evt) => (
+            <CarteEvenement
+              key={evt.id}
+              evenement={evt}
               editable={editable}
-              onChangeDate={(date) => patcherChamp(champ.cle, { date })}
+              enConfirmationSuppression={confirmationSuppression === evt.id}
+              onChangeTitre={(titre) =>
+                modifierEvt(livret.id, utilisateurActif.id, evt.id, { titre })
+              }
+              onChangeDate={(date) =>
+                modifierEvt(livret.id, utilisateurActif.id, evt.id, { date })
+              }
               onChangeCommentaire={(commentaire) =>
-                patcherChamp(champ.cle, { commentaire })
+                modifierEvt(livret.id, utilisateurActif.id, evt.id, { commentaire })
               }
               onToggleVerrouille={() =>
-                patcherChamp(champ.cle, { verrouille: !valeur.verrouille })
+                modifierEvt(livret.id, utilisateurActif.id, evt.id, {
+                  verrouille: !evt.verrouille,
+                })
               }
+              onSupprimer={() => supprimer(evt.id)}
             />
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
 
       {org.modifieLe && (
         <p className="text-xs text-muted-foreground">
@@ -159,38 +196,47 @@ export function OrganisationSuivi() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Carte d'un champ — date à gauche, commentaire à droite (sm+) / empilé (mobile)
+// Carte d'un événement — titre + date à gauche, commentaire à droite
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface CarteOrganisationProps {
-  champ: ChampSuivi;
-  valeur: ChampOrganisationSuivi;
+interface CarteEvenementProps {
+  evenement: EvenementOrganisationSuivi;
   editable: boolean;
+  enConfirmationSuppression: boolean;
+  onChangeTitre: (titre: string) => void;
   onChangeDate: (date: string) => void;
   onChangeCommentaire: (commentaire: string) => void;
   onToggleVerrouille: () => void;
+  onSupprimer: () => void;
 }
 
-function CarteOrganisation({
-  champ,
-  valeur,
+function CarteEvenement({
+  evenement,
   editable,
+  enConfirmationSuppression,
+  onChangeTitre,
   onChangeDate,
   onChangeCommentaire,
   onToggleVerrouille,
-}: CarteOrganisationProps) {
-  const idDate = `org-date-${champ.cle}`;
-  const idCommentaire = `org-com-${champ.cle}`;
-  const verrouille = valeur.verrouille === true;
-  // Édition possible si le rôle a le droit ET que le champ n'est pas verrouillé.
+  onSupprimer,
+}: CarteEvenementProps) {
+  const meta = metadonneesMotif(evenement.motif);
+  const idTitre = `org-titre-${evenement.id}`;
+  const idDate = `org-date-${evenement.id}`;
+  const idCommentaire = `org-com-${evenement.id}`;
+  const verrouille = evenement.verrouille === true;
   const peutEditerChamp = editable && !verrouille;
+  const verrouSuppression = peutSupprimerEvenement(evenement);
+  const supprimable = verrouSuppression.supprimable;
 
   return (
     <article
+      data-testid={`org-evt-${evenement.id}`}
       className={cn(
         'flex flex-col gap-3 rounded-lg border border-border bg-card p-4',
         editable && 'border-l-4 border-l-role-formateur',
         verrouille && 'bg-muted/30',
+        enConfirmationSuppression && 'border-red-300 bg-red-50/50',
       )}
     >
       <header className="flex items-start gap-2">
@@ -199,10 +245,58 @@ function CarteOrganisation({
           aria-hidden="true"
         />
         <div className="flex-1 min-w-0">
-          <h2 className="text-sm font-medium">{champ.libelle}</h2>
-          <p className="text-xs text-muted-foreground">{champ.description}</p>
+          <h2 className="text-sm font-medium">{meta.libelle}</h2>
+          <p className="text-xs text-muted-foreground">{meta.description}</p>
         </div>
+        {editable && (
+          <button
+            type="button"
+            onClick={onSupprimer}
+            disabled={!supprimable}
+            title={verrouSuppression.raison}
+            aria-label={
+              enConfirmationSuppression
+                ? `Confirmer la suppression de ${meta.libelle}`
+                : `Supprimer ${meta.libelle}`
+            }
+            data-testid={`org-supprimer-${evenement.id}`}
+            className={cn(
+              'inline-flex shrink-0 items-center gap-1 rounded-md p-1.5 transition-colors',
+              enConfirmationSuppression
+                ? 'border border-red-300 bg-red-600 text-white hover:bg-red-700'
+                : 'border border-input bg-background text-muted-foreground hover:bg-secondary hover:text-foreground',
+              !supprimable && 'cursor-not-allowed opacity-40 hover:bg-background hover:text-muted-foreground',
+            )}
+          >
+            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+            {enConfirmationSuppression && (
+              <span className="text-xs font-medium">Confirmer</span>
+            )}
+          </button>
+        )}
       </header>
+
+      {/* Titre custom — affiché en lecture seule pour les autres rôles si renseigné */}
+      {peutEditerChamp ? (
+        <div className="space-y-1">
+          <label
+            htmlFor={idTitre}
+            className="text-xs font-medium text-muted-foreground"
+          >
+            Titre (optionnel — utile pour distinguer plusieurs événements du même motif)
+          </label>
+          <input
+            id={idTitre}
+            type="text"
+            value={evenement.titre ?? ''}
+            onChange={(e) => onChangeTitre(e.target.value)}
+            placeholder={'ex : Visite n°1 — novembre 2025'}
+            className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+      ) : evenement.titre?.trim() ? (
+        <p className="text-sm font-medium text-foreground">{evenement.titre}</p>
+      ) : null}
 
       <div className="flex flex-col gap-3 sm:flex-row">
         {/* Colonne date + bouton verrou */}
@@ -212,36 +306,33 @@ function CarteOrganisation({
               htmlFor={idDate}
               className="text-xs font-medium text-muted-foreground"
             >
-              Date{champ.dateAttendue ? '' : ' (optionnelle)'}
+              Date (optionnelle)
             </label>
             {peutEditerChamp ? (
               <input
                 id={idDate}
                 type="date"
-                value={valeur.date ?? ''}
+                value={evenement.date ?? ''}
                 onChange={(e) => onChangeDate(e.target.value)}
                 className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             ) : editable ? (
-              // Champ verrouillé pour le formateur : on garde l'apparence input,
-              // mais désactivé visuellement.
               <input
                 id={idDate}
                 type="date"
-                value={valeur.date ?? ''}
+                value={evenement.date ?? ''}
                 disabled
                 className="w-full cursor-not-allowed rounded-md border border-input bg-muted px-2 py-1.5 text-sm text-muted-foreground"
               />
             ) : (
-              // Lecture seule pour les autres rôles (apprenti·e, maître…).
               <p
                 className={cn(
                   'rounded-md border border-transparent px-2 py-1.5 text-sm',
-                  !valeur.date && 'italic text-muted-foreground',
+                  !evenement.date && 'italic text-muted-foreground',
                 )}
               >
-                {valeur.date
-                  ? new Date(valeur.date).toLocaleDateString('fr-FR', {
+                {evenement.date
+                  ? new Date(evenement.date).toLocaleDateString('fr-FR', {
                       day: '2-digit',
                       month: '2-digit',
                       year: 'numeric',
@@ -251,7 +342,6 @@ function CarteOrganisation({
             )}
           </div>
 
-          {/* Bouton verrouiller / déverrouiller — formateur uniquement */}
           {editable && (
             <div className="flex justify-center">
               <button
@@ -260,8 +350,8 @@ function CarteOrganisation({
                 aria-pressed={verrouille}
                 aria-label={
                   verrouille
-                    ? `Déverrouiller le champ ${champ.libelle}`
-                    : `Verrouiller le champ ${champ.libelle}`
+                    ? `Déverrouiller le champ ${meta.libelle}`
+                    : `Verrouiller le champ ${meta.libelle}`
                 }
                 className={cn(
                   'inline-flex items-center justify-center gap-1.5 rounded-md border px-3 py-1 text-xs font-medium transition-colors',
@@ -300,17 +390,16 @@ function CarteOrganisation({
             <textarea
               id={idCommentaire}
               rows={3}
-              value={valeur.commentaire ?? ''}
+              value={evenement.commentaire ?? ''}
               onChange={(e) => onChangeCommentaire(e.target.value)}
-              placeholder={champ.placeholderCommentaire}
+              placeholder={meta.placeholderCommentaire}
               className="w-full resize-y rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
           ) : editable ? (
-            // Champ verrouillé pour le formateur.
             <textarea
               id={idCommentaire}
               rows={3}
-              value={valeur.commentaire ?? ''}
+              value={evenement.commentaire ?? ''}
               readOnly
               className="w-full cursor-not-allowed resize-y rounded-md border border-input bg-muted px-2 py-1.5 text-sm text-muted-foreground"
             />
@@ -318,10 +407,10 @@ function CarteOrganisation({
             <p
               className={cn(
                 'min-h-[3.25rem] whitespace-pre-wrap rounded-md border border-transparent px-2 py-1.5 text-sm',
-                !valeur.commentaire && 'italic text-muted-foreground',
+                !evenement.commentaire && 'italic text-muted-foreground',
               )}
             >
-              {valeur.commentaire || 'Non renseigné'}
+              {evenement.commentaire || 'Non renseigné'}
             </p>
           )}
         </div>

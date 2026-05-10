@@ -8,23 +8,25 @@ import type {
   EntreeDeverrouillage,
   EntretienTripartite,
   EtatFiche,
+  EvenementOrganisationSuivi,
   FicheSuiviPeriode,
   LigneEvaluationFinaleAttitude,
   LigneEvaluationFinaleCompetence,
   LigneSuiviEntreprise,
   LigneSuiviGreta,
   Livret,
+  MotifOrganisationSuivi,
   NiveauMaitrise,
   NiveauMaitriseEntreprise,
   ObservationsFiche,
-  OrganisationSuivi,
-  ReponsesApprentiEntretien,
-  ReponsesMaitreEntretien,
+  ValeurReponseEntretien,
   Role,
 } from '@/types';
 import { livretsDemo } from '@/fixtures/livret-demo';
 import { deduireEtat } from '@/lib/transitions-fiche';
 import { creerCloture } from '@/lib/cloture-livret';
+import { creerEvenementVierge } from '@/lib/organisation-suivi';
+import { idsQuestionsInitiales, nettoyerReponses } from '@/lib/questions-entretien';
 
 /**
  * Store Zustand des livrets.
@@ -44,7 +46,10 @@ import { creerCloture } from '@/lib/cloture-livret';
 // Bumpé post-sprint 5 :
 //   v4 — refonte `OrganisationSuivi` (date + commentaire structurés)
 //   v5 — passage à 6 apprenti·e·s + livrets scénarisés (CDC §24.5)
-const VERSION_SCHEMA = 5;
+//   v6 — refonte modulaire de `OrganisationSuivi` (liste d'événements)
+//   v7 — banque de questions d'entretien (questions sélectionnées + réponses
+//        indexées par questionId au lieu de champs nommés rigides)
+const VERSION_SCHEMA = 7;
 
 interface LivretStore {
   livrets: Record<string, Livret>;
@@ -132,22 +137,53 @@ interface LivretStore {
    */
   supprimerFichePeriode: (livretId: string, ficheId: string) => void;
 
-  // ── Mutations sur l'organisation du suivi (CDC §5.1) ─────────────────────
-  setOrganisationSuivi: (
+  // ── Mutations sur l'organisation du suivi (CDC §5.1, refonte modulaire) ──
+  /**
+   * Crée un nouvel événement vierge pour le motif donné. Le formateur
+   * référent peut en ajouter autant que nécessaire (plusieurs visites en
+   * entreprise distinctes, par exemple).
+   * @returns l'id du nouvel événement (utile pour scroll/focus côté UI).
+   */
+  ajouterEvenementOrganisation: (
     livretId: string,
     auteurId: string,
-    patch: Partial<Omit<OrganisationSuivi, 'modifieLe' | 'modifiePar'>>,
+    motif: MotifOrganisationSuivi,
+  ) => string;
+  /** Met à jour partiellement un événement (titre, date, commentaire, verrou). */
+  modifierEvenementOrganisation: (
+    livretId: string,
+    auteurId: string,
+    evenementId: string,
+    patch: Partial<Omit<EvenementOrganisationSuivi, 'id' | 'motif'>>,
+  ) => void;
+  /** Supprime un événement de la liste. */
+  supprimerEvenementOrganisation: (
+    livretId: string,
+    auteurId: string,
+    evenementId: string,
   ) => void;
 
-  // ── Mutations sur l'entretien tripartite (CDC §5.2) ──────────────────────
+  // ── Mutations sur l'entretien tripartite (CDC §5.2, refonte mai 2026) ────
   /** Initialise une fiche d'entretien vierge si elle n'existe pas encore (R6). */
   initialiserEntretien: (livretId: string) => void;
   setEntretienDate: (livretId: string, dateEntretien: string) => void;
-  setReponsesApprenti: (
+  /**
+   * Met à jour la liste ordonnée des questions sélectionnées par le formateur
+   * référent. Les réponses orphelines (questions désélectionnées) sont
+   * automatiquement nettoyées pour ne pas peser dans le store.
+   */
+  setQuestionsSelectionnees: (
     livretId: string,
-    patch: Partial<ReponsesApprentiEntretien>,
+    cible: 'apprenti' | 'maitre',
+    questionIds: string[],
   ) => void;
-  setReponsesMaitre: (livretId: string, patch: Partial<ReponsesMaitreEntretien>) => void;
+  /** Met à jour la réponse à une question. */
+  setReponseEntretien: (
+    livretId: string,
+    cible: 'apprenti' | 'maitre',
+    questionId: string,
+    valeur: ValeurReponseEntretien,
+  ) => void;
   setAppreciationMaitre: (livretId: string, patch: Partial<AppreciationMaitre>) => void;
   setDemarchesAdministratives: (
     livretId: string,
@@ -227,11 +263,16 @@ function muterLivret(
   };
 }
 
-/** Crée un entretien tripartite vide (R6 — un seul par livret). */
+/**
+ * Crée un entretien tripartite vide (R6 — un seul par livret).
+ * Pré-sélectionne les questions par défaut de la banque (les 11 historiques).
+ */
 function entretienVierge(): EntretienTripartite {
   return {
+    questionsApprentiSelectionnees: idsQuestionsInitiales('apprenti'),
+    questionsMaitreSelectionnees: idsQuestionsInitiales('maitre'),
     reponsesApprenti: {},
-    reponsesMaitre: { dejaFormeApprenti: null },
+    reponsesMaitre: {},
     appreciationMaitre: {},
     demarchesAdministratives: {
       contratSigne: null,
@@ -454,14 +495,47 @@ export const useLivretStore = create<LivretStore>()(
           })),
         ),
 
-      // ── Organisation du suivi ─────────────────────────────────────────────
-      setOrganisationSuivi: (livretId, auteurId, patch) =>
+      // ── Organisation du suivi (refonte modulaire) ─────────────────────────
+      ajouterEvenementOrganisation: (livretId, auteurId, motif) => {
+        const evt = creerEvenementVierge(motif);
         set((s) =>
           muterLivret(s, livretId, (l) => ({
             ...l,
             organisationSuivi: {
               ...l.organisationSuivi,
-              ...patch,
+              evenements: [...l.organisationSuivi.evenements, evt],
+              modifieLe: new Date().toISOString(),
+              modifiePar: auteurId,
+            },
+          })),
+        );
+        return evt.id;
+      },
+
+      modifierEvenementOrganisation: (livretId, auteurId, evenementId, patch) =>
+        set((s) =>
+          muterLivret(s, livretId, (l) => ({
+            ...l,
+            organisationSuivi: {
+              ...l.organisationSuivi,
+              evenements: l.organisationSuivi.evenements.map((e) =>
+                e.id === evenementId ? { ...e, ...patch } : e,
+              ),
+              modifieLe: new Date().toISOString(),
+              modifiePar: auteurId,
+            },
+          })),
+        ),
+
+      supprimerEvenementOrganisation: (livretId, auteurId, evenementId) =>
+        set((s) =>
+          muterLivret(s, livretId, (l) => ({
+            ...l,
+            organisationSuivi: {
+              ...l.organisationSuivi,
+              evenements: l.organisationSuivi.evenements.filter(
+                (e) => e.id !== evenementId,
+              ),
               modifieLe: new Date().toISOString(),
               modifiePar: auteurId,
             },
@@ -489,29 +563,44 @@ export const useLivretStore = create<LivretStore>()(
           })),
         ),
 
-      setReponsesApprenti: (livretId, patch) =>
+      setQuestionsSelectionnees: (livretId, cible, questionIds) =>
         set((s) =>
           muterLivret(s, livretId, (l) => {
             const e = l.entretienTripartite ?? entretienVierge();
+            // Nettoie les réponses orphelines (questions désélectionnées) pour
+            // ne pas peser dans le store. La sélection sert aussi de garde
+            // d'affichage côté UI.
+            if (cible === 'apprenti') {
+              return {
+                ...l,
+                entretienTripartite: {
+                  ...e,
+                  questionsApprentiSelectionnees: questionIds,
+                  reponsesApprenti: nettoyerReponses(e.reponsesApprenti, questionIds),
+                },
+              };
+            }
             return {
               ...l,
               entretienTripartite: {
                 ...e,
-                reponsesApprenti: { ...e.reponsesApprenti, ...patch },
+                questionsMaitreSelectionnees: questionIds,
+                reponsesMaitre: nettoyerReponses(e.reponsesMaitre, questionIds),
               },
             };
           }),
         ),
 
-      setReponsesMaitre: (livretId, patch) =>
+      setReponseEntretien: (livretId, cible, questionId, valeur) =>
         set((s) =>
           muterLivret(s, livretId, (l) => {
             const e = l.entretienTripartite ?? entretienVierge();
+            const champ = cible === 'apprenti' ? 'reponsesApprenti' : 'reponsesMaitre';
             return {
               ...l,
               entretienTripartite: {
                 ...e,
-                reponsesMaitre: { ...e.reponsesMaitre, ...patch },
+                [champ]: { ...e[champ], [questionId]: valeur },
               },
             };
           }),

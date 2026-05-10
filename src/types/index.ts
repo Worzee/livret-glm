@@ -178,57 +178,96 @@ export interface SignaturesTripartite {
 }
 
 /**
- * Un champ de l'organisation du suivi (CDC §5.1).
- * Date principale optionnelle (ISO 8601 YYYY-MM-DD) + commentaire libre.
+ * Motifs disponibles pour les événements de l'organisation du suivi (CDC §5.1).
  *
- * Pour les cas multi-dates (visites en entreprise, bilans semestriels), la
- * date principale porte la première occurrence et les autres sont énumérées
- * dans le commentaire. Pour les cas sans date précise (restitution périodique,
- * bilans à planifier), la date reste vide.
+ * Le formateur référent peut ajouter un nombre arbitraire d'événements (ex.
+ * 3 visites en entreprise distinctes). Le motif `'autre'` autorise toute
+ * occasion non couverte par les motifs standards (conseil de classe, sortie
+ * pédagogique, période d'examen, etc.).
  */
-export interface ChampOrganisationSuivi {
+export type MotifOrganisationSuivi =
+  | 'reunion-rentree'
+  | 'entretien-individuel'
+  | 'accueil-tuteur'
+  | 'visite-entreprise'
+  | 'restitution-activites'
+  | 'bilan-formation'
+  | 'autre';
+
+/**
+ * Un événement planifié dans l'organisation du suivi (CDC §5.1, refonte
+ * modulaire mai 2026).
+ *
+ * Anciennement, `OrganisationSuivi` portait 6 champs nommés rigides ; les
+ * livrets sont désormais alimentés via une liste dynamique d'événements créés
+ * à la demande par le formateur référent. Plusieurs événements peuvent
+ * partager le même motif (ex. plusieurs visites en entreprise) — le `titre`
+ * optionnel permet de les distinguer dans la liste.
+ */
+export interface EvenementOrganisationSuivi {
+  /** Identifiant stable (UUID court) — clé React et cible des mutations. */
+  id: string;
+  /** Catégorie de l'événement (cf. `MotifOrganisationSuivi`). */
+  motif: MotifOrganisationSuivi;
+  /** Titre libre — utile pour distinguer plusieurs cartes d'un même motif. */
+  titre?: string;
   /** Date principale au format ISO 8601 (YYYY-MM-DD), optionnelle. */
   date?: string;
   /** Commentaire libre — lieu, modalités, dates secondaires, etc. */
   commentaire?: string;
   /**
-   * Verrou local du champ — quand `true`, la date et le commentaire passent
-   * en lecture seule jusqu'à un déverrouillage explicite. Aucune validation
-   * supplémentaire (ni motif, ni confirmation) : c'est un simple toggle.
-   *
-   * Compatibilité ascendante : un livret persisté en v4 sans ce champ vaut
-   * `undefined` ≡ déverrouillé. Pas besoin de bumper VERSION_SCHEMA.
+   * Verrou local de l'événement — quand `true`, le titre, la date et le
+   * commentaire passent en lecture seule jusqu'à un déverrouillage explicite.
    */
   verrouille?: boolean;
 }
 
 export interface OrganisationSuivi {
-  reunionRentree: ChampOrganisationSuivi;
-  entretienIndividuel: ChampOrganisationSuivi;
-  accueilTuteurs: ChampOrganisationSuivi;
-  visitesEntreprise: ChampOrganisationSuivi;
-  restitutionActivites: ChampOrganisationSuivi;
-  bilansFormation: ChampOrganisationSuivi;
+  /** Liste ordonnée des événements créés (ordre d'ajout). */
+  evenements: EvenementOrganisationSuivi[];
   modifieLe: string;
   modifiePar: string;
 }
 
-export interface ReponsesApprentiEntretien {
-  motivations?: string;
-  contactEntreprise?: string;
-  connaissanceEntreprise?: string;
-  metierVsRepresentation?: string;
-  difficultesDisciplines?: string;
-  difficultesAutres?: string;
-  ressenti?: string;
+/**
+ * Banque de questions de l'entretien tripartite (CDC §5.2, refonte mai 2026).
+ *
+ * Les questions posées à l'apprenti·e et au maître d'apprentissage ne sont
+ * plus codées en dur : elles vivent dans une banque centrale gérée par les
+ * coordinateur·rice·s + administrateur·rice·s. Pour chaque livret, le
+ * formateur référent sélectionne (et ordonne) les questions à poser.
+ *
+ * Les réponses sont indexées par `questionId` pour rester robustes au
+ * renommage des questions ; le type de la valeur dépend du `type` de la
+ * question.
+ */
+export type CibleQuestion = 'apprenti' | 'maitre';
+
+export type TypeQuestion = 'texte-court' | 'texte-long' | 'oui-non';
+
+export interface QuestionBanque {
+  id: string;
+  /** À qui la question s'adresse — détermine la section dans laquelle elle apparaît. */
+  cible: CibleQuestion;
+  /** Format attendu de la réponse. */
+  type: TypeQuestion;
+  /** Libellé affiché à l'utilisateur·rice. */
+  libelle: string;
+  /** Aide de saisie facultative (placeholder). Ignorée pour le type oui-non. */
+  placeholder?: string;
 }
 
-export interface ReponsesMaitreEntretien {
-  dejaFormeApprenti: boolean | null;
-  siOuiDiplomes?: string;
-  objectifsEmbauche?: string;
-  organisationAccueil?: string;
-}
+/**
+ * Réponse à une question de l'entretien.
+ *  - texte-court / texte-long → string
+ *  - oui-non                  → boolean | null (null = pas répondu)
+ */
+export type ValeurReponseEntretien = string | boolean | null;
+
+/**
+ * Réponses indexées par `questionId`. Une entrée manquante = pas répondu.
+ */
+export type ReponsesEntretien = Record<string, ValeurReponseEntretien>;
 
 export interface AppreciationMaitre {
   ponctualite?: NiveauAppreciation;
@@ -268,8 +307,16 @@ export interface CommentairesEntretien {
 
 export interface EntretienTripartite {
   dateEntretien?: string;
-  reponsesApprenti: ReponsesApprentiEntretien;
-  reponsesMaitre: ReponsesMaitreEntretien;
+  /**
+   * IDs des questions sélectionnées par le formateur référent pour chaque
+   * cible. L'ordre du tableau détermine l'ordre d'affichage. Vide = aucune
+   * question sélectionnée (le formateur doit en choisir avant la saisie).
+   */
+  questionsApprentiSelectionnees: string[];
+  questionsMaitreSelectionnees: string[];
+  /** Réponses indexées par `questionId` (cf. `ReponsesEntretien`). */
+  reponsesApprenti: ReponsesEntretien;
+  reponsesMaitre: ReponsesEntretien;
   appreciationMaitre: AppreciationMaitre;
   demarchesAdministratives: DemarchesAdministratives;
   conditionsPratiques: ConditionsPratiques;

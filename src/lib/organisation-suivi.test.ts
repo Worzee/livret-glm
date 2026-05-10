@@ -1,0 +1,114 @@
+import { describe, expect, it } from 'vitest';
+import type { EvenementOrganisationSuivi, MotifOrganisationSuivi } from '@/types';
+import {
+  MOTIFS_ORGANISATION_SUIVI,
+  creerEvenementVierge,
+  libelleEvenement,
+  libelleMotif,
+  metadonneesMotif,
+  peutSupprimerEvenement,
+} from './organisation-suivi';
+
+describe('MOTIFS_ORGANISATION_SUIVI', () => {
+  it('expose exactement les 7 motifs convenus avec le pilote (mai 2026)', () => {
+    const cles = MOTIFS_ORGANISATION_SUIVI.map((m) => m.motif);
+    expect(cles).toEqual([
+      'reunion-rentree',
+      'entretien-individuel',
+      'accueil-tuteur',
+      'visite-entreprise',
+      'restitution-activites',
+      'bilan-formation',
+      'autre',
+    ]);
+  });
+
+  it('chaque motif porte un libellé, une description et un placeholder non vides', () => {
+    for (const meta of MOTIFS_ORGANISATION_SUIVI) {
+      expect(meta.libelle.length).toBeGreaterThan(0);
+      expect(meta.description.length).toBeGreaterThan(0);
+      expect(meta.placeholderCommentaire.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('metadonneesMotif / libelleMotif', () => {
+  it('renvoie les métadonnées attendues pour un motif connu', () => {
+    expect(metadonneesMotif('visite-entreprise').libelle).toBe('Visites en entreprise');
+    expect(libelleMotif('accueil-tuteur')).toBe('Accueil tuteur');
+    expect(libelleMotif('autre')).toBe('Autre');
+  });
+
+  it('lance une erreur explicite pour un motif inconnu (données corrompues)', () => {
+    const corrompu = 'inconnu' as unknown as MotifOrganisationSuivi;
+    expect(() => metadonneesMotif(corrompu)).toThrow(/inconnu/i);
+  });
+});
+
+describe('libelleEvenement', () => {
+  const base: EvenementOrganisationSuivi = {
+    id: 'evt-1',
+    motif: 'visite-entreprise',
+  };
+
+  it('renvoie le libellé du motif seul si aucun titre custom', () => {
+    expect(libelleEvenement(base)).toBe('Visites en entreprise');
+  });
+
+  it('concatène le titre quand il est renseigné', () => {
+    expect(libelleEvenement({ ...base, titre: 'Visite n°1 — novembre' })).toBe(
+      'Visites en entreprise — Visite n°1 — novembre',
+    );
+  });
+
+  it("ignore un titre vide ou composé uniquement d'espaces", () => {
+    expect(libelleEvenement({ ...base, titre: '' })).toBe('Visites en entreprise');
+    expect(libelleEvenement({ ...base, titre: '   ' })).toBe('Visites en entreprise');
+  });
+});
+
+describe('peutSupprimerEvenement', () => {
+  const base: EvenementOrganisationSuivi = {
+    id: 'evt-1',
+    motif: 'visite-entreprise',
+  };
+
+  it('autorise la suppression quand le verrou est absent', () => {
+    expect(peutSupprimerEvenement(base)).toEqual({ supprimable: true });
+  });
+
+  it("autorise la suppression quand verrouille vaut explicitement false", () => {
+    expect(peutSupprimerEvenement({ ...base, verrouille: false })).toEqual({
+      supprimable: true,
+    });
+  });
+
+  it("bloque la suppression et fournit une raison quand l'événement est verrouillé", () => {
+    const r = peutSupprimerEvenement({ ...base, verrouille: true });
+    expect(r.supprimable).toBe(false);
+    expect(r.raison).toMatch(/déverrouillez/i);
+  });
+});
+
+describe('creerEvenementVierge', () => {
+  it("génère un événement avec id unique, motif fourni, autres champs vides", () => {
+    const evt = creerEvenementVierge('autre');
+    expect(evt.motif).toBe('autre');
+    expect(evt.id).toMatch(/^evt-/);
+    expect(evt.titre).toBe('');
+    expect(evt.date).toBe('');
+    expect(evt.commentaire).toBe('');
+    expect(evt.verrouille).toBeUndefined();
+  });
+
+  it("respecte un id custom (utile pour les fixtures déterministes)", () => {
+    const evt = creerEvenementVierge('reunion-rentree', 'evt-fixture-1');
+    expect(evt.id).toBe('evt-fixture-1');
+  });
+
+  it("génère deux ids distincts pour deux appels successifs", () => {
+    const a = creerEvenementVierge('visite-entreprise');
+    const b = creerEvenementVierge('visite-entreprise');
+    expect(a.id).not.toBe(b.id);
+  });
+});

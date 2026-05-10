@@ -117,11 +117,15 @@ export function validerSignatureEntretien(
 
   switch (role) {
     case 'apprenti': {
-      const r = entretien.reponsesApprenti;
-      const auMoinsUneReponse =
-        !!(r.motivations || r.contactEntreprise || r.connaissanceEntreprise ||
-          r.metierVsRepresentation || r.difficultesDisciplines || r.difficultesAutres ||
-          r.ressenti);
+      // Refonte mai 2026 : la signature est autorisée si au moins une des
+      // questions sélectionnées par le formateur référent a été répondue.
+      const reponses = entretien.reponsesApprenti;
+      const ids = entretien.questionsApprentiSelectionnees;
+      const auMoinsUneReponse = ids.some((id) => {
+        const v = reponses[id];
+        if (typeof v === 'string') return v.trim().length > 0;
+        return typeof v === 'boolean';
+      });
       if (!auMoinsUneReponse) {
         raisons.push('Renseignez au moins une réponse à vos questions.');
       }
@@ -129,11 +133,10 @@ export function validerSignatureEntretien(
     }
 
     case 'maitre': {
-      const r = entretien.reponsesMaitre;
+      // Refonte mai 2026 : on exige uniquement au moins un critère
+      // d'appréciation. La saisie des questions sélectionnées reste libre
+      // (le formateur peut en avoir choisi 0 pour un cas simplifié).
       const ap = entretien.appreciationMaitre;
-      if (r.dejaFormeApprenti === null) {
-        raisons.push("Indiquez si vous avez déjà formé un·e apprenti·e (oui/non).");
-      }
       const auMoinsUnCritere =
         !!(ap.ponctualite || ap.comprehensionConsignes || ap.qualiteTravail || ap.integration);
       if (!auMoinsUnCritere) {
@@ -176,27 +179,19 @@ interface ProgressionEntretien {
  * attendu pour chaque rôle.
  */
 export function calculerProgression(entretien: EntretienTripartite): ProgressionEntretien {
-  // Apprenti : 7 questions textuelles
-  const r = entretien.reponsesApprenti;
-  const champsApprenti = [
-    r.motivations,
-    r.contactEntreprise,
-    r.connaissanceEntreprise,
-    r.metierVsRepresentation,
-    r.difficultesDisciplines,
-    r.difficultesAutres,
-    r.ressenti,
-  ];
+  // Apprenti : N questions sélectionnées par le formateur référent.
+  // On considère « rempli » dès qu'on a une string non-vide ou un boolean.
+  const champsApprenti = entretien.questionsApprentiSelectionnees.map((id) =>
+    valeurReponseRemplie(entretien.reponsesApprenti[id]),
+  );
   const apprentiPct = pourcentageRempli(champsApprenti);
 
-  // Maître : 1 boolean + 3 textes + 4 critères + commentaires (optionnel)
-  const m = entretien.reponsesMaitre;
+  // Maître : N questions sélectionnées + 4 critères d'appréciation (en dur)
   const ap = entretien.appreciationMaitre;
   const champsMaitre = [
-    m.dejaFormeApprenti !== null ? '✓' : '',
-    m.siOuiDiplomes,
-    m.objectifsEmbauche,
-    m.organisationAccueil,
+    ...entretien.questionsMaitreSelectionnees.map((id) =>
+      valeurReponseRemplie(entretien.reponsesMaitre[id]),
+    ),
     ap.ponctualite,
     ap.comprehensionConsignes,
     ap.qualiteTravail,
@@ -240,4 +235,13 @@ function pourcentageRempli(champs: Array<string | undefined | null>): number {
   if (champs.length === 0) return 0;
   const remplis = champs.filter((v) => v && v.toString().trim().length > 0).length;
   return Math.round((remplis / champs.length) * 100);
+}
+
+/** Helper : ramène une réponse de question (string|boolean|null) à un marqueur
+ * « rempli » (chaîne non vide) ou « non rempli » (chaîne vide), pour rester
+ * compatible avec `pourcentageRempli`. */
+function valeurReponseRemplie(v: unknown): string {
+  if (typeof v === 'string') return v;
+  if (typeof v === 'boolean') return '✓';
+  return '';
 }

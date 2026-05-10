@@ -26,16 +26,22 @@ import { cn } from '@/lib/utils';
  * Modale d'import d'un référentiel de compétences.
  * Référence : cahier des charges v1.3, extension 3 phase C.
  *
- * Workflow finalisé avec le pilote (mai 2026) :
- *   1. L'utilisateur·rice choisit la **formation** à laquelle rattacher le
- *      référentiel (select sur les formations existantes).
+ * Workflow étendu (mai 2026) :
+ *   1. L'utilisateur·rice **peut** choisir une formation à rattacher (select
+ *      sur les formations existantes). C'est désormais **optionnel** : un
+ *      référentiel peut être importé seul puis rattaché plus tard à une ou
+ *      plusieurs formations depuis la page Formations.
+ *      - Si une formation est choisie → le libellé est auto-généré
+ *        `Referentiel_<intituléFormation>_<YYYY-MM-DD>` et la formation est
+ *        mise à jour pour pointer sur le nouveau référentiel.
+ *      - Si aucune formation n'est choisie → un champ « Nom du référentiel »
+ *        apparaît et devient obligatoire (≥ 3 caractères).
  *   2. Il/elle fournit un fichier (CSV ou XLSX) **OU** colle le contenu
  *      CSV dans un textarea (utile pour des tests rapides).
  *   3. Clic « Aperçu » → analyse + stats + détection auto du format
  *      (signature ZIP pour XLSX, encodage UTF-8/CP1252 pour CSV).
- *   4. Clic « Importer » → le référentiel est créé avec le libellé
- *      `Referentiel_<intituléFormation>_<YYYY-MM-DD>`, et la formation
- *      est mise à jour pour pointer dessus (`formation.referentielId`).
+ *   4. Clic « Importer » → le référentiel est créé avec le libellé déterminé
+ *      en (1).
  *
  * Esc / clic backdrop / Annuler ferment sans rien persister.
  */
@@ -50,6 +56,7 @@ interface ModaleImportReferentielProps {
 
 const SAISIE_VIDE: SaisieImportReferentiel = {
   formationId: '',
+  nomReferentielLibre: '',
   source: 'fichier',
   nomFichier: '',
   contenuCsv: '',
@@ -151,12 +158,12 @@ export function ModaleImportReferentiel({
       setApercu(null);
       return;
     }
-    if (!formationCible) {
-      // Sécurité : on ne devrait pas arriver ici grâce à la validation.
-      setApercu({ type: 'erreur', message: 'Formation introuvable.' });
-      return;
-    }
-    const nomReferentiel = genererNomReferentiel(formationCible);
+    // Le libellé final dépend du chemin : si une formation est rattachée, on
+    // utilise la convention canonique (auto-générée). Sinon, on respecte le
+    // nom libre saisi tel quel.
+    const nomReferentiel = formationCible
+      ? genererNomReferentiel(formationCible)
+      : (saisie.nomReferentielLibre ?? '').trim();
     try {
       let rapport: RapportImport;
       if (saisie.source === 'fichier' && bufferFichier) {
@@ -173,7 +180,7 @@ export function ModaleImportReferentiel({
           nomFormation: nomReferentiel,
         });
       }
-      const refExistant = formationCible.referentielId
+      const refExistant = formationCible?.referentielId
         ? referentielsExistants[formationCible.referentielId]
         : undefined;
       setApercu({
@@ -193,10 +200,13 @@ export function ModaleImportReferentiel({
 
   function importer() {
     if (!apercu || apercu.type !== 'ok') return;
-    if (!formationCible) return;
     const ref = ajouter(apercu.rapport.referentiel);
-    // Rattache la formation au nouveau référentiel.
-    modifierFormation(formationCible.id, { referentielId: ref.id });
+    // Rattache la formation au nouveau référentiel — uniquement si une
+    // formation a été choisie. Sinon le référentiel reste « orphelin » et
+    // sera rattaché plus tard depuis la page Formations.
+    if (formationCible) {
+      modifierFormation(formationCible.id, { referentielId: ref.id });
+    }
     onValide?.(ref.id);
     onAnnuler();
   }
@@ -240,10 +250,11 @@ export function ModaleImportReferentiel({
         </div>
 
         <div className="space-y-4 p-4">
-          {/* Formation cible */}
+          {/* Formation cible — optionnelle */}
           <div className="space-y-1">
             <label htmlFor="import-ref-formation" className="text-xs font-medium">
-              Formation à associer <span className="text-red-600">*</span>
+              Formation à associer{' '}
+              <span className="font-normal text-muted-foreground">(optionnel)</span>
             </label>
             <select
               id="import-ref-formation"
@@ -261,7 +272,7 @@ export function ModaleImportReferentiel({
                 erreurs.formationId ? 'border-red-400' : 'border-input',
               )}
             >
-              <option value="">— Choisir une formation —</option>
+              <option value="">— Aucune (rattacher plus tard) —</option>
               {formationsListe.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.intitule} ({f.annee})
@@ -273,21 +284,50 @@ export function ModaleImportReferentiel({
                 {erreurs.formationId}
               </p>
             )}
-            {formationsListe.length === 0 && !erreurs.formationId && (
-              <p className="text-xs text-amber-700">
-                ⚠ Aucune formation disponible. Créez d'abord la formation depuis la page{' '}
-                <em>Formations</em>.
-              </p>
-            )}
-            {formationCible && (
+            {formationCible ? (
               <p className="text-xs text-muted-foreground">
                 Le référentiel sera nommé{' '}
                 <code className="rounded bg-secondary px-1 py-0.5">
                   {genererNomReferentiel(formationCible)}
                 </code>
               </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Le référentiel pourra être rattaché à une ou plusieurs formations plus tard
+                depuis la page <em>Formations</em>.
+              </p>
             )}
           </div>
+
+          {/* Nom libre — visible uniquement quand aucune formation n'est choisie */}
+          {!formationCible && (
+            <div className="space-y-1">
+              <label htmlFor="import-ref-nom-libre" className="text-xs font-medium">
+                Nom du référentiel <span className="text-red-600">*</span>
+              </label>
+              <input
+                id="import-ref-nom-libre"
+                type="text"
+                data-testid="import-ref-nom-libre"
+                value={saisie.nomReferentielLibre ?? ''}
+                onChange={(e) => {
+                  setSaisie((s) => ({ ...s, nomReferentielLibre: e.target.value }));
+                  setApercu(null);
+                }}
+                placeholder="ex : Référentiel CAP Boulanger 2026"
+                aria-invalid={!!erreurs.nomReferentielLibre}
+                className={cn(
+                  'w-full rounded-md border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring',
+                  erreurs.nomReferentielLibre ? 'border-red-400' : 'border-input',
+                )}
+              />
+              {erreurs.nomReferentielLibre && (
+                <p role="alert" className="text-xs text-red-700">
+                  {erreurs.nomReferentielLibre}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Source : fichier OU texte collé. La présence d'un fichier prend le pas. */}
           <div className="space-y-2">

@@ -4,21 +4,36 @@ import type { Formation } from '@/types';
  * Validation du formulaire d'import d'un référentiel.
  * Référence : cahier des charges v1.3, extension 3 (import de référentiels).
  *
- * Workflow validé par le pilote :
- *   - L'utilisateur·rice choisit une **formation existante** (et non un nom
- *     libre comme dans la version initiale).
- *   - Le référentiel est ensuite **rattaché automatiquement** à cette
- *     formation, et son libellé est dérivé via `genererNomReferentiel`
- *     (`Referentiel_<intitulé>_<YYYY-MM-DD>`).
+ * Workflow étendu (mai 2026) :
+ *   - La formation est **optionnelle** à l'import : un référentiel peut être
+ *     importé seul puis rattaché plus tard à une ou plusieurs formations
+ *     (relation N:1 — plusieurs formations peuvent pointer vers le même
+ *     référentiel).
+ *   - Si une formation est choisie, le libellé est auto-généré via
+ *     `genererNomReferentiel` (`Referentiel_<intitulé>_<YYYY-MM-DD>`) et la
+ *     formation est rattachée automatiquement à l'import.
+ *   - Sinon, l'utilisateur·rice fournit un **nom libre** (≥ 3 caractères) qui
+ *     sert directement de libellé.
  *
  * Pures fonctions — pas d'effet de bord, testables sans React.
  */
 
 export type SourceImportReferentiel = 'fichier' | 'texte';
 
+const NOM_LIBRE_MIN = 3;
+
 export interface SaisieImportReferentiel {
-  /** Identifiant de la formation à laquelle le référentiel sera rattaché. */
+  /**
+   * Identifiant de la formation à laquelle le référentiel sera rattaché.
+   * Vide si l'utilisateur·rice importe un référentiel « orphelin » qu'il/elle
+   * rattachera plus tard depuis la page Formations.
+   */
   formationId: string;
+  /**
+   * Nom libre du référentiel — utilisé uniquement si `formationId` est vide.
+   * Sinon, le libellé est dérivé de la formation via `genererNomReferentiel`.
+   */
+  nomReferentielLibre?: string;
   /** Origine du contenu : fichier sélectionné ou texte collé. */
   source: SourceImportReferentiel;
   /** Nom du fichier choisi (présent si source === 'fichier'). */
@@ -29,6 +44,7 @@ export interface SaisieImportReferentiel {
 
 export interface ErreursImportReferentiel {
   formationId?: string;
+  nomReferentielLibre?: string;
   contenuCsv?: string;
 }
 
@@ -44,8 +60,18 @@ export function validerSaisieImportReferentiel(
   const erreurs: ErreursImportReferentiel = {};
   const avertissements: ErreursImportReferentiel = {};
 
-  if (!saisie.formationId?.trim()) {
-    erreurs.formationId = 'Sélectionnez la formation à laquelle rattacher ce référentiel.';
+  // Formation optionnelle. Si non fournie, un nom libre est requis pour
+  // identifier le référentiel dans la liste — il pourra être rattaché à une
+  // ou plusieurs formations plus tard depuis la page Formations.
+  const aFormation = !!saisie.formationId?.trim();
+  if (!aFormation) {
+    const nom = saisie.nomReferentielLibre?.trim() ?? '';
+    if (!nom) {
+      erreurs.nomReferentielLibre =
+        'Sans formation choisie, donnez un nom au référentiel (vous pourrez le rattacher plus tard).';
+    } else if (nom.length < NOM_LIBRE_MIN) {
+      erreurs.nomReferentielLibre = `Le nom doit faire au moins ${NOM_LIBRE_MIN} caractères.`;
+    }
   }
 
   // Source de données : fichier OU texte. Au moins l'une des deux doit être

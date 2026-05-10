@@ -20,10 +20,48 @@ describe('validerSaisieImportReferentiel', () => {
     expect(r.erreurs).toEqual({});
   });
 
-  it("exige une formation sélectionnée (formationId non vide)", () => {
-    const r = validerSaisieImportReferentiel({ ...SAISIE_VALIDE, formationId: '' });
+  // Workflow étendu mai 2026 : la formation peut être rattachée plus tard.
+  it("accepte une saisie sans formation si un nom libre est fourni", () => {
+    const r = validerSaisieImportReferentiel({
+      formationId: '',
+      nomReferentielLibre: 'Référentiel Boulangerie 2026',
+      source: 'fichier',
+      nomFichier: 'boulangerie.xlsx',
+      contenuCsv: '',
+    });
+    expect(r.ok).toBe(true);
+    expect(r.erreurs).toEqual({});
+  });
+
+  it("exige un nom libre quand aucune formation n'est sélectionnée", () => {
+    const r = validerSaisieImportReferentiel({
+      ...SAISIE_VALIDE,
+      formationId: '',
+      nomReferentielLibre: '',
+    });
     expect(r.ok).toBe(false);
-    expect(r.erreurs.formationId).toBeDefined();
+    expect(r.erreurs.nomReferentielLibre).toBeDefined();
+  });
+
+  it("rejette un nom libre trop court (< 3 caractères) sans formation", () => {
+    const r = validerSaisieImportReferentiel({
+      ...SAISIE_VALIDE,
+      formationId: '',
+      nomReferentielLibre: 'AB',
+    });
+    expect(r.ok).toBe(false);
+    expect(r.erreurs.nomReferentielLibre).toMatch(/3 caractères/);
+  });
+
+  it("ignore le nom libre si une formation est choisie (le libellé est auto-généré)", () => {
+    // Si formation présente, nomReferentielLibre est ignoré : pas d'erreur, pas
+    // d'avertissement. La modale doit cacher le champ dans ce cas.
+    const r = validerSaisieImportReferentiel({
+      ...SAISIE_VALIDE,
+      nomReferentielLibre: '',
+    });
+    expect(r.ok).toBe(true);
+    expect(r.erreurs.nomReferentielLibre).toBeUndefined();
   });
 
   it("exige une source de données (fichier OU texte non vide)", () => {

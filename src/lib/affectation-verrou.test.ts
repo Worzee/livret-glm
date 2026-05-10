@@ -27,12 +27,7 @@ function fabriquerLivret(overrides: Partial<Livret> = {}): Livret {
     apprentiId: 'u-test',
     formationId: 'f-test',
     organisationSuivi: {
-      reunionRentree: {},
-      entretienIndividuel: {},
-      accueilTuteurs: {},
-      visitesEntreprise: {},
-      restitutionActivites: {},
-      bilansFormation: {},
+      evenements: [],
       modifieLe: '2025-09-01T00:00:00.000Z',
       modifiePar: 'u-test',
     },
@@ -65,8 +60,10 @@ const FICHE_VIDE: FicheSuiviPeriode = {
 };
 
 const ENTRETIEN_VIDE: EntretienTripartite = {
+  questionsApprentiSelectionnees: [],
+  questionsMaitreSelectionnees: [],
   reponsesApprenti: {},
-  reponsesMaitre: { dejaFormeApprenti: null },
+  reponsesMaitre: {},
   appreciationMaitre: {},
   demarchesAdministratives: {
     contratSigne: null,

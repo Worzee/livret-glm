@@ -43,13 +43,11 @@ export function creerLivretVierge(
     id: livretId,
     apprentiId: apprenti.id,
     formationId: apprenti.formationId,
+    // Refonte modulaire mai 2026 : la liste démarre vide. Le formateur
+    // référent ajoute à la demande chaque événement (réunion de rentrée,
+    // visites en entreprise, etc.) depuis la page Organisation du suivi.
     organisationSuivi: {
-      reunionRentree: {},
-      entretienIndividuel: {},
-      accueilTuteurs: {},
-      visitesEntreprise: {},
-      restitutionActivites: {},
-      bilansFormation: {},
+      evenements: [],
       modifieLe: iso,
       modifiePar: auteurId,
     },

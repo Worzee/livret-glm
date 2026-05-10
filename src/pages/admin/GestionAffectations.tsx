@@ -153,8 +153,14 @@ export function GestionAffectations() {
           Aucun·e apprenti·e ne correspond à vos critères.
         </div>
       ) : (
-        <div className="rounded-lg border border-border bg-card overflow-x-auto">
-          <table className="w-full text-sm">
+        <>
+          {/* Indicateur de scroll horizontal — affiché uniquement sur mobile,
+              le tableau a 6 colonnes denses (selects, sticky first col). */}
+          <p className="md:hidden text-xs italic text-muted-foreground">
+            ← Faites défiler horizontalement pour voir toutes les colonnes →
+          </p>
+          <div className="rounded-lg border border-border bg-card overflow-x-auto">
+            <table className="w-full text-sm min-w-[42rem]">
             <thead className="bg-secondary/50 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="px-4 py-2 text-left">
@@ -204,7 +210,8 @@ export function GestionAffectations() {
               })}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       )}
     </div>
   );

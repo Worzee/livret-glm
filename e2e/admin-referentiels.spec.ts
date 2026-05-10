@@ -228,6 +228,55 @@ test("la compétence décochée disparaît du sélecteur d'ajout dans la fiche d
   expect(options.some((o) => o.includes('C1.1'))).toBe(false);
 });
 
+test("import sans formation — nom libre obligatoire, référentiel orphelin créé", async ({
+  page,
+}) => {
+  await selectRole(page, 'Coordinateur·rice');
+  await page.goto('/admin/referentiels');
+  await page.getByRole('button', { name: /Importer un référentiel/i }).click();
+  const modale = page.getByRole('dialog');
+
+  // Aucune formation choisie → champ « Nom du référentiel » apparaît
+  await expect(modale.getByTestId('import-ref-nom-libre')).toBeVisible();
+
+  // Tentative d'aperçu sans nom libre → erreur de validation
+  await modale.getByTestId('import-ref-csv').fill(
+    [
+      'BLOC;COMPETENCE',
+      'BLOC A;Compétence 1',
+      'BLOC A;Compétence 2',
+      'BLOC B;Compétence 3',
+    ].join('\n'),
+  );
+  await modale.getByRole('button', { name: /^Aperçu$/i }).click();
+  await expect(modale.getByText(/Sans formation choisie, donnez un nom/i)).toBeVisible();
+
+  // Saisie du nom libre → import effectif
+  await modale.getByTestId('import-ref-nom-libre').fill('Référentiel CAP Boulanger 2026');
+  await modale.getByRole('button', { name: /^Aperçu$/i }).click();
+  await expect(modale.getByText(/Aperçu prêt — Référentiel CAP Boulanger 2026/)).toBeVisible();
+  await modale.getByRole('button', { name: /Importer \(/i }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+
+  // La nouvelle carte affiche « Aucune formation rattachée »
+  const carte = page.locator('article', { hasText: 'Référentiel CAP Boulanger 2026' });
+  await expect(carte).toBeVisible();
+  await expect(
+    carte.getByTestId('ref-formations-rattachees'),
+  ).toContainText(/Aucune formation rattachée/i);
+});
+
+test("la carte du CAP Cuisine affiche la formation rattachée (relation N:1)", async ({
+  page,
+}) => {
+  await selectRole(page, 'Coordinateur·rice');
+  await page.goto('/admin/referentiels');
+  const carte = page.locator('article', { hasText: 'CAP Cuisine' });
+  await expect(carte.getByTestId('ref-formations-rattachees')).toContainText(
+    /Utilisé par 1 formation : CAP Cuisine \(2025-2026\)/i,
+  );
+});
+
 test('persistance après reload : le référentiel importé survit', async ({ page }) => {
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/referentiels');

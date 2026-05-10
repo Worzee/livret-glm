@@ -14,9 +14,9 @@
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
-| **Tests unitaires** | **272 / 272 ✓** (Vitest, 22 fichiers) |
-| **Tests E2E** | **93 / 93 ✓** (Playwright — 81 desktop + 12 mobile Pixel 5) |
-| **Bundle JS gzippé** | 125 KB (cible CDC §19.1 : < 500 KB → marge × 4) |
+| **Tests unitaires** | **301 / 301 ✓** (Vitest, 24 fichiers) |
+| **Tests E2E** | **113 / 113 ✓** (Playwright — 101 desktop + 12 mobile Pixel 5) |
+| **Bundle JS gzippé** | 127 KB (cible CDC §19.1 : < 500 KB → marge × 4) |
 | **Bundle CSS gzippé** | 6,2 KB (cible : < 50 KB → marge × 8) |
 | **Chunk PDF lazy** | 493 KB (chargé uniquement au clic « Exporter ») |
 | **Préflight VPS** | 11 / 11 ✓ |
@@ -29,13 +29,14 @@
 
 - **Frontend** : Vite 6 + React 18 + TypeScript 5.7 (strict)
 - **Style** : Tailwind CSS 3 + shadcn/ui (tokens CSS variables)
-- **State** : Zustand 5 + middleware `persist` — **6 stores** persistés en localStorage :
-  - `livret-donnees` (schema v5) — livrets, fiches, entretiens, évaluations
+- **State** : Zustand 5 + middleware `persist` — **7 stores** persistés en localStorage :
+  - `livret-donnees` (schema v7) — livrets, fiches, entretiens, évaluations
   - `livret-role-actif` — rôle + maître actif
   - `livret-apprenti-actif` — id de l'apprenti·e affiché·e
   - `livret-utilisateurs` (schema v1) — apprenti·e·s, maîtres, formateurs, coordos, admins
   - `livret-formations` (schema v1) — formations (intitulé, niveau, dates, lieu, référentiel)
   - `livret-referentiels` (schema v1) — référentiels de compétences (Bloc → Sous-famille? → Compétence)
+  - `livret-banque-questions` (schema v1) — banque centrale des questions de l'entretien tripartite
 - **Routing** : React Router v6
 - **PDF** : `@react-pdf/renderer` 4 (lazy-loaded — chunk séparé, chargé uniquement au clic « Exporter »)
 - **XLSX** : `fflate` (~12 KB) pour la décompression ZIP, parser maison
@@ -109,9 +110,10 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 - **Phase D** (rendering 3 niveaux) : `GrilleCompetences` groupe par sous-famille, `TableauTriColonnes.AjouterCompetence` optgroup `Bloc — Sous-famille`
 - **Phase E** (XLSX) : dépendance `fflate`, parser XLSX maison (sharedStrings + sheet1, regex robustes, 16 tests TDD dont 4 d'intégration sur les fichiers du pilote), détection automatique CSV vs XLSX par signature ZIP
 - **Workflow finalisé pilote** :
-  - L'utilisateur·rice **choisit une formation existante** (et non un nom libre)
-  - Helper `genererNomReferentiel(formation, date)` → libellé canonique `Referentiel_<intitulé>_<YYYY-MM-DD>`
-  - À l'import, `formation.referentielId` est **mis à jour automatiquement** pour rattacher la nouvelle entrée
+  - La formation à associer est **optionnelle** : un référentiel peut être importé seul puis rattaché plus tard à une ou plusieurs formations (relation N:1 — `Formation.referentielId` côté formation)
+    - Si une formation est choisie → libellé auto-généré via `genererNomReferentiel(formation)` → `Referentiel_<intitulé>_<YYYY-MM-DD>` + `formation.referentielId` mis à jour automatiquement
+    - Sinon → champ « Nom du référentiel » (libre, ≥ 3 caractères) qui sert directement de libellé
+  - La carte du référentiel dans la page d'admin affiche la (les) formation(s) qui l'utilise(nt) — ou « Aucune formation rattachée » si orphelin
   - Le `Referentiel.source` est typé `'import-csv'` ou `'import-xlsx'` selon le format détecté (utile dans l'admin et en debug)
 - **Tests d'intégration sur les fichiers exemples réels du pilote** (`exemple-{1,2}.{csv,xlsx}` dans `src/lib/__fixtures__/`) côté unitaire ET côté E2E (chargement via `setInputFiles`)
 
@@ -135,9 +137,43 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 
 Helper `peutEncoreEditerFiche(fiche, role)` dans `lib/transitions-fiche.ts` (6 tests TDD) — empêche un rôle de modifier ses zones après avoir signé. Mention UI explicite « Figée par signature ».
 
+#### Banque de questions de l'entretien tripartite (mai 2026)
+
+Refonte complète de la section « Questions à l'apprenti·e / au maître » : les questions ne sont plus codées en dur, elles vivent dans une **banque centrale** gérée par les coordo·s + admin·s, et le **formateur référent sélectionne (et ordonne)** celles à poser pour chaque livret.
+- Nouveaux types `QuestionBanque { id, cible, type, libelle, placeholder? }` avec 3 types supportés (`texte-court`, `texte-long`, `oui-non`) ; `EntretienTripartite` adapté avec `questionsApprentiSelectionnees: string[]`, `questionsMaitreSelectionnees: string[]` et réponses indexées par `questionId` (au lieu des champs nommés rigides)
+- Lib `questions-entretien` (14 tests TDD) : catalogue par défaut **11 questions reformulées de façon neutre** (sans référence à un domaine particulier) + helpers `idsQuestionsInitiales` / `reponseEstRenseignee` / `nettoyerReponses` / `questionEstUtilisee`
+- Nouveau store `useBanqueQuestionsStore` (CRUD + persist v1) : suppression bloquée si la question est référencée dans au moins un entretien (cohérence référentielle)
+- `useLivretStore` : bump schema v6 → v7 (reset complet localStorage), 2 mutations granulaires `setQuestionsSelectionnees` / `setReponseEntretien` (les anciennes `setReponsesApprenti` / `setReponsesMaitre` sont supprimées)
+- Nouvelle page admin `/admin/banque-questions` : CRUD complet (modale création/édition, suppression avec confirmation 2 clics + tooltip de blocage), réservée aux rôles `coordo` + `admin` (matrice §6 — `admin.banque-questions.gerer`)
+- UI entretien : bouton « Choisir les questions (N) » dans `SectionApprenti` et `SectionMaitre`, visible uniquement pour le formateur référent ; modale de sélection multiple avec réordonnancement ↑/↓ ; les réponses orphelines (questions désélectionnées) sont automatiquement nettoyées
+- Bloc « Appréciation maître » (4 critères ++/+/-/--) reste **en dur** — élément standardisé du livret CDC §5.2
+- PDF adapté : itère sur les questions sélectionnées + résolutions de libellés depuis la banque
+- Fixtures démo réécrites : les 5 entretiens scénarisés (Léa, Théo, Sofia, Minh, Aya, Luca) utilisent les nouveaux ids (`q-app-motivations`, `q-mai-deja-forme`, etc.)
+
+#### Trio contextuel dans le header (mai 2026)
+
+Sous la ligne « Connecté en tant que … » du header, une seconde ligne dense affiche les **3 personnes du trio pédagogique** rattachées à l'apprenti·e actif·ve :
+- 🎓 **Apprenti·e** (couleur `role-apprenti`)
+- ⛑ **Maître d'apprentissage** (couleur `role-maitre`)
+- ⚙ **Formateur référent** (couleur `role-formateur`)
+
+Les noms sont mis à jour automatiquement quand on change d'apprenti·e actif·ve. Le bloc utilise les mêmes icônes que le `RoleSwitcher` pour la cohérence visuelle. Visible uniquement sur écrans `lg+` (cohérent avec le bloc « Connecté en tant que … » existant).
+
 #### Refonte UX « Organisation du suivi »
 
 Modèle `string` libre → `ChampOrganisationSuivi { date?, commentaire?, verrouille? }`. Toggle verrouiller/déverrouiller par champ. Schema localStorage v3 → v4.
+
+#### Organisation du suivi modulaire (mai 2026)
+
+Refonte complète de la page : passage des 6 cadres rigides à une **liste dynamique d'événements** créée à la demande par le formateur référent.
+- Nouveaux types `MotifOrganisationSuivi` (7 valeurs : réunion-rentree, entretien-individuel, accueil-tuteur, visite-entreprise, restitution-activites, bilan-formation, autre) et `EvenementOrganisationSuivi { id, motif, titre?, date?, commentaire?, verrouille? }`
+- `OrganisationSuivi` simplifié : `evenements: []` au lieu des 6 champs nommés
+- Lib `organisation-suivi` (10 tests TDD) : catalogue motifs + métadonnées (libellé, description, placeholder) + helpers `libelleEvenement` / `creerEvenementVierge`
+- Store : 3 mutations granulaires `ajouterEvenementOrganisation` / `modifierEvenementOrganisation` / `supprimerEvenementOrganisation` ; bump schema v5 → v6 (reset complet localStorage à la première charge — cohérent avec la stratégie générale)
+- UI : sélecteur d'ajout (motif → bouton « Ajouter ») visible pour le formateur uniquement, **plusieurs cadres du même motif autorisés** (ex. 3 visites distinctes), suppression avec confirmation 2 clics, titre custom optionnel pour distinguer plusieurs occurrences d'un même motif
+- Verrou de suppression : un événement verrouillé doit d'abord être déverrouillé (helper `peutSupprimerEvenement`, 3 tests TDD) — bouton désactivé + tooltip explicite
+- Fixtures démo réécrites : Léa porte 8 événements scénarisés (5 standards + 3 visites titrées), Sofia 5, Minh 5, livret vierge 5
+- PDF : itère sur `evenements`, libellé `<motif> — <titre>` si titre custom
 
 #### Responsive mobile (cas d'usage terrain)
 
@@ -203,7 +239,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées :
 
 ## 6. Tests (272 unitaires + 93 E2E)
 
-### Tests unitaires Vitest (22 fichiers)
+### Tests unitaires Vitest (24 fichiers)
 
 | Fichier | Tests | Périmètre |
 |---|---|---|
@@ -224,13 +260,15 @@ Toutes les règles du CDC v1.3 sont implémentées et testées :
 | `lib/affectation-verrou.test.ts` | 7 | Verrou affectation |
 | `lib/validation-formation.test.ts` | 9 | Validation formation |
 | `lib/formation-verrou.test.ts` | 4 | Verrou suppression formation |
-| `lib/validation-import-referentiel.test.ts` | 8 | Saisie d'import + génération du libellé canonique |
+| `lib/validation-import-referentiel.test.ts` | 11 | Saisie d'import (formation optionnelle, nom libre conditionnel) + génération du libellé canonique |
 | `lib/referentiel-verrou.test.ts` | 4 | Verrou suppression référentiel |
 | `lib/parser-xlsx.test.ts` | 16 | Parser XLSX + tests d'intégration sur les 4 fichiers exemples du pilote |
 | `lib/competence-entreprise.test.ts` | 6 | Flag `evalueeEnEntreprise` |
 | `lib/validation-fiche-periode.test.ts` | 15 | Saisie fiche + `peutSupprimer` + `libelleFichePeriode` |
+| `lib/organisation-suivi.test.ts` | 13 | Catalogue motifs + helpers `metadonneesMotif`/`libelleEvenement`/`creerEvenementVierge` + verrou `peutSupprimerEvenement` |
+| `lib/questions-entretien.test.ts` | 14 | Catalogue 11 questions par défaut (formulation neutre) + helpers `idsQuestionsInitiales`/`reponseEstRenseignee`/`questionEstUtilisee`/`nettoyerReponses` |
 
-### Tests E2E Playwright (13 specs)
+### Tests E2E Playwright (16 specs)
 
 | Projet | Fichier | Tests | Périmètre |
 |---|---|---|---|
@@ -244,8 +282,11 @@ Toutes les règles du CDC v1.3 sont implémentées et testées :
 | `chromium-desktop` | `admin-utilisateurs-staff.spec.ts` | 10 | CRUD staff + droits formateur partiel |
 | `chromium-desktop` | `admin-affectations.spec.ts` | 6 | Verrou + déverrouillage temporaire + réaffectation |
 | `chromium-desktop` | `admin-formations.spec.ts` | 7 | CRUD formations + persistance |
-| `chromium-desktop` | `admin-referentiels.spec.ts` | 12 | Import textarea, **import des 4 fichiers exemples réels (CSV+XLSX, 2/3 niveaux)**, association auto, toggle « abordée en entreprise », filtrage en aval |
+| `chromium-desktop` | `admin-referentiels.spec.ts` | 14 | Import textarea, **import des 4 fichiers exemples réels (CSV+XLSX, 2/3 niveaux)**, association auto, toggle « abordée en entreprise », filtrage en aval, **import sans formation (orphelin)**, **affichage des formations rattachées sur la carte** |
 | `chromium-desktop` | `fiches-periodes.spec.ts` | 8 | Création/renommage/suppression : droits, R13, blocage si signée, titre custom |
+| `chromium-desktop` | `organisation-suivi.spec.ts` | 7 | Refonte modulaire : ajout par motif, multi-occurrences, suppression 2 clics, lecture seule apprenti·e, persistance, **verrou suppression si événement verrouillé** |
+| `chromium-desktop` | `header-trio-contextuel.spec.ts` | 4 | Trio contextuel apprenti·e / maître / formateur dans le header — affichage par défaut, mise à jour au switch d'apprenti·e, coexistence avec « Connecté en tant que » |
+| `chromium-desktop` | `banque-questions.spec.ts` | 7 | CRUD admin banque + sélection questions par formateur référent + lecture seule apprenti·e + verrou suppression si utilisée + persistance des réponses indexées |
 | `mobile-pixel5` | `audit-mobile.mobile.spec.ts` | 12 | Aucun débordement, hamburger, drawer, RoleSwitcher compact, modale R10 |
 
 ---
@@ -269,8 +310,8 @@ LIVRET APPRENTISSAGE/
 └── src/
     ├── main.tsx, App.tsx, vite-env.d.ts
     ├── styles/index.css
-    ├── types/index.ts              # CDC §7 + extensions (titre fiche, evalueeEnEntreprise, etc.)
-    ├── lib/                        # 22 modules + 22 fichiers tests
+    ├── types/index.ts              # CDC §7 + extensions (titre fiche, evalueeEnEntreprise, EvenementOrganisationSuivi, etc.)
+    ├── lib/                        # 23 modules + 23 fichiers tests
     │   ├── droits.ts               # matrice §6 (44 ressources × 5 rôles)
     │   ├── transitions-fiche.ts    # R15/R16/R17/R21
     │   ├── validation-signature.ts # R18/R20
@@ -294,6 +335,7 @@ LIVRET APPRENTISSAGE/
     │   ├── formation-verrou.ts     # verrou suppression formation
     │   ├── referentiel-verrou.ts   # verrou suppression référentiel
     │   ├── competence-entreprise.ts # flag « abordée en entreprise »
+    │   ├── organisation-suivi.ts    # catalogue motifs + helpers (refonte modulaire)
     │   ├── __fixtures__/           # exemple-{1,2}.{csv,xlsx} (fichiers du pilote)
     │   └── utils.ts
     ├── store/                      # 6 stores Zustand persistés
@@ -357,12 +399,14 @@ Documenter les changements négociés depuis v1.3 :
 - §4.1 : ajout des rôles **Coordo** et **Admin**
 - §6 : nouvelles ressources de la matrice (admin.* + fiche.modifier-periode + fiche.supprimer-periode + admin.referentiels.gerer)
 - §6 : `creer-apprenti` et `creer-maitre` ouverts au formateur référent ; `creer-periode`, `modifier-periode`, `supprimer-periode` ouverts au coordo
-- §7.1 : types `Coordo`, `Admin`, `Lieu` ; `Formation` enrichi ; `FicheSuiviPeriode.titre?` ; `Competence.evalueeEnEntreprise?`
+- §7.1 : types `Coordo`, `Admin`, `Lieu` ; `Formation` enrichi ; `FicheSuiviPeriode.titre?` ; `Competence.evalueeEnEntreprise?` ; refonte `OrganisationSuivi { evenements: EvenementOrganisationSuivi[] }` (modulaire) + nouveaux types `MotifOrganisationSuivi` et `EvenementOrganisationSuivi` ; refonte `EntretienTripartite` avec `questionsApprentiSelectionnees: string[]`, `questionsMaitreSelectionnees: string[]`, `reponsesApprenti/Maitre: ReponsesEntretien` (Record indexé par questionId) + nouveaux types `QuestionBanque`, `CibleQuestion`, `TypeQuestion`
 - §7.2 : `Competence.sousFamille?` (3 niveaux hiérarchiques optionnels)
 - §10.4 : règle de gouvernance — affectations verrouillées dès le démarrage du contrat / fiches existantes / entretien initialisé
 - §17.2 : entrées glossaire *Coordinateur·rice*, *Administrateur·rice*
-- Nouvelle section : workflow d'import référentiels (CSV + XLSX, génération auto du libellé, association formation)
+- Nouvelle section : workflow d'import référentiels (CSV + XLSX, formation optionnelle, génération auto du libellé OU nom libre, association ultérieure depuis la page Formations, affichage N:1 des formations rattachées sur la carte du référentiel)
 - Nouvelle section : flag « compétence abordée en entreprise »
+- §5.1 : refonte modulaire de l'organisation du suivi (liste d'événements à la demande, multi-occurrences d'un même motif autorisées, motifs au catalogue : Réunion de rentrée / Entretien individuel / Accueil tuteur / Visites en entreprise / Restitution des activités / Bilans de formation / Autre)
+- §5.2 : refonte de l'entretien tripartite — banque centrale de questions gérée par les coordo·s + admin·s, **sélection par livret** par le formateur référent, 3 types de réponse supportés (texte court / texte long / oui-non), bloc « Appréciation maître » 4 critères inchangé
 
 → noté dans `TODO-etape-2.md`.
 

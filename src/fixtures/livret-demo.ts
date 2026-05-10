@@ -17,6 +17,7 @@ import {
   formatriceSophieDubois,
 } from './utilisateurs';
 import { referentielCapCuisine } from './referentiel-cap-cuisine';
+import { idsQuestionsInitiales } from '@/lib/questions-entretien';
 
 /**
  * Livrets de démonstration — 6 apprenti·e·s, un livret par cas pédagogique.
@@ -73,14 +74,35 @@ function livretVierge(apprenti: Apprenti, livretId: string): Livret {
     apprentiId: apprenti.id,
     formationId: apprenti.formationId,
     organisationSuivi: {
-      reunionRentree: { date: '2025-09-04', commentaire: 'Salle Diderot' },
-      entretienIndividuel: { commentaire: 'À planifier' },
-      accueilTuteurs: { date: '2025-09-15', commentaire: 'Journée tuteurs' },
-      visitesEntreprise: {},
-      restitutionActivites: { commentaire: 'Tous les 6 semaines en classe.' },
-      bilansFormation: {
-        commentaire: 'Bilan intermédiaire en janvier, bilan final en juin.',
-      },
+      evenements: [
+        {
+          id: 'evt-vierge-1',
+          motif: 'reunion-rentree',
+          date: '2025-09-04',
+          commentaire: 'Salle Diderot',
+        },
+        {
+          id: 'evt-vierge-2',
+          motif: 'entretien-individuel',
+          commentaire: 'À planifier',
+        },
+        {
+          id: 'evt-vierge-3',
+          motif: 'accueil-tuteur',
+          date: '2025-09-15',
+          commentaire: 'Journée tuteurs',
+        },
+        {
+          id: 'evt-vierge-4',
+          motif: 'restitution-activites',
+          commentaire: 'Tous les 6 semaines en classe.',
+        },
+        {
+          id: 'evt-vierge-5',
+          motif: 'bilan-formation',
+          commentaire: 'Bilan intermédiaire en janvier, bilan final en juin.',
+        },
+      ],
       modifieLe: '2025-09-10T08:00:00.000Z',
       modifiePar: formatriceSophieDubois.id,
     },
@@ -111,26 +133,30 @@ function livretVierge(apprenti: Apprenti, livretId: string): Livret {
 
 const entretienLea: EntretienTripartite = {
   dateEntretien: '2025-10-28',
+  questionsApprentiSelectionnees: idsQuestionsInitiales('apprenti'),
+  questionsMaitreSelectionnees: idsQuestionsInitiales('maitre'),
   reponsesApprenti: {
-    motivations:
+    'q-app-motivations':
       "Devenir cuisinière dans la restauration traditionnelle, idéalement à mon compte d'ici 10 ans.",
-    contactEntreprise:
+    'q-app-contact-entreprise':
       "J'ai connu Le Gourmet via une journée portes ouvertes du GRETA, puis un stage de 2 jours en juin 2025.",
-    connaissanceEntreprise:
+    'q-app-connaissance-entreprise':
       "Je connaissais le restaurant comme cliente avec mes parents depuis quelques années.",
-    metierVsRepresentation:
+    'q-app-metier-representation':
       "Plus exigeant en rythme que je ne l'imaginais, mais le travail d'équipe me plaît beaucoup.",
-    difficultesDisciplines: 'La technologie culinaire (vocabulaire spécifique) demande de la mémorisation.',
-    difficultesAutres: "Réveil tôt pour les services du midi, je m'adapte progressivement.",
-    ressenti:
+    'q-app-difficultes-formation':
+      'La technologie culinaire (vocabulaire spécifique) demande de la mémorisation.',
+    'q-app-difficultes-autres': "Réveil tôt pour les services du midi, je m'adapte progressivement.",
+    'q-app-ressenti-equipe':
       "Très bien intégrée dans la brigade. Karim me fait confiance et me confie des tâches variées.",
   },
   reponsesMaitre: {
-    dejaFormeApprenti: true,
-    siOuiDiplomes: 'CAP Cuisine (3 apprenti·e·s formé·e·s sur les 8 dernières années).',
-    objectifsEmbauche:
+    'q-mai-deja-forme': true,
+    'q-mai-diplomes-deja-formes':
+      'CAP Cuisine (3 apprenti·e·s formé·e·s sur les 8 dernières années).',
+    'q-mai-objectifs-embauche':
       "Embauche envisagée à la fin du contrat si Léa confirme sa progression actuelle.",
-    organisationAccueil:
+    'q-mai-organisation-tutorat':
       "Tutorat réparti entre moi-même (Karim) et notre second de cuisine. Briefing hebdomadaire le lundi matin.",
   },
   appreciationMaitre: {
@@ -342,15 +368,55 @@ const leaPeriode3: FicheSuiviPeriode = {
 const livretLea: Livret = {
   ...livretVierge(apprentiLeaMartin, 'livret-lea'),
   organisationSuivi: {
-    reunionRentree: { date: '2025-09-04', commentaire: 'Salle Diderot' },
-    entretienIndividuel: { commentaire: 'À planifier' },
-    accueilTuteurs: { date: '2025-09-15', commentaire: 'Journée tuteurs' },
-    visitesEntreprise: {
-      date: '2025-11-12',
-      commentaire: 'Puis le 04/02/2026 et le 12/05/2026 (prévue).',
-    },
-    restitutionActivites: { commentaire: 'Tous les 6 semaines en classe.' },
-    bilansFormation: { commentaire: 'Bilan intermédiaire en janvier, bilan final en juin.' },
+    evenements: [
+      {
+        id: 'evt-lea-1',
+        motif: 'reunion-rentree',
+        date: '2025-09-04',
+        commentaire: 'Salle Diderot',
+      },
+      {
+        id: 'evt-lea-2',
+        motif: 'entretien-individuel',
+        commentaire: 'À planifier',
+      },
+      {
+        id: 'evt-lea-3',
+        motif: 'accueil-tuteur',
+        date: '2025-09-15',
+        commentaire: 'Journée tuteurs',
+      },
+      {
+        id: 'evt-lea-4',
+        motif: 'visite-entreprise',
+        titre: 'Visite n°1',
+        date: '2025-11-12',
+        commentaire: 'Premier point d\'étape avec Karim BENALI.',
+      },
+      {
+        id: 'evt-lea-5',
+        motif: 'visite-entreprise',
+        titre: 'Visite n°2',
+        date: '2026-02-04',
+        commentaire: 'Bilan mi-parcours en cuisine.',
+      },
+      {
+        id: 'evt-lea-6',
+        motif: 'visite-entreprise',
+        titre: 'Visite n°3 (prévue)',
+        date: '2026-05-12',
+      },
+      {
+        id: 'evt-lea-7',
+        motif: 'restitution-activites',
+        commentaire: 'Tous les 6 semaines en classe.',
+      },
+      {
+        id: 'evt-lea-8',
+        motif: 'bilan-formation',
+        commentaire: 'Bilan intermédiaire en janvier, bilan final en juin.',
+      },
+    ],
     modifieLe: '2025-09-10T08:00:00.000Z',
     modifiePar: formatriceSophieDubois.id,
   },
@@ -367,21 +433,26 @@ const livretLea: Livret = {
 
 const entretienTheo: EntretienTripartite = {
   dateEntretien: '2025-10-15',
+  questionsApprentiSelectionnees: idsQuestionsInitiales('apprenti'),
+  questionsMaitreSelectionnees: idsQuestionsInitiales('maitre'),
   reponsesApprenti: {
-    motivations:
+    'q-app-motivations':
       'Reprendre la cuisine familiale italienne (mes grands-parents) en y ajoutant des techniques actuelles.',
-    contactEntreprise: 'Mon oncle connaissait Karim. Première rencontre en juillet 2025.',
-    connaissanceEntreprise: "Pas de visite préalable, mais bonne réputation auprès de mes proches.",
-    metierVsRepresentation: 'Conforme à mes attentes. Je découvre le rythme du soir.',
-    difficultesDisciplines: 'Aucune particulière jusqu\'ici.',
-    difficultesAutres: '',
-    ressenti: "Excellent. Karim et l'équipe sont très pédagogues.",
+    'q-app-contact-entreprise': 'Mon oncle connaissait Karim. Première rencontre en juillet 2025.',
+    'q-app-connaissance-entreprise':
+      "Pas de visite préalable, mais bonne réputation auprès de mes proches.",
+    'q-app-metier-representation':
+      'Conforme à mes attentes. Je découvre le rythme du soir.',
+    'q-app-difficultes-formation': 'Aucune particulière jusqu\'ici.',
+    'q-app-difficultes-autres': '',
+    'q-app-ressenti-equipe': "Excellent. Karim et l'équipe sont très pédagogues.",
   },
   reponsesMaitre: {
-    dejaFormeApprenti: true,
-    siOuiDiplomes: 'CAP Cuisine.',
-    objectifsEmbauche: 'Embauche très probable à la fin du contrat.',
-    organisationAccueil: 'Mêmes modalités que pour Léa (briefing hebdo, tutorat partagé).',
+    'q-mai-deja-forme': true,
+    'q-mai-diplomes-deja-formes': 'CAP Cuisine.',
+    'q-mai-objectifs-embauche': 'Embauche très probable à la fin du contrat.',
+    'q-mai-organisation-tutorat':
+      'Mêmes modalités que pour Léa (briefing hebdo, tutorat partagé).',
   },
   appreciationMaitre: {
     ponctualite: 'plusplus',
@@ -565,12 +636,35 @@ const sofiaPeriode1: FicheSuiviPeriode = {
 const livretSofia: Livret = {
   ...livretVierge(apprentiSofiaPereira, 'livret-sofia'),
   organisationSuivi: {
-    reunionRentree: { date: '2025-09-04', commentaire: 'Salle Diderot' },
-    entretienIndividuel: { commentaire: 'Reporté plusieurs fois — à reprogrammer en urgence.' },
-    accueilTuteurs: { date: '2025-09-15', commentaire: 'Journée tuteurs' },
-    visitesEntreprise: { commentaire: 'Aucune visite réalisée à ce jour.' },
-    restitutionActivites: { commentaire: 'Tous les 6 semaines en classe.' },
-    bilansFormation: { commentaire: '' },
+    evenements: [
+      {
+        id: 'evt-sofia-1',
+        motif: 'reunion-rentree',
+        date: '2025-09-04',
+        commentaire: 'Salle Diderot',
+      },
+      {
+        id: 'evt-sofia-2',
+        motif: 'entretien-individuel',
+        commentaire: 'Reporté plusieurs fois — à reprogrammer en urgence.',
+      },
+      {
+        id: 'evt-sofia-3',
+        motif: 'accueil-tuteur',
+        date: '2025-09-15',
+        commentaire: 'Journée tuteurs',
+      },
+      {
+        id: 'evt-sofia-4',
+        motif: 'visite-entreprise',
+        commentaire: 'Aucune visite réalisée à ce jour.',
+      },
+      {
+        id: 'evt-sofia-5',
+        motif: 'restitution-activites',
+        commentaire: 'Tous les 6 semaines en classe.',
+      },
+    ],
     modifieLe: '2025-09-10T08:00:00.000Z',
     modifiePar: formatriceSophieDubois.id,
   },
@@ -587,22 +681,24 @@ const livretSofia: Livret = {
 
 const entretienMinh: EntretienTripartite = {
   dateEntretien: '2026-04-20',
+  questionsApprentiSelectionnees: idsQuestionsInitiales('apprenti'),
+  questionsMaitreSelectionnees: idsQuestionsInitiales('maitre'),
   reponsesApprenti: {
-    motivations: 'Devenir cuisinier dans la restauration asiatique-fusion.',
-    contactEntreprise:
+    'q-app-motivations': 'Devenir cuisinier dans la restauration asiatique-fusion.',
+    'q-app-contact-entreprise':
       "J'ai déposé une candidature spontanée au début du mois de février 2026.",
-    connaissanceEntreprise:
+    'q-app-connaissance-entreprise':
       "J'ai mangé plusieurs fois à la Brasserie du Rhône. J'aime leur carte.",
-    metierVsRepresentation: 'Plus physique que je ne l\'imaginais.',
-    difficultesDisciplines: '',
-    difficultesAutres: '',
-    ressenti: 'Bonne intégration, équipe accueillante.',
+    'q-app-metier-representation': 'Plus physique que je ne l\'imaginais.',
+    'q-app-difficultes-formation': '',
+    'q-app-difficultes-autres': '',
+    'q-app-ressenti-equipe': 'Bonne intégration, équipe accueillante.',
   },
   reponsesMaitre: {
-    dejaFormeApprenti: false,
-    siOuiDiplomes: '',
-    objectifsEmbauche: 'À évaluer en fin de contrat.',
-    organisationAccueil: 'Tutorat par moi-même (Hélène) + sous-cheffe.',
+    'q-mai-deja-forme': false,
+    'q-mai-diplomes-deja-formes': '',
+    'q-mai-objectifs-embauche': 'À évaluer en fin de contrat.',
+    'q-mai-organisation-tutorat': 'Tutorat par moi-même (Hélène) + sous-cheffe.',
   },
   appreciationMaitre: {
     ponctualite: 'plus',
@@ -641,15 +737,36 @@ const entretienMinh: EntretienTripartite = {
 const livretMinh: Livret = {
   ...livretVierge(apprentiMinhNguyen, 'livret-minh'),
   organisationSuivi: {
-    reunionRentree: { date: '2025-09-04', commentaire: 'Salle Diderot — Minh absent (intégration tardive)' },
-    entretienIndividuel: {
-      date: '2026-04-20',
-      commentaire: 'Réalisé suite à la prise de poste fin mars 2026.',
-    },
-    accueilTuteurs: { commentaire: 'Hélène ROCHE intégrée à mi-parcours.' },
-    visitesEntreprise: { date: '2026-04-25', commentaire: 'Première visite après prise de poste.' },
-    restitutionActivites: { commentaire: 'Tous les 6 semaines en classe.' },
-    bilansFormation: { commentaire: '' },
+    evenements: [
+      {
+        id: 'evt-minh-1',
+        motif: 'reunion-rentree',
+        date: '2025-09-04',
+        commentaire: 'Salle Diderot — Minh absent (intégration tardive)',
+      },
+      {
+        id: 'evt-minh-2',
+        motif: 'entretien-individuel',
+        date: '2026-04-20',
+        commentaire: 'Réalisé suite à la prise de poste fin mars 2026.',
+      },
+      {
+        id: 'evt-minh-3',
+        motif: 'accueil-tuteur',
+        commentaire: 'Hélène ROCHE intégrée à mi-parcours.',
+      },
+      {
+        id: 'evt-minh-4',
+        motif: 'visite-entreprise',
+        date: '2026-04-25',
+        commentaire: 'Première visite après prise de poste.',
+      },
+      {
+        id: 'evt-minh-5',
+        motif: 'restitution-activites',
+        commentaire: 'Tous les 6 semaines en classe.',
+      },
+    ],
     modifieLe: '2026-04-20T16:00:00.000Z',
     modifiePar: formatriceSophieDubois.id,
   },
@@ -767,8 +884,9 @@ const livretAya: Livret = {
     dateEntretien: '2025-10-22',
     reponsesApprenti: {
       ...entretienTheo.reponsesApprenti,
-      motivations: 'Travailler dans la restauration de brigade, viser le Bac Pro à terme.',
-      contactEntreprise: 'Candidature spontanée. Hélène a accepté après un essai d\'une journée.',
+      'q-app-motivations': 'Travailler dans la restauration de brigade, viser le Bac Pro à terme.',
+      'q-app-contact-entreprise':
+        'Candidature spontanée. Hélène a accepté après un essai d\'une journée.',
     },
     appreciationMaitre: {
       ponctualite: 'plus',
@@ -795,20 +913,22 @@ const livretAya: Livret = {
 
 const entretienLuca: EntretienTripartite = {
   dateEntretien: '2025-10-30',
+  questionsApprentiSelectionnees: idsQuestionsInitiales('apprenti'),
+  questionsMaitreSelectionnees: idsQuestionsInitiales('maitre'),
   reponsesApprenti: {
-    motivations: "Devenir cuisinier de bistrot, peut-être ouvrir mon affaire à terme.",
-    contactEntreprise: "J'ai trouvé l'annonce sur le site du GRETA.",
-    connaissanceEntreprise: 'Je connaissais l\'enseigne par réputation.',
-    metierVsRepresentation: "Conforme à mes attentes, rythme soutenu mais gérable.",
-    difficultesDisciplines: 'La pâtisserie demande un peu plus d\'attention.',
-    difficultesAutres: '',
-    ressenti: 'Bonne intégration progressive.',
+    'q-app-motivations': "Devenir cuisinier de bistrot, peut-être ouvrir mon affaire à terme.",
+    'q-app-contact-entreprise': "J'ai trouvé l'annonce sur le site du GRETA.",
+    'q-app-connaissance-entreprise': 'Je connaissais l\'enseigne par réputation.',
+    'q-app-metier-representation': "Conforme à mes attentes, rythme soutenu mais gérable.",
+    'q-app-difficultes-formation': 'La pâtisserie demande un peu plus d\'attention.',
+    'q-app-difficultes-autres': '',
+    'q-app-ressenti-equipe': 'Bonne intégration progressive.',
   },
   reponsesMaitre: {
-    dejaFormeApprenti: true,
-    siOuiDiplomes: 'CAP Cuisine + Bac Pro.',
-    objectifsEmbauche: 'Possibilité d\'embauche à confirmer.',
-    organisationAccueil: 'Tutorat par moi-même, briefing de service.',
+    'q-mai-deja-forme': true,
+    'q-mai-diplomes-deja-formes': 'CAP Cuisine + Bac Pro.',
+    'q-mai-objectifs-embauche': 'Possibilité d\'embauche à confirmer.',
+    'q-mai-organisation-tutorat': 'Tutorat par moi-même, briefing de service.',
   },
   appreciationMaitre: {
     ponctualite: 'plus',

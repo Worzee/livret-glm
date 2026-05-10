@@ -324,10 +324,11 @@ export function GestionUtilisateurs() {
           <table className="w-full text-sm">
             <thead className="bg-secondary/50 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
-                <th className="px-4 py-2 text-left">Nom</th>
-                <th className="px-4 py-2 text-left">Rôle</th>
-                <th className="px-4 py-2 text-left">Email</th>
-                <th className="px-4 py-2 text-right">Actions</th>
+                <th className="px-2 md:px-4 py-2 text-left">Nom</th>
+                <th className="px-2 md:px-4 py-2 text-left">Rôle</th>
+                {/* Email caché sur mobile (replié sous le nom dans la cellule Nom). */}
+                <th className="hidden md:table-cell px-4 py-2 text-left">Email</th>
+                <th className="px-2 md:px-4 py-2 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -340,17 +341,23 @@ export function GestionUtilisateurs() {
                 const supprimable = u.role !== 'admin' && peutSupprimer && !blocage.bloque;
                 return (
                   <tr key={u.id} className={cn(enConfirmation && 'bg-red-50')}>
-                    <td className="px-4 py-2 font-medium">
+                    <td className="px-2 md:px-4 py-2 font-medium align-top">
                       <span className="inline-flex items-center gap-2">
                         <IconeRole role={u.role} />
-                        {u.prenom} {u.nom}
+                        <span>{u.prenom} {u.nom}</span>
                       </span>
+                      {/* Email replié sous le nom sur mobile. */}
+                      <p className="md:hidden text-xs font-normal text-muted-foreground mt-0.5 break-all">
+                        {u.email}
+                      </p>
                     </td>
-                    <td className="px-4 py-2 text-muted-foreground">
+                    <td className="px-2 md:px-4 py-2 text-muted-foreground align-top">
                       {libelleRole(u.role)}
                     </td>
-                    <td className="px-4 py-2 text-muted-foreground">{u.email}</td>
-                    <td className="px-4 py-2 text-right">
+                    <td className="hidden md:table-cell px-4 py-2 text-muted-foreground align-top">
+                      {u.email}
+                    </td>
+                    <td className="px-2 md:px-4 py-2 text-right align-top">
                       <div className="inline-flex items-center gap-1">
                         {editable && (
                           <button

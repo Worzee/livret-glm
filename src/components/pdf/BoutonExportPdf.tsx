@@ -6,6 +6,7 @@ import type {
   Formation,
   Livret,
   Maitre,
+  QuestionBanque,
   Referentiel,
 } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
@@ -39,6 +40,8 @@ interface BoutonExportPdfProps {
   formateur: Formateur;
   formation: Formation;
   referentiel: Referentiel;
+  /** Banque indexée des questions de l'entretien (refonte mai 2026). */
+  banqueQuestions: Record<string, QuestionBanque>;
 }
 
 export function BoutonExportPdf(props: BoutonExportPdfProps) {
