@@ -13,8 +13,7 @@
 |---|---|
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
-| **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main`) |
-| **Dernier commit déployé** | `35f895d` — précisions workflow d'import référentiels |
+| **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
 | **Tests unitaires** | **272 / 272 ✓** (Vitest, 22 fichiers) |
 | **Tests E2E** | **93 / 93 ✓** (Playwright — 81 desktop + 12 mobile Pixel 5) |
 | **Bundle JS gzippé** | 125 KB (cible CDC §19.1 : < 500 KB → marge × 4) |
@@ -78,7 +77,7 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 - **Service DuckDNS gratuit** — best effort, peut tomber temporairement
 - **Renouvellement Let's Encrypt** automatique par Traefik (vérifier les logs si > 60 j)
 - **localStorage navigateur** — limite ~5 Mo, déjà géré (CDC §C1)
-- **VPS root SSH par mot de passe** — à basculer en clé SSH (cf. §11)
+- **VPS root SSH par mot de passe** — à basculer en clé SSH (cf. §8.D)
 
 ---
 
@@ -264,7 +263,7 @@ LIVRET APPRENTISSAGE/
 ├── cahier-des-charges-livret-apprentissage-v1.3.md
 ├── design-system/MASTER.md
 ├── scripts/                        # déploiement VPS
-├── e2e/                            # tests Playwright (12 specs)
+├── e2e/                            # tests Playwright (13 specs)
 ├── playwright.config.ts            # 2 projets (desktop + mobile)
 ├── package.json
 └── src/
@@ -272,7 +271,7 @@ LIVRET APPRENTISSAGE/
     ├── styles/index.css
     ├── types/index.ts              # CDC §7 + extensions (titre fiche, evalueeEnEntreprise, etc.)
     ├── lib/                        # 22 modules + 22 fichiers tests
-    │   ├── droits.ts               # matrice §6 (36 ressources × 5 rôles)
+    │   ├── droits.ts               # matrice §6 (44 ressources × 5 rôles)
     │   ├── transitions-fiche.ts    # R15/R16/R17/R21
     │   ├── validation-signature.ts # R18/R20
     │   ├── regles-periode.ts       # R11/R12/R13/R14
