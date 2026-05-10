@@ -1,6 +1,6 @@
 # État du projet — Livret d'apprentissage GRETA Lyon Métropole
 
-**Dernière mise à jour** : 2026-05-09
+**Dernière mise à jour** : 2026-05-10
 **Version applicative** : 0.1.0
 **Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3) **livrée + extensions métier post-livraison**
 **Pilote métier** : Guillaume FERRERI
@@ -110,7 +110,11 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 - **Phase C** (UI) : `useReferentielsStore`, `ModaleImportReferentiel` (file ou textarea, workflow Aperçu → Importer avec stats détaillées + avertissement de remplacement), page `/admin/referentiels`, sidebar
 - **Phase D** (rendering 3 niveaux) : `GrilleCompetences` groupe par sous-famille, `TableauTriColonnes.AjouterCompetence` optgroup `Bloc — Sous-famille`
 - **Phase E** (XLSX) : dépendance `fflate`, parser XLSX maison (sharedStrings + sheet1, regex robustes, 11 tests TDD), détection automatique CSV vs XLSX par signature ZIP
-- **Workflow finalisé pilote** : on choisit la formation cible (pas un nom libre), le référentiel est nommé `Referentiel_<intituléFormation>_<YYYY-MM-DD>`, la formation est rattachée automatiquement à l'import (`formation.referentielId` mis à jour)
+- **Workflow finalisé pilote** :
+  - L'utilisateur·rice **choisit une formation existante** (et non un nom libre)
+  - Helper `genererNomReferentiel(formation, date)` → libellé canonique `Referentiel_<intitulé>_<YYYY-MM-DD>`
+  - À l'import, `formation.referentielId` est **mis à jour automatiquement** pour rattacher la nouvelle entrée
+  - Le `Referentiel.source` est typé `'import-csv'` ou `'import-xlsx'` selon le format détecté (utile dans l'admin et en debug)
 - **5 tests d'intégration** sur les fichiers exemples réels du pilote (`exemple-{1,2}.{csv,xlsx}` dans `src/lib/__fixtures__/`) + 4 tests E2E qui chargent ces fichiers via `setInputFiles`
 
 ### Administration métier (post-livraison)
