@@ -2431,6 +2431,10 @@ export const referentielCapCuisine: Referentiel = {
 | 1.1 | avril 2026 | Guillaume (pilote) + Claude | Ajout section 11 (déploiement VPS Hostinger + DuckDNS + HTTPS + Basic Auth). Sprint 1 étendu à l'installation infra. Déploiement continu à chaque fin de sprint. |
 | 1.2 | avril 2026 | Guillaume (pilote) + Claude | Ajout section 12 (Skills Claude Code : UI UX Pro Max, web-artifacts-builder, webapp-testing, test-driven-development, brainstorming). Sprint 1 étendu à l'installation des Skills. Renumérotation des sections 12 → 17. Lien Google Drive non exploité faute d'accès. |
 | 1.3 | avril 2026 | Guillaume (pilote) + Claude | Révision complète : ajout TDM, sections 8 (règles métier R1-R24), 9 (erreurs et cas limites C1-C14), 10 (navigation multi-livrets), 11 (responsive et stratégie mobile), 12 (historique et traçabilité), 16 (conventions de code), 17 (i18n et glossaire), 18 (assets et identité visuelle), 19 (performance), 20 (anti-télémétrie), 23 (Git et workflow), 24 (seed data démonstrative 6 apprenti·e·s), 25 (scénario de démo minuté), 28 (checklist de démarrage). Ajout script `verifier-vps.sh` (21.10). Ajout de 3 diagrammes Mermaid (architecture, machine à états des fiches, flux de co-édition). Renumérotation complète : 31 sections. |
+| **1.5** (addendum) | **mai 2026** | Guillaume + Claude | Extensions métier post-livraison — voir document séparé `cahier-des-charges-livret-apprentissage-v1.5-addendum.md`. Ajout rôles Coordo + Admin ; refonte modulaire de l'organisation du suivi (renommée « Fiches de suivi ») ; refonte de l'entretien tripartite avec banque de questions configurable ; renommage UI « Fiches de suivi » → « Période en Entreprise » ; nouvelle section Pronote WEB + établissements ; matrice droits étendue à 46 ressources × 5 rôles ; règle §10.4 verrouillage des affectations ; workflow d'import référentiels CSV + XLSX ; flag « compétence abordée en entreprise ». |
+
+> **Pour les évolutions post-livraison v1.3, consulter l'addendum v1.5** :
+> [`cahier-des-charges-livret-apprentissage-v1.5-addendum.md`](./cahier-des-charges-livret-apprentissage-v1.5-addendum.md)
 
 ---
 

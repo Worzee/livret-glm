@@ -326,6 +326,7 @@ LIVRET APPRENTISSAGE/
 ├── TODO-etape-2.md                 # captures de scope creep
 ├── perf-sprint-5.md                # mesures bundle + procédure Lighthouse
 ├── cahier-des-charges-livret-apprentissage-v1.3.md
+├── cahier-des-charges-livret-apprentissage-v1.5-addendum.md  # évolutions post-livraison v1.3
 ├── design-system/MASTER.md
 ├── scripts/                        # déploiement VPS
 ├── e2e/                            # tests Playwright (16 specs)
@@ -429,26 +430,17 @@ LIVRET APPRENTISSAGE/
 
 ## 8. Reste à faire
 
-### A. Documentation — Formaliser CDC v1.5
+### A. Documentation — CDC v1.5 ✅ formalisé
 
-Documenter dans le CDC officiel toutes les évolutions négociées depuis v1.3 :
+Toutes les évolutions négociées depuis v1.3 sont consignées dans le document :
 
-- §4.1 : ajout des rôles **Coordo** et **Admin**
-- §5.1 : refonte modulaire de l'organisation du suivi (liste d'événements à la demande, multi-occurrences d'un même motif autorisées, catalogue de 7 motifs)
-- §5.2 : refonte de l'entretien tripartite — banque centrale de questions (CRUD coordo + admin), **sélection par livret** par le formateur référent, 3 types de réponse (texte court / texte long / oui-non), bloc « Appréciation maître » 4 critères inchangé
-- §6 : 46 ressources de matrice (admin.* + fiche.modifier-periode + fiche.supprimer-periode + admin.referentiels.gerer + admin.banque-questions.gerer + admin.etablissements.gerer (admin uniquement))
-- §6 : `creer-apprenti` et `creer-maitre` ouverts au formateur référent ; `creer/modifier/supprimer-periode` ouverts au coordo
-- §7.1 : types `Coordo`, `Admin`, **`Etablissement`** (remplace `Lieu`) ; `Formation.lieuId: string` (référence vers `useEtablissementsStore`) ; `FicheSuiviPeriode.titre?` ; `Competence.evalueeEnEntreprise?` ; refonte `OrganisationSuivi { evenements: [] }` + types `MotifOrganisationSuivi` / `EvenementOrganisationSuivi` ; refonte `EntretienTripartite` avec questions sélectionnées + réponses indexées par questionId + types `QuestionBanque` / `CibleQuestion` / `TypeQuestion`
-- §7.2 : `Competence.sousFamille?` (3 niveaux hiérarchiques optionnels)
-- §10.4 : règle de gouvernance — affectations verrouillées dès le démarrage du contrat / fiches existantes / entretien initialisé
-- §17.2 : entrées glossaire *Coordinateur·rice*, *Administrateur·rice*
-- Nouvelle section : workflow d'import référentiels (CSV + XLSX, formation optionnelle, génération auto du libellé OU nom libre, affichage N:1 sur la carte)
-- Nouvelle section : flag « compétence abordée en entreprise »
-- Nouvelle section : **« Établissements »** (lieux de formation) — gestion CRUD réservée à l'admin, chaque établissement porte une URL Pronote optionnelle, `Formation.lieuId` remplace `Formation.lieu` inline
-- Nouvelle section : **« Pronote WEB »** — page utilisateur visible tous rôles, filtrage par rôle via les établissements rattachés (formationIds / promoIds / apprentiIds), ouverture nouvel onglet (pas de SSO côté maquette)
-- Renommage UI : « Organisation du suivi » → « Fiches de suivi » ; « Fiches de suivi » → « Période en Entreprise » (libellés visibles uniquement — URLs internes et ressources matrice inchangées)
+→ **[`cahier-des-charges-livret-apprentissage-v1.5-addendum.md`](cahier-des-charges-livret-apprentissage-v1.5-addendum.md)** (mai 2026)
 
-→ noté dans `TODO-etape-2.md`.
+L'addendum **complète** le v1.3 (qui reste intact comme référence historique). Il couvre les 17 sections du v1.5 : rôles étendus à 5, refonte modulaire de l'organisation du suivi, banque de questions d'entretien, établissements + Pronote WEB, matrice 46 ressources × 5 rôles, verrouillage des affectations, import référentiels, flag « compétence abordée en entreprise », polish UX, journal des migrations localStorage.
+
+Une note de renvoi a été ajoutée au §31 du v1.3 (Journal des versions) pour pointer vers l'addendum.
+
+**Ce qui reste à faire** au niveau documentation : aucun chantier actif. Les évolutions futures (étape 2 — auth réelle, notifications, multi-établissement) feront l'objet d'un nouveau document v2.0.
 
 ### B. Évaluation finale et flag `evalueeEnEntreprise` (à arbitrer)
 
@@ -581,12 +573,14 @@ L'étape 1 du CDC v1.3 est **livrée et fonctionnelle**, étendue par 2 vagues p
 
 Il reste à faire :
 
-1. **Formaliser CDC v1.5** — rassembler dans le CDC officiel toutes les évolutions négociées depuis v1.3 (cf. §8.A — liste exhaustive)
-2. **Arbitrages métier ouverts** :
-   - Évaluation finale et `evalueeEnEntreprise` (cf. §8.B)
-   - R13 stricte ou avertissement (cf. §8.C)
-3. **Sécurité VPS** — actions côté pilote (clé SSH, désactivation password auth — cf. §8.E)
+1. **Arbitrages métier ouverts** (cf. §8.B et §8.C) :
+   - Évaluation finale et `evalueeEnEntreprise` — la colonne « Acquis en entreprise » de `GrilleCompetences` devrait-elle être masquée pour les compétences `evalueeEnEntreprise === false` ?
+   - R13 stricte ou avertissement — la création de la période N est-elle bloquante tant que N-1 n'est pas signée, ou simple avertissement ?
+2. **Sécurité VPS** — actions côté pilote (clé SSH, désactivation password auth — cf. §8.E)
+3. **Étape 2** (hors CDC actuel) : authentification réelle, notifications email, multi-établissement, signature manuscrite tactile (cf. §8.D).
+
+✅ **CDC v1.5 formalisé** : voir [`cahier-des-charges-livret-apprentissage-v1.5-addendum.md`](cahier-des-charges-livret-apprentissage-v1.5-addendum.md).
 
 ---
 
-*Étape 1 livrée — Sprint 5 + post-livraison complète : mobile + verrouillage UX + 6 apprenti·e·s + administration (CRUD 4 rôles + formations + affectations + référentiels CSV/XLSX + banque de questions) + flag « compétence abordée en entreprise » + gestion modulaire des fiches de période, de l'organisation du suivi et des questions d'entretien — cahier des charges v1.3.*
+*Étape 1 livrée + 2 vagues post-livraison (CDC v1.5) : administration métier complète (CRUD 4 rôles + formations + affectations + référentiels CSV/XLSX + banque de questions + établissements + Pronote WEB) ; organisation du suivi modulaire ; entretien tripartite avec banque de questions configurable ; trio contextuel ; audit mobile complet ; renommages UI cohérents.*
