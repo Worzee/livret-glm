@@ -67,7 +67,9 @@ export type Ressource =
   /** Importer / supprimer / éditer les référentiels de compétences. */
   | 'admin.referentiels.gerer'
   /** CRUD sur la banque de questions de l'entretien tripartite. */
-  | 'admin.banque-questions.gerer';
+  | 'admin.banque-questions.gerer'
+  /** CRUD sur les liens externes Pronote WEB. */
+  | 'admin.pronote.gerer';
 
 /**
  * Matrice statique : pour chaque ressource, l'ensemble des rôles autorisés.
@@ -142,6 +144,7 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'admin.affectations.gerer': ['coordo', 'admin'],
   'admin.referentiels.gerer': ['coordo', 'admin'],
   'admin.banque-questions.gerer': ['coordo', 'admin'],
+  'admin.pronote.gerer': ['coordo', 'admin'],
 };
 
 /**

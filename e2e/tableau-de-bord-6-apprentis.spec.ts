@@ -96,7 +96,7 @@ test('clic sur une carte ouvre le livret de l\'apprenti·e correspondant·e', as
 test("contexte « apprenti·e actif·ve » survit aux changements de page", async ({ page }) => {
   // Sélectionner Aya, naviguer vers les fiches → on doit voir la fiche P2 dévérrouillée.
   await page.getByRole('button', { name: /Ouvrir le livret de Aya KOUAMÉ/i }).click();
-  await page.getByRole('link', { name: /Fiches de suivi/i }).click();
+  await page.getByRole('link', { name: /Période en Entreprise/i }).click();
   await expect(page.getByRole('link', { name: /Période 1/i })).toBeVisible();
   await expect(page.getByRole('link', { name: /Période 2/i })).toBeVisible();
   // Période 3 n'existe pas pour Aya (livret avec 2 fiches uniquement).
@@ -110,7 +110,7 @@ test("contexte « apprenti·e actif·ve » survit aux changements de page", asyn
 
 test('Minh (cas démarrage) : page Fiches affiche un état vide', async ({ page }) => {
   await page.getByRole('button', { name: /Ouvrir le livret de Minh NGUYEN/i }).click();
-  await page.getByRole('link', { name: /Fiches de suivi/i }).click();
+  await page.getByRole('link', { name: /Période en Entreprise/i }).click();
   await expect(page.getByText(/Aucune période créée/i)).toBeVisible();
 });
 

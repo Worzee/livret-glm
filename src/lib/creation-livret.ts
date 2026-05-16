@@ -45,7 +45,7 @@ export function creerLivretVierge(
     formationId: apprenti.formationId,
     // Refonte modulaire mai 2026 : la liste démarre vide. Le formateur
     // référent ajoute à la demande chaque événement (réunion de rentrée,
-    // visites en entreprise, etc.) depuis la page Organisation du suivi.
+    // visites en entreprise, etc.) depuis la page Fiches de suivi.
     organisationSuivi: {
       evenements: [],
       modifieLe: iso,

@@ -462,3 +462,25 @@ export interface EntreeHistorique {
   dateIso: string;
   motif?: string;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 13 — Liens externes Pronote WEB
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Lien externe vers un espace Pronote WEB. Configuré par les rôles `coordo`
+ * et `admin` depuis la page `/admin/pronote`. Chaque utilisateur·rice de la
+ * maquette retrouve la liste des liens disponibles sur `/livret/pronote` et
+ * s'identifie ensuite avec ses propres credentials côté Pronote.
+ *
+ * Plusieurs liens peuvent coexister (espace élèves, espace enseignants, etc.).
+ */
+export interface LienPronote {
+  id: string;
+  /** Libellé court affiché sur le bouton (ex : « Espace élèves »). */
+  libelle: string;
+  /** URL absolue (https://…). */
+  url: string;
+  /** Description facultative pour aiguiller l'utilisateur·rice. */
+  description?: string;
+}

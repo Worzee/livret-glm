@@ -19,9 +19,9 @@ test.beforeEach(async ({ page }) => {
 
 const PAGES_PRINCIPALES = [
   { url: '/', titre: /Tableau de bord|MARTIN/i },
-  { url: '/livret/organisation-suivi', titre: /Organisation du suivi/i },
+  { url: '/livret/organisation-suivi', titre: /Fiches de suivi/i },
   { url: '/livret/entretien', titre: /Entretien tripartite/i },
-  { url: '/livret/fiches-suivi', titre: /Fiches de suivi/i },
+  { url: '/livret/fiches-suivi', titre: /Période en Entreprise/i },
   { url: '/livret/evaluation-finale', titre: /Évaluation finale/i },
 ];
 
@@ -57,7 +57,7 @@ test('le bouton hamburger est visible et ouvre le drawer de navigation', async (
   await expect(drawer).toBeVisible();
 
   // Les liens de la sidebar sont présents dans le drawer.
-  await expect(drawer.getByRole('link', { name: /Organisation du suivi/i })).toBeVisible();
+  await expect(drawer.getByRole('link', { name: /Fiches de suivi/i })).toBeVisible();
   await expect(drawer.getByRole('link', { name: /Entretien tripartite/i })).toBeVisible();
 });
 
@@ -104,11 +104,11 @@ test('le RoleSwitcher est compact (icônes seules) et reste cliquable', async ({
   );
 });
 
-test("le formulaire Organisation du suivi est utilisable en mobile (date + commentaire)", async ({
+test("le formulaire Fiches de suivi est utilisable en mobile (date + commentaire)", async ({
   page,
 }) => {
   await page.goto('/livret/organisation-suivi');
-  await expect(page.getByRole('heading', { name: /Organisation du suivi/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Fiches de suivi/i })).toBeVisible();
 
   // Au moins un input type=date est rendu en mobile (calendrier natif).
   const dates = page.locator('input[type="date"]');

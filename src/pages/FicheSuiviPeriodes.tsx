@@ -76,10 +76,10 @@ export function FicheSuiviPeriodes() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-2">
-          <h1 className="text-2xl font-semibold">Fiches de suivi par période</h1>
+          <h1 className="text-2xl font-semibold">Période en Entreprise</h1>
           <p className="text-muted-foreground">
             Co-édition tripartite des activités et compétences travaillées sur chaque période
-            d'alternance.
+            d'alternance en entreprise.
           </p>
           <p className="text-xs text-muted-foreground">
             Apprenti·e : <strong>{apprenti.prenom} {apprenti.nom}</strong>

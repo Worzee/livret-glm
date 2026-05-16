@@ -21,8 +21,8 @@ test('parcours formateur : navigation complète + signature R10/R22 visibles', a
   // 1. Page d'accueil
   await expect(page.getByText(/MAQUETTE DE DÉMONSTRATION/i)).toBeVisible();
 
-  // 2. Organisation du suivi
-  await page.getByRole('link', { name: /Organisation du suivi/i }).click();
+  // 2. Fiches de suivi (anciennement « Organisation du suivi »)
+  await page.getByRole('link', { name: /^Fiches de suivi$/i }).click();
   await expect(page).toHaveURL(/\/livret\/organisation-suivi/);
 
   // 3. Entretien tripartite (signé dans la fixture)
@@ -30,8 +30,8 @@ test('parcours formateur : navigation complète + signature R10/R22 visibles', a
   await expect(page).toHaveURL(/\/livret\/entretien/);
   await expect(page.getByRole('heading', { name: /Entretien tripartite/i })).toBeVisible();
 
-  // 4. Fiches de suivi — au moins 3 fiches listées
-  await page.getByRole('link', { name: /Fiches de suivi/i }).click();
+  // 4. Période en Entreprise — au moins 3 fiches listées
+  await page.getByRole('link', { name: /Période en Entreprise/i }).click();
   await expect(page.getByRole('link', { name: /Période 1/i })).toBeVisible();
   await expect(page.getByRole('link', { name: /Période 2/i })).toBeVisible();
   await expect(page.getByRole('link', { name: /Période 3/i })).toBeVisible();

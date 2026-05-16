@@ -24,7 +24,8 @@ import { cn } from '@/lib/utils';
 import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelectionne';
 
 /**
- * Module — Organisation du suivi (CDC §5.1, refonte modulaire mai 2026).
+ * Module — Fiches de suivi (ex « Organisation du suivi », renommé mai 2026).
+ * Référence CDC §5.1, refonte modulaire mai 2026.
  *
  * Le formateur référent ajoute à la demande chaque événement (réunion de
  * rentrée, visites en entreprise multiples, conseil de classe, etc.) en
@@ -81,7 +82,7 @@ export function OrganisationSuivi() {
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold">Organisation du suivi</h1>
+        <h1 className="text-2xl font-semibold">Fiches de suivi</h1>
         <p className="text-muted-foreground">
           Cadre de suivi de la promo, défini par le formateur référent. Consultable par
           l'apprenti·e et le maître d'apprentissage.

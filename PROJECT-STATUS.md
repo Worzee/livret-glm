@@ -15,7 +15,7 @@
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
 | **Tests unitaires** | **301 / 301 ✓** (Vitest, 24 fichiers de test pour 26 modules `lib/`) |
-| **Tests E2E** | **113 / 113 ✓** (Playwright — 101 desktop + 12 mobile Pixel 5, 16 specs) |
+| **Tests E2E** | **119 / 119 ✓** (Playwright — 107 desktop + 12 mobile Pixel 5, 17 specs) |
 | **Bundle JS gzippé** | 127 KB (cible CDC §19.1 : < 500 KB → marge × 4) |
 | **Bundle CSS gzippé** | 6,2 KB (cible : < 50 KB → marge × 8) |
 | **Chunk PDF lazy** | 493 KB (chargé uniquement au clic « Exporter ») |
@@ -29,7 +29,7 @@
 
 - **Frontend** : Vite 6 + React 18 + TypeScript 5.7 (strict)
 - **Style** : Tailwind CSS 3 + shadcn/ui (tokens CSS variables)
-- **State** : Zustand 5 + middleware `persist` — **7 stores** persistés en localStorage :
+- **State** : Zustand 5 + middleware `persist` — **8 stores** persistés en localStorage :
   - `livret-donnees` (schema v7) — livrets, fiches, entretiens, évaluations
   - `livret-role-actif` — rôle + maître actif
   - `livret-apprenti-actif` — id de l'apprenti·e affiché·e
@@ -37,6 +37,7 @@
   - `livret-formations` (schema v1) — formations (intitulé, niveau, dates, lieu, référentiel)
   - `livret-referentiels` (schema v1) — référentiels de compétences (Bloc → Sous-famille? → Compétence)
   - `livret-banque-questions` (schema v1) — banque centrale des questions de l'entretien tripartite
+  - `livret-pronote` (schema v1) — liens externes vers Pronote WEB (configurés par coordo + admin)
 - **Routing** : React Router v6
 - **PDF** : `@react-pdf/renderer` 4 (lazy-loaded — chunk séparé, chargé uniquement au clic « Exporter »)
 - **XLSX** : `fflate` (~12 KB) pour la décompression ZIP, parser maison
@@ -123,6 +124,27 @@ Léa MARTIN (cas principal), Théo DUBOIS (« bon élève »), Sofia PEREIRA («
 `MobileMenu` hamburger + drawer accessible (`role=dialog`, focus piégé, Esc), `RoleSwitcher` compact, touch targets ≥ 44 px (WCAG 2.5.5), audit Playwright dédié 12 tests sur Pixel 5.
 
 ### Post-livraison mai 2026 — chantiers fonctionnels et UX
+
+#### Renommages du menu principal (16 mai 2026)
+
+Rationalisation du vocabulaire de la sidebar suite à un retour pilote :
+- L'ancien **« Organisation du suivi »** (page modulaire d'événements) devient **« Fiches de suivi »** (libellé visible)
+- L'ancien **« Fiches de suivi »** (cahier de période par alternance) devient **« Période en Entreprise »** (libellé visible)
+- Les URLs internes (`/livret/organisation-suivi`, `/livret/fiches-suivi`) et les ressources techniques (matrice `'organisation-suivi'`, noms de fichiers/imports lib `organisation-suivi.ts`) **restent inchangés** — pas de migration nécessaire, juste un renommage UI cohérent (sidebar + titres de page + section PDF + tests E2E)
+
+#### Lien Pronote WEB (16 mai 2026)
+
+Nouvel item **« Pronote WEB »** dans le menu Livret, visible pour **tous les rôles**, pointant vers une nouvelle page `/livret/pronote` :
+- Page explicative : présentation de Pronote, garantie sécurité (aucun stockage de credentials côté livret, identifiants propres à chacun·e côté Pronote)
+- Liste des liens externes configurés, chacun ouvre Pronote dans un nouvel onglet (`target="_blank"` + `rel="noopener noreferrer"`)
+- Si aucun lien configuré : message d'attente, guidage vers la page admin pour les rôles autorisés
+
+Côté administration, nouvelle page **`/admin/pronote`** (réservée coordo + admin via la ressource matrice `admin.pronote.gerer`) :
+- CRUD des liens Pronote (libellé, URL, description optionnelle)
+- Validation : URL `https?://...` obligatoire, libellé ≥ 3 caractères
+- Suppression avec confirmation 2 clics
+
+Nouveaux types `LienPronote { id, libelle, url, description? }` + store `usePronoteStore` (persist v1, vide par défaut — pas de pré-configuration de fausses URLs).
 
 #### Banque de questions de l'entretien tripartite
 
@@ -215,13 +237,13 @@ Toutes les règles du CDC v1.3 sont implémentées et testées :
 
 ---
 
-## 6. Tests (301 unitaires + 113 E2E)
+## 6. Tests (301 unitaires + 119 E2E)
 
 ### Tests unitaires Vitest (24 fichiers de test pour 26 modules `lib/`)
 
 | Fichier | Tests | Périmètre |
 |---|---|---|
-| `lib/droits.test.ts` | 37 | Matrice **45 ressources × 5 rôles**, cohérence transverse |
+| `lib/droits.test.ts` | 37 | Matrice **46 ressources × 5 rôles**, cohérence transverse |
 | `lib/transitions-fiche.test.ts` | 20 | R15/R16/R17/R21 |
 | `lib/validation-signature.test.ts` | 11 | R18/R20 par rôle |
 | `lib/regles-periode.test.ts` | 15 | R11/R12/R13 |
@@ -248,7 +270,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées :
 
 *Les modules `creation-livret.ts` et `utils.ts` sont couverts indirectement via les tests E2E.*
 
-### Tests E2E Playwright (16 specs)
+### Tests E2E Playwright (17 specs)
 
 | Projet | Fichier | Tests | Périmètre |
 |---|---|---|---|
@@ -267,6 +289,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées :
 | `chromium-desktop` | `organisation-suivi.spec.ts` | 7 | Refonte modulaire : ajout par motif, multi-occurrences, suppression 2 clics, persistance, **verrou suppression si événement verrouillé** |
 | `chromium-desktop` | `header-trio-contextuel.spec.ts` | 4 | Trio apprenti·e / maître / formateur dans le header — affichage par défaut, mise à jour au switch d'apprenti·e |
 | `chromium-desktop` | `banque-questions.spec.ts` | 7 | CRUD admin banque + sélection questions par formateur référent + lecture seule apprenti·e + verrou suppression si utilisée |
+| `chromium-desktop` | `pronote.spec.ts` | 6 | Visibilité menu Pronote WEB tous rôles + admin réservé coordo/admin + CRUD lien + validation URL + target=_blank côté utilisateur |
 | `mobile-pixel5` | `audit-mobile.mobile.spec.ts` | 12 | Aucun débordement, hamburger, drawer, RoleSwitcher compact, modale R10 |
 
 ---
@@ -292,7 +315,7 @@ LIVRET APPRENTISSAGE/
     ├── styles/index.css
     ├── types/index.ts              # CDC §7 + extensions (titre fiche, evalueeEnEntreprise, EvenementOrganisationSuivi, QuestionBanque, etc.)
     ├── lib/                        # 26 modules + 24 fichiers tests
-    │   ├── droits.ts               # matrice §6 (45 ressources × 5 rôles)
+    │   ├── droits.ts               # matrice §6 (46 ressources × 5 rôles)
     │   ├── transitions-fiche.ts    # R15/R16/R17/R21
     │   ├── validation-signature.ts # R18/R20
     │   ├── regles-periode.ts       # R11/R12/R13/R14
@@ -319,14 +342,15 @@ LIVRET APPRENTISSAGE/
     │   ├── questions-entretien.ts  # catalogue 11 questions par défaut + helpers
     │   ├── __fixtures__/           # exemple-{1,2}.{csv,xlsx} (fichiers du pilote)
     │   └── utils.ts
-    ├── store/                      # 7 stores Zustand persistés
+    ├── store/                      # 8 stores Zustand persistés
     │   ├── useUserStore.ts
     │   ├── useLivretStore.ts       # données livret (persist v7)
     │   ├── useApprentiActifStore.ts
     │   ├── useUtilisateursStore.ts # CRUD utilisateurs (persist v1)
     │   ├── useFormationsStore.ts   # CRUD formations (persist v1)
     │   ├── useReferentielsStore.ts # CRUD référentiels (persist v1)
-    │   └── useBanqueQuestionsStore.ts # CRUD banque questions entretien (persist v1)
+    │   ├── useBanqueQuestionsStore.ts # CRUD banque questions entretien (persist v1)
+    │   └── usePronoteStore.ts      # CRUD liens externes Pronote WEB (persist v1)
     ├── fixtures/
     │   ├── utilisateurs.ts         # 6 apprenti·e·s + 2 maîtres + Sophie + Martine + Guillaume
     │   ├── formations.ts           # CAP Cuisine 2025-2026
@@ -361,17 +385,19 @@ LIVRET APPRENTISSAGE/
     │   └── pdf/                             # export lazy (LivretPdf 7 sections, banque injectée)
     ├── pages/
     │   ├── TableauDeBord.tsx, NotFound.tsx, PagePlaceholder.tsx
-    │   ├── OrganisationSuivi.tsx           # liste modulaire d'événements
+    │   ├── OrganisationSuivi.tsx           # liste modulaire d'événements (libellé UI : « Fiches de suivi »)
     │   ├── EntretienTripartite.tsx
-    │   ├── FicheSuiviPeriodes.tsx
+    │   ├── FicheSuiviPeriodes.tsx          # libellé UI : « Période en Entreprise »
     │   ├── FicheSuiviPeriodeDetail.tsx
     │   ├── EvaluationFinale.tsx
+    │   ├── PronoteWeb.tsx                  # page explicative + liens externes (tous rôles)
     │   └── admin/
     │       ├── GestionUtilisateurs.tsx
     │       ├── GestionFormations.tsx
     │       ├── GestionAffectations.tsx
     │       ├── GestionReferentiels.tsx
-    │       └── GestionBanqueQuestions.tsx  # CRUD banque questions entretien
+    │       ├── GestionBanqueQuestions.tsx  # CRUD banque questions entretien
+    │       └── GestionPronote.tsx          # CRUD liens externes Pronote WEB
     └── test/setup.ts
 ```
 
@@ -386,7 +412,7 @@ Documenter dans le CDC officiel toutes les évolutions négociées depuis v1.3 :
 - §4.1 : ajout des rôles **Coordo** et **Admin**
 - §5.1 : refonte modulaire de l'organisation du suivi (liste d'événements à la demande, multi-occurrences d'un même motif autorisées, catalogue de 7 motifs)
 - §5.2 : refonte de l'entretien tripartite — banque centrale de questions (CRUD coordo + admin), **sélection par livret** par le formateur référent, 3 types de réponse (texte court / texte long / oui-non), bloc « Appréciation maître » 4 critères inchangé
-- §6 : 45 ressources de matrice (admin.* + fiche.modifier-periode + fiche.supprimer-periode + admin.referentiels.gerer + admin.banque-questions.gerer)
+- §6 : 46 ressources de matrice (admin.* + fiche.modifier-periode + fiche.supprimer-periode + admin.referentiels.gerer + admin.banque-questions.gerer + admin.pronote.gerer)
 - §6 : `creer-apprenti` et `creer-maitre` ouverts au formateur référent ; `creer/modifier/supprimer-periode` ouverts au coordo
 - §7.1 : types `Coordo`, `Admin`, `Lieu` ; `Formation` enrichi ; `FicheSuiviPeriode.titre?` ; `Competence.evalueeEnEntreprise?` ; refonte `OrganisationSuivi { evenements: [] }` + types `MotifOrganisationSuivi` / `EvenementOrganisationSuivi` ; refonte `EntretienTripartite` avec questions sélectionnées + réponses indexées par questionId + types `QuestionBanque` / `CibleQuestion` / `TypeQuestion`
 - §7.2 : `Competence.sousFamille?` (3 niveaux hiérarchiques optionnels)
@@ -394,6 +420,8 @@ Documenter dans le CDC officiel toutes les évolutions négociées depuis v1.3 :
 - §17.2 : entrées glossaire *Coordinateur·rice*, *Administrateur·rice*
 - Nouvelle section : workflow d'import référentiels (CSV + XLSX, formation optionnelle, génération auto du libellé OU nom libre, affichage N:1 sur la carte)
 - Nouvelle section : flag « compétence abordée en entreprise »
+- Nouvelle section : « Pronote WEB » — lien externe configuré par coordo + admin, visible tous rôles, ouverture nouvel onglet (pas de SSO côté maquette)
+- Renommage UI : « Organisation du suivi » → « Fiches de suivi » ; « Fiches de suivi » → « Période en Entreprise » (libellés visibles uniquement — URLs internes et ressources matrice inchangées)
 
 → noté dans `TODO-etape-2.md`.
 
@@ -469,7 +497,7 @@ npm run dev            # serveur Vite sur http://localhost:5173
 
 ```bash
 npm test               # 301 tests Vitest
-npm run e2e            # 113 tests E2E Playwright (build + preview + tests)
+npm run e2e            # 119 tests E2E Playwright (build + preview + tests)
 npm run e2e:ui         # UI Playwright pour debug
 npm run typecheck      # tsc --noEmit
 npm run lint           # ESLint
@@ -493,7 +521,7 @@ Ou en console DevTools :
 ```js
 ['livret-donnees','livret-role-actif','livret-apprenti-actif',
  'livret-utilisateurs','livret-formations','livret-referentiels',
- 'livret-banque-questions']
+ 'livret-banque-questions','livret-pronote']
   .forEach(k => localStorage.removeItem(k));
 location.reload();
 ```
@@ -507,7 +535,7 @@ location.reload();
 - **PDF lazy-loaded** : `@react-pdf/renderer` dans un chunk séparé (493 KB gzip), chargé uniquement au clic « Exporter » → bundle initial 127 KB
 - **Tests TDD ciblés** sur la logique métier pure (`lib/`) ; les composants UI sont testés via Playwright E2E
 - **Migration localStorage par bump de version** : reset complet à chaque bump (pas de migration logicielle, données fictives)
-- **7 stores Zustand persistés avec import croisé** : synchronisations cross-store dans les actions, cycle résolu par ESM
+- **8 stores Zustand persistés avec import croisé** : synchronisations cross-store dans les actions, cycle résolu par ESM
 - **Cohérence référentielle protectrice** : suppressions bloquées en cascade (apprenti·e si livret actif, maître/formateur si rattachements, formation si apprenti·e·s, référentiel si formations rattachées, fiche-période si verrouillée ou signée, événement organisation si verrouillé, question banque si utilisée par un entretien)
 - **Mobile-first responsive** : drawer + RoleSwitcher compact + audit Playwright dédié 12 tests + corrections récentes sur les tableaux admin
 - **Sélecteurs E2E stables via `data-testid`** sur les modales admin (corrige une race-condition observée avec `getByLabel(/regex/)` sous suite full Playwright)
@@ -518,12 +546,13 @@ location.reload();
 
 L'étape 1 du CDC v1.3 est **livrée et fonctionnelle**, étendue par 2 vagues post-livraison (administration métier + refonte modulaire des sections principales) :
 
-- administration métier complète : CRUD 4 rôles + formations + affectations + référentiels CSV/XLSX + banque de questions
+- administration métier complète : CRUD 4 rôles + formations + affectations + référentiels CSV/XLSX + banque de questions + liens Pronote
 - verrouillages de cohérence référentielle à toutes les couches
-- organisation du suivi modulaire (liste dynamique d'événements)
+- organisation du suivi modulaire (liste dynamique d'événements) — libellé UI « Fiches de suivi »
 - entretien tripartite avec banque de questions configurable + sélection par livret
 - trio contextuel dans le header (apprenti·e / maître / formateur)
 - audit mobile complet + corrections tableaux admin
+- lien Pronote WEB (page explicative + liens externes vers l'outil GRETA)
 
 Il reste à faire :
 

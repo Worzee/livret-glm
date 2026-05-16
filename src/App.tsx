@@ -13,6 +13,8 @@ import { GestionFormations } from '@/pages/admin/GestionFormations';
 import { GestionAffectations } from '@/pages/admin/GestionAffectations';
 import { GestionReferentiels } from '@/pages/admin/GestionReferentiels';
 import { GestionBanqueQuestions } from '@/pages/admin/GestionBanqueQuestions';
+import { GestionPronote } from '@/pages/admin/GestionPronote';
+import { PronoteWeb } from '@/pages/PronoteWeb';
 
 /**
  * Composition des routes de l'application.
@@ -35,6 +37,7 @@ export function App() {
         <Route path="livret/fiches-suivi" element={<FicheSuiviPeriodes />} />
         <Route path="livret/fiches-suivi/:ficheId" element={<FicheSuiviPeriodeDetail />} />
         <Route path="livret/evaluation-finale" element={<EvaluationFinale />} />
+        <Route path="livret/pronote" element={<PronoteWeb />} />
         <Route
           path="livret/export"
           element={
@@ -53,6 +56,7 @@ export function App() {
         <Route path="admin/affectations" element={<GestionAffectations />} />
         <Route path="admin/referentiels" element={<GestionReferentiels />} />
         <Route path="admin/banque-questions" element={<GestionBanqueQuestions />} />
+        <Route path="admin/pronote" element={<GestionPronote />} />
 
         <Route path="*" element={<NotFound />} />
       </Route>

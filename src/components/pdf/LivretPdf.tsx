@@ -33,9 +33,9 @@ import {
  *
  * Structure :
  *   - Page de garde (identité, formation, métadonnées, mention démo)
- *   - Organisation du suivi
+ *   - Fiches de suivi (ex « Organisation du suivi »)
  *   - Entretien tripartite
- *   - 1 page par fiche de suivi
+ *   - 1 page par période en entreprise (ex « Fiche de suivi »)
  *   - Évaluations finales (compétences par bloc, attitudes)
  *   - Annexes (clôture, historiques de déverrouillage)
  *
@@ -309,7 +309,7 @@ function Ligne({ label, valeur }: { label: string; valeur: string }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Section : Organisation du suivi
+// Section : Fiches de suivi (anciennement « Organisation du suivi »)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function PageOrganisation({ livret }: { livret: Livret }) {
@@ -327,7 +327,7 @@ function PageOrganisation({ livret }: { livret: Livret }) {
     <Page size="A4" style={styles.page}>
       <PiedDePage dateExport={new Date().toISOString()} />
       <View>
-        <Text style={styles.h1}>Organisation du suivi</Text>
+        <Text style={styles.h1}>Fiches de suivi</Text>
         <Text style={[styles.italique, { marginBottom: 12 }]}>
           Cette section détaille l'organisation pédagogique mise en place pour la promotion.
         </Text>
@@ -512,7 +512,7 @@ function PageFiche({
       <PiedDePage dateExport={new Date().toISOString()} />
       <View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <Text style={styles.h1}>Fiche de suivi — Période {fiche.numeroPeriode}</Text>
+          <Text style={styles.h1}>Période en Entreprise n° {fiche.numeroPeriode}</Text>
           <Text
             style={[
               styles.badgeEtat,

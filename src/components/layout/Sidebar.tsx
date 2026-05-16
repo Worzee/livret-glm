@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import {
   CalendarRange,
   ClipboardList,
+  ExternalLink,
   FileDown,
   GraduationCap,
   LayoutDashboard,
@@ -39,10 +40,11 @@ interface LienItem {
 
 const LIENS_LIVRET: LienItem[] = [
   { to: '/', label: 'Tableau de bord', Icon: LayoutDashboard },
-  { to: '/livret/organisation-suivi', label: 'Organisation du suivi', Icon: CalendarRange },
+  { to: '/livret/organisation-suivi', label: 'Fiches de suivi', Icon: CalendarRange },
   { to: '/livret/entretien', label: 'Entretien tripartite', Icon: ClipboardList },
-  { to: '/livret/fiches-suivi', label: 'Fiches de suivi', Icon: Notebook },
+  { to: '/livret/fiches-suivi', label: 'Période en Entreprise', Icon: Notebook },
   { to: '/livret/evaluation-finale', label: 'Évaluation finale', Icon: Target },
+  { to: '/livret/pronote', label: 'Pronote WEB', Icon: ExternalLink },
   { to: '/livret/export', label: 'Export PDF', Icon: FileDown },
 ];
 
@@ -58,6 +60,7 @@ const LIENS_ADMIN: Array<LienItem & { ressource: Ressource }> = [
   { to: '/admin/affectations', label: 'Affectations', Icon: Link2, ressource: 'admin.affectations.gerer' },
   { to: '/admin/referentiels', label: 'Référentiels', Icon: Library, ressource: 'admin.referentiels.gerer' },
   { to: '/admin/banque-questions', label: 'Banque de questions', Icon: ListChecks, ressource: 'admin.banque-questions.gerer' },
+  { to: '/admin/pronote', label: 'Pronote', Icon: ExternalLink, ressource: 'admin.pronote.gerer' },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
