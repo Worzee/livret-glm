@@ -47,18 +47,24 @@ async function remplirModaleFormation(
     annee: string;
     dateDebut: string;
     dateFin: string;
-    nomLieu: string;
+    /**
+     * Id de l'établissement à sélectionner dans le select « Lieu de formation ».
+     * Par défaut : `eta-site-diderot` (le seul présent dans les fixtures).
+     * Refonte mai 2026 : remplace l'ancien champ texte `nomLieu`.
+     */
+    lieuId?: string;
   },
 ) {
   const modale = page.getByRole('dialog');
-  // Attente explicite du dernier champ (mont React complet) avant de fill.
-  await modale.getByTestId('formation-nom-lieu').waitFor({ state: 'visible' });
+  await modale.getByTestId('formation-lieu-id').waitFor({ state: 'visible' });
   await modale.getByTestId('formation-intitule').fill(champs.intitule);
   await modale.getByTestId('formation-niveau').fill(champs.niveau);
   await modale.getByTestId('formation-annee').fill(champs.annee);
   await modale.getByTestId('formation-date-debut').fill(champs.dateDebut);
   await modale.getByTestId('formation-date-fin').fill(champs.dateFin);
-  await modale.getByTestId('formation-nom-lieu').fill(champs.nomLieu);
+  await modale
+    .getByTestId('formation-lieu-id')
+    .selectOption(champs.lieuId ?? 'eta-site-diderot');
 }
 
 test("création d'une nouvelle formation via la modale", async ({ page }) => {
@@ -74,7 +80,7 @@ test("création d'une nouvelle formation via la modale", async ({ page }) => {
     annee: '2026-2028',
     dateDebut: '2026-09-01',
     dateFin: '2028-06-30',
-    nomLieu: 'GRETA Lyon Métropole — Site Magenta',
+    // (lieuId par défaut = eta-site-diderot)
   });
   await modale.getByRole('button', { name: /Créer la formation/i }).click();
 
@@ -103,7 +109,7 @@ test('création + suppression effective (2 clics) d\'une formation libre', async
     annee: '2026-2027',
     dateDebut: '2026-09-01',
     dateFin: '2027-06-30',
-    nomLieu: 'GRETA Annexe Pâtisserie',
+    // (lieuId par défaut = eta-site-diderot)
   });
   await modale.getByRole('button', { name: /Créer la formation/i }).click();
 
@@ -147,7 +153,7 @@ test('création + persistance reload + visibilité dans la page Affectations', a
     annee: '2026-2027',
     dateDebut: '2026-09-01',
     dateFin: '2027-06-30',
-    nomLieu: 'GRETA Antenne Vaise',
+    // (lieuId par défaut = eta-site-diderot)
   });
   await modale.getByRole('button', { name: /Créer la formation/i }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);

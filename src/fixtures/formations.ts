@@ -1,8 +1,12 @@
 import type { Formation } from '@/types';
+import { etablissementSiteDiderot } from './etablissements';
 
 /**
  * Formations fictives de démonstration.
  * Référence : cahier des charges v1.3, sections 24 et 30 (annexes).
+ *
+ * Refonte mai 2026 : `lieu` inline remplacé par `lieuId` qui pointe vers
+ * une entrée du store `useEtablissementsStore`.
  */
 
 export const formationCapCuisine: Formation = {
@@ -13,12 +17,7 @@ export const formationCapCuisine: Formation = {
   referentielId: 'ref-cap-cuisine',
   dateDebut: '2025-09-02',
   dateFin: '2027-09-01',
-  lieu: {
-    nom: 'GRETA Lyon Métropole — Site Diderot',
-    adresse: '41 rue Antoine Lumière',
-    codePostal: '69008',
-    ville: 'Lyon',
-  },
+  lieuId: etablissementSiteDiderot.id,
 };
 
 /**

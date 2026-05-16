@@ -2,6 +2,7 @@ import { Document, Page, Text, View } from '@react-pdf/renderer';
 import type {
   Apprenti,
   EntretienTripartite,
+  Etablissement,
   FicheSuiviPeriode,
   Formateur,
   Formation,
@@ -51,6 +52,12 @@ interface LivretPdfProps {
   formation: Formation;
   referentiel: Referentiel;
   /**
+   * Établissement (lieu de formation) — résolu via `formation.lieuId` en
+   * amont. Peut être `undefined` si l'établissement référencé a été supprimé
+   * (cas non nominal, on affiche un fallback).
+   */
+  etablissement?: Etablissement;
+  /**
    * Banque indexée des questions de l'entretien (refonte mai 2026).
    * Permet au PDF de résoudre les libellés depuis les questionId stockées
    * dans `entretien.reponses{Apprenti,Maitre}`.
@@ -67,6 +74,7 @@ export function LivretPdf({
   formateur,
   formation,
   referentiel,
+  etablissement,
   banqueQuestions,
   dateExport,
 }: LivretPdfProps) {
@@ -85,6 +93,7 @@ export function LivretPdf({
         maitre={maitre}
         formateur={formateur}
         formation={formation}
+        etablissement={etablissement}
         livret={livret}
         dateExport={date}
       />
@@ -222,6 +231,7 @@ function PageDeGarde({
   maitre,
   formateur,
   formation,
+  etablissement,
   livret,
   dateExport,
 }: {
@@ -229,9 +239,15 @@ function PageDeGarde({
   maitre: Maitre;
   formateur: Formateur;
   formation: Formation;
+  etablissement?: Etablissement;
   livret: Livret;
   dateExport: string;
 }) {
+  // Fallback : si l'établissement est introuvable (cas non nominal — soft
+  // delete d'un lieu encore référencé), on affiche un libellé générique.
+  const libelleLieu = etablissement
+    ? `${etablissement.nom}${etablissement.ville ? ` — ${etablissement.ville}` : ''}`
+    : 'Établissement non spécifié';
   return (
     <Page size="A4" style={styles.page}>
       <View style={styles.garde}>
@@ -259,10 +275,7 @@ function PageDeGarde({
               label="Contrat d'apprentissage"
               valeur={`du ${formaterDateCourte(apprenti.contratDebut)} au ${formaterDateCourte(apprenti.contratFin)}`}
             />
-            <Ligne
-              label="Centre de formation"
-              valeur={`${formation.lieu.nom}${formation.lieu.ville ? ` — ${formation.lieu.ville}` : ''}`}
-            />
+            <Ligne label="Centre de formation" valeur={libelleLieu} />
             <Ligne
               label="Maître d'apprentissage"
               valeur={`${maitre.prenom} ${maitre.nom}`}

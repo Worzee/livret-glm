@@ -1,12 +1,13 @@
-import type { Formation, Lieu } from '@/types';
+import type { Formation } from '@/types';
 
 /**
  * Validation des champs d'une formation (création + édition).
  * Référence : cahier des charges v1.3, section 7.1 (entité Formation).
  *
- * Pures fonctions — pas d'effet de bord, testables sans React. Utilisées
- * par `ModaleFormation` (création + édition) pour empêcher la soumission
- * sur erreur bloquante.
+ * Refonte mai 2026 : le lieu inline (`Lieu`) est remplacé par un `lieuId`
+ * qui pointe vers une entrée du store `useEtablissementsStore`.
+ *
+ * Pures fonctions — pas d'effet de bord, testables sans React.
  */
 
 export type SaisieFormation = Omit<Formation, 'id'>;
@@ -18,8 +19,8 @@ export interface ErreursFormation {
   referentielId?: string;
   dateDebut?: string;
   dateFin?: string;
-  /** Le nom du lieu est obligatoire ; les autres champs du lieu sont optionnels. */
-  lieuNom?: string;
+  /** L'établissement (lieu de formation) est obligatoire. */
+  lieuId?: string;
 }
 
 export interface ResultatValidationFormation {
@@ -66,8 +67,9 @@ export function validerSaisieFormation(saisie: SaisieFormation): ResultatValidat
     erreurs.dateFin = 'La date de fin doit être postérieure à la date de début.';
   }
 
-  if (!saisie.lieu?.nom?.trim()) {
-    erreurs.lieuNom = 'Le nom du lieu est obligatoire.';
+  if (!saisie.lieuId?.trim()) {
+    erreurs.lieuId =
+      "Le lieu de formation est obligatoire. Sélectionnez un établissement dans la liste.";
   }
 
   return {
@@ -78,16 +80,9 @@ export function validerSaisieFormation(saisie: SaisieFormation): ResultatValidat
 }
 
 /**
- * Normalise une saisie avant persistance : trim des strings, MAJUSCULES sur le
- * niveau (CAP, BAC PRO, BTS…) si reconnu, conservation du format brut sinon.
+ * Normalise une saisie avant persistance : trim des strings.
  */
 export function normaliserSaisieFormation(saisie: SaisieFormation): SaisieFormation {
-  const lieu: Lieu = {
-    nom: saisie.lieu.nom.trim(),
-    adresse: saisie.lieu.adresse?.trim() || undefined,
-    codePostal: saisie.lieu.codePostal?.trim() || undefined,
-    ville: saisie.lieu.ville?.trim() || undefined,
-  };
   return {
     intitule: saisie.intitule.trim(),
     niveau: saisie.niveau.trim(),
@@ -95,6 +90,6 @@ export function normaliserSaisieFormation(saisie: SaisieFormation): SaisieFormat
     referentielId: saisie.referentielId.trim(),
     dateDebut: saisie.dateDebut,
     dateFin: saisie.dateFin,
-    lieu,
+    lieuId: saisie.lieuId.trim(),
   };
 }

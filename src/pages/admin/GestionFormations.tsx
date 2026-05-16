@@ -13,6 +13,7 @@ import {
 import type { Formation, Role } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
+import { useEtablissementsStore } from '@/store/useEtablissementsStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
 import { evaluerVerrouFormation } from '@/lib/formation-verrou';
@@ -32,6 +33,7 @@ export function GestionFormations() {
   const roleActif = useUserStore((s) => s.roleActif);
   const formations = useFormationsStore((s) => s.formations);
   const supprimerFormation = useFormationsStore((s) => s.supprimerFormation);
+  const etablissements = useEtablissementsStore((s) => s.etablissements);
   const apprentis = useUtilisateursStore((s) => s.apprentis);
 
   const [requete, setRequete] = useState('');
@@ -233,20 +235,34 @@ export function GestionFormations() {
                     <div>
                       <dt className="sr-only">Lieu</dt>
                       <dd>
-                        <span className="font-medium">{f.lieu.nom}</span>
-                        {f.lieu.adresse && (
-                          <>
-                            <br />
-                            <span className="text-muted-foreground">
-                              {f.lieu.adresse}
-                              {f.lieu.codePostal && f.lieu.ville && (
+                        {(() => {
+                          const eta = etablissements[f.lieuId];
+                          if (!eta) {
+                            return (
+                              <span className="italic text-muted-foreground">
+                                Établissement non spécifié
+                              </span>
+                            );
+                          }
+                          return (
+                            <>
+                              <span className="font-medium">{eta.nom}</span>
+                              {eta.adresse && (
                                 <>
-                                  , {f.lieu.codePostal} {f.lieu.ville}
+                                  <br />
+                                  <span className="text-muted-foreground">
+                                    {eta.adresse}
+                                    {eta.codePostal && eta.ville && (
+                                      <>
+                                        , {eta.codePostal} {eta.ville}
+                                      </>
+                                    )}
+                                  </span>
                                 </>
                               )}
-                            </span>
-                          </>
-                        )}
+                            </>
+                          );
+                        })()}
                       </dd>
                     </div>
                   </div>

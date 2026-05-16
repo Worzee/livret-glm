@@ -13,7 +13,7 @@ import { GestionFormations } from '@/pages/admin/GestionFormations';
 import { GestionAffectations } from '@/pages/admin/GestionAffectations';
 import { GestionReferentiels } from '@/pages/admin/GestionReferentiels';
 import { GestionBanqueQuestions } from '@/pages/admin/GestionBanqueQuestions';
-import { GestionPronote } from '@/pages/admin/GestionPronote';
+import { GestionEtablissements } from '@/pages/admin/GestionEtablissements';
 import { PronoteWeb } from '@/pages/PronoteWeb';
 
 /**
@@ -56,7 +56,7 @@ export function App() {
         <Route path="admin/affectations" element={<GestionAffectations />} />
         <Route path="admin/referentiels" element={<GestionReferentiels />} />
         <Route path="admin/banque-questions" element={<GestionBanqueQuestions />} />
-        <Route path="admin/pronote" element={<GestionPronote />} />
+        <Route path="admin/etablissements" element={<GestionEtablissements />} />
 
         <Route path="*" element={<NotFound />} />
       </Route>

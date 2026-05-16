@@ -35,12 +35,26 @@ export interface Utilisateur {
   telephone?: string;
 }
 
-export interface Lieu {
+/**
+ * Établissement (lieu de formation).
+ * Référence : refonte mai 2026.
+ *
+ * Anciennement, chaque `Formation` portait son `lieu: Lieu` inline. Avec la
+ * refonte Pronote/établissements, les lieux deviennent des entités à part
+ * entière, gérés en CRUD par l'administrateur·rice uniquement. Chaque
+ * établissement peut porter une `urlPronote` (le portail Pronote du lieu).
+ *
+ * La `Formation` référence désormais un établissement par id (`lieuId`).
+ */
+export interface Etablissement {
+  id: string;
   /** Libellé court affiché dans les listes (ex : "GRETA Lyon Métropole — Site Diderot"). */
   nom: string;
   adresse?: string;
   codePostal?: string;
   ville?: string;
+  /** URL absolue du portail Pronote du lieu (https://…). Optionnelle. */
+  urlPronote?: string;
 }
 
 export interface Formation {
@@ -54,8 +68,8 @@ export interface Formation {
   dateDebut: string;
   /** Date de fin de la promo (ISO 8601 YYYY-MM-DD). */
   dateFin: string;
-  /** Lieu principal du centre de formation (le coordo peut le modifier). */
-  lieu: Lieu;
+  /** Id de l'établissement où se déroule la formation (cf. `Etablissement`). */
+  lieuId: string;
 }
 
 export interface Entreprise {
@@ -463,24 +477,3 @@ export interface EntreeHistorique {
   motif?: string;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 13 — Liens externes Pronote WEB
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Lien externe vers un espace Pronote WEB. Configuré par les rôles `coordo`
- * et `admin` depuis la page `/admin/pronote`. Chaque utilisateur·rice de la
- * maquette retrouve la liste des liens disponibles sur `/livret/pronote` et
- * s'identifie ensuite avec ses propres credentials côté Pronote.
- *
- * Plusieurs liens peuvent coexister (espace élèves, espace enseignants, etc.).
- */
-export interface LienPronote {
-  id: string;
-  /** Libellé court affiché sur le bouton (ex : « Espace élèves »). */
-  libelle: string;
-  /** URL absolue (https://…). */
-  url: string;
-  /** Description facultative pour aiguiller l'utilisateur·rice. */
-  description?: string;
-}

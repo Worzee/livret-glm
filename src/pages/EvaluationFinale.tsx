@@ -5,6 +5,7 @@ import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { useReferentielsStore } from '@/store/useReferentielsStore';
 import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
+import { useEtablissementsStore } from '@/store/useEtablissementsStore';
 import { peutEditer } from '@/lib/droits';
 import { libelleRole } from '@/lib/droits';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
@@ -40,6 +41,7 @@ export function EvaluationFinale() {
   const formations = useFormationsStore((s) => s.formations);
   const referentiels = useReferentielsStore((s) => s.referentiels);
   const banqueQuestions = useBanqueQuestionsStore((s) => s.questions);
+  const etablissements = useEtablissementsStore((s) => s.etablissements);
   const ctx = useApprentiActif();
 
   if (!ctx) return <AucunApprentiSelectionne />;
@@ -50,6 +52,7 @@ export function EvaluationFinale() {
   // vers un référentiel supprimé — comportement raisonnable pour la maquette.
   const referentiel =
     referentiels[formation.referentielId] ?? referentielCapCuisine;
+  const etablissement = etablissements[formation.lieuId];
   const maitre = getMaitreByIdFromStore(apprenti.maitreApprentissageId) ?? maitreKarimBenali;
 
   const aDroitEdition =
@@ -85,6 +88,7 @@ export function EvaluationFinale() {
           formateur={formatriceSophieDubois}
           formation={formation}
           referentiel={referentiel}
+          etablissement={etablissement}
           banqueQuestions={banqueQuestions}
         />
       </header>

@@ -44,7 +44,11 @@ interface FormationsStore {
   reinitialiser: () => void;
 }
 
-const VERSION_SCHEMA = 1;
+// Bumpé post-livraison :
+//   v1 — schéma initial (`Formation.lieu: Lieu` inline)
+//   v2 — refonte mai 2026 : `Formation.lieuId: string` (relation vers
+//        `useEtablissementsStore`). Reset complet à la première charge.
+const VERSION_SCHEMA = 2;
 
 function etatInitial(): Pick<FormationsStore, 'formations'> {
   return { formations: { ...formationsDemo } };

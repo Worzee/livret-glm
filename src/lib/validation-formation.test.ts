@@ -11,12 +11,7 @@ const FORMATION_VALIDE: SaisieFormation = {
   referentielId: 'ref-cap-cuisine',
   dateDebut: '2025-09-02',
   dateFin: '2027-09-01',
-  lieu: {
-    nom: 'GRETA Lyon Métropole — Site Diderot',
-    adresse: '41 rue Antoine Lumière',
-    codePostal: '69008',
-    ville: 'Lyon',
-  },
+  lieuId: 'eta-site-diderot',
 };
 
 describe('validerSaisieFormation', () => {
@@ -70,28 +65,21 @@ describe('validerSaisieFormation', () => {
   });
 
   it("n'exige PAS le référentiel mais signale un avertissement quand absent", () => {
-    // Le référentiel peut être créé après la formation (cf. UX feedback) :
-    // on n'empêche pas la sauvegarde, mais on prévient l'utilisateur·rice.
     const r = validerSaisieFormation({ ...FORMATION_VALIDE, referentielId: '' });
     expect(r.ok).toBe(true);
     expect(r.erreurs.referentielId).toBeUndefined();
     expect(r.avertissements.referentielId).toBeDefined();
   });
 
-  it('exige le nom du lieu (le reste est optionnel)', () => {
-    const r = validerSaisieFormation({
-      ...FORMATION_VALIDE,
-      lieu: { nom: '', adresse: '41 rue', codePostal: '69008', ville: 'Lyon' },
-    });
+  it('exige un lieu de formation (lieuId non vide)', () => {
+    const r = validerSaisieFormation({ ...FORMATION_VALIDE, lieuId: '' });
     expect(r.ok).toBe(false);
-    expect(r.erreurs.lieuNom).toBeDefined();
+    expect(r.erreurs.lieuId).toMatch(/lieu de formation/i);
   });
 
-  it('accepte un lieu sans adresse / CP / ville (cas centre virtuel)', () => {
-    const r = validerSaisieFormation({
-      ...FORMATION_VALIDE,
-      lieu: { nom: 'Centre virtuel' },
-    });
-    expect(r.ok).toBe(true);
+  it('rejette un lieuId composé uniquement d\'espaces', () => {
+    const r = validerSaisieFormation({ ...FORMATION_VALIDE, lieuId: '   ' });
+    expect(r.ok).toBe(false);
+    expect(r.erreurs.lieuId).toBeDefined();
   });
 });

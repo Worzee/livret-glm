@@ -10,7 +10,7 @@ const formation = (id: string, referentielId: string): Formation => ({
   referentielId,
   dateDebut: '2025-09-01',
   dateFin: '2026-08-31',
-  lieu: { nom: 'GRETA' },
+  lieuId: 'eta-test',
 });
 
 describe('evaluerVerrouReferentiel', () => {

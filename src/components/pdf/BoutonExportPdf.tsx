@@ -2,6 +2,7 @@ import { lazy, Suspense, useState } from 'react';
 import { AlertTriangle, FileDown } from 'lucide-react';
 import type {
   Apprenti,
+  Etablissement,
   Formateur,
   Formation,
   Livret,
@@ -40,6 +41,8 @@ interface BoutonExportPdfProps {
   formateur: Formateur;
   formation: Formation;
   referentiel: Referentiel;
+  /** Établissement (résolu depuis `formation.lieuId`). */
+  etablissement?: Etablissement;
   /** Banque indexée des questions de l'entretien (refonte mai 2026). */
   banqueQuestions: Record<string, QuestionBanque>;
 }

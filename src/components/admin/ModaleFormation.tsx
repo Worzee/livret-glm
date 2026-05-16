@@ -1,8 +1,9 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { GraduationCap, X } from 'lucide-react';
-import type { Formation, Lieu } from '@/types';
+import { GraduationCap, Info, X } from 'lucide-react';
+import type { Formation } from '@/types';
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { useReferentielsStore } from '@/store/useReferentielsStore';
+import { useEtablissementsStore } from '@/store/useEtablissementsStore';
 import {
   type SaisieFormation,
   normaliserSaisieFormation,
@@ -16,12 +17,14 @@ import { cn } from '@/lib/utils';
  * - Mode `creation` : `formation` est `undefined`. Ajoute une nouvelle formation.
  * - Mode `edition`  : `formation` est fourni. Met à jour les champs existants.
  *
+ * Refonte mai 2026 : le lieu de formation se sélectionne désormais dans une
+ * liste d'établissements gérée par l'administrateur·rice (cf.
+ * `useEtablissementsStore`). Plus de saisie inline de l'adresse — celle-ci
+ * est définie côté établissement et partagée par toutes les formations du
+ * lieu.
+ *
  * Validation : `lib/validation-formation.ts`. Esc / clic arrière-plan / Annuler
  * ferment sans sauvegarder.
- *
- * Référentiels : tant que l'UI d'import (Extension 3 phase C) n'est pas livrée,
- * on liste statiquement les référentiels connus. Quand `useReferentielsStore`
- * existera, on s'y branchera ici.
  */
 
 interface ModaleFormationProps {
@@ -31,8 +34,6 @@ interface ModaleFormationProps {
   onValide?: (formation: Formation) => void;
 }
 
-const LIEU_VIDE: Lieu = { nom: '', adresse: '', codePostal: '', ville: '' };
-
 const SAISIE_VIDE: SaisieFormation = {
   intitule: '',
   niveau: '',
@@ -40,7 +41,7 @@ const SAISIE_VIDE: SaisieFormation = {
   referentielId: '',
   dateDebut: '',
   dateFin: '',
-  lieu: LIEU_VIDE,
+  lieuId: '',
 };
 
 // Suggestions de niveaux courants pour le datalist (saisie libre conservée).
@@ -55,6 +56,7 @@ export function ModaleFormation({
   const ajouter = useFormationsStore((s) => s.ajouterFormation);
   const modifier = useFormationsStore((s) => s.modifierFormation);
   const referentiels = useReferentielsStore((s) => s.referentiels);
+  const etablissements = useEtablissementsStore((s) => s.etablissements);
 
   const referentielsDisponibles = useMemo(
     () =>
@@ -64,39 +66,33 @@ export function ModaleFormation({
     [referentiels],
   );
 
+  const etablissementsDisponibles = useMemo(
+    () =>
+      Object.values(etablissements).sort((a, b) =>
+        a.nom.localeCompare(b.nom, 'fr-FR'),
+      ),
+    [etablissements],
+  );
+
   const titreId = useId();
   const premierChampRef = useRef<HTMLInputElement>(null);
 
   function valeurInitiale(): SaisieFormation {
     if (formation) {
-      const { id: _id, lieu, ...rest } = formation;
+      const { id: _id, ...rest } = formation;
       void _id;
-      return {
-        ...rest,
-        lieu: {
-          nom: lieu.nom,
-          adresse: lieu.adresse ?? '',
-          codePostal: lieu.codePostal ?? '',
-          ville: lieu.ville ?? '',
-        },
-      };
+      return rest;
     }
-    // En création, on laisse le référentiel vide par défaut : il peut ne pas
-    // encore avoir été créé/importé au moment où l'utilisateur·rice définit
-    // la formation. Le select propose explicitement « Aucun ».
     return SAISIE_VIDE;
   }
 
   const [saisie, setSaisie] = useState<SaisieFormation>(valeurInitiale);
   const [tentativeSoumission, setTentativeSoumission] = useState(false);
 
-  // Pas de side-effect au mount : ni setSaisie (race avec les fills E2E)
-  // ni setTimeout(focus, 30ms) (race avec le focus auto qui sautait
-  // pendant les frappes). Le focus initial est géré via `autoFocus` sur
-  // l'input. Pour forcer un état frais à chaque ouverture, le parent
-  // passe une `key` distincte (cf. GestionFormations).
   useEffect(() => {
     // Hook conservé pour rester explicite sur l'absence de side-effect.
+    // Le focus initial est géré via `autoFocus` sur l'input. Pour forcer un
+    // état frais à chaque ouverture, le parent passe une `key` distincte.
   }, [ouvert]);
 
   useEffect(() => {
@@ -113,10 +109,6 @@ export function ModaleFormation({
   const validation = validerSaisieFormation(saisie);
   const erreurs = tentativeSoumission ? validation.erreurs : {};
   const avertissements = validation.avertissements;
-
-  function setLieu(patch: Partial<Lieu>) {
-    setSaisie((s) => ({ ...s, lieu: { ...s.lieu, ...patch } }));
-  }
 
   function soumettre(e: React.FormEvent) {
     e.preventDefault();
@@ -135,6 +127,7 @@ export function ModaleFormation({
   }
 
   const titre = formation ? `Modifier ${formation.intitule}` : 'Nouvelle formation';
+  const aucunEtablissement = etablissementsDisponibles.length === 0;
 
   return (
     <div
@@ -247,30 +240,29 @@ export function ModaleFormation({
           </Section>
 
           <Section titre="Lieu de formation">
-            <Champ
-              label="Nom du lieu"
-              valeur={saisie.lieu.nom}
-              onChange={(v) => setLieu({ nom: v })}
-              erreur={erreurs.lieuNom}
-              obligatoire
-              hint="Ex : GRETA Lyon Métropole — Site Diderot"
-              testId="formation-nom-lieu"
-            />
-            <Champ
-              label="Adresse"
-              valeur={saisie.lieu.adresse ?? ''}
-              onChange={(v) => setLieu({ adresse: v })}
-            />
-            <Champ
-              label="Code postal"
-              valeur={saisie.lieu.codePostal ?? ''}
-              onChange={(v) => setLieu({ codePostal: v })}
-            />
-            <Champ
-              label="Ville"
-              valeur={saisie.lieu.ville ?? ''}
-              onChange={(v) => setLieu({ ville: v })}
-            />
+            <div className="sm:col-span-2 space-y-1">
+              <ChampSelect
+                label="Lieu de formation"
+                valeur={saisie.lieuId}
+                onChange={(v) => setSaisie((s) => ({ ...s, lieuId: v }))}
+                options={etablissementsDisponibles.map((e) => ({
+                  value: e.id,
+                  libelle: e.nom,
+                }))}
+                erreur={erreurs.lieuId}
+                obligatoire
+                testId="formation-lieu-id"
+              />
+              {aucunEtablissement && (
+                <p className="flex items-start gap-1.5 text-xs text-amber-700">
+                  <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" aria-hidden="true" />
+                  <span>
+                    Aucun établissement n'a encore été créé. Demandez à l'administrateur·rice
+                    d'en ajouter depuis la page <em>Administration → Établissements</em>.
+                  </span>
+                </p>
+              )}
+            </div>
           </Section>
         </div>
 
@@ -322,12 +314,9 @@ interface ChampProps {
   hint?: string;
   obligatoire?: boolean;
   inputRef?: React.Ref<HTMLInputElement>;
-  /** Si fourni, attache un <datalist> avec ces suggestions (saisie libre conservée). */
   listId?: string;
   datalist?: string[];
-  /** Identifiant stable pour les tests E2E (data-testid). */
   testId?: string;
-  /** Focus auto au mount (1er champ d'un formulaire). */
   autoFocus?: boolean;
 }
 
@@ -402,15 +391,10 @@ interface ChampSelectProps {
   onChange: (v: string) => void;
   options: Array<{ value: string; libelle: string }>;
   erreur?: string;
-  /** Avertissement non-bloquant (affiché en ambre, pas en rouge). */
   avertissement?: string;
   obligatoire?: boolean;
-  /**
-   * Libellé de l'option `value=""`. Si fourni, l'option est sélectionnable
-   * (cas où aucune valeur est un choix valide). Sinon (défaut), l'option
-   * « — Choisir — » reste affichée mais désactivée.
-   */
   optionVideLibelle?: string;
+  testId?: string;
 }
 
 function ChampSelect({
@@ -422,6 +406,7 @@ function ChampSelect({
   avertissement,
   obligatoire,
   optionVideLibelle,
+  testId,
 }: ChampSelectProps) {
   const id = useId();
   const messageId = useId();
@@ -434,6 +419,7 @@ function ChampSelect({
       <select
         id={id}
         value={valeur}
+        data-testid={testId}
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={!!erreur}
         aria-describedby={erreur || avertissement ? messageId : undefined}

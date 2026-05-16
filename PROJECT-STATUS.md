@@ -1,6 +1,6 @@
 # État du projet — Livret d'apprentissage GRETA Lyon Métropole
 
-**Dernière mise à jour** : 2026-05-16
+**Dernière mise à jour** : 2026-05-17
 **Version applicative** : 0.1.0
 **Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3) **livrée + extensions métier post-livraison**
 **Pilote métier** : Guillaume FERRERI
@@ -14,8 +14,8 @@
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
-| **Tests unitaires** | **301 / 301 ✓** (Vitest, 24 fichiers de test pour 26 modules `lib/`) |
-| **Tests E2E** | **119 / 119 ✓** (Playwright — 107 desktop + 12 mobile Pixel 5, 17 specs) |
+| **Tests unitaires** | **313 / 313 ✓** (Vitest, 26 fichiers de test pour 28 modules `lib/`) |
+| **Tests E2E** | **126 / 126 ✓** (Playwright — 114 desktop + 12 mobile Pixel 5, 17 specs) |
 | **Bundle JS gzippé** | 127 KB (cible CDC §19.1 : < 500 KB → marge × 4) |
 | **Bundle CSS gzippé** | 6,2 KB (cible : < 50 KB → marge × 8) |
 | **Chunk PDF lazy** | 493 KB (chargé uniquement au clic « Exporter ») |
@@ -34,10 +34,10 @@
   - `livret-role-actif` — rôle + maître actif
   - `livret-apprenti-actif` — id de l'apprenti·e affiché·e
   - `livret-utilisateurs` (schema v1) — apprenti·e·s, maîtres, formateurs, coordos, admins
-  - `livret-formations` (schema v1) — formations (intitulé, niveau, dates, lieu, référentiel)
+  - `livret-formations` (schema v2) — formations (intitulé, niveau, dates, **lieuId**, référentiel)
   - `livret-referentiels` (schema v1) — référentiels de compétences (Bloc → Sous-famille? → Compétence)
   - `livret-banque-questions` (schema v1) — banque centrale des questions de l'entretien tripartite
-  - `livret-pronote` (schema v1) — liens externes vers Pronote WEB (configurés par coordo + admin)
+  - `livret-etablissements` (schema v1) — lieux de formation + URL Pronote (gestion admin uniquement)
 - **Routing** : React Router v6
 - **PDF** : `@react-pdf/renderer` 4 (lazy-loaded — chunk séparé, chargé uniquement au clic « Exporter »)
 - **XLSX** : `fflate` (~12 KB) pour la décompression ZIP, parser maison
@@ -132,19 +132,38 @@ Rationalisation du vocabulaire de la sidebar suite à un retour pilote :
 - L'ancien **« Fiches de suivi »** (cahier de période par alternance) devient **« Période en Entreprise »** (libellé visible)
 - Les URLs internes (`/livret/organisation-suivi`, `/livret/fiches-suivi`) et les ressources techniques (matrice `'organisation-suivi'`, noms de fichiers/imports lib `organisation-suivi.ts`) **restent inchangés** — pas de migration nécessaire, juste un renommage UI cohérent (sidebar + titres de page + section PDF + tests E2E)
 
-#### Lien Pronote WEB (16 mai 2026)
+#### Établissements (lieux de formation) + Pronote WEB (17 mai 2026)
 
-Nouvel item **« Pronote WEB »** dans le menu Livret, visible pour **tous les rôles**, pointant vers une nouvelle page `/livret/pronote` :
-- Page explicative : présentation de Pronote, garantie sécurité (aucun stockage de credentials côté livret, identifiants propres à chacun·e côté Pronote)
-- Liste des liens externes configurés, chacun ouvre Pronote dans un nouvel onglet (`target="_blank"` + `rel="noopener noreferrer"`)
-- Si aucun lien configuré : message d'attente, guidage vers la page admin pour les rôles autorisés
+Refonte du modèle de données : les lieux de formation, jusque-là inline dans `Formation.lieu: Lieu`, deviennent des **entités à part entière** gérées en CRUD par l'administrateur·rice uniquement. Chaque établissement porte une URL Pronote optionnelle (le portail du lieu).
 
-Côté administration, nouvelle page **`/admin/pronote`** (réservée coordo + admin via la ressource matrice `admin.pronote.gerer`) :
-- CRUD des liens Pronote (libellé, URL, description optionnelle)
-- Validation : URL `https?://...` obligatoire, libellé ≥ 3 caractères
-- Suppression avec confirmation 2 clics
+**Modèle** :
+- Nouveau type `Etablissement { id, nom, adresse?, codePostal?, ville?, urlPronote? }`
+- `Formation.lieu: Lieu` → `Formation.lieuId: string` (relation N:1)
+- Nouveau store `useEtablissementsStore` (persist v1, CRUD admin uniquement, verrou suppression si formation rattachée)
+- Lib `etablissement-verrou` (4 tests TDD)
+- Migration : `useFormationsStore` bumpé v1 → v2 (reset complet, cohérent avec la stratégie projet)
 
-Nouveaux types `LienPronote { id, libelle, url, description? }` + store `usePronoteStore` (persist v1, vide par défaut — pas de pré-configuration de fausses URLs).
+**Page admin `/admin/etablissements`** (rôle `admin` uniquement, ressource matrice `admin.etablissements.gerer`) :
+- CRUD complet (nom + adresse + code postal + ville + URL Pronote)
+- Validation : nom ≥ 3 caractères, URL `https?://...` (optionnelle)
+- Suppression bloquée si une formation référence l'établissement
+
+**Page utilisateur `/livret/pronote`** (visible **tous rôles**) :
+- Page explicative : présentation de Pronote, garantie sécurité (aucun stockage de credentials côté livret)
+- **Filtrage par rôle** (lib `etablissements-accessibles`, 9 tests TDD) :
+  - **admin** : tous les établissements
+  - **coordo** : ceux où il/elle a au moins une formation rattachée (`Coordo.formationIds`)
+  - **formateur** : ceux des promos qu'il/elle encadre (`Formateur.promoIds`)
+  - **apprenti·e** : celui de sa formation
+  - **maître** : ceux des formations de ses apprenti·e·s (déduplication)
+- Chaque établissement avec URL est un lien `target="_blank" rel="noopener noreferrer"`
+- Si pas d'URL configurée : affiché en lecture seule avec mention « URL Pronote non configurée »
+
+**Modale Formation adaptée** :
+- L'ancien bloc « Nom du lieu / Adresse / CP / Ville » (4 champs texte) est remplacé par un **select déroulant unique** « Lieu de formation » listant les établissements créés par l'admin
+- Si aucun établissement n'a encore été créé : message guidant vers `/admin/etablissements`
+
+**Suppression de l'ancien `usePronoteStore`** (liens Pronote plats sans rattachement) — remplacé par `Etablissement.urlPronote`.
 
 #### Banque de questions de l'entretien tripartite
 
@@ -237,13 +256,13 @@ Toutes les règles du CDC v1.3 sont implémentées et testées :
 
 ---
 
-## 6. Tests (301 unitaires + 119 E2E)
+## 6. Tests (313 unitaires + 126 E2E)
 
-### Tests unitaires Vitest (24 fichiers de test pour 26 modules `lib/`)
+### Tests unitaires Vitest (26 fichiers de test pour 28 modules `lib/`)
 
 | Fichier | Tests | Périmètre |
 |---|---|---|
-| `lib/droits.test.ts` | 37 | Matrice **46 ressources × 5 rôles**, cohérence transverse |
+| `lib/droits.test.ts` | 37 | Matrice **46 ressources × 5 rôles**, cohérence transverse (45 + admin.etablissements.gerer, − admin.pronote.gerer remplacé) |
 | `lib/transitions-fiche.test.ts` | 20 | R15/R16/R17/R21 |
 | `lib/validation-signature.test.ts` | 11 | R18/R20 par rôle |
 | `lib/regles-periode.test.ts` | 15 | R11/R12/R13 |
@@ -267,6 +286,8 @@ Toutes les règles du CDC v1.3 sont implémentées et testées :
 | `lib/validation-fiche-periode.test.ts` | 15 | Saisie fiche + `peutSupprimer` + `libelleFichePeriode` |
 | `lib/organisation-suivi.test.ts` | 13 | Catalogue motifs + helpers + verrou `peutSupprimerEvenement` |
 | `lib/questions-entretien.test.ts` | 14 | Catalogue 11 questions par défaut (formulation neutre) + helpers |
+| `lib/etablissement-verrou.test.ts` | 4 | Verrou suppression d'un établissement référencé par une formation |
+| `lib/etablissements-accessibles.test.ts` | 9 | Filtrage par rôle des établissements visibles sur `/livret/pronote` |
 
 *Les modules `creation-livret.ts` et `utils.ts` sont couverts indirectement via les tests E2E.*
 
@@ -289,7 +310,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées :
 | `chromium-desktop` | `organisation-suivi.spec.ts` | 7 | Refonte modulaire : ajout par motif, multi-occurrences, suppression 2 clics, persistance, **verrou suppression si événement verrouillé** |
 | `chromium-desktop` | `header-trio-contextuel.spec.ts` | 4 | Trio apprenti·e / maître / formateur dans le header — affichage par défaut, mise à jour au switch d'apprenti·e |
 | `chromium-desktop` | `banque-questions.spec.ts` | 7 | CRUD admin banque + sélection questions par formateur référent + lecture seule apprenti·e + verrou suppression si utilisée |
-| `chromium-desktop` | `pronote.spec.ts` | 6 | Visibilité menu Pronote WEB tous rôles + admin réservé coordo/admin + CRUD lien + validation URL + target=_blank côté utilisateur |
+| `chromium-desktop` | `etablissements.spec.ts` | 13 | CRUD admin établissements (admin uniquement) + URL Pronote + filtrage par rôle sur `/livret/pronote` + verrou suppression + visibilité menu |
 | `mobile-pixel5` | `audit-mobile.mobile.spec.ts` | 12 | Aucun débordement, hamburger, drawer, RoleSwitcher compact, modale R10 |
 
 ---
@@ -314,7 +335,7 @@ LIVRET APPRENTISSAGE/
     ├── main.tsx, App.tsx, vite-env.d.ts
     ├── styles/index.css
     ├── types/index.ts              # CDC §7 + extensions (titre fiche, evalueeEnEntreprise, EvenementOrganisationSuivi, QuestionBanque, etc.)
-    ├── lib/                        # 26 modules + 24 fichiers tests
+    ├── lib/                        # 28 modules + 26 fichiers tests
     │   ├── droits.ts               # matrice §6 (46 ressources × 5 rôles)
     │   ├── transitions-fiche.ts    # R15/R16/R17/R21
     │   ├── validation-signature.ts # R18/R20
@@ -340,6 +361,8 @@ LIVRET APPRENTISSAGE/
     │   ├── competence-entreprise.ts # flag « abordée en entreprise »
     │   ├── organisation-suivi.ts   # catalogue motifs + helpers + verrou suppression
     │   ├── questions-entretien.ts  # catalogue 11 questions par défaut + helpers
+    │   ├── etablissement-verrou.ts # verrou suppression établissement (cf. formations)
+    │   ├── etablissements-accessibles.ts # filtrage par rôle pour /livret/pronote
     │   ├── __fixtures__/           # exemple-{1,2}.{csv,xlsx} (fichiers du pilote)
     │   └── utils.ts
     ├── store/                      # 8 stores Zustand persistés
@@ -347,13 +370,14 @@ LIVRET APPRENTISSAGE/
     │   ├── useLivretStore.ts       # données livret (persist v7)
     │   ├── useApprentiActifStore.ts
     │   ├── useUtilisateursStore.ts # CRUD utilisateurs (persist v1)
-    │   ├── useFormationsStore.ts   # CRUD formations (persist v1)
+    │   ├── useFormationsStore.ts   # CRUD formations (persist v2 — refonte lieuId)
     │   ├── useReferentielsStore.ts # CRUD référentiels (persist v1)
     │   ├── useBanqueQuestionsStore.ts # CRUD banque questions entretien (persist v1)
-    │   └── usePronoteStore.ts      # CRUD liens externes Pronote WEB (persist v1)
+    │   └── useEtablissementsStore.ts # CRUD établissements + URL Pronote (persist v1, admin uniquement)
     ├── fixtures/
     │   ├── utilisateurs.ts         # 6 apprenti·e·s + 2 maîtres + Sophie + Martine + Guillaume
-    │   ├── formations.ts           # CAP Cuisine 2025-2026
+    │   ├── formations.ts           # CAP Cuisine 2025-2026 (lieuId vers etablissementsDemo)
+    │   ├── etablissements.ts       # 1 établissement par défaut (Site Diderot)
     │   ├── referentiel-cap-cuisine.ts
     │   └── livret-demo.ts          # 6 livrets scénarisés (CDC §24.5)
     ├── components/
@@ -397,7 +421,7 @@ LIVRET APPRENTISSAGE/
     │       ├── GestionAffectations.tsx
     │       ├── GestionReferentiels.tsx
     │       ├── GestionBanqueQuestions.tsx  # CRUD banque questions entretien
-    │       └── GestionPronote.tsx          # CRUD liens externes Pronote WEB
+    │       └── GestionEtablissements.tsx   # CRUD établissements + URL Pronote (admin uniquement)
     └── test/setup.ts
 ```
 
@@ -412,15 +436,16 @@ Documenter dans le CDC officiel toutes les évolutions négociées depuis v1.3 :
 - §4.1 : ajout des rôles **Coordo** et **Admin**
 - §5.1 : refonte modulaire de l'organisation du suivi (liste d'événements à la demande, multi-occurrences d'un même motif autorisées, catalogue de 7 motifs)
 - §5.2 : refonte de l'entretien tripartite — banque centrale de questions (CRUD coordo + admin), **sélection par livret** par le formateur référent, 3 types de réponse (texte court / texte long / oui-non), bloc « Appréciation maître » 4 critères inchangé
-- §6 : 46 ressources de matrice (admin.* + fiche.modifier-periode + fiche.supprimer-periode + admin.referentiels.gerer + admin.banque-questions.gerer + admin.pronote.gerer)
+- §6 : 46 ressources de matrice (admin.* + fiche.modifier-periode + fiche.supprimer-periode + admin.referentiels.gerer + admin.banque-questions.gerer + admin.etablissements.gerer (admin uniquement))
 - §6 : `creer-apprenti` et `creer-maitre` ouverts au formateur référent ; `creer/modifier/supprimer-periode` ouverts au coordo
-- §7.1 : types `Coordo`, `Admin`, `Lieu` ; `Formation` enrichi ; `FicheSuiviPeriode.titre?` ; `Competence.evalueeEnEntreprise?` ; refonte `OrganisationSuivi { evenements: [] }` + types `MotifOrganisationSuivi` / `EvenementOrganisationSuivi` ; refonte `EntretienTripartite` avec questions sélectionnées + réponses indexées par questionId + types `QuestionBanque` / `CibleQuestion` / `TypeQuestion`
+- §7.1 : types `Coordo`, `Admin`, **`Etablissement`** (remplace `Lieu`) ; `Formation.lieuId: string` (référence vers `useEtablissementsStore`) ; `FicheSuiviPeriode.titre?` ; `Competence.evalueeEnEntreprise?` ; refonte `OrganisationSuivi { evenements: [] }` + types `MotifOrganisationSuivi` / `EvenementOrganisationSuivi` ; refonte `EntretienTripartite` avec questions sélectionnées + réponses indexées par questionId + types `QuestionBanque` / `CibleQuestion` / `TypeQuestion`
 - §7.2 : `Competence.sousFamille?` (3 niveaux hiérarchiques optionnels)
 - §10.4 : règle de gouvernance — affectations verrouillées dès le démarrage du contrat / fiches existantes / entretien initialisé
 - §17.2 : entrées glossaire *Coordinateur·rice*, *Administrateur·rice*
 - Nouvelle section : workflow d'import référentiels (CSV + XLSX, formation optionnelle, génération auto du libellé OU nom libre, affichage N:1 sur la carte)
 - Nouvelle section : flag « compétence abordée en entreprise »
-- Nouvelle section : « Pronote WEB » — lien externe configuré par coordo + admin, visible tous rôles, ouverture nouvel onglet (pas de SSO côté maquette)
+- Nouvelle section : **« Établissements »** (lieux de formation) — gestion CRUD réservée à l'admin, chaque établissement porte une URL Pronote optionnelle, `Formation.lieuId` remplace `Formation.lieu` inline
+- Nouvelle section : **« Pronote WEB »** — page utilisateur visible tous rôles, filtrage par rôle via les établissements rattachés (formationIds / promoIds / apprentiIds), ouverture nouvel onglet (pas de SSO côté maquette)
 - Renommage UI : « Organisation du suivi » → « Fiches de suivi » ; « Fiches de suivi » → « Période en Entreprise » (libellés visibles uniquement — URLs internes et ressources matrice inchangées)
 
 → noté dans `TODO-etape-2.md`.
@@ -496,8 +521,8 @@ npm run dev            # serveur Vite sur http://localhost:5173
 ### Tests / qualité
 
 ```bash
-npm test               # 301 tests Vitest
-npm run e2e            # 119 tests E2E Playwright (build + preview + tests)
+npm test               # 313 tests Vitest
+npm run e2e            # 126 tests E2E Playwright (build + preview + tests)
 npm run e2e:ui         # UI Playwright pour debug
 npm run typecheck      # tsc --noEmit
 npm run lint           # ESLint
@@ -521,7 +546,7 @@ Ou en console DevTools :
 ```js
 ['livret-donnees','livret-role-actif','livret-apprenti-actif',
  'livret-utilisateurs','livret-formations','livret-referentiels',
- 'livret-banque-questions','livret-pronote']
+ 'livret-banque-questions','livret-etablissements']
   .forEach(k => localStorage.removeItem(k));
 location.reload();
 ```
@@ -536,7 +561,7 @@ location.reload();
 - **Tests TDD ciblés** sur la logique métier pure (`lib/`) ; les composants UI sont testés via Playwright E2E
 - **Migration localStorage par bump de version** : reset complet à chaque bump (pas de migration logicielle, données fictives)
 - **8 stores Zustand persistés avec import croisé** : synchronisations cross-store dans les actions, cycle résolu par ESM
-- **Cohérence référentielle protectrice** : suppressions bloquées en cascade (apprenti·e si livret actif, maître/formateur si rattachements, formation si apprenti·e·s, référentiel si formations rattachées, fiche-période si verrouillée ou signée, événement organisation si verrouillé, question banque si utilisée par un entretien)
+- **Cohérence référentielle protectrice** : suppressions bloquées en cascade (apprenti·e si livret actif, maître/formateur si rattachements, formation si apprenti·e·s, référentiel si formations rattachées, fiche-période si verrouillée ou signée, événement organisation si verrouillé, question banque si utilisée par un entretien, établissement si formation rattachée)
 - **Mobile-first responsive** : drawer + RoleSwitcher compact + audit Playwright dédié 12 tests + corrections récentes sur les tableaux admin
 - **Sélecteurs E2E stables via `data-testid`** sur les modales admin (corrige une race-condition observée avec `getByLabel(/regex/)` sous suite full Playwright)
 
@@ -546,13 +571,13 @@ location.reload();
 
 L'étape 1 du CDC v1.3 est **livrée et fonctionnelle**, étendue par 2 vagues post-livraison (administration métier + refonte modulaire des sections principales) :
 
-- administration métier complète : CRUD 4 rôles + formations + affectations + référentiels CSV/XLSX + banque de questions + liens Pronote
+- administration métier complète : CRUD 4 rôles + formations + affectations + référentiels CSV/XLSX + banque de questions + **établissements (lieux de formation + URLs Pronote)**
 - verrouillages de cohérence référentielle à toutes les couches
 - organisation du suivi modulaire (liste dynamique d'événements) — libellé UI « Fiches de suivi »
 - entretien tripartite avec banque de questions configurable + sélection par livret
 - trio contextuel dans le header (apprenti·e / maître / formateur)
 - audit mobile complet + corrections tableaux admin
-- lien Pronote WEB (page explicative + liens externes vers l'outil GRETA)
+- page Pronote WEB filtrée par rôle (apprenti·e voit son établissement, coordo ses formations rattachées, formateur ses promos, maître ceux de ses apprenti·e·s, admin tout)
 
 Il reste à faire :
 

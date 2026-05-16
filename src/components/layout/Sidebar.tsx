@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
+  Building2,
   CalendarRange,
   ClipboardList,
   ExternalLink,
@@ -60,7 +61,7 @@ const LIENS_ADMIN: Array<LienItem & { ressource: Ressource }> = [
   { to: '/admin/affectations', label: 'Affectations', Icon: Link2, ressource: 'admin.affectations.gerer' },
   { to: '/admin/referentiels', label: 'Référentiels', Icon: Library, ressource: 'admin.referentiels.gerer' },
   { to: '/admin/banque-questions', label: 'Banque de questions', Icon: ListChecks, ressource: 'admin.banque-questions.gerer' },
-  { to: '/admin/pronote', label: 'Pronote', Icon: ExternalLink, ressource: 'admin.pronote.gerer' },
+  { to: '/admin/etablissements', label: 'Établissements', Icon: Building2, ressource: 'admin.etablissements.gerer' },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
