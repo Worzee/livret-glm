@@ -1,6 +1,6 @@
 # État du projet — Livret d'apprentissage GRETA Lyon Métropole
 
-**Dernière mise à jour** : 2026-05-10
+**Dernière mise à jour** : 2026-05-16
 **Version applicative** : 0.1.0
 **Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3) **livrée + extensions métier post-livraison**
 **Pilote métier** : Guillaume FERRERI
@@ -78,7 +78,7 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 - **Service DuckDNS gratuit** — best effort, peut tomber temporairement
 - **Renouvellement Let's Encrypt** automatique par Traefik (vérifier les logs si > 60 j)
 - **localStorage navigateur** — limite ~5 Mo, déjà géré (CDC §C1)
-- **VPS root SSH par mot de passe** — à basculer en clé SSH (cf. §8.D)
+- **VPS root SSH par mot de passe** — à basculer en clé SSH (cf. §8.E)
 
 ---
 
@@ -405,7 +405,21 @@ Documenter dans le CDC officiel toutes les évolutions négociées depuis v1.3 :
 
 R13 reste actuellement bloquante : on ne peut créer la période N que si la N-1 est signée. À décider avec le pilote : faut-il l'assouplir en avertissement non-bloquant ?
 
-### D. Sécurité VPS — action côté pilote (urgent)
+### D. Pistes d'évolution discutées, non engagées
+
+Idées soulevées en revue mais reportées (typiquement à l'étape 2, qui apporte l'authentification réelle) :
+
+#### Signature manuscrite tactile (canvas au doigt)
+
+À la place du clic + confirmation actuel, capturer le tracé manuscrit du·de la signataire sur un `<canvas>` HTML5 (compatible tactile + souris).
+
+- **Coût estimé** : 1,5 à 2 jours (composant canvas via `signature_pad` ~5 KB gzip + modale plein écran sur mobile + insertion PNG dans `LivretPdf` + tests E2E + migration `Signature = { signe, dateSignature, image?: dataURL }`)
+- **Bénéfice étape 1** : polish UX uniquement (la signature actuelle est déjà claire avec horodatage ISO + confirmation 2 clics)
+- **Bénéfice étape 2** : substantiel — combinée à une session authentifiée et un horodatage serveur, la signature manuscrite acquiert un poids juridique (Loi 2000-230, art. 1366 du Code civil)
+- **Piège anticipé** : poids du stockage. Une signature PNG 400×150 px en base64 ≈ 10-20 KB → vite 1-2 Mo sur la limite localStorage 5 Mo. Solutions possibles : compression, réduction de résolution, ou stockage SVG vectoriel
+- **Recommandation actuelle** : reporter à l'étape 2 quand l'auth réelle arrive — l'investissement aura alors sa pleine valeur
+
+### E. Sécurité VPS — action côté pilote (urgent)
 
 > Le mot de passe SSH root du VPS a été partagé en clair dans une conversation et doit être changé.
 
@@ -517,7 +531,7 @@ Il reste à faire :
 2. **Arbitrages métier ouverts** :
    - Évaluation finale et `evalueeEnEntreprise` (cf. §8.B)
    - R13 stricte ou avertissement (cf. §8.C)
-3. **Sécurité VPS** — actions côté pilote (clé SSH, désactivation password auth — cf. §8.D)
+3. **Sécurité VPS** — actions côté pilote (clé SSH, désactivation password auth — cf. §8.E)
 
 ---
 
