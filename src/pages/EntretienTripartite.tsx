@@ -16,6 +16,7 @@ import { SectionMaitre } from '@/components/entretien/SectionMaitre';
 import { SectionFormateur } from '@/components/entretien/SectionFormateur';
 import { SectionSelectionCompetences } from '@/components/entretien/SectionSelectionCompetences';
 import { BlocSignaturesEntretien } from '@/components/entretien/BlocSignaturesEntretien';
+import { creerSelectionVierge } from '@/lib/selection-competences-entreprise';
 
 /**
  * Page Entretien tripartite (CDC §5.2).
@@ -110,7 +111,7 @@ export function EntretienTripartite() {
       <SectionSelectionCompetences
         livretId={livret.id}
         apprenti={apprenti}
-        selection={livret.selectionCompetencesEntreprise}
+        selection={livret.selectionCompetencesEntreprise ?? creerSelectionVierge()}
         entretienVerrouille={ficheVerrouillee}
       />
 

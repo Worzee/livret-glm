@@ -12,7 +12,11 @@ import { useUserStore } from '@/store/useUserStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { peutEditer } from '@/lib/droits';
 import { estCloture } from '@/lib/cloture-livret';
-import { estSelectionnee, estValidee } from '@/lib/selection-competences-entreprise';
+import {
+  creerSelectionVierge,
+  estSelectionnee,
+  estValidee,
+} from '@/lib/selection-competences-entreprise';
 import { synthetiserCompetences, valeurEffective } from '@/lib/synthese-evaluation';
 import { calculerStatsParBloc } from '@/lib/stats-bloc';
 import { SelecteurNiveau } from '@/components/common/SelecteurNiveau';
@@ -53,7 +57,10 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
   const synthese = synthetiserCompetences(livret.fichesSuivi, referentiel);
   const lignes = livret.evaluationFinaleCompetences.lignes;
   const stats = calculerStatsParBloc(referentiel, lignes, synthese);
-  const selection = livret.selectionCompetencesEntreprise;
+  // Fallback défensif : un livret persisté avant le bump v7→v8 peut ne pas
+  // avoir le sous-objet `selectionCompetencesEntreprise`. La migration store
+  // est censée reset, mais on protège quand même la chaîne de rendu.
+  const selection = livret.selectionCompetencesEntreprise ?? creerSelectionVierge();
   const selectionValidee = estValidee(selection);
 
   // CDC v1.5 addendum — Q2(b) : tant que la sélection n'est pas validée à
