@@ -28,6 +28,7 @@ import { creerCloture } from '@/lib/cloture-livret';
 import { creerEvenementVierge } from '@/lib/organisation-suivi';
 import { idsQuestionsInitiales, nettoyerReponses } from '@/lib/questions-entretien';
 import {
+  creerSelectionVierge,
   invaliderAvecMotif as invaliderSelection,
   marquerValidee,
   toggleCompetence,
@@ -726,7 +727,9 @@ export const useLivretStore = create<LivretStore>()(
             // l'apprenti·e du livret.
             const toutesSignees =
               signatures.apprenti.signe && signatures.maitre.signe && signatures.formateur.signe;
-            let selection = l.selectionCompetencesEntreprise;
+            // Fallback : un livret persisté avant le bump v7→v8 peut ne pas
+            // avoir le sous-objet (cas où la migration store n'a pas reset).
+            let selection = l.selectionCompetencesEntreprise ?? creerSelectionVierge(maintenant);
             if (toutesSignees && selection.validePar === undefined) {
               const apprenti = useUtilisateursStore.getState().apprentis[l.apprentiId];
               if (apprenti) {
@@ -750,13 +753,11 @@ export const useLivretStore = create<LivretStore>()(
       toggleSelectionCompetenceEntreprise: (livretId, competenceId) =>
         set((s) =>
           muterLivret(s, livretId, (l) => {
-            if (l.selectionCompetencesEntreprise.validePar !== undefined) return l;
+            const sel = l.selectionCompetencesEntreprise ?? creerSelectionVierge();
+            if (sel.validePar !== undefined) return l;
             return {
               ...l,
-              selectionCompetencesEntreprise: toggleCompetence(
-                l.selectionCompetencesEntreprise,
-                competenceId,
-              ),
+              selectionCompetencesEntreprise: toggleCompetence(sel, competenceId),
             };
           }),
         ),
@@ -764,11 +765,12 @@ export const useLivretStore = create<LivretStore>()(
       setSelectionCompetencesEntreprise: (livretId, ids) =>
         set((s) =>
           muterLivret(s, livretId, (l) => {
-            if (l.selectionCompetencesEntreprise.validePar !== undefined) return l;
+            const sel = l.selectionCompetencesEntreprise ?? creerSelectionVierge();
+            if (sel.validePar !== undefined) return l;
             return {
               ...l,
               selectionCompetencesEntreprise: {
-                ...l.selectionCompetencesEntreprise,
+                ...sel,
                 ids,
                 modifieLe: new Date().toISOString(),
               },
@@ -780,13 +782,16 @@ export const useLivretStore = create<LivretStore>()(
         set((s) =>
           muterLivret(s, livretId, (l) => ({
             ...l,
-            selectionCompetencesEntreprise: invaliderSelection(l.selectionCompetencesEntreprise, {
-              id: `inv-${crypto.randomUUID()}`,
-              auteurId,
-              auteurNom,
-              auteurRole,
-              motif,
-            }),
+            selectionCompetencesEntreprise: invaliderSelection(
+              l.selectionCompetencesEntreprise ?? creerSelectionVierge(),
+              {
+                id: `inv-${crypto.randomUUID()}`,
+                auteurId,
+                auteurNom,
+                auteurRole,
+                motif,
+              },
+            ),
           })),
         ),
 
