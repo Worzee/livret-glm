@@ -1,5 +1,13 @@
 import { useMemo } from 'react';
-import type { Competence, FicheSuiviPeriode, LigneSuiviEntreprise, Referentiel } from '@/types';
+import { Info } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import type {
+  Competence,
+  FicheSuiviPeriode,
+  LigneSuiviEntreprise,
+  Referentiel,
+  SelectionCompetencesEntreprise,
+} from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
@@ -7,7 +15,10 @@ import { useFormationsStore } from '@/store/useFormationsStore';
 import { useReferentielsStore } from '@/store/useReferentielsStore';
 import { peutEditer } from '@/lib/droits';
 import { peutEncoreEditerFiche } from '@/lib/transitions-fiche';
-import { estEvalueeEnEntreprise } from '@/lib/competence-entreprise';
+import {
+  estSelectionnee,
+  estValidee,
+} from '@/lib/selection-competences-entreprise';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
 import { SelecteurNiveau } from '@/components/common/SelecteurNiveau';
 import { BoutonSupprimer } from '@/components/common/BoutonSupprimer';
@@ -38,9 +49,18 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
   const setEval = useLivretStore((s) => s.setEvaluationLigne);
   const ajouter = useLivretStore((s) => s.ajouterLigneSuiviEntreprise);
   const supprimer = useLivretStore((s) => s.supprimerLigneSuiviEntreprise);
+  const livretCourant = useLivretStore((s) => s.livrets[livretId]);
   const ctx = useApprentiActif();
   const formations = useFormationsStore((s) => s.formations);
   const referentiels = useReferentielsStore((s) => s.referentiels);
+
+  // Sélection des compétences abordées en entreprise pour ce livret
+  // (CDC v1.5 addendum). Tant que la sélection n'est pas validée à
+  // l'entretien tripartite, le sélecteur d'ajout est désactivé et un
+  // bandeau invite à finaliser la décision conjointe.
+  const selection: SelectionCompetencesEntreprise | undefined =
+    livretCourant?.selectionCompetencesEntreprise;
+  const selectionValidee = selection ? estValidee(selection) : false;
 
   // Résolution du référentiel courant via la formation de l'apprenti·e actif·ve.
   // Fallback sur le CAP Cuisine si la formation n'a pas (encore) de référentiel
@@ -87,14 +107,33 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
             Co-édition tripartite par compétence du référentiel.
           </p>
         </div>
-        {peutAjouterLigne && (
+        {peutAjouterLigne && selectionValidee && selection && (
           <AjouterCompetence
             referentiel={referentiel}
+            selection={selection}
             onAjouter={(id) => ajouter(livretId, fiche.id, id)}
             competencesPresentes={fiche.suiviEntreprise.map((l) => l.competenceId).filter(Boolean) as string[]}
           />
         )}
       </header>
+
+      {!selectionValidee && (
+        <div
+          role="status"
+          className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
+        >
+          <Info className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
+          <div className="space-y-1">
+            <p className="font-medium">Sélection des compétences abordées en entreprise non validée</p>
+            <p className="text-xs">
+              La liste des compétences à travailler en entreprise pour cet·te apprenti·e doit être
+              définie conjointement par le formateur référent et le maître d'apprentissage, puis
+              validée à l'<Link className="underline hover:no-underline" to="/livret/entretien">entretien tripartite</Link>.
+              Les lignes déjà saisies restent visibles ci-dessous.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── Desktop : tableau ──────────────────────────────────────────── */}
       <div className="hidden md:block overflow-x-auto rounded-lg border border-border">
@@ -371,12 +410,15 @@ function Pastille({ valeur, title, mode = 'standard' }: PastilleProps) {
 interface AjouterCompetenceProps {
   /** Référentiel courant — résolu côté parent depuis la formation de l'apprenti·e. */
   referentiel: Referentiel;
+  /** Sélection validée des compétences abordées en entreprise pour ce livret. */
+  selection: SelectionCompetencesEntreprise;
   onAjouter: (competenceId: string | null) => void;
   competencesPresentes: string[];
 }
 
 function AjouterCompetence({
   referentiel,
+  selection,
   onAjouter,
   competencesPresentes,
 }: AjouterCompetenceProps) {
@@ -397,11 +439,13 @@ function AjouterCompetence({
         + Ajouter une compétence…
       </option>
       {referentiel.blocs.flatMap((bloc) => {
-        // Filtrage : seules les compétences abordées en entreprise sont
-        // proposées au sélecteur (cf. lib/competence-entreprise). Les lignes
-        // déjà saisies pour des compétences devenues « non abordées » restent
-        // affichées plus haut dans le tableau.
-        const competencesAbordees = bloc.competences.filter(estEvalueeEnEntreprise);
+        // Filtrage : seules les compétences présentes dans la sélection
+        // validée du livret apparaissent au sélecteur (CDC v1.5 addendum).
+        // Les lignes déjà saisies pour des compétences ensuite décochées
+        // restent affichées plus haut dans le tableau (cohérence historique).
+        const competencesAbordees = bloc.competences.filter((c) =>
+          estSelectionnee(selection, c.id),
+        );
         if (competencesAbordees.length === 0) return [];
 
         // Si le référentiel est à 3 niveaux et que le bloc a des sous-familles,

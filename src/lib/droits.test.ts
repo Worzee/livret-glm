@@ -56,6 +56,14 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('maitre', 'entretien.signature-apprenti')).toBe(false);
       expect(peutEditer('formateur', 'entretien.signature-apprenti')).toBe(false);
     });
+
+    it("formateur et maître co-éditent la sélection des compétences abordées en entreprise", () => {
+      expect(peutEditer('formateur', 'entretien.selection-competences-entreprise')).toBe(true);
+      expect(peutEditer('maitre', 'entretien.selection-competences-entreprise')).toBe(true);
+      expect(peutEditer('apprenti', 'entretien.selection-competences-entreprise')).toBe(false);
+      expect(peutEditer('coordo', 'entretien.selection-competences-entreprise')).toBe(false);
+      expect(peutEditer('admin', 'entretien.selection-competences-entreprise')).toBe(false);
+    });
   });
 
   describe('Fiche de suivi par période (CDC §5.3)', () => {
@@ -174,6 +182,7 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
         'entretien.questions-maitre',
         'entretien.appreciation-maitre',
         'entretien.demarches-administratives',
+        'entretien.selection-competences-entreprise',
         'fiche.suivi-greta-cfa',
         'fiche.evaluation-entreprise',
         'fiche.evaluation-greta',

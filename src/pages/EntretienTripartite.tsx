@@ -14,6 +14,7 @@ import { BandeauAlerteR7 } from '@/components/entretien/BandeauAlerteR7';
 import { SectionApprenti } from '@/components/entretien/SectionApprenti';
 import { SectionMaitre } from '@/components/entretien/SectionMaitre';
 import { SectionFormateur } from '@/components/entretien/SectionFormateur';
+import { SectionSelectionCompetences } from '@/components/entretien/SectionSelectionCompetences';
 import { BlocSignaturesEntretien } from '@/components/entretien/BlocSignaturesEntretien';
 
 /**
@@ -105,6 +106,13 @@ export function EntretienTripartite() {
       />
 
       <EntretienProgression entretien={entretien} />
+
+      <SectionSelectionCompetences
+        livretId={livret.id}
+        apprenti={apprenti}
+        selection={livret.selectionCompetencesEntreprise}
+        entretienVerrouille={ficheVerrouillee}
+      />
 
       <SectionApprenti livretId={livret.id} entretien={entretien} />
       <SectionMaitre livretId={livret.id} entretien={entretien} />

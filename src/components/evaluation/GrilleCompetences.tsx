@@ -1,4 +1,5 @@
-import { Sparkles } from 'lucide-react';
+import { Info, Sparkles } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import type {
   BlocCompetences,
   Competence,
@@ -11,6 +12,7 @@ import { useUserStore } from '@/store/useUserStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { peutEditer } from '@/lib/droits';
 import { estCloture } from '@/lib/cloture-livret';
+import { estSelectionnee, estValidee } from '@/lib/selection-competences-entreprise';
 import { synthetiserCompetences, valeurEffective } from '@/lib/synthese-evaluation';
 import { calculerStatsParBloc } from '@/lib/stats-bloc';
 import { SelecteurNiveau } from '@/components/common/SelecteurNiveau';
@@ -51,6 +53,34 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
   const synthese = synthetiserCompetences(livret.fichesSuivi, referentiel);
   const lignes = livret.evaluationFinaleCompetences.lignes;
   const stats = calculerStatsParBloc(referentiel, lignes, synthese);
+  const selection = livret.selectionCompetencesEntreprise;
+  const selectionValidee = estValidee(selection);
+
+  // CDC v1.5 addendum — Q2(b) : tant que la sélection n'est pas validée à
+  // l'entretien tripartite, la grille finale n'est pas affichée. Un message
+  // explicite invite à finaliser la décision conjointe.
+  if (!selectionValidee) {
+    return (
+      <div
+        role="status"
+        className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+      >
+        <Info className="h-5 w-5 shrink-0 mt-0.5" aria-hidden="true" />
+        <div className="space-y-1">
+          <p className="font-medium">
+            Sélection des compétences abordées en entreprise non validée
+          </p>
+          <p>
+            La grille d'évaluation finale s'affichera dès que le formateur référent et le maître
+            d'apprentissage auront validé conjointement la liste des compétences travaillées en
+            entreprise pour cet·te apprenti·e. Cette décision se prend à l'
+            <Link className="underline hover:no-underline" to="/livret/entretien">entretien tripartite</Link>{' '}
+            (figée à la 3<sup>ᵉ</sup> signature).
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -108,6 +138,7 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
                           acquisEntreprise: null,
                           acquisCentre: null,
                         } satisfies LigneEvaluationFinaleCompetence);
+                      const competenceEnEntreprise = estSelectionnee(selection, c.id);
 
                       return (
                         <tr key={c.id} className="align-top">
@@ -116,16 +147,23 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
                             <div className="text-xs text-muted-foreground">{c.libelle}</div>
                           </td>
                           <td className="px-3 py-3 border-l-2 border-l-role-maitre/20">
-                            <CelluleNiveau
-                              ligne={ligne}
-                              synthese={synthese}
-                              colonne="acquisEntreprise"
-                              editable={peutEditerEntreprise}
-                              onChange={(v) =>
-                                setLigne(livret.id, c.id, { acquisEntreprise: v })
-                              }
-                              ariaLabel={`Acquis en entreprise pour ${c.code}`}
-                            />
+                            {competenceEnEntreprise ? (
+                              <CelluleNiveau
+                                ligne={ligne}
+                                synthese={synthese}
+                                colonne="acquisEntreprise"
+                                editable={peutEditerEntreprise}
+                                onChange={(v) =>
+                                  setLigne(livret.id, c.id, { acquisEntreprise: v })
+                                }
+                                ariaLabel={`Acquis en entreprise pour ${c.code}`}
+                              />
+                            ) : (
+                              <CelluleNonSelectionnee
+                                valeurHistorique={ligne.acquisEntreprise}
+                                codeCompetence={c.code}
+                              />
+                            )}
                           </td>
                           <td className="px-3 py-3 border-l-2 border-l-role-formateur/20">
                             <CelluleNiveau
@@ -216,6 +254,48 @@ function CelluleNiveau({
           Hérité des fiches
         </span>
       )}
+    </div>
+  );
+}
+
+/**
+ * Cellule « Acquis en entreprise » d'une compétence **non sélectionnée** pour
+ * ce livret. Toujours en lecture seule (cf. CDC v1.5 addendum, Q3 option a).
+ *
+ * - Pas de saisie historique → affiche « — » + tooltip explicatif.
+ * - Saisie historique présente (compétence cochée puis décochée via R10) →
+ *   affiche la valeur en lecture seule grisée pour préserver la traçabilité
+ *   (cf. Q3 option a1).
+ */
+function CelluleNonSelectionnee({
+  valeurHistorique,
+  codeCompetence,
+}: {
+  valeurHistorique: NiveauMaitrise | null;
+  codeCompetence: string;
+}) {
+  if (valeurHistorique === null) {
+    return (
+      <span
+        className="inline-flex items-center text-muted-foreground italic"
+        title={`Compétence ${codeCompetence} non abordée en entreprise pour cet·te apprenti·e.`}
+        aria-label={`Compétence ${codeCompetence} non abordée en entreprise`}
+      >
+        —
+      </span>
+    );
+  }
+  return (
+    <div
+      className="opacity-60"
+      title={`Saisie historique conservée — la compétence ${codeCompetence} a été décochée depuis (R10).`}
+    >
+      <SelecteurNiveau
+        editable={false}
+        mode="greta"
+        valeur={valeurHistorique}
+        ariaLabel={`Acquis en entreprise pour ${codeCompetence} (saisie historique, lecture seule)`}
+      />
     </div>
   );
 }

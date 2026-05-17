@@ -133,18 +133,6 @@ export interface Competence {
    * L'évaluation se fait toujours au niveau leaf (cette Compétence elle-même).
    */
   sousFamille?: string;
-  /**
-   * Indique si la compétence est abordée en période en entreprise. Quand
-   * `false`, elle ne doit pas apparaître dans le sélecteur de la fiche
-   * « Suivi de la formation en entreprise ». Quand `true` ou `undefined`
-   * (défaut implicite, rétrocompat avec les anciens référentiels), elle
-   * est éligible à l'évaluation tri-colonnes.
-   *
-   * Le pilotage se fait depuis la page `/admin/referentiels` (case à
-   * cocher par compétence). Les imports CSV/XLSX laissent ce champ
-   * `undefined` → la compétence est par défaut abordée en entreprise.
-   */
-  evalueeEnEntreprise?: boolean;
 }
 
 export interface BlocCompetences {
@@ -442,6 +430,46 @@ export interface EntreeDeverrouillage {
   motif: string;
 }
 
+/**
+ * Sélection des compétences abordées en entreprise pour un livret donné
+ * (CDC v1.5 addendum — mai 2026).
+ *
+ * Décision conjointe formateur référent + maître d'apprentissage, validée à
+ * la 3ᵉ signature de l'entretien tripartite. La sélection figée détermine :
+ *   - les compétences proposées par le sélecteur de `TableauTriColonnes`
+ *   - les compétences évaluables sur la colonne « Acquis en entreprise »
+ *     de `GrilleCompetences` (grille finale)
+ *
+ * Réversibilité : une fois validée, la sélection n'est modifiable qu'au prix
+ * d'un acte explicite (R10 — déverrouillage motivé par le formateur).
+ *
+ * Le sous-objet est toujours présent dans `Livret` (init vide à la création).
+ * `validePar` reste `undefined` tant que les 3 signatures de l'entretien ne
+ * sont pas apposées.
+ */
+export interface SelectionCompetencesEntreprise {
+  /** IDs des compétences sélectionnées (sous-ensemble du référentiel du livret). */
+  ids: string[];
+  /**
+   * Trace de validation conjointe. `undefined` tant que les 3 signatures de
+   * l'entretien tripartite ne sont pas apposées. Auto-rempli par
+   * `signerEntretien` quand la 3ᵉ signature tombe.
+   */
+  validePar?: {
+    formateurId: string;
+    maitreId: string;
+    /** Horodatage ISO 8601 du moment de validation (3ᵉ signature). */
+    dateIso: string;
+  };
+  modifieLe: string;
+  /**
+   * Historique des invalidations R10 — mêmes structure et sémantique que
+   * `FicheSuiviPeriode.historiqueDeverrouillages`. Empilé chronologiquement
+   * (le plus récent en dernier).
+   */
+  historiqueInvalidations: EntreeDeverrouillage[];
+}
+
 export interface Livret {
   id: string;
   apprentiId: string;
@@ -451,6 +479,8 @@ export interface Livret {
   fichesSuivi: FicheSuiviPeriode[];
   evaluationFinaleCompetences: EvaluationFinaleCompetences;
   evaluationFinaleAttitudes: EvaluationFinaleAttitudes;
+  /** Sélection des compétences abordées en entreprise (cf. SelectionCompetencesEntreprise). */
+  selectionCompetencesEntreprise: SelectionCompetencesEntreprise;
   /** R22 — null tant que le livret n'a pas été clôturé. */
   cloture: ClotureLivret | null;
   creeLe: string;

@@ -4,6 +4,7 @@ import type {
   EntreeDeverrouillage,
   FicheSuiviPeriode,
   Livret,
+  SelectionCompetencesEntreprise,
   SignaturesTripartite,
 } from '@/types';
 import {
@@ -66,6 +67,37 @@ function lignesEvaluationFinaleVides() {
   };
 }
 
+/**
+ * Construit une sélection validée à une date donnée pour un livret démo dont
+ * l'entretien tripartite est signé (les ids de compétences correspondent au
+ * référentiel CAP Cuisine).
+ */
+function selectionValideeDemo(
+  apprenti: Apprenti,
+  ids: string[],
+  dateIso: string,
+): SelectionCompetencesEntreprise {
+  return {
+    ids,
+    validePar: {
+      formateurId: apprenti.formateurReferentId,
+      maitreId: apprenti.maitreApprentissageId,
+      dateIso,
+    },
+    modifieLe: dateIso,
+    historiqueInvalidations: [],
+  };
+}
+
+/** Sélection vierge utilisée pour les livrets sans entretien signé. */
+function selectionVierge(dateIso: string): SelectionCompetencesEntreprise {
+  return {
+    ids: [],
+    modifieLe: dateIso,
+    historiqueInvalidations: [],
+  };
+}
+
 /** Construit un livret vierge (sans entretien, sans fiche) pour un·e apprenti·e. */
 function livretVierge(apprenti: Apprenti, livretId: string): Livret {
   const lignesVides = lignesEvaluationFinaleVides();
@@ -116,6 +148,9 @@ function livretVierge(apprenti: Apprenti, livretId: string): Livret {
       lignes: lignesVides.attitudes,
       modifieLe: '2025-09-02T08:00:00.000Z',
     },
+    // Démarre vierge par défaut ; les livrets démo dont l'entretien est signé
+    // override ce champ avec `selectionValideeDemo(...)` plus bas.
+    selectionCompetencesEntreprise: selectionVierge('2025-09-02T08:00:00.000Z'),
     cloture: null,
     creeLe: '2025-09-02T08:00:00.000Z',
     modifieLe: '2025-09-02T08:00:00.000Z',
@@ -422,6 +457,11 @@ const livretLea: Livret = {
   },
   entretienTripartite: entretienLea,
   fichesSuivi: [leaPeriode1, leaPeriode2, leaPeriode3],
+  selectionCompetencesEntreprise: selectionValideeDemo(
+    apprentiLeaMartin,
+    ['c1-1', 'c1-2', 'c1-3', 'c2-1', 'c2-2', 'c2-3', 'c3-1', 'c3-2'],
+    '2025-10-28T15:40:00.000Z',
+  ),
   modifieLe: '2026-04-12T18:00:00.000Z',
 };
 
@@ -583,6 +623,11 @@ const livretTheo: Livret = {
     theoFiche(2, '2026-01-06', '2026-02-14', '2026-02-16T10:30:00.000Z'),
     theoFiche(3, '2026-03-02', '2026-04-11', '2026-04-13T09:00:00.000Z'),
   ],
+  selectionCompetencesEntreprise: selectionValideeDemo(
+    apprentiTheoDubois,
+    ['c1-1', 'c1-2', 'c1-3', 'c2-1', 'c2-2', 'c2-3', 'c3-1', 'c3-2', 'c3-3'],
+    '2025-10-15T17:00:00.000Z',
+  ),
   modifieLe: '2026-04-13T09:00:00.000Z',
 };
 
@@ -772,6 +817,11 @@ const livretMinh: Livret = {
   },
   entretienTripartite: entretienMinh,
   fichesSuivi: [],
+  selectionCompetencesEntreprise: selectionValideeDemo(
+    apprentiMinhNguyen,
+    ['c1-1', 'c1-2', 'c1-3', 'c2-1', 'c2-2', 'c2-3', 'c3-2'],
+    '2026-04-20T16:00:00.000Z',
+  ),
   modifieLe: '2026-04-20T16:00:00.000Z',
 };
 
@@ -903,6 +953,11 @@ const livretAya: Livret = {
     signatures: signaturesCompletes('2025-10-22T17:30:00.000Z'),
   },
   fichesSuivi: [ayaPeriode1, ayaPeriode2],
+  selectionCompetencesEntreprise: selectionValideeDemo(
+    apprentiAyaKouame,
+    ['c1-1', 'c1-2', 'c1-3', 'c2-1', 'c2-2', 'c2-3', 'c3-1', 'c3-2'],
+    '2025-10-22T17:30:00.000Z',
+  ),
   modifieLe: '2026-03-10T11:30:00.000Z',
 };
 
@@ -1094,6 +1149,11 @@ const livretLuca: Livret = {
   ...livretVierge(apprentiLucaBianchi, 'livret-luca'),
   entretienTripartite: entretienLuca,
   fichesSuivi: [lucaPeriode1, lucaPeriode2, lucaPeriode3],
+  selectionCompetencesEntreprise: selectionValideeDemo(
+    apprentiLucaBianchi,
+    ['c1-1', 'c1-2', 'c1-3', 'c2-1', 'c2-2', 'c2-3', 'c3-1', 'c3-2', 'c3-3'],
+    '2025-10-30T16:30:00.000Z',
+  ),
   modifieLe: '2026-04-05T17:00:00.000Z',
 };
 

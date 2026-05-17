@@ -1,5 +1,6 @@
 import type { Apprenti, Livret } from '@/types';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
+import { creerSelectionVierge } from './selection-competences-entreprise';
 
 /**
  * Crée un livret vierge pour un·e apprenti·e fraîchement créé·e.
@@ -61,6 +62,11 @@ export function creerLivretVierge(
       lignes: lignesAttitudes,
       modifieLe: iso,
     },
+    // CDC v1.5 addendum : la sélection des compétences abordées en entreprise
+    // démarre vierge — elle sera définie conjointement par le formateur
+    // référent et le maître d'apprentissage, puis validée à la 3ᵉ signature
+    // de l'entretien tripartite.
+    selectionCompetencesEntreprise: creerSelectionVierge(maintenant),
     cloture: null,
     creeLe: iso,
     modifieLe: iso,

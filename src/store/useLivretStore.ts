@@ -27,6 +27,12 @@ import { deduireEtat } from '@/lib/transitions-fiche';
 import { creerCloture } from '@/lib/cloture-livret';
 import { creerEvenementVierge } from '@/lib/organisation-suivi';
 import { idsQuestionsInitiales, nettoyerReponses } from '@/lib/questions-entretien';
+import {
+  invaliderAvecMotif as invaliderSelection,
+  marquerValidee,
+  toggleCompetence,
+} from '@/lib/selection-competences-entreprise';
+import { useUtilisateursStore } from './useUtilisateursStore';
 
 /**
  * Store Zustand des livrets.
@@ -49,7 +55,10 @@ import { idsQuestionsInitiales, nettoyerReponses } from '@/lib/questions-entreti
 //   v6 — refonte modulaire de `OrganisationSuivi` (liste d'événements)
 //   v7 — banque de questions d'entretien (questions sélectionnées + réponses
 //        indexées par questionId au lieu de champs nommés rigides)
-const VERSION_SCHEMA = 7;
+//   v8 — sélection des compétences abordées en entreprise (cf. CDC v1.5
+//        addendum) ; nouveau sous-objet `Livret.selectionCompetencesEntreprise`
+//        + auto-marquage à la 3ᵉ signature de l'entretien tripartite
+const VERSION_SCHEMA = 8;
 
 interface LivretStore {
   livrets: Record<string, Livret>;
@@ -197,6 +206,31 @@ interface LivretStore {
     valeur: string,
   ) => void;
   signerEntretien: (livretId: string, role: 'apprenti' | 'maitre' | 'formateur') => void;
+
+  // ── Sélection des compétences abordées en entreprise (CDC v1.5 addendum) ─
+  /**
+   * Coche/décoche une compétence du référentiel pour le livret donné. Sans
+   * effet si la sélection est déjà validée (R8/R9 — il faut alors passer par
+   * `invaliderSelectionCompetencesEntreprise`).
+   */
+  toggleSelectionCompetenceEntreprise: (livretId: string, competenceId: string) => void;
+  /**
+   * Remplace la liste complète des compétences sélectionnées (utilisé par
+   * l'UI pour appliquer un patch atomique). Sans effet si déjà validée.
+   */
+  setSelectionCompetencesEntreprise: (livretId: string, ids: string[]) => void;
+  /**
+   * Invalide une sélection précédemment validée (R10). Empile une trace dans
+   * l'historique d'invalidations. Validation UI (formateur uniquement + motif
+   * obligatoire) effectuée côté composant.
+   */
+  invaliderSelectionCompetencesEntreprise: (
+    livretId: string,
+    auteurId: string,
+    auteurNom: string,
+    auteurRole: Role,
+    motif: string,
+  ) => void;
 
   // ── Mutations sur les grilles d'évaluation finales (CDC §5.4 / §5.5) ─────
   setLigneCompetenceFinale: (
@@ -680,15 +714,80 @@ export const useLivretStore = create<LivretStore>()(
         set((s) =>
           muterLivret(s, livretId, (l) => {
             const e = l.entretienTripartite ?? entretienVierge();
+            const maintenant = new Date();
             const signatures = {
               ...e.signatures,
-              [role]: { signe: true, dateSignature: new Date().toISOString() },
+              [role]: { signe: true, dateSignature: maintenant.toISOString() },
             };
+            // Auto-marquage de la sélection des compétences abordées en
+            // entreprise (CDC v1.5 addendum) : dès que les 3 signatures sont
+            // apposées, la sélection passe en lecture seule pour tous.
+            // Les ids du formateur référent et du maître sont récupérés via
+            // l'apprenti·e du livret.
+            const toutesSignees =
+              signatures.apprenti.signe && signatures.maitre.signe && signatures.formateur.signe;
+            let selection = l.selectionCompetencesEntreprise;
+            if (toutesSignees && selection.validePar === undefined) {
+              const apprenti = useUtilisateursStore.getState().apprentis[l.apprentiId];
+              if (apprenti) {
+                selection = marquerValidee(
+                  selection,
+                  apprenti.formateurReferentId,
+                  apprenti.maitreApprentissageId,
+                  maintenant,
+                );
+              }
+            }
             return {
               ...l,
               entretienTripartite: { ...e, signatures },
+              selectionCompetencesEntreprise: selection,
             };
           }),
+        ),
+
+      // ── Sélection des compétences abordées en entreprise ──────────────────
+      toggleSelectionCompetenceEntreprise: (livretId, competenceId) =>
+        set((s) =>
+          muterLivret(s, livretId, (l) => {
+            if (l.selectionCompetencesEntreprise.validePar !== undefined) return l;
+            return {
+              ...l,
+              selectionCompetencesEntreprise: toggleCompetence(
+                l.selectionCompetencesEntreprise,
+                competenceId,
+              ),
+            };
+          }),
+        ),
+
+      setSelectionCompetencesEntreprise: (livretId, ids) =>
+        set((s) =>
+          muterLivret(s, livretId, (l) => {
+            if (l.selectionCompetencesEntreprise.validePar !== undefined) return l;
+            return {
+              ...l,
+              selectionCompetencesEntreprise: {
+                ...l.selectionCompetencesEntreprise,
+                ids,
+                modifieLe: new Date().toISOString(),
+              },
+            };
+          }),
+        ),
+
+      invaliderSelectionCompetencesEntreprise: (livretId, auteurId, auteurNom, auteurRole, motif) =>
+        set((s) =>
+          muterLivret(s, livretId, (l) => ({
+            ...l,
+            selectionCompetencesEntreprise: invaliderSelection(l.selectionCompetencesEntreprise, {
+              id: `inv-${crypto.randomUUID()}`,
+              auteurId,
+              auteurNom,
+              auteurRole,
+              motif,
+            }),
+          })),
         ),
 
       // ── Grilles d'évaluation finales ─────────────────────────────────────

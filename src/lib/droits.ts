@@ -29,6 +29,13 @@ export type Ressource =
   | 'entretien.signature-apprenti'
   | 'entretien.signature-maitre'
   | 'entretien.signature-formateur'
+  /**
+   * Sélection des compétences abordées en entreprise — décision conjointe
+   * formateur référent + maître d'apprentissage, validée à la 3ᵉ signature
+   * de l'entretien (W1, cf. CDC v1.5 addendum). L'invalidation R10 reste
+   * réservée au formateur référent via `fiche.deverrouiller`.
+   */
+  | 'entretien.selection-competences-entreprise'
   // Fiche de suivi par période (CDC §5.3)
   | 'fiche.suivi-greta-cfa'
   | 'fiche.evaluation-entreprise' // colonne entreprise
@@ -92,6 +99,7 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'entretien.signature-apprenti': ['apprenti'],
   'entretien.signature-maitre': ['maitre'],
   'entretien.signature-formateur': ['formateur'],
+  'entretien.selection-competences-entreprise': ['formateur', 'maitre'],
 
   // Fiche de suivi
   'fiche.suivi-greta-cfa': ['formateur'],

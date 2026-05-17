@@ -14,10 +14,10 @@
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
-| **Tests unitaires** | **313 / 313 ✓** (Vitest, 26 fichiers de test pour 28 modules `lib/`) |
-| **Tests E2E** | **126 / 126 ✓** (Playwright — 114 desktop + 12 mobile Pixel 5, 17 specs) |
-| **Bundle JS gzippé** | 127 KB (cible CDC §19.1 : < 500 KB → marge × 4) |
-| **Bundle CSS gzippé** | 6,2 KB (cible : < 50 KB → marge × 8) |
+| **Tests unitaires** | **332 / 332 ✓** (Vitest, 26 fichiers de test pour 28 modules `lib/`) |
+| **Tests E2E** | **131 / 131 ✓** (Playwright — 119 desktop + 12 mobile Pixel 5, 18 specs) |
+| **Bundle JS gzippé** | 137 KB (cible CDC §19.1 : < 500 KB → marge × 3,6) |
+| **Bundle CSS gzippé** | 6,4 KB (cible : < 50 KB → marge × 7) |
 | **Chunk PDF lazy** | 493 KB (chargé uniquement au clic « Exporter ») |
 | **Préflight VPS** | 11 / 11 ✓ |
 | **TypeScript** | strict, sans erreur |
@@ -30,12 +30,12 @@
 - **Frontend** : Vite 6 + React 18 + TypeScript 5.7 (strict)
 - **Style** : Tailwind CSS 3 + shadcn/ui (tokens CSS variables)
 - **State** : Zustand 5 + middleware `persist` — **8 stores** persistés en localStorage :
-  - `livret-donnees` (schema v7) — livrets, fiches, entretiens, évaluations
+  - `livret-donnees` (schema v8) — livrets, fiches, entretiens, évaluations, **sélection des compétences abordées en entreprise**
   - `livret-role-actif` — rôle + maître actif
   - `livret-apprenti-actif` — id de l'apprenti·e affiché·e
   - `livret-utilisateurs` (schema v1) — apprenti·e·s, maîtres, formateurs, coordos, admins
   - `livret-formations` (schema v2) — formations (intitulé, niveau, dates, **lieuId**, référentiel)
-  - `livret-referentiels` (schema v1) — référentiels de compétences (Bloc → Sous-famille? → Compétence)
+  - `livret-referentiels` (schema v2) — référentiels de compétences (Bloc → Sous-famille? → Compétence)
   - `livret-banque-questions` (schema v1) — banque centrale des questions de l'entretien tripartite
   - `livret-etablissements` (schema v1) — lieux de formation + URL Pronote (gestion admin uniquement)
 - **Routing** : React Router v6
@@ -199,13 +199,30 @@ Le formateur référent et le coordo peuvent gérer les fiches :
 - Lib `validation-fiche-periode` (15 tests TDD) : titre + dates + R11/R12/R13/R14, mode édition, `peutSupprimerFichePeriode`
 - `ModaleFichePeriode` + boutons modifier/supprimer par carte (confirmation 2 clics)
 
-#### Compétences abordées en entreprise
+#### Sélection des compétences abordées en entreprise — par stagiaire (17 mai 2026)
 
-Flag par compétence pour exclure du suivi en entreprise les compétences purement académiques :
-- `Competence.evalueeEnEntreprise?: boolean` (défaut implicite `true`)
-- Lib `competence-entreprise` (6 tests TDD)
-- UI checkbox par compétence dans la page Référentiels
-- `TableauTriColonnes.AjouterCompetence` n'expose que les compétences cochées ; lignes déjà saisies pour des compétences décochées **restent visibles** (cohérence historique)
+Refonte de fond : le choix des compétences travaillées en entreprise n'est plus défini au niveau du référentiel partagé, mais **par livret**, en **décision conjointe** formateur référent + maître d'apprentissage. La sélection est **validée automatiquement à la 3ᵉ signature de l'entretien tripartite** et figée pour la suite (modifiable uniquement par déverrouillage motivé du formateur — R10).
+
+**Modèle** :
+- Nouveau sous-objet `Livret.selectionCompetencesEntreprise: { ids[], validePar?: {formateurId, maitreId, dateIso}, modifieLe, historiqueInvalidations[] }`
+- Lib pure `selection-competences-entreprise` (24 tests TDD : création, lecture, mutations immuables, marquage validé, invalidation R10, nettoyage post-MAJ référentiel, identification des saisies historiques pour option a1)
+- Bump `useLivretStore` v7 → v8 + 3 nouvelles mutations (`toggle…`, `set…`, `invalider…`) + auto-marquage côté `signerEntretien` (lecture cross-store `useUtilisateursStore` pour résoudre les ids formateur/maître depuis l'apprenti·e du livret)
+- Nouvelle ressource matrice : `entretien.selection-competences-entreprise` (formateur + maître)
+
+**Suppression du flag référentiel** :
+- `Competence.evalueeEnEntreprise` retiré du modèle, lib `competence-entreprise` supprimée (6 tests purgés)
+- Case à cocher retirée de la page `/admin/referentiels` (lecture seule désormais)
+- Bump `useReferentielsStore` v1 → v2
+
+**UI** :
+- Nouvelle section `SectionSelectionCompetences` insérée **avant** les sections apprenti/maître/formateur dans la page Entretien tripartite (badge « Sélection en cours » → « Sélection validée le … par … » + bouton « Modifier (motif requis) » pour le formateur quand applicable + historique des invalidations)
+- `TableauTriColonnes` : bandeau d'avertissement « sélection non validée » + sélecteur d'ajout désactivé tant que la décision conjointe n'est pas prise
+- `GrilleCompetences` : page entière remplacée par un message dédié tant que la sélection n'est pas validée ; ensuite, cellule « Acquis en entreprise » **grisée + « — »** pour les compétences non sélectionnées, **lecture seule grisée** si une saisie historique existe (option a1 — conservation de la trace après décochage R10)
+- Modale d'invalidation R10 réutilisant la validation `validerMotifDeverrouillage` (≥ 10 caractères)
+
+**Fixtures démo adaptées** : Léa (8/10), Théo (9/10), Aya (8/10), Luca (9/10), Minh (7/10) avec sélection validée à la date de leur entretien ; Sofia reste avec sélection vierge (entretien jamais initialisé — démontre le bandeau).
+
+**Tests E2E** : nouveau spec `entretien-selection-competences.spec.ts` (6 tests : bandeaux Sofia, badge Léa, cellule grisée, co-édition après init, lecture seule apprenti).
 
 #### Audit mobile + corrections tableaux admin
 
@@ -256,13 +273,13 @@ Toutes les règles du CDC v1.3 sont implémentées et testées :
 
 ---
 
-## 6. Tests (313 unitaires + 126 E2E)
+## 6. Tests (332 unitaires + 131 E2E)
 
 ### Tests unitaires Vitest (26 fichiers de test pour 28 modules `lib/`)
 
 | Fichier | Tests | Périmètre |
 |---|---|---|
-| `lib/droits.test.ts` | 37 | Matrice **46 ressources × 5 rôles**, cohérence transverse (45 + admin.etablissements.gerer, − admin.pronote.gerer remplacé) |
+| `lib/droits.test.ts` | 38 | Matrice **47 ressources × 5 rôles**, cohérence transverse (+ entretien.selection-competences-entreprise — co-édition formateur+maître) |
 | `lib/transitions-fiche.test.ts` | 20 | R15/R16/R17/R21 |
 | `lib/validation-signature.test.ts` | 11 | R18/R20 par rôle |
 | `lib/regles-periode.test.ts` | 15 | R11/R12/R13 |
@@ -282,7 +299,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées :
 | `lib/validation-import-referentiel.test.ts` | 11 | Saisie d'import (formation optionnelle, nom libre conditionnel) + génération du libellé canonique |
 | `lib/referentiel-verrou.test.ts` | 4 | Verrou suppression référentiel |
 | `lib/parser-xlsx.test.ts` | 16 | Parser XLSX + tests d'intégration sur les 4 fichiers exemples du pilote |
-| `lib/competence-entreprise.test.ts` | 6 | Flag `evalueeEnEntreprise` |
+| `lib/selection-competences-entreprise.test.ts` | 24 | Sélection par livret (création vierge, validation, invalidation R10 motivée, toggle immuable, nettoyage post-MAJ référentiel, identification des saisies historiques pour option a1) |
 | `lib/validation-fiche-periode.test.ts` | 15 | Saisie fiche + `peutSupprimer` + `libelleFichePeriode` |
 | `lib/organisation-suivi.test.ts` | 13 | Catalogue motifs + helpers + verrou `peutSupprimerEvenement` |
 | `lib/questions-entretien.test.ts` | 14 | Catalogue 11 questions par défaut (formulation neutre) + helpers |
@@ -291,7 +308,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées :
 
 *Les modules `creation-livret.ts` et `utils.ts` sont couverts indirectement via les tests E2E.*
 
-### Tests E2E Playwright (17 specs)
+### Tests E2E Playwright (18 specs)
 
 | Projet | Fichier | Tests | Périmètre |
 |---|---|---|---|
@@ -305,7 +322,8 @@ Toutes les règles du CDC v1.3 sont implémentées et testées :
 | `chromium-desktop` | `admin-utilisateurs-staff.spec.ts` | 10 | CRUD staff + droits formateur partiel |
 | `chromium-desktop` | `admin-affectations.spec.ts` | 6 | Verrou + déverrouillage temporaire + réaffectation |
 | `chromium-desktop` | `admin-formations.spec.ts` | 7 | CRUD formations + persistance |
-| `chromium-desktop` | `admin-referentiels.spec.ts` | 14 | Import textarea, **import des 4 fichiers exemples réels (CSV+XLSX, 2/3 niveaux)**, association auto, toggle « abordée en entreprise », import sans formation (orphelin), affichage des formations rattachées |
+| `chromium-desktop` | `admin-referentiels.spec.ts` | 13 | Import textarea, **import des 4 fichiers exemples réels (CSV+XLSX, 2/3 niveaux)**, association auto, lecture seule des compétences (flag retiré — CDC v1.5), import sans formation (orphelin), affichage des formations rattachées |
+| `chromium-desktop` | `entretien-selection-competences.spec.ts` | 6 | Sélection par livret : bandeau « non validée » fiche + grille finale (Sofia), badge « validée » + cases désactivées (Léa), cellule grisée colonne entreprise pour compétences non sélectionnées, co-édition formateur après init entretien, lecture seule apprenti·e |
 | `chromium-desktop` | `fiches-periodes.spec.ts` | 8 | Création/renommage/suppression : droits, R13, blocage si signée, titre custom |
 | `chromium-desktop` | `organisation-suivi.spec.ts` | 7 | Refonte modulaire : ajout par motif, multi-occurrences, suppression 2 clics, persistance, **verrou suppression si événement verrouillé** |
 | `chromium-desktop` | `header-trio-contextuel.spec.ts` | 4 | Trio apprenti·e / maître / formateur dans le header — affichage par défaut, mise à jour au switch d'apprenti·e |
@@ -335,9 +353,9 @@ LIVRET APPRENTISSAGE/
 └── src/
     ├── main.tsx, App.tsx, vite-env.d.ts
     ├── styles/index.css
-    ├── types/index.ts              # CDC §7 + extensions (titre fiche, evalueeEnEntreprise, EvenementOrganisationSuivi, QuestionBanque, etc.)
+    ├── types/index.ts              # CDC §7 + extensions (titre fiche, EvenementOrganisationSuivi, QuestionBanque, SelectionCompetencesEntreprise, etc.)
     ├── lib/                        # 28 modules + 26 fichiers tests
-    │   ├── droits.ts               # matrice §6 (46 ressources × 5 rôles)
+    │   ├── droits.ts               # matrice §6 (47 ressources × 5 rôles)
     │   ├── transitions-fiche.ts    # R15/R16/R17/R21
     │   ├── validation-signature.ts # R18/R20
     │   ├── regles-periode.ts       # R11/R12/R13/R14
@@ -359,7 +377,7 @@ LIVRET APPRENTISSAGE/
     │   ├── affectation-verrou.ts   # verrou affectation si livret actif
     │   ├── formation-verrou.ts     # verrou suppression formation
     │   ├── referentiel-verrou.ts   # verrou suppression référentiel
-    │   ├── competence-entreprise.ts # flag « abordée en entreprise »
+    │   ├── selection-competences-entreprise.ts # sélection par livret + validation conjointe (CDC v1.5)
     │   ├── organisation-suivi.ts   # catalogue motifs + helpers + verrou suppression
     │   ├── questions-entretien.ts  # catalogue 11 questions par défaut + helpers
     │   ├── etablissement-verrou.ts # verrou suppression établissement (cf. formations)
@@ -368,11 +386,11 @@ LIVRET APPRENTISSAGE/
     │   └── utils.ts
     ├── store/                      # 8 stores Zustand persistés
     │   ├── useUserStore.ts
-    │   ├── useLivretStore.ts       # données livret (persist v7)
+    │   ├── useLivretStore.ts       # données livret (persist v8 — + selectionCompetencesEntreprise + auto-marquage à la 3ᵉ signature entretien)
     │   ├── useApprentiActifStore.ts
     │   ├── useUtilisateursStore.ts # CRUD utilisateurs (persist v1)
     │   ├── useFormationsStore.ts   # CRUD formations (persist v2 — refonte lieuId)
-    │   ├── useReferentielsStore.ts # CRUD référentiels (persist v1)
+    │   ├── useReferentielsStore.ts # CRUD référentiels (persist v2 — flag « abordée en entreprise » retiré)
     │   ├── useBanqueQuestionsStore.ts # CRUD banque questions entretien (persist v1)
     │   └── useEtablissementsStore.ts # CRUD établissements + URL Pronote (persist v1, admin uniquement)
     ├── fixtures/
@@ -401,6 +419,7 @@ LIVRET APPRENTISSAGE/
     │   ├── entretien/
     │   │   ├── SectionApprenti.tsx          # questions dynamiques (banque)
     │   │   ├── SectionMaitre.tsx            # questions dynamiques + appréciation 4 critères en dur
+    │   │   ├── SectionSelectionCompetences.tsx # co-édition formateur+maître + dialog R10 invalidation (CDC v1.5)
     │   │   └── SelecteurQuestions.tsx       # modale sélection + réordonnancement ↑/↓
     │   ├── evaluation/
     │   │   ├── SyntheseBloc.tsx
@@ -442,9 +461,9 @@ Une note de renvoi a été ajoutée au §31 du v1.3 (Journal des versions) pour 
 
 **Ce qui reste à faire** au niveau documentation : aucun chantier actif. Les évolutions futures (étape 2 — auth réelle, notifications, multi-établissement) feront l'objet d'un nouveau document v2.0.
 
-### B. Évaluation finale et flag `evalueeEnEntreprise` (à arbitrer)
+### B. ~~Évaluation finale et flag `evalueeEnEntreprise`~~ ✅ arbitré et livré (CDC v1.5 addendum)
 
-`GrilleCompetences` montre encore la colonne « Acquis en entreprise » pour toutes les compétences, indépendamment du flag. À décider avec le pilote : faut-il désactiver/masquer cette colonne pour les compétences `evalueeEnEntreprise === false` ? La règle actuelle ne couvre que le tableau de suivi par période.
+Question initialement ouverte (« doit-on griser la colonne entreprise pour les compétences non abordées ? »), elle a été refondue en un chantier complet : passage du flag au niveau **livret** (par stagiaire) avec validation conjointe à l'entretien tripartite. Voir la section « Sélection des compétences abordées en entreprise — par stagiaire » dans §4 (post-livraison mai 2026).
 
 ### C. R13 — choix de gouvernance (à arbitrer)
 
@@ -561,26 +580,26 @@ location.reload();
 
 ## 12. Prochaine étape recommandée
 
-L'étape 1 du CDC v1.3 est **livrée et fonctionnelle**, étendue par 2 vagues post-livraison (administration métier + refonte modulaire des sections principales) :
+L'étape 1 du CDC v1.3 est **livrée et fonctionnelle**, étendue par 3 vagues post-livraison (administration métier + refonte modulaire des sections principales + sélection par stagiaire des compétences en entreprise) :
 
 - administration métier complète : CRUD 4 rôles + formations + affectations + référentiels CSV/XLSX + banque de questions + **établissements (lieux de formation + URLs Pronote)**
 - verrouillages de cohérence référentielle à toutes les couches
 - organisation du suivi modulaire (liste dynamique d'événements) — libellé UI « Fiches de suivi »
 - entretien tripartite avec banque de questions configurable + sélection par livret
+- **sélection des compétences abordées en entreprise par stagiaire** (décision conjointe formateur+maître validée à la 3ᵉ signature de l'entretien, R10 motivé pour modification ultérieure)
 - trio contextuel dans le header (apprenti·e / maître / formateur)
 - audit mobile complet + corrections tableaux admin
 - page Pronote WEB filtrée par rôle (apprenti·e voit son établissement, coordo ses formations rattachées, formateur ses promos, maître ceux de ses apprenti·e·s, admin tout)
 
 Il reste à faire :
 
-1. **Arbitrages métier ouverts** (cf. §8.B et §8.C) :
-   - Évaluation finale et `evalueeEnEntreprise` — la colonne « Acquis en entreprise » de `GrilleCompetences` devrait-elle être masquée pour les compétences `evalueeEnEntreprise === false` ?
+1. **Arbitrage métier ouvert** (cf. §8.C) :
    - R13 stricte ou avertissement — la création de la période N est-elle bloquante tant que N-1 n'est pas signée, ou simple avertissement ?
 2. **Sécurité VPS** — actions côté pilote (clé SSH, désactivation password auth — cf. §8.E)
-3. **Étape 2** (hors CDC actuel) : authentification réelle, notifications email, multi-établissement, signature manuscrite tactile (cf. §8.D).
+3. **Étape 2** (hors CDC actuel) : authentification réelle, notifications email, multi-établissement, signature manuscrite tactile (cf. §8.D), mécanisme de re-validation conjointe après invalidation R10 (la maquette autorise actuellement le formateur seul à figer une sélection revue après invalidation).
 
 ✅ **CDC v1.5 formalisé** : voir [`cahier-des-charges-livret-apprentissage-v1.5-addendum.md`](cahier-des-charges-livret-apprentissage-v1.5-addendum.md).
 
 ---
 
-*Étape 1 livrée + 2 vagues post-livraison (CDC v1.5) : administration métier complète (CRUD 4 rôles + formations + affectations + référentiels CSV/XLSX + banque de questions + établissements + Pronote WEB) ; organisation du suivi modulaire ; entretien tripartite avec banque de questions configurable ; trio contextuel ; audit mobile complet ; renommages UI cohérents.*
+*Étape 1 livrée + 3 vagues post-livraison (CDC v1.5) : administration métier complète (CRUD 4 rôles + formations + affectations + référentiels CSV/XLSX + banque de questions + établissements + Pronote WEB) ; organisation du suivi modulaire ; entretien tripartite avec banque de questions configurable ; sélection des compétences abordées en entreprise par stagiaire avec validation conjointe à la 3ᵉ signature ; trio contextuel ; audit mobile complet ; renommages UI cohérents.*

@@ -183,49 +183,20 @@ test('après import, la formation est rattachée au nouveau référentiel (auto-
   await expect(selectRef).toContainText(/Referentiel_CAP Cuisine_/);
 });
 
-test("toggle « abordée en entreprise » persiste après reload", async ({ page }) => {
-  await selectRole(page, 'Coordinateur·rice');
-  await page.goto('/admin/referentiels');
-  // Ouvre le détail du CAP Cuisine
-  const carteCap = page.locator('article', { hasText: 'CAP Cuisine' });
-  await carteCap.getByText(/Voir et configurer les compétences/i).click();
-  // La compétence c1-1 du CAP Cuisine est cochée par défaut (rétrocompat)
-  const checkbox = carteCap.getByTestId('comp-eval-c1-1');
-  await expect(checkbox).toBeChecked();
-  // Décochage
-  await checkbox.uncheck();
-  await expect(checkbox).not.toBeChecked();
-
-  // Persistance après reload
-  await page.reload();
-  // Le détail est replié — on le rouvre
-  await page.locator('article', { hasText: 'CAP Cuisine' }).getByText(/Voir et configurer/i).click();
-  await expect(page.getByTestId('comp-eval-c1-1')).not.toBeChecked();
-});
-
-test("la compétence décochée disparaît du sélecteur d'ajout dans la fiche de suivi", async ({
+test("la page Référentiels affiche les compétences en lecture seule (CDC v1.5 — flag retiré)", async ({
   page,
 }) => {
-  // 1) Décocher c1-1 sur la page Référentiels (en coordo)
+  // Depuis le CDC v1.5 addendum, le choix des compétences abordées en
+  // entreprise se fait par livret à l'entretien tripartite (cf. spec
+  // entretien-selection-competences.spec.ts). La page Référentiels n'expose
+  // donc plus de case à cocher par compétence.
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/referentiels');
-  await page.locator('article', { hasText: 'CAP Cuisine' }).getByText(/Voir et configurer/i).click();
-  await page.getByTestId('comp-eval-c1-1').uncheck();
-
-  // 2) Bascule en formateur, ouvre la fiche Période 3 de Léa MARTIN qui est
-  //    encore en-cours (pas signée formateur, le sélecteur d'ajout y est dispo).
-  await selectRole(page, 'Formateur référent');
-  await page.goto('/livret/fiches-suivi');
-  await page.getByRole('link', { name: /Période 3/i }).first().click();
-
-  // 3) Le sélecteur d'ajout ne doit pas proposer C1.1 (la compétence décochée).
-  //    On lit les <option> et on vérifie que C1.1 n'y figure pas.
-  const select = page.getByLabel(/Ajouter une compétence à la fiche/i);
-  await expect(select).toBeVisible();
-  // C1.2 est toujours présente (toujours cochée), C1.1 a disparu du sélecteur.
-  const options = await select.locator('option').allTextContents();
-  expect(options.some((o) => o.includes('C1.2'))).toBe(true);
-  expect(options.some((o) => o.includes('C1.1'))).toBe(false);
+  const carteCap = page.locator('article', { hasText: 'CAP Cuisine' });
+  await carteCap.getByText(/Voir les compétences/i).click();
+  // C1.1 reste visible mais sans aucune case à cocher.
+  await expect(carteCap).toContainText(/C1\.1/);
+  await expect(carteCap.getByTestId('comp-eval-c1-1')).toHaveCount(0);
 });
 
 test("import sans formation — nom libre obligatoire, référentiel orphelin créé", async ({
