@@ -1,7 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { TableauDeBord } from '@/pages/TableauDeBord';
-import { PagePlaceholder } from '@/pages/PagePlaceholder';
 import { NotFound } from '@/pages/NotFound';
 import { OrganisationSuivi } from '@/pages/OrganisationSuivi';
 import { EntretienTripartite } from '@/pages/EntretienTripartite';
@@ -19,9 +18,6 @@ import { PronoteWeb } from '@/pages/PronoteWeb';
 /**
  * Composition des routes de l'application.
  * Référence : cahier des charges v1.3, sections 5 et 10.
- *
- * Sprint 1 : routes principales avec pages placeholder.
- * Les sprints suivants remplacent chaque PagePlaceholder par sa vraie implémentation.
  */
 export function App() {
   return (
@@ -38,17 +34,6 @@ export function App() {
         <Route path="livret/fiches-suivi/:ficheId" element={<FicheSuiviPeriodeDetail />} />
         <Route path="livret/evaluation-finale" element={<EvaluationFinale />} />
         <Route path="livret/pronote" element={<PronoteWeb />} />
-        <Route
-          path="livret/export"
-          element={
-            <PagePlaceholder
-              titre="Export PDF"
-              description="Génération du livret complet au format PDF."
-              refCdc="5.6"
-              ressourceDemo="export-pdf"
-            />
-          }
-        />
 
         {/* ── Administration (rôle coordo) ──────────────────────────────── */}
         <Route path="admin/utilisateurs" element={<GestionUtilisateurs />} />

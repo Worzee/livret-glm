@@ -238,6 +238,12 @@ Audit Playwright Pixel 5 (393×851) sur 11 captures fullPage + viewport. Correct
 
 Helper `peutEncoreEditerFiche(fiche, role)` dans `lib/transitions-fiche.ts` (6 tests TDD) — empêche un rôle de modifier ses zones après avoir signé. Mention UI explicite « Figée par signature ».
 
+#### Nettoyage UI — entrée « Export PDF » sidebar supprimée (18 mai 2026)
+
+L'entrée « Export PDF » dans la sidebar (`/livret/export`) était un placeholder résiduel du Sprint 1 qui n'avait jamais été nettoyé après l'arrivée du vrai export PDF en Sprint 5. Le seul vrai export reste le bouton « Exporter le livret » sur la page Évaluation finale (composant `BoutonExportPdf` + chunk lazy `ExportPdfLazy`).
+
+Suppression : entrée sidebar, route, composant `PagePlaceholder.tsx` (plus utilisé nulle part). La ressource matricée `export-pdf` reste, elle gouverne la visibilité du bouton sur la page Éval finale.
+
 #### Renforcement R20 — signature maître **et formateur** exige au moins une compétence abordée (18 mai 2026)
 
 Ni le maître d'apprentissage ni le formateur référent ne peuvent désormais signer leur fiche de période si toutes les compétences de leur colonne (« Évaluation entreprise » côté maître, « Évaluation GRETA CFA » côté formateur) sont `null` **ou** à `'non-fait'`. Il faut au moins une vraie évaluation (`maitrise` / `partiel` / `non-maitrise`) pour qu'une compétence soit considérée comme « abordée ».
@@ -463,7 +469,7 @@ LIVRET APPRENTISSAGE/
     │   │   └── BandeauCloture.tsx
     │   └── pdf/                             # export lazy (LivretPdf 7 sections, banque injectée)
     ├── pages/
-    │   ├── TableauDeBord.tsx, NotFound.tsx, PagePlaceholder.tsx
+    │   ├── TableauDeBord.tsx, NotFound.tsx
     │   ├── OrganisationSuivi.tsx           # liste modulaire d'événements (libellé UI : « Fiches de suivi »)
     │   ├── EntretienTripartite.tsx
     │   ├── FicheSuiviPeriodes.tsx          # libellé UI : « Période en Entreprise »

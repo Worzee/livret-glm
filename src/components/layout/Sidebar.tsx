@@ -5,7 +5,6 @@ import {
   CalendarRange,
   ClipboardList,
   ExternalLink,
-  FileDown,
   GraduationCap,
   LayoutDashboard,
   Library,
@@ -46,7 +45,6 @@ const LIENS_LIVRET: LienItem[] = [
   { to: '/livret/fiches-suivi', label: 'Période en Entreprise', Icon: Notebook },
   { to: '/livret/evaluation-finale', label: 'Évaluation finale', Icon: Target },
   { to: '/livret/pronote', label: 'Pronote WEB', Icon: ExternalLink },
-  { to: '/livret/export', label: 'Export PDF', Icon: FileDown },
 ];
 
 /**
