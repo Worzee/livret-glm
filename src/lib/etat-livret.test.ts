@@ -68,10 +68,40 @@ describe('calculerResumeLivret — cas pédagogique', () => {
     expect(r.nbFiches).toBe(0);
   });
 
-  it('Aya (désaccord) : historique R10 non vide → "desaccord"', () => {
+  it('Aya (désaccord) : fiche déverrouillée encore en-cours → "desaccord"', () => {
     const r = calculerResumeLivret(apprentiAyaKouame, getLivret(apprentiAyaKouame.id), MAINTENANT);
     expect(r.cas).toBe('desaccord');
     expect(r.aDeverrouillage).toBe(true);
+  });
+
+  it('désaccord résolu : fiche déverrouillée puis re-signée → quitte le cas "desaccord"', () => {
+    const livretAya = getLivret(apprentiAyaKouame.id);
+    // Simule la fin du désaccord : on re-signe la fiche déverrouillée par
+    // les 3 parties → état passe à `signee`, l'historique R10 reste pour
+    // traçabilité mais ne doit plus tirer le cas pédagogique vers "desaccord".
+    const livretResolu: Livret = {
+      ...livretAya,
+      fichesSuivi: livretAya.fichesSuivi.map((f) =>
+        f.etat === 'en-cours' && f.historiqueDeverrouillages.length > 0
+          ? {
+              ...f,
+              etat: 'signee' as const,
+              signatures: {
+                apprenti: { signe: true, dateSignature: '2026-03-20T10:00:00.000Z' },
+                maitre: { signe: true, dateSignature: '2026-03-20T11:00:00.000Z' },
+                formateur: { signe: true, dateSignature: '2026-03-20T12:00:00.000Z' },
+              },
+            }
+          : f,
+      ),
+    };
+    const r = calculerResumeLivret(apprentiAyaKouame, livretResolu, MAINTENANT);
+    expect(r.cas).not.toBe('desaccord');
+    // L'historique R10 reste pour audit, mais le badge "Désaccord en cours"
+    // doit disparaître. Avec 2/2 fiches signées + entretien complet, on tombe
+    // sur "toutes-signees".
+    expect(r.cas).toBe('toutes-signees');
+    expect(r.aDeverrouillage).toBe(true); // historique conservé, cf. JSDoc
   });
 
   it('priorise « cloture » sur tous les autres cas', () => {

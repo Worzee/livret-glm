@@ -14,7 +14,7 @@
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
-| **Tests unitaires** | **336 / 336 ✓** (Vitest, 26 fichiers de test pour 28 modules `lib/`) |
+| **Tests unitaires** | **337 / 337 ✓** (Vitest, 26 fichiers de test pour 28 modules `lib/`) |
 | **Tests E2E** | **131 / 131 ✓** (Playwright — 119 desktop + 12 mobile Pixel 5, 18 specs) |
 | **Bundle JS gzippé** | 137 KB (cible CDC §19.1 : < 500 KB → marge × 3,6) |
 | **Bundle CSS gzippé** | 6,4 KB (cible : < 50 KB → marge × 7) |
@@ -238,6 +238,12 @@ Audit Playwright Pixel 5 (393×851) sur 11 captures fullPage + viewport. Correct
 
 Helper `peutEncoreEditerFiche(fiche, role)` dans `lib/transitions-fiche.ts` (6 tests TDD) — empêche un rôle de modifier ses zones après avoir signé. Mention UI explicite « Figée par signature ».
 
+#### Bugfix tableau de bord — badge « Désaccord en cours » persistant (18 mai 2026)
+
+Le badge « Désaccord en cours » restait affiché pour un·e apprenti·e après que la fiche déverrouillée (R10) ait été re-signée par les 3 parties. Le calcul du cas pédagogique dans `lib/etat-livret.ts` regardait uniquement `historiqueDeverrouillages.length > 0` (trace d'audit), sans vérifier si la fiche correspondante était encore dans un état non-signé.
+
+Correctif : ajout d'une variable interne `desaccordEnCours` = il existe au moins une fiche avec historique R10 **ET** dont l'état n'est ni `signee` ni `verrouillee`. Le champ exposé `aDeverrouillage` garde sa sémantique d'origine (trace historique, utile pour audit) mais ne pilote plus à lui seul le cas pédagogique. 1 test TDD ajouté.
+
 #### R13 assouplie + R14 activée (18 mai 2026)
 
 Création de la période N autorisée même si N-1 n'est pas signée. Seule l'absence d'entretien tripartite reste bloquante. La modale `ModaleFichePeriode` affiche un **bandeau ambre** sous le champ Date de début listant les parties qui n'ont pas encore signé la N-1 (apprenti·e / maître d'apprentissage / formateur·rice référent·e), avec le message :
@@ -300,7 +306,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées :
 | `lib/cloture-livret.test.ts` | 14 | R22 |
 | `lib/deverrouillage-fiche.test.ts` | 8 | R10 |
 | `lib/apprentis-accessibles.test.ts` | 18 | Filtre par rôle (R3) + tri fr-FR + recherche normalisée |
-| `lib/etat-livret.test.ts` | 7 | Cas pédagogiques 6 apprenti·e·s |
+| `lib/etat-livret.test.ts` | 8 | Cas pédagogiques 6 apprenti·e·s + désaccord résolu après re-signature |
 | `lib/validation-apprenti.test.ts` | 9 | Saisie apprenti·e (avertissement RQTH) |
 | `lib/validation-utilisateur-staff.test.ts` | 6 | Validation maître/formateur/coordo |
 | `lib/affectation-verrou.test.ts` | 7 | Verrou affectation |
@@ -542,7 +548,7 @@ npm run dev            # serveur Vite sur http://localhost:5173
 ### Tests / qualité
 
 ```bash
-npm test               # 336 tests Vitest
+npm test               # 337 tests Vitest
 npm run e2e            # 131 tests E2E Playwright (build + preview + tests)
 npm run e2e:ui         # UI Playwright pour debug
 npm run typecheck      # tsc --noEmit

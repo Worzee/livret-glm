@@ -33,7 +33,7 @@ export interface ResumeLivret {
 export type CasPedagogique =
   | 'cloture' // R22 — livret figé
   | 'alerte-r7' // entretien manquant > 60 j
-  | 'desaccord' // au moins un déverrouillage R10
+  | 'desaccord' // fiche déverrouillée R10 et pas encore re-signée (désaccord actif)
   | 'demarrage' // pas encore de fiche
   | 'toutes-signees' // toutes les fiches signées ou verrouillées
   | 'en-cours'; // cas standard mi-parcours
@@ -50,6 +50,15 @@ export function calculerResumeLivret(
     (f) => f.etat === 'signee' || f.etat === 'verrouillee',
   ).length;
   const aDeverrouillage = fiches.some((f) => f.historiqueDeverrouillages.length > 0);
+  // « Désaccord en cours » = il y a eu un déverrouillage R10 ET la fiche
+  // correspondante n'a pas encore été re-signée. Une fois re-signée, l'historique
+  // est conservé pour audit mais le badge pédagogique doit disparaître.
+  const desaccordEnCours = fiches.some(
+    (f) =>
+      f.historiqueDeverrouillages.length > 0 &&
+      f.etat !== 'signee' &&
+      f.etat !== 'verrouillee',
+  );
 
   const alerteR7Result = calculerAlerteR7(apprenti, livret.entretienTripartite, maintenant);
   const alerteR7 = alerteR7Result.declenchee;
@@ -68,7 +77,7 @@ export function calculerResumeLivret(
   let cas: CasPedagogique = 'en-cours';
   if (cloture) cas = 'cloture';
   else if (alerteR7) cas = 'alerte-r7';
-  else if (aDeverrouillage) cas = 'desaccord';
+  else if (desaccordEnCours) cas = 'desaccord';
   else if (nbFiches === 0) cas = 'demarrage';
   else if (nbFiches > 0 && nbFichesSignees === nbFiches) cas = 'toutes-signees';
 
