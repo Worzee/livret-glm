@@ -9,13 +9,16 @@ import { cn } from '@/lib/utils';
  * - Mode `greta` : 3 niveaux (Maîtrisé, Partiel, Non maîtrisé)
  * - Mode `entreprise` : 4 niveaux (idem + Non fait)
  *
- * En mode édition, un bouton supplémentaire « Non renseigné » permet de
- * remettre la cellule à `null` (utile pour ré-activer l'héritage depuis les
- * fiches sur la grille finale, ou pour effacer une saisie par erreur).
+ * En mode édition, un bouton supplémentaire « Non renseigné » peut être
+ * activé via la prop `permetEffacer`. Il remet la cellule à `null` — utile
+ * sur la **grille finale** pour ré-activer l'héritage depuis les fiches.
+ * Sur les fiches de période, ce bouton est inutile (« Non fait » en mode
+ * entreprise couvre déjà le cas d'absence d'évaluation, et un toggle
+ * implicite reste possible via re-clic sur la valeur sélectionnée).
  *
  * Affichage :
  *   - lecture : pastille colorée + libellé (ou « Non renseigné » si null)
- *   - édition : 3-4 boutons de niveau + 1 bouton « Non renseigné »
+ *   - édition : 3-4 boutons de niveau + (optionnel) 1 bouton « Non renseigné »
  */
 
 type Niveau = NiveauMaitriseEntreprise; // surensemble qui contient 'non-fait'
@@ -70,6 +73,12 @@ interface SelecteurNiveauProps {
   onChange?: (valeur: NiveauMaitrise | NiveauMaitriseEntreprise | null) => void;
   /** Étiquette accessible pour les lecteurs d'écran. */
   ariaLabel?: string;
+  /**
+   * Si true (et en mode édition), affiche un bouton « Non renseigné » qui
+   * remet la valeur à `null`. Utile uniquement sur la grille finale pour
+   * réactiver l'héritage depuis les fiches. Par défaut `false`.
+   */
+  permetEffacer?: boolean;
   className?: string;
 }
 
@@ -82,6 +91,7 @@ export function SelecteurNiveau({
   valeur,
   onChange,
   ariaLabel,
+  permetEffacer = false,
   className,
 }: SelecteurNiveauProps) {
   const niveauxAffiches = mode === 'greta' ? NIVEAUX_GRETA : NIVEAUX_ENTREPRISE;
@@ -148,23 +158,25 @@ export function SelecteurNiveau({
           </button>
         );
       })}
-      <button
-        type="button"
-        role="radio"
-        aria-checked={valeur === null}
-        onClick={() => onChange?.(null)}
-        title="Effacer la saisie — la valeur reviendra à « Non renseigné » (ou à l'héritage des fiches si applicable)."
-        className={cn(
-          'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium transition-colors',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-          valeur === null
-            ? 'bg-secondary text-muted-foreground border-transparent'
-            : 'border-border bg-background text-muted-foreground hover:bg-secondary',
-        )}
-      >
-        <Minus className="h-3.5 w-3.5" aria-hidden="true" />
-        <span>Non renseigné</span>
-      </button>
+      {permetEffacer && (
+        <button
+          type="button"
+          role="radio"
+          aria-checked={valeur === null}
+          onClick={() => onChange?.(null)}
+          title="Effacer la saisie — la valeur reviendra à « Non renseigné » (ou à l'héritage des fiches si applicable)."
+          className={cn(
+            'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium transition-colors',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+            valeur === null
+              ? 'bg-secondary text-muted-foreground border-transparent'
+              : 'border-border bg-background text-muted-foreground hover:bg-secondary',
+          )}
+        >
+          <Minus className="h-3.5 w-3.5" aria-hidden="true" />
+          <span>Non renseigné</span>
+        </button>
+      )}
     </div>
   );
 }

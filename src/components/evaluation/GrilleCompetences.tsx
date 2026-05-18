@@ -254,6 +254,7 @@ function CelluleNiveau({
         valeur={eff.valeur}
         onChange={(v) => onChange(v as NiveauMaitrise | null)}
         ariaLabel={ariaLabel}
+        permetEffacer
       />
       {eff.source === 'synthese' && (
         <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs italic text-muted-foreground">
