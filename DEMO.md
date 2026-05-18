@@ -41,9 +41,9 @@ Référence : cahier des charges v1.3, section 25.
 1. Ouvrir l'URL, saisir le Basic Auth devant le public.
    - 🗣️ *« L'accès est protégé par mot de passe et HTTPS, hébergé sur un VPS européen, sans aucun tracker ni télémétrie. »*
 2. L'application charge sur le **Tableau de bord du formateur référent** (rôle par défaut).
-3. Pointer le **bandeau démo** persistant en haut de l'écran et le **role switcher** en haut à droite.
-4. Cliquer sur **« Ouvrir le livret de démonstration »** (carte de Léa MARTIN).
-   - 🎯 *Étape 1 : un seul apprenti·e démo (Léa). Les 5 autres cas du CDC §24.5 sont au backlog étape 2 — TODO-etape-2.md.*
+3. Pointer le **bandeau démo** persistant en haut de l'écran et le **role switcher** en haut à droite (5 rôles : apprenti·e, maître, formateur, coordo, admin).
+4. Montrer rapidement les **6 cartes apprenti·e·s** du tableau de bord (Léa MARTIN — cas principal, Théo DUBOIS — « bon élève », Sofia PEREIRA — alerte R7, Minh NGUYEN — démarrage, Aya KOUAMÉ — désaccord R10, Luca BIANCHI — mi-parcours).
+5. Cliquer sur **« Ouvrir le livret de Léa MARTIN »**.
 
 ### 01:00 — 02:30 · Navigation dans un livret
 
@@ -115,13 +115,13 @@ Référence : cahier des charges v1.3, section 25.
 
 ### 09:00 — 10:00 · Perspectives et clôture
 
-1. **Bascule rôle → Coordo (Martine LEFÈVRE)** : section *Administration* apparaît dans la sidebar (placeholder fonctionnels — gestion utilisateurs, formations, affectations).
-2. **Bascule rôle → Admin (Guillaume FERRERI)** : couronne 👑, droits étendus.
+1. **Bascule rôle → Coordo (Martine LEFÈVRE)** : section *Administration* apparaît dans la sidebar avec **CRUD réel** — gestion utilisateurs, formations, affectations, référentiels (import CSV/XLSX), banque de questions d'entretien.
+2. **Bascule rôle → Admin (Guillaume FERRERI)** : droits étendus + gestion **établissements** + URLs Pronote.
 3. Rappeler les **limites du périmètre étape 1** :
    - Pas d'authentification réelle (role switcher de démo).
    - Pas de conformité RGPD/RGAA stricte.
    - Données en `localStorage` du navigateur (1 utilisateur = 1 vue).
-4. Pointer `TODO-etape-2.md` (à montrer en capture si pas de second écran) : modules administratifs CRUD, multi-apprenti·e, import référentiels CSV/XLSX, export Excel, notifications email.
+4. Pointer `TODO-etape-2.md` : authentification réelle, notifications email, signature manuscrite tactile, mécanisme de re-validation conjointe après invalidation R10.
 5. Ouvrir la discussion.
 
 ---
@@ -160,8 +160,10 @@ Cible 5 min : Intro + Navigation + Co-édition + Évaluation finale rapide.
 
 ```js
 // DevTools > Console
-localStorage.removeItem('livret-donnees');
-localStorage.removeItem('livret-role-actif');
+['livret-donnees','livret-role-actif','livret-apprenti-actif',
+ 'livret-utilisateurs','livret-formations','livret-referentiels',
+ 'livret-banque-questions','livret-etablissements']
+  .forEach(k => localStorage.removeItem(k));
 location.reload();
 ```
 
@@ -176,4 +178,4 @@ location.reload();
 
 ---
 
-*Référence : CDC v1.3 §25 · Sprint 5 livré · Maquette étape 1.*
+*Référence : CDC v1.3 §25 + addendum v1.5 · Étape 1 livrée + 3 vagues post-livraison.*

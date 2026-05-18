@@ -1,19 +1,20 @@
 # Livret d'apprentissage — GRETA Lyon Métropole
 
-Maquette numérique du livret d'apprentissage, **étape 1 / 3** (cahier des charges v1.3).
+Maquette numérique du livret d'apprentissage, **étape 1 / 3** (CDC v1.3 + addendum v1.5).
 
 > **À quoi ça sert ?** Démontrer à la direction du GRETA Lyon Métropole, sur une URL réelle protégée
 > par mot de passe, à quoi ressemblerait un livret d'apprentissage numérique : co-édition tripartite
-> (apprenti·e + maître + formateur), entretien tripartite, fiches de période, évaluations finales,
-> export PDF officiel. Aucune donnée réelle, aucun tracker, aucune analytics.
+> (apprenti·e + maître + formateur), entretien tripartite avec banque de questions, fiches de période,
+> évaluations finales, export PDF officiel, administration métier (CRUD utilisateurs, formations,
+> référentiels, établissements). Aucune donnée réelle, aucun tracker, aucune analytics.
 
 | | |
 |---|---|
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / mdp partagé hors-canal |
 | **Pilote métier** | Guillaume FERRERI |
-| **État** | Sprint 5 livré — étape 1 prête pour démo direction |
-| **Tests** | 162 / 162 ✓ |
+| **État** | Étape 1 livrée + 3 vagues post-livraison (CDC v1.5) |
+| **Tests** | **332 unit ✓ · 131 E2E ✓** |
 
 ---
 
@@ -51,8 +52,10 @@ npm run lint              # ESLint
 npm run format            # Prettier (écriture)
 
 # Tests
-npm test                  # 162 tests Vitest (run unique)
-npm run test:watch        # mode watch
+npm test                  # 332 tests Vitest unit
+npm run e2e               # 131 tests E2E Playwright (build + preview + tests)
+npm run e2e:ui            # UI Playwright pour debug
+npm run test:watch        # mode watch (unit)
 
 # Production
 npm run build             # produit dist/ (+ source maps)
@@ -70,44 +73,42 @@ bash scripts/verifier-vps.sh          # 11 contrôles préflight (DNS, TLS, head
 
 ```
 LIVRET APPRENTISSAGE/
-├── README.md                       ← ce fichier
-├── PROJECT-STATUS.md               ← état d'avancement détaillé du projet
-├── DEMO.md                         ← script de démo minuté 10 min + plan B
-├── CONVENTIONS.md                  ← règles de code (résumé CDC §16)
-├── TODO-etape-2.md                 ← captures de scope creep pour étape 2
-├── cahier-des-charges-livret-apprentissage-v1.3.md   ← source de vérité fonctionnelle
-├── design-system/MASTER.md         ← design system complet (CDC §14)
-├── scripts/                        ← scripts de déploiement VPS
-│   ├── README.md                   ← procédure complète
-│   ├── deploy.sh, setup-vps.sh, verifier-vps.sh
-│   ├── docker-compose.livret.yml, nginx-livret.conf
-│   └── .env.deploy.example         ← gabarit (le .env.deploy réel est gitignoré)
+├── README.md                                              ← ce fichier
+├── PROJECT-STATUS.md                                      ← état d'avancement détaillé
+├── DEMO.md                                                ← script de démo minuté 10 min
+├── CONVENTIONS.md                                         ← règles de code (résumé CDC §16)
+├── TODO-etape-2.md                                        ← pistes reportées étape 2/3
+├── cahier-des-charges-livret-apprentissage-v1.3.md        ← référence historique scellée
+├── cahier-des-charges-livret-apprentissage-v1.5-addendum.md ← évolutions post-livraison
+├── design-system/MASTER.md                                ← design system (CDC §14)
+├── scripts/                                               ← déploiement VPS
+├── e2e/                                                   ← 18 specs Playwright
 └── src/
-    ├── main.tsx, App.tsx
-    ├── styles/index.css            ← tokens shadcn + thème institutionnel
-    ├── types/index.ts              ← modèle de données (CDC §7)
-    ├── lib/                        ← logique métier pure + tests TDD
-    │   ├── droits.ts               ← matrice §6 (32 ressources × 5 rôles)
-    │   ├── transitions-fiche.ts    ← R15/R16/R17/R21 (machine à états + non-régression)
-    │   ├── validation-signature.ts ← R18/R20 fiches de période
+    ├── types/index.ts              ← modèle (CDC §7 + extensions v1.5)
+    ├── lib/                        ← logique métier pure + 26 fichiers tests TDD
+    │   ├── droits.ts               ← matrice (47 ressources × 5 rôles)
+    │   ├── transitions-fiche.ts    ← R15/R16/R17/R21
+    │   ├── validation-signature.ts ← R18/R20
     │   ├── regles-periode.ts       ← R11/R12/R13/R14
     │   ├── regles-entretien.ts     ← R6/R7/R8/R9
-    │   ├── synthese-evaluation.ts  ← last-write-wins fiches → évaluations finales
-    │   ├── stats-bloc.ts           ← agrégation stats par bloc
-    │   ├── cloture-livret.ts       ← R22 (clôture)
-    │   ├── deverrouillage-fiche.ts ← R10 (motif obligatoire)
-    │   ├── import-referentiel.ts   ← parsing CSV (encodage, 2/3 colonnes)
-    │   └── *.test.ts               ← 162 tests Vitest
-    ├── store/                      ← Zustand persist (localStorage v3)
-    ├── fixtures/                   ← données de démo (Léa MARTIN + 4 autres rôles)
+    │   ├── selection-competences-entreprise.ts ← CDC v1.5 §12 (sélection par livret)
+    │   ├── cloture-livret.ts       ← R22
+    │   ├── deverrouillage-fiche.ts ← R10 motivé
+    │   ├── questions-entretien.ts  ← banque de questions
+    │   ├── organisation-suivi.ts   ← refonte modulaire (liste d'événements)
+    │   ├── import-referentiel.ts + parser-xlsx.ts ← CSV+XLSX
+    │   └── *.test.ts               ← 332 tests Vitest
+    ├── store/                      ← 8 stores Zustand persistés
+    ├── fixtures/                   ← 6 livrets démo + utilisateurs + référentiels
     ├── components/
-    │   ├── layout/                 ← AppShell, Sidebar, RoleSwitcher, BoutonReinit…
-    │   ├── common/                 ← BoutonSigner, ChampEditable, BadgeEtatFiche…
+    │   ├── layout/                 ← AppShell, Sidebar, RoleSwitcher, MobileMenu…
+    │   ├── common/                 ← BoutonSigner, BoutonSupprimer, SelecteurNiveau…
+    │   ├── admin/                  ← modales CRUD (utilisateurs, formations, référentiels…)
     │   ├── livret/                 ← TableauTriColonnes, BlocSignatures, DialogDeverrouillage…
-    │   ├── entretien/              ← sections de l'entretien tripartite
-    │   ├── evaluation/             ← grilles finales + BandeauCloture (R22)
-    │   └── pdf/                    ← export PDF via @react-pdf/renderer (lazy-loaded)
-    └── pages/                      ← routes principales + sous-pages admin
+    │   ├── entretien/              ← sections + SectionSelectionCompetences (CDC v1.5)
+    │   ├── evaluation/             ← grilles finales + BandeauCloture
+    │   └── pdf/                    ← export lazy @react-pdf/renderer
+    └── pages/                      ← routes + sous-pages admin (5 rôles)
 ```
 
 ---
@@ -128,10 +129,11 @@ LIVRET APPRENTISSAGE/
 | Document | Quand le consulter |
 |---|---|
 | **`DEMO.md`** | Avant chaque présentation. Script minuté + plan B. |
-| **`PROJECT-STATUS.md`** | Faire le point — sprints livrés, ce qui reste, métriques bundle/tests. |
+| **`PROJECT-STATUS.md`** | Faire le point — vagues livrées, ce qui reste, métriques bundle/tests. |
 | **`CONVENTIONS.md`** | Règles de code et conventions du projet (CDC §16). |
-| **`TODO-etape-2.md`** | Backlog des fonctionnalités reportées à l'étape 2. |
-| **`cahier-des-charges-livret-apprentissage-v1.3.md`** | Source de vérité fonctionnelle officielle. |
+| **`TODO-etape-2.md`** | Pistes reportées étape 2/3 (auth réelle, notifications, signature tactile…). |
+| **`cahier-des-charges-livret-apprentissage-v1.3.md`** | Référence historique scellée (CDC initial). |
+| **`cahier-des-charges-livret-apprentissage-v1.5-addendum.md`** | Évolutions post-livraison v1.3 → v1.5 (3 vagues). |
 | **`scripts/README.md`** | Procédure complète VPS (setup initial, déploiement, sécurité). |
 | **`design-system/MASTER.md`** | Tokens, couleurs par rôle, patterns UI. |
 
@@ -166,9 +168,7 @@ Procédure complète dans [`scripts/README.md`](./scripts/README.md) § *Sécuri
 - Pas de backup automatique — données dans le `localStorage` de chaque navigateur.
 - Pas de monitoring centralisé (Uptime Kuma, logs).
 - Pas d'historique granulaire (CDC §12) — traçabilité minimale `modifieLe` + historique R10
-  spécifique.
-- 1 apprenti·e démo (Léa MARTIN). 6 apprenti·e·s prévus pour la démo direction (CDC §24.5)
-  → cf. PROJECT-STATUS.md §9.C.
+  spécifique (déverrouillages fiches + invalidations sélection compétences).
 
 ---
 
@@ -176,17 +176,18 @@ Procédure complète dans [`scripts/README.md`](./scripts/README.md) § *Sécuri
 
 - **Frontend** : Vite 6 + React 18 + TypeScript 5.7 (strict)
 - **Style** : Tailwind CSS 3 + shadcn/ui (tokens CSS variables)
-- **State** : Zustand 5 + middleware `persist` (localStorage, schema v3)
+- **State** : Zustand 5 + middleware `persist` (localStorage, **8 stores** persistés)
 - **Routing** : React Router v6
 - **PDF** : `@react-pdf/renderer` (lazy-loaded — chargé uniquement au clic « Exporter »)
-- **Tests** : Vitest 2 + Testing Library + jsdom
+- **XLSX** : `fflate` (~12 KB) pour la décompression ZIP + parser maison
+- **Tests** : Vitest 2 (unitaires) + Playwright 1.59 (E2E desktop + mobile Pixel 5)
 - **Lint/Format** : ESLint 9 (flat config) + Prettier 3
 - **Aucune dépendance d'analytics ou tracking** (CDC §20)
 
 Bundle production gzippé :
-- JS initial : **~94 KB** (cible CDC §19.1 : < 500 KB) ✓
-- CSS : **~5 KB** (cible : < 50 KB) ✓
-- Chunk PDF lazy : ~495 KB (chargé à la demande seulement)
+- JS initial : **~137 KB** (cible CDC §19.1 : < 500 KB) ✓
+- CSS : **~6,4 KB** (cible : < 50 KB) ✓
+- Chunk PDF lazy : ~493 KB (chargé uniquement au clic « Exporter »)
 
 ---
 
@@ -201,8 +202,8 @@ Bundle production gzippé :
 | Le PDF ne se génère pas dans le navigateur | Console DevTools → chercher `[@react-pdf]`. Probable problème de police absente (Helvetica est intégrée, donc rare). |
 | `localStorage` saturé (modale d'avertissement) | Footer → Réinitialiser, ou DevTools → `localStorage.clear()`. |
 
-Pour tout autre incident, consulter `PROJECT-STATUS.md §10` (limites connues) et `TODO-etape-2.md`.
+Pour tout autre incident, consulter `PROJECT-STATUS.md §9` (limites connues) et `TODO-etape-2.md`.
 
 ---
 
-*Étape 1 livrée — Sprint 5 — cahier des charges v1.3.*
+*Étape 1 livrée + 3 vagues post-livraison (CDC v1.5 addendum) — mai 2026.*

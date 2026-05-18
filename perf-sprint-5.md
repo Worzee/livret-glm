@@ -1,8 +1,7 @@
-# Performance — Sprint 5
+# Performance — bundle et chargement
 
-**Date de mesure** : 2026-05-08
-**Bundle mesuré** : `index-Didtqnc4.js` / `index-xmqICkgX.css`
-**Hash commit** : Sprint 5 — phase A (R10/R22/réinit) + phase B (export PDF lazy) + bugfix R21
+**Dernière mise à jour** : 2026-05-17 (post CDC v1.5 addendum — vague 3)
+**Mesure historique** : 2026-05-08 (Sprint 5 — phase A R10/R22, phase B PDF lazy, bugfix R21)
 
 Référence : cahier des charges v1.3, **§19 (Performance et accessibilité)**.
 
@@ -10,16 +9,25 @@ Référence : cahier des charges v1.3, **§19 (Performance et accessibilité)**.
 
 ## 1. Mesures objectives (CLI)
 
-### 1.1 Taille du bundle de production
+### 1.1 Taille du bundle de production — état courant (2026-05-17)
 
 | Asset | Brut | Gzippé | Cible CDC §19.1 | Statut |
 |---|---|---|---|---|
-| `index.html` | 1,21 KB | 0,64 KB | — | ✓ |
-| `index-*.js` (bundle initial) | 322 KB | **94 KB** | < 500 KB | **✓ marge × 5,3** |
-| `index-*.css` | 24,88 KB | **5,2 KB** | < 50 KB | **✓ marge × 9,6** |
-| `ExportPdfLazy-*.js` (chunk lazy) | 1 481 KB | 495 KB | n/a (lazy-loaded au clic) | acceptable |
+| `index.html` | 1,23 KB | 0,66 KB | — | ✓ |
+| `index-*.js` (bundle initial) | 520 KB | **137 KB** | < 500 KB | **✓ marge × 3,6** |
+| `index-*.css` | 32,5 KB | **6,4 KB** | < 50 KB | **✓ marge × 7,8** |
+| `ExportPdfLazy-*.js` (chunk lazy) | 1 475 KB | 493 KB | n/a (lazy-loaded au clic) | acceptable |
 
-→ **Bundle initial total transmis : ~100 KB gzippé** (HTML + JS + CSS).
+→ **Bundle initial total transmis : ~144 KB gzippé** (HTML + JS + CSS).
+
+**Évolution depuis Sprint 5** : +43 KB JS gzip absorbés par les 3 vagues post-livraison (administration métier complète, banque de questions, établissements + Pronote, sélection compétences par stagiaire). Marge versus la cible CDC reste large (× 3,6).
+
+### 1.1bis Snapshot historique Sprint 5 (2026-05-08)
+
+| Asset | Brut | Gzippé |
+|---|---|---|
+| `index-Didtqnc4.js` | 322 KB | 94 KB |
+| `index-xmqICkgX.css` | 24,88 KB | 5,2 KB |
 
 Le chunk `ExportPdfLazy` contient `@react-pdf/renderer` (~1,4 MB minifié) et n'est chargé
 que **lors du premier clic sur « Exporter le livret »**. Les utilisateurs qui consultent le
@@ -91,14 +99,14 @@ Cibles à valider :
 
 ---
 
-## 3. Statut sprint 5
+## 3. Statut courant (post-livraison CDC v1.5)
 
 | Item | État |
 |---|---|
-| Bundle initial < 500 KB gzip | ✅ 94 KB (marge 5×) |
-| Bundle CSS < 50 KB gzip | ✅ 5,2 KB (marge 9×) |
+| Bundle initial < 500 KB gzip | ✅ 137 KB (marge × 3,6) |
+| Bundle CSS < 50 KB gzip | ✅ 6,4 KB (marge × 7,8) |
 | Code-splitting du PDF | ✅ chunk lazy `ExportPdfLazy` |
-| TTFB acceptable | ✅ ~80 ms VPS Hostinger |
+| TTFB acceptable | ✅ ~80 ms VPS Hostinger (mesure Sprint 5, stable) |
 | Lighthouse performance ≥ 90 (estimé) | 🔵 à confirmer manuellement |
 | Lighthouse a11y ≥ 95 (estimé) | 🔵 à confirmer manuellement |
 | CLS < 0,1 | 🔵 à mesurer en runtime |
@@ -123,7 +131,7 @@ Cibles à valider :
 | Piste | Gain estimé | Coût | Pertinence |
 |---|---|---|---|
 | Préchargement (`modulepreload`) du chunk PDF si le rôle est formateur | -200 ms au clic | faible | moyenne (quelques utilisateurs) |
-| Lazy import par route principale (Évaluation, Entretien, Fiches) | -10 à -20 KB | faible | faible (déjà 94 KB) |
+| Lazy import par route principale (Évaluation, Entretien, Fiches, admin) | -30 à -50 KB | faible | moyenne (gain visible vu 137 KB désormais) |
 | Service worker / mise en cache offline | UX offline | moyen | hors scope étape 1 |
 | HTTP/3 sur Traefik | -50 à -100 ms TTFB | élevé (config) | faible (TTFB déjà < 100 ms) |
 | Préchargement Basic Auth | UX | faible | UX seulement, pas perf |
@@ -132,6 +140,6 @@ Cibles à valider :
 
 ---
 
-*Sprint 5 — étape 1 livrée. Performances mesurées objectivement et largement sous les cibles
-contractuelles. Lighthouse manuel à exécuter avant chaque démo direction pour confirmation
-formelle.*
+*Étape 1 livrée + 3 vagues post-livraison (CDC v1.5). Performances mesurées objectivement et
+largement sous les cibles contractuelles. Lighthouse manuel à exécuter avant chaque démo
+direction pour confirmation formelle.*
