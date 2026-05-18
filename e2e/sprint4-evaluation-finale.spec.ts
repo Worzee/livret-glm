@@ -30,8 +30,9 @@ test("la synthèse hérite des fiches de période (last-write-wins)", async ({ p
   await page.goto('/livret/evaluation-finale');
 
   // La fixture de Léa contient des évaluations sur les fiches → au moins
-  // une cellule porte le badge ✨ "Hérité des fiches".
-  await expect(page.getByText(/Hérité des fiches/i).first()).toBeVisible();
+  // une cellule porte le badge ✨ "Vue en Période N" (N = dernière période
+  // où la cellule a été évaluée, last-write-wins).
+  await expect(page.getByText(/Vue en Période \d+/i).first()).toBeVisible();
 });
 
 test("l'onglet Attitudes affiche la grille du référentiel", async ({ page }) => {

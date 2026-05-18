@@ -63,7 +63,25 @@ describe('synthetiserCompetences', () => {
       fiche(2, [{ competenceId: 'c1', evaluationGreta: 'maitrise', evaluationEntreprise: 'maitrise' }]),
     ];
     const s = synthetiserCompetences(fiches, referentiel);
-    expect(s.get('c1')).toEqual({ acquisEntreprise: 'maitrise', acquisCentre: 'maitrise' });
+    expect(s.get('c1')?.acquisEntreprise).toBe('maitrise');
+    expect(s.get('c1')?.acquisCentre).toBe('maitrise');
+  });
+
+  it("retourne le numéro de la dernière période d'origine pour chaque côté", () => {
+    const fiches: FicheSuiviPeriode[] = [
+      fiche(1, [{ competenceId: 'c1', evaluationGreta: 'partiel', evaluationEntreprise: 'partiel' }]),
+      fiche(2, [{ competenceId: 'c1', evaluationGreta: 'maitrise' }]),
+      fiche(3, [{ competenceId: 'c1', evaluationEntreprise: 'maitrise' }]),
+    ];
+    const s = synthetiserCompetences(fiches, referentiel);
+    expect(s.get('c1')?.periodeCentre).toBe(2); // dernière éval Greta : période 2
+    expect(s.get('c1')?.periodeEntreprise).toBe(3); // dernière éval entreprise : période 3
+  });
+
+  it("ne renseigne pas de période d'origine si aucune éval n'a eu lieu", () => {
+    const s = synthetiserCompetences([], referentiel);
+    expect(s.get('c1')?.periodeCentre).toBeUndefined();
+    expect(s.get('c1')?.periodeEntreprise).toBeUndefined();
   });
 
   it("ignore les lignes ad-hoc (competenceId null)", () => {
@@ -90,7 +108,10 @@ describe('synthetiserCompetences', () => {
       fiche(2, [{ competenceId: 'c1', evaluationGreta: null, evaluationEntreprise: 'partiel' }]),
     ];
     const s = synthetiserCompetences(fiches, referentiel);
-    expect(s.get('c1')).toEqual({ acquisEntreprise: 'partiel', acquisCentre: 'maitrise' });
+    expect(s.get('c1')?.acquisEntreprise).toBe('partiel');
+    expect(s.get('c1')?.acquisCentre).toBe('maitrise');
+    expect(s.get('c1')?.periodeCentre).toBe(1);
+    expect(s.get('c1')?.periodeEntreprise).toBe(2);
   });
 
   it("trie les fiches par numéro de période avant agrégation", () => {
@@ -117,16 +138,26 @@ describe('valeurEffective', () => {
     expect(r).toEqual({ valeur: 'maitrise', source: 'manuelle' });
   });
 
-  it("retourne la valeur héritée si la saisie manuelle est null", () => {
+  it("retourne la valeur héritée + le numéro de période si la saisie manuelle est null", () => {
     const synth = new Map([
-      ['c1', { acquisEntreprise: 'partiel' as const, acquisCentre: 'partiel' as const }],
+      [
+        'c1',
+        {
+          acquisEntreprise: 'partiel' as const,
+          acquisCentre: 'partiel' as const,
+          periodeEntreprise: 2,
+          periodeCentre: 3,
+        },
+      ],
     ]);
     const r = valeurEffective(
       { competenceId: 'c1', acquisEntreprise: null, acquisCentre: null },
       synth,
       'acquisEntreprise',
     );
-    expect(r).toEqual({ valeur: 'partiel', source: 'synthese' });
+    expect(r.valeur).toBe('partiel');
+    expect(r.source).toBe('synthese');
+    expect(r.numeroPeriode).toBe(2);
   });
 
   it("retourne aucune si manuel ET synthèse sont null", () => {

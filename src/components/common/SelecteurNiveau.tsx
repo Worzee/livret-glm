@@ -1,4 +1,4 @@
-import { Check, CircleDashed, CircleDot, X } from 'lucide-react';
+import { Check, CircleDashed, CircleDot, Minus, X } from 'lucide-react';
 import type { NiveauMaitrise, NiveauMaitriseEntreprise } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -9,9 +9,13 @@ import { cn } from '@/lib/utils';
  * - Mode `greta` : 3 niveaux (Maîtrisé, Partiel, Non maîtrisé)
  * - Mode `entreprise` : 4 niveaux (idem + Non fait)
  *
+ * En mode édition, un bouton supplémentaire « Non renseigné » permet de
+ * remettre la cellule à `null` (utile pour ré-activer l'héritage depuis les
+ * fiches sur la grille finale, ou pour effacer une saisie par erreur).
+ *
  * Affichage :
- *   - lecture : pastille colorée + libellé
- *   - édition : 3-4 boutons radio horizontaux compacts
+ *   - lecture : pastille colorée + libellé (ou « Non renseigné » si null)
+ *   - édition : 3-4 boutons de niveau + 1 bouton « Non renseigné »
  */
 
 type Niveau = NiveauMaitriseEntreprise; // surensemble qui contient 'non-fait'
@@ -87,7 +91,7 @@ export function SelecteurNiveau({
     if (valeur === null) {
       return (
         <span className={cn('inline-flex items-center gap-1.5 text-xs text-muted-foreground', className)}>
-          <CircleDashed className="h-3.5 w-3.5" aria-hidden="true" />
+          <Minus className="h-3.5 w-3.5" aria-hidden="true" />
           Non renseigné
         </span>
       );
@@ -144,6 +148,23 @@ export function SelecteurNiveau({
           </button>
         );
       })}
+      <button
+        type="button"
+        role="radio"
+        aria-checked={valeur === null}
+        onClick={() => onChange?.(null)}
+        title="Effacer la saisie — la valeur reviendra à « Non renseigné » (ou à l'héritage des fiches si applicable)."
+        className={cn(
+          'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium transition-colors',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+          valeur === null
+            ? 'bg-secondary text-muted-foreground border-transparent'
+            : 'border-border bg-background text-muted-foreground hover:bg-secondary',
+        )}
+      >
+        <Minus className="h-3.5 w-3.5" aria-hidden="true" />
+        <span>Non renseigné</span>
+      </button>
     </div>
   );
 }

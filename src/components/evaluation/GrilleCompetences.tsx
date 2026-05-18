@@ -31,8 +31,8 @@ import { cn } from '@/lib/utils';
  *   - Acquis en centre (saisie formateur référent)
  *
  * Les valeurs non saisies héritent par défaut de la synthèse calculée à partir
- * des fiches de suivi (last-write-wins). Le badge "Hérité" signale visuellement
- * cette source de donnée pour respecter la transparence demandée.
+ * des fiches de suivi (last-write-wins). Le badge "Vue en Période N" signale
+ * visuellement la source du report pour respecter la transparence demandée.
  */
 
 interface GrilleCompetencesProps {
@@ -258,7 +258,9 @@ function CelluleNiveau({
       {eff.source === 'synthese' && (
         <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs italic text-muted-foreground">
           <Sparkles className="h-3 w-3 shrink-0" aria-hidden="true" />
-          Hérité des fiches
+          {eff.numeroPeriode !== undefined
+            ? `Vue en Période ${eff.numeroPeriode}`
+            : 'Vue dans les fiches'}
         </span>
       )}
     </div>

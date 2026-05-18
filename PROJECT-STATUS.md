@@ -14,7 +14,7 @@
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
-| **Tests unitaires** | **342 / 342 ✓** (Vitest, 26 fichiers de test pour 28 modules `lib/`) |
+| **Tests unitaires** | **344 / 344 ✓** (Vitest, 26 fichiers de test pour 28 modules `lib/`) |
 | **Tests E2E** | **131 / 131 ✓** (Playwright — 119 desktop + 12 mobile Pixel 5, 18 specs) |
 | **Bundle JS gzippé** | 137 KB (cible CDC §19.1 : < 500 KB → marge × 3,6) |
 | **Bundle CSS gzippé** | 6,4 KB (cible : < 50 KB → marge × 7) |
@@ -238,6 +238,13 @@ Audit Playwright Pixel 5 (393×851) sur 11 captures fullPage + viewport. Correct
 
 Helper `peutEncoreEditerFiche(fiche, role)` dans `lib/transitions-fiche.ts` (6 tests TDD) — empêche un rôle de modifier ses zones après avoir signé. Mention UI explicite « Figée par signature ».
 
+#### Polish grille finale — badge « Vue en Période N » + bouton « Non renseigné » (18 mai 2026)
+
+Deux améliorations UX sur la grille d'évaluation finale des compétences :
+
+1. **Badge plus précis** : le label « Hérité des fiches » devient **« Vue en Période N »** où N est le numéro de la dernière période où la cellule a été évaluée (last-write-wins). `synthetiserCompetences` retourne désormais `periodeEntreprise/periodeCentre` dans la synthèse, et `valeurEffective` propage `numeroPeriode` quand la source est `synthese`. 2 tests TDD ajoutés.
+2. **Bouton « Non renseigné » dans `SelecteurNiveau`** : permet de remettre explicitement une cellule à `null` (efface une saisie manuelle, ré-active l'héritage le cas échéant). Cohérent avec le toggle implicite déjà en place. Apparaît partout où `SelecteurNiveau` est utilisé (grille finale + fiches période).
+
 #### Bugfix tableau de bord — badge « Désaccord en cours » persistant (18 mai 2026)
 
 Le badge « Désaccord en cours » restait affiché pour un·e apprenti·e après que la fiche déverrouillée (R10) ait été re-signée par les 3 parties. Le calcul du cas pédagogique dans `lib/etat-livret.ts` regardait uniquement `historiqueDeverrouillages.length > 0` (trace d'audit), sans vérifier si la fiche correspondante était encore dans un état non-signé.
@@ -300,7 +307,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées :
 | `lib/validation-signature.test.ts` | 11 | R18/R20 par rôle |
 | `lib/regles-periode.test.ts` | 18 | R11/R12/R13 + R14 assouplie (avertissement liste les parties manquantes — CDC v1.5 §14.B) |
 | `lib/regles-entretien.test.ts` | 19 | R7/R8/R9 + progression (adapté aux questions sélectionnées) |
-| `lib/synthese-evaluation.test.ts` | 9 | Last-write-wins fiches → finales |
+| `lib/synthese-evaluation.test.ts` | 11 | Last-write-wins fiches → finales + numéro de période source (badge « Vue en Période N ») |
 | `lib/stats-bloc.test.ts` | 6 | Compte des niveaux par bloc |
 | `lib/import-referentiel.test.ts` | 24 | Parsing CSV (encodage CP1252, 2/3 cols, robustesse) |
 | `lib/cloture-livret.test.ts` | 14 | R22 |
@@ -548,7 +555,7 @@ npm run dev            # serveur Vite sur http://localhost:5173
 ### Tests / qualité
 
 ```bash
-npm test               # 342 tests Vitest
+npm test               # 344 tests Vitest
 npm run e2e            # 131 tests E2E Playwright (build + preview + tests)
 npm run e2e:ui         # UI Playwright pour debug
 npm run typecheck      # tsc --noEmit
