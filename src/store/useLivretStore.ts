@@ -16,7 +16,6 @@ import type {
   LigneSuiviGreta,
   Livret,
   MotifOrganisationSuivi,
-  NiveauMaitrise,
   NiveauMaitriseEntreprise,
   ObservationsFiche,
   ValeurReponseEntretien,
@@ -77,7 +76,7 @@ interface LivretStore {
     ficheId: string,
     ligneId: string,
     champ:
-      | { type: 'evaluationGreta'; valeur: NiveauMaitrise | null }
+      | { type: 'evaluationGreta'; valeur: NiveauMaitriseEntreprise | null }
       | { type: 'evaluationEntreprise'; valeur: NiveauMaitriseEntreprise | null }
       | { type: 'retourApprenti'; valeur: string },
   ) => void;
