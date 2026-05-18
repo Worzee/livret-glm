@@ -14,7 +14,7 @@
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
-| **Tests unitaires** | **337 / 337 ✓** (Vitest, 26 fichiers de test pour 28 modules `lib/`) |
+| **Tests unitaires** | **342 / 342 ✓** (Vitest, 26 fichiers de test pour 28 modules `lib/`) |
 | **Tests E2E** | **131 / 131 ✓** (Playwright — 119 desktop + 12 mobile Pixel 5, 18 specs) |
 | **Bundle JS gzippé** | 137 KB (cible CDC §19.1 : < 500 KB → marge × 3,6) |
 | **Bundle CSS gzippé** | 6,4 KB (cible : < 50 KB → marge × 7) |
@@ -306,7 +306,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées :
 | `lib/cloture-livret.test.ts` | 14 | R22 |
 | `lib/deverrouillage-fiche.test.ts` | 8 | R10 |
 | `lib/apprentis-accessibles.test.ts` | 18 | Filtre par rôle (R3) + tri fr-FR + recherche normalisée |
-| `lib/etat-livret.test.ts` | 8 | Cas pédagogiques 6 apprenti·e·s + désaccord résolu après re-signature |
+| `lib/etat-livret.test.ts` | 13 | Cas pédagogiques 6 apprenti·e·s + désaccord résolu + audit des **5 transitions** (démarrage↔en-cours, en-cours↔toutes-signees, toutes-signees↔desaccord, alerte-r7↔autre) |
 | `lib/validation-apprenti.test.ts` | 9 | Saisie apprenti·e (avertissement RQTH) |
 | `lib/validation-utilisateur-staff.test.ts` | 6 | Validation maître/formateur/coordo |
 | `lib/affectation-verrou.test.ts` | 7 | Verrou affectation |
@@ -548,7 +548,7 @@ npm run dev            # serveur Vite sur http://localhost:5173
 ### Tests / qualité
 
 ```bash
-npm test               # 337 tests Vitest
+npm test               # 342 tests Vitest
 npm run e2e            # 131 tests E2E Playwright (build + preview + tests)
 npm run e2e:ui         # UI Playwright pour debug
 npm run typecheck      # tsc --noEmit
