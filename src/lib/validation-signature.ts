@@ -7,7 +7,9 @@ import type { FicheSuiviPeriode, Role } from '@/types';
  * Tableau §8.4 — champs requis par rôle pour signer une fiche de période :
  *
  *   Apprenti·e  : ≥ 1 entrée "retour apprenti·e" + zone observation apprenti non vide
- *   Maître      : ≥ 1 compétence évaluée (col entreprise) + zone observation maître non vide
+ *   Maître      : ≥ 1 compétence **réellement abordée** (col entreprise, valeur
+ *                 autre que `null` et autre que `non-fait`) + zone observation
+ *                 maître non vide
  *   Formateur   : ≥ 1 entrée "suivi GRETA CFA" + ≥ 1 compétence évaluée (col centre) +
  *                 zone observation formateur non vide
  */
@@ -57,11 +59,16 @@ export function validerSignature(
     }
 
     case 'maitre': {
-      const auMoinsUneEval = fiche.suiviEntreprise.some(
-        (l) => l.evaluationEntreprise !== null,
+      // Une compétence est « réellement abordée » si elle a été évaluée avec
+      // un niveau de maîtrise — `'non-fait'` ne compte pas (signale que la
+      // compétence n'a pas pu être travaillée pendant la période).
+      const auMoinsUneAbordee = fiche.suiviEntreprise.some(
+        (l) => l.evaluationEntreprise !== null && l.evaluationEntreprise !== 'non-fait',
       );
-      if (!auMoinsUneEval) {
-        raisons.push("Évaluez au moins une compétence dans la colonne « Évaluation entreprise ».");
+      if (!auMoinsUneAbordee) {
+        raisons.push(
+          "Évaluez au moins une compétence abordée dans la colonne « Évaluation entreprise » (autre que « Non fait »).",
+        );
       }
       if (!fiche.observations.maitre || fiche.observations.maitre.trim().length === 0) {
         raisons.push('La zone d\'observation maître d\'apprentissage est vide.');

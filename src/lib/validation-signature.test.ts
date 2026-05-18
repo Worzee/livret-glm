@@ -99,6 +99,56 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
       f.observations.maitre = 'Progrès constants.';
       expect(validerSignature(f, 'maitre').peutSigner).toBe(true);
     });
+
+    it("rejette la signature si la seule éval entreprise est « Non fait »", () => {
+      // « Non fait » signale une compétence non abordée durant la période —
+      // ce n'est pas une évaluation utilisable. Il faut au moins une
+      // compétence réellement abordée pour pouvoir signer.
+      const f = ficheBase();
+      f.suiviEntreprise = [
+        {
+          id: 'l1',
+          competenceId: 'c1',
+          evaluationGreta: null,
+          evaluationEntreprise: 'non-fait',
+          retourApprenti: '',
+        },
+        {
+          id: 'l2',
+          competenceId: 'c2',
+          evaluationGreta: null,
+          evaluationEntreprise: 'non-fait',
+          retourApprenti: '',
+        },
+      ];
+      f.observations.maitre = 'Période courte.';
+      const r = validerSignature(f, 'maitre');
+      expect(r.peutSigner).toBe(false);
+      expect(r.raisons.some((m) => /abord[ée]e/i.test(m))).toBe(true);
+    });
+
+    it("autorise la signature dès qu'une éval entreprise est autre que « Non fait »", () => {
+      // Mix « Non fait » + une vraie éval → signature autorisée.
+      const f = ficheBase();
+      f.suiviEntreprise = [
+        {
+          id: 'l1',
+          competenceId: 'c1',
+          evaluationGreta: null,
+          evaluationEntreprise: 'non-fait',
+          retourApprenti: '',
+        },
+        {
+          id: 'l2',
+          competenceId: 'c2',
+          evaluationGreta: null,
+          evaluationEntreprise: 'maitrise',
+          retourApprenti: '',
+        },
+      ];
+      f.observations.maitre = 'Une compétence maîtrisée, le reste à voir.';
+      expect(validerSignature(f, 'maitre').peutSigner).toBe(true);
+    });
   });
 
   describe('Formateur référent', () => {

@@ -14,7 +14,7 @@
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
-| **Tests unitaires** | **344 / 344 ✓** (Vitest, 26 fichiers de test pour 28 modules `lib/`) |
+| **Tests unitaires** | **346 / 346 ✓** (Vitest, 26 fichiers de test pour 28 modules `lib/`) |
 | **Tests E2E** | **131 / 131 ✓** (Playwright — 119 desktop + 12 mobile Pixel 5, 18 specs) |
 | **Bundle JS gzippé** | 137 KB (cible CDC §19.1 : < 500 KB → marge × 3,6) |
 | **Bundle CSS gzippé** | 6,4 KB (cible : < 50 KB → marge × 7) |
@@ -238,6 +238,12 @@ Audit Playwright Pixel 5 (393×851) sur 11 captures fullPage + viewport. Correct
 
 Helper `peutEncoreEditerFiche(fiche, role)` dans `lib/transitions-fiche.ts` (6 tests TDD) — empêche un rôle de modifier ses zones après avoir signé. Mention UI explicite « Figée par signature ».
 
+#### Renforcement R20 — signature maître exige au moins une compétence abordée (18 mai 2026)
+
+Le maître d'apprentissage ne peut désormais signer sa fiche de période que si **au moins une compétence** dans la colonne « Évaluation entreprise » a été évaluée avec une vraie valeur (`maitrise` / `partiel` / `non-maitrise`). La valeur `non-fait` (« compétence non abordée pendant la période ») ne suffit plus à débloquer la signature, car elle ne représente pas une évaluation.
+
+Le message d'erreur est explicite : *« Évaluez au moins une compétence abordée dans la colonne "Évaluation entreprise" (autre que "Non fait"). »*. 2 tests TDD ajoutés (`validation-signature.test.ts`).
+
 #### Polish grille finale — badge « Vue en Période N » + bouton « Non renseigné » (18 mai 2026)
 
 Deux améliorations UX sur la grille d'évaluation finale des compétences :
@@ -304,7 +310,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées :
 |---|---|---|
 | `lib/droits.test.ts` | 38 | Matrice **47 ressources × 5 rôles**, cohérence transverse (+ entretien.selection-competences-entreprise — co-édition formateur+maître) |
 | `lib/transitions-fiche.test.ts` | 20 | R15/R16/R17/R21 |
-| `lib/validation-signature.test.ts` | 11 | R18/R20 par rôle |
+| `lib/validation-signature.test.ts` | 13 | R18/R20 par rôle + R20 maître : exclusion de « Non fait » des compétences abordées |
 | `lib/regles-periode.test.ts` | 18 | R11/R12/R13 + R14 assouplie (avertissement liste les parties manquantes — CDC v1.5 §14.B) |
 | `lib/regles-entretien.test.ts` | 19 | R7/R8/R9 + progression (adapté aux questions sélectionnées) |
 | `lib/synthese-evaluation.test.ts` | 11 | Last-write-wins fiches → finales + numéro de période source (badge « Vue en Période N ») |
@@ -555,7 +561,7 @@ npm run dev            # serveur Vite sur http://localhost:5173
 ### Tests / qualité
 
 ```bash
-npm test               # 344 tests Vitest
+npm test               # 346 tests Vitest
 npm run e2e            # 131 tests E2E Playwright (build + preview + tests)
 npm run e2e:ui         # UI Playwright pour debug
 npm run typecheck      # tsc --noEmit
