@@ -1,6 +1,6 @@
 # État du projet — Livret d'apprentissage GRETA Lyon Métropole
 
-**Dernière mise à jour** : 2026-05-17
+**Dernière mise à jour** : 2026-05-18
 **Version applicative** : 0.1.0
 **Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3) **livrée + extensions métier post-livraison**
 **Pilote métier** : Guillaume FERRERI
@@ -14,7 +14,7 @@
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
-| **Tests unitaires** | **332 / 332 ✓** (Vitest, 26 fichiers de test pour 28 modules `lib/`) |
+| **Tests unitaires** | **336 / 336 ✓** (Vitest, 26 fichiers de test pour 28 modules `lib/`) |
 | **Tests E2E** | **131 / 131 ✓** (Playwright — 119 desktop + 12 mobile Pixel 5, 18 specs) |
 | **Bundle JS gzippé** | 137 KB (cible CDC §19.1 : < 500 KB → marge × 3,6) |
 | **Bundle CSS gzippé** | 6,4 KB (cible : < 50 KB → marge × 7) |
@@ -238,6 +238,16 @@ Audit Playwright Pixel 5 (393×851) sur 11 captures fullPage + viewport. Correct
 
 Helper `peutEncoreEditerFiche(fiche, role)` dans `lib/transitions-fiche.ts` (6 tests TDD) — empêche un rôle de modifier ses zones après avoir signé. Mention UI explicite « Figée par signature ».
 
+#### R13 assouplie + R14 activée (18 mai 2026)
+
+Création de la période N autorisée même si N-1 n'est pas signée. Seule l'absence d'entretien tripartite reste bloquante. La modale `ModaleFichePeriode` affiche un **bandeau ambre** sous le champ Date de début listant les parties qui n'ont pas encore signé la N-1 (apprenti·e / maître d'apprentissage / formateur·rice référent·e), avec le message :
+
+> *« La période N n'a pas encore été signée par … Vous pouvez créer la nouvelle période, mais pensez à finaliser la précédente (R14). »*
+
+Motivation : sur le terrain, les périodes d'alternance sont calendaires (planning CFA), pas conditionnées par la signature. Bloquer la P2 jusqu'à signature de P1 paralysait l'apprenti·e en cas de retard d'un signataire (maître en vacances, oubli, etc.). Le mécanisme s'aligne sur l'**intention originelle du v1.3** qui spécifiait R14 comme avertissement (en contradiction avec R13 strict). Détail complet : [CDC v1.5 §14.B](cahier-des-charges-livret-apprentissage-v1.5-addendum.md).
+
+Implémentation : `verifierCreationPeriode` peuple `avertissements[]` quand N-1 n'est pas en `signee`/`verrouillee` ; `validation-fiche-periode` propage dans `avertissements.dateDebut` ; la modale affiche via le mécanisme `Champ` déjà en place (bordure ambre + ⚠). 4 tests TDD sur `regles-periode` + 1 sur `validation-fiche-periode`.
+
 ---
 
 ## 5. Règles métier R1 → R24
@@ -258,8 +268,8 @@ Toutes les règles du CDC v1.3 sont implémentées et testées :
 | **R10** | **Déverrouillage formateur + motif** | ✓ 8 tests TDD + modale UI + traçabilité |
 | R11 | `dateFin > dateDebut` période | ✓ 3 tests |
 | R12 | Pas de chevauchement | ✓ 4 tests |
-| R13 | Création période N | ✓ 5 tests |
-| R14 | Avertissement N créée avant N-1 signée | ✓ |
+| R13 | Création période N (bloquant uniquement si entretien absent) | ✓ 5 tests |
+| **R14** | **Avertissement N créée avant N-1 signée — non bloquant, parties listées** | ✓ 4 tests TDD (CDC v1.5 §14.B) |
 | R15 | 3 signatures fiche = signée | ✓ 3 tests |
 | R16 | brouillon → en-cours auto | ✓ 2 tests |
 | R17 | 15 j sans modif → verrouillée | ✓ 3 tests + bouton manuel |
@@ -282,7 +292,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées :
 | `lib/droits.test.ts` | 38 | Matrice **47 ressources × 5 rôles**, cohérence transverse (+ entretien.selection-competences-entreprise — co-édition formateur+maître) |
 | `lib/transitions-fiche.test.ts` | 20 | R15/R16/R17/R21 |
 | `lib/validation-signature.test.ts` | 11 | R18/R20 par rôle |
-| `lib/regles-periode.test.ts` | 15 | R11/R12/R13 |
+| `lib/regles-periode.test.ts` | 18 | R11/R12/R13 + R14 assouplie (avertissement liste les parties manquantes — CDC v1.5 §14.B) |
 | `lib/regles-entretien.test.ts` | 19 | R7/R8/R9 + progression (adapté aux questions sélectionnées) |
 | `lib/synthese-evaluation.test.ts` | 9 | Last-write-wins fiches → finales |
 | `lib/stats-bloc.test.ts` | 6 | Compte des niveaux par bloc |
@@ -300,7 +310,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées :
 | `lib/referentiel-verrou.test.ts` | 4 | Verrou suppression référentiel |
 | `lib/parser-xlsx.test.ts` | 16 | Parser XLSX + tests d'intégration sur les 4 fichiers exemples du pilote |
 | `lib/selection-competences-entreprise.test.ts` | 24 | Sélection par livret (création vierge, validation, invalidation R10 motivée, toggle immuable, nettoyage post-MAJ référentiel, identification des saisies historiques pour option a1) |
-| `lib/validation-fiche-periode.test.ts` | 15 | Saisie fiche + `peutSupprimer` + `libelleFichePeriode` |
+| `lib/validation-fiche-periode.test.ts` | 16 | Saisie fiche + `peutSupprimer` + `libelleFichePeriode` + propagation avertissement R14 |
 | `lib/organisation-suivi.test.ts` | 13 | Catalogue motifs + helpers + verrou `peutSupprimerEvenement` |
 | `lib/questions-entretien.test.ts` | 14 | Catalogue 11 questions par défaut (formulation neutre) + helpers |
 | `lib/etablissement-verrou.test.ts` | 4 | Verrou suppression d'un établissement référencé par une formation |
@@ -465,9 +475,9 @@ Une note de renvoi a été ajoutée au §31 du v1.3 (Journal des versions) pour 
 
 Question initialement ouverte (« doit-on griser la colonne entreprise pour les compétences non abordées ? »), elle a été refondue en un chantier complet : passage du flag au niveau **livret** (par stagiaire) avec validation conjointe à l'entretien tripartite. Voir la section « Sélection des compétences abordées en entreprise — par stagiaire » dans §4 (post-livraison mai 2026).
 
-### C. R13 — choix de gouvernance (à arbitrer)
+### C. ~~R13 — choix de gouvernance~~ ✅ tranché et livré (18 mai 2026)
 
-R13 reste actuellement bloquante : on ne peut créer la période N que si la N-1 est signée. À décider avec le pilote : faut-il l'assouplir en avertissement non-bloquant ?
+R13 a été **assouplie** : seule l'absence d'entretien tripartite reste bloquante. La création de la période N est désormais autorisée même si N-1 n'est pas signée, avec un **avertissement R14 non bloquant** sous le champ Date de début listant les parties manquantes (apprenti·e / maître d'apprentissage / formateur·rice référent·e). Voir [CDC v1.5 §14.B](cahier-des-charges-livret-apprentissage-v1.5-addendum.md) pour la motivation complète.
 
 ### D. Pistes d'évolution discutées, non engagées
 
@@ -532,8 +542,8 @@ npm run dev            # serveur Vite sur http://localhost:5173
 ### Tests / qualité
 
 ```bash
-npm test               # 313 tests Vitest
-npm run e2e            # 126 tests E2E Playwright (build + preview + tests)
+npm test               # 336 tests Vitest
+npm run e2e            # 131 tests E2E Playwright (build + preview + tests)
 npm run e2e:ui         # UI Playwright pour debug
 npm run typecheck      # tsc --noEmit
 npm run lint           # ESLint
@@ -593,13 +603,11 @@ L'étape 1 du CDC v1.3 est **livrée et fonctionnelle**, étendue par 3 vagues p
 
 Il reste à faire :
 
-1. **Arbitrage métier ouvert** (cf. §8.C) :
-   - R13 stricte ou avertissement — la création de la période N est-elle bloquante tant que N-1 n'est pas signée, ou simple avertissement ?
-2. **Sécurité VPS** — actions côté pilote (clé SSH, désactivation password auth — cf. §8.E)
-3. **Étape 2** (hors CDC actuel) : authentification réelle, notifications email, multi-établissement, signature manuscrite tactile (cf. §8.D), mécanisme de re-validation conjointe après invalidation R10 (la maquette autorise actuellement le formateur seul à figer une sélection revue après invalidation).
+1. **Sécurité VPS** — actions côté pilote (clé SSH, désactivation password auth — cf. §8.E)
+2. **Étape 2** (hors CDC actuel) : authentification réelle, notifications email, multi-établissement, signature manuscrite tactile (cf. §8.D), mécanisme de re-validation conjointe après invalidation R10 (la maquette autorise actuellement le formateur seul à figer une sélection revue après invalidation).
 
 ✅ **CDC v1.5 formalisé** : voir [`cahier-des-charges-livret-apprentissage-v1.5-addendum.md`](cahier-des-charges-livret-apprentissage-v1.5-addendum.md).
 
 ---
 
-*Étape 1 livrée + 3 vagues post-livraison (CDC v1.5) : administration métier complète (CRUD 4 rôles + formations + affectations + référentiels CSV/XLSX + banque de questions + établissements + Pronote WEB) ; organisation du suivi modulaire ; entretien tripartite avec banque de questions configurable ; sélection des compétences abordées en entreprise par stagiaire avec validation conjointe à la 3ᵉ signature ; trio contextuel ; audit mobile complet ; renommages UI cohérents.*
+*Étape 1 livrée + 3 vagues post-livraison (CDC v1.5) : administration métier complète (CRUD 4 rôles + formations + affectations + référentiels CSV/XLSX + banque de questions + établissements + Pronote WEB) ; organisation du suivi modulaire ; entretien tripartite avec banque de questions configurable ; sélection des compétences abordées en entreprise par stagiaire avec validation conjointe à la 3ᵉ signature ; **R13 assouplie + R14 activée** (création de période N autorisée si N-1 non signée, avertissement non bloquant) ; trio contextuel ; audit mobile complet ; renommages UI cohérents.*

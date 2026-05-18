@@ -71,12 +71,18 @@ export function validerSaisieFichePeriode(
     }
   }
 
-  // R13 ne s'applique qu'à la création (pas à la simple édition de titre/dates
-  // d'une fiche existante).
+  // R13 + R14 ne s'appliquent qu'à la création (pas à la simple édition de
+  // titre/dates d'une fiche existante).
   if (!enEditionPourFicheId) {
     const creerOk = verifierCreationPeriode(fichesAutres, entretienExiste);
     if (!creerOk.ok && !erreurs.dateDebut) {
       erreurs.dateDebut = creerOk.raisons[0] ?? 'Création non autorisée.';
+    }
+    // R14 : avertissement non bloquant si la N-1 n'est pas encore signée. On
+    // ne le pose pas si dateDebut porte déjà une erreur (R12 chevauchement ou
+    // R13 entretien absent) — l'erreur est plus prioritaire visuellement.
+    if (creerOk.avertissements.length > 0 && !erreurs.dateDebut) {
+      avertissements.dateDebut = creerOk.avertissements[0];
     }
   }
 

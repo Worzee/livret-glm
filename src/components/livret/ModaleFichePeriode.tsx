@@ -165,6 +165,7 @@ export function ModaleFichePeriode({
               valeur={saisie.dateDebut}
               onChange={(v) => setSaisie((s) => ({ ...s, dateDebut: v }))}
               erreur={erreurs.dateDebut}
+              avertissement={avertissements.dateDebut}
               obligatoire
               testId="periode-date-debut"
             />

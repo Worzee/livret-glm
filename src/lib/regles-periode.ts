@@ -61,11 +61,17 @@ export function verifierDatesPeriode(
  * R13 + R14 : autorisation de création d'une période N.
  *
  * Conditions :
- *   - L'entretien tripartite doit exister (objet non null) — bloquant (R13)
- *   - La période N-1 doit être `signee` ou `verrouillee` — bloquant (R13)
- *   - Avertissement (R14) si la période N-1 n'est pas signée par les 3 parties.
- *     (En l'état actuel du modèle, "signee" implique 3 signatures, donc cet
- *      avertissement vise les futurs cas d'arbitrage humain.)
+ *   - L'entretien tripartite doit exister (objet non null) — **bloquant** (R13).
+ *   - La période N-1 doit exister (implicite : le numéro est attribué par
+ *     incrément depuis la dernière fiche existante).
+ *   - Si N-1 n'est pas en état `signee`/`verrouillee` : **avertissement
+ *     non bloquant** (R14) listant les parties qui n'ont pas encore signé.
+ *     Permet de créer la N même si le maître ou le formateur·rice tarde à
+ *     signer la N-1 (cas terrain courant : retards de signature pendant que
+ *     l'apprenti·e est déjà physiquement sur la période suivante).
+ *
+ * Quand l'entretien manque (R13), on ne peuple pas l'avertissement R14 : on
+ * remet d'abord la situation administrative en place avant d'attaquer le reste.
  */
 export function verifierCreationPeriode(
   fichesExistantes: FicheSuiviPeriode[],
@@ -78,18 +84,35 @@ export function verifierCreationPeriode(
     raisons.push(
       "Vous ne pouvez pas créer cette période : l'entretien tripartite n'a pas encore été initialisé (R13).",
     );
+    return { ok: false, raisons, avertissements };
   }
 
-  // S'il y a déjà des fiches, la dernière doit être signée ou verrouillée
   if (fichesExistantes.length > 0) {
     const triees = [...fichesExistantes].sort((a, b) => a.numeroPeriode - b.numeroPeriode);
     const derniere = triees[triees.length - 1];
     if (derniere.etat !== 'signee' && derniere.etat !== 'verrouillee') {
-      raisons.push(
-        `La période ${derniere.numeroPeriode} n'est pas encore signée. Terminez-la avant d'en créer une nouvelle (R13).`,
-      );
+      const partiesManquantes: string[] = [];
+      if (!derniere.signatures.apprenti.signe) partiesManquantes.push('apprenti·e');
+      if (!derniere.signatures.maitre.signe) partiesManquantes.push("maître d'apprentissage");
+      if (!derniere.signatures.formateur.signe)
+        partiesManquantes.push('formateur·rice référent·e');
+
+      if (partiesManquantes.length > 0) {
+        avertissements.push(
+          `La période ${derniere.numeroPeriode} n'a pas encore été signée par ${formaterListeFr(
+            partiesManquantes,
+          )}. Vous pouvez créer la nouvelle période, mais pensez à finaliser la précédente (R14).`,
+        );
+      }
     }
   }
 
   return { ok: raisons.length === 0, raisons, avertissements };
+}
+
+/** « a, b et c » — listes énumérées à la française. */
+function formaterListeFr(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? '';
+  if (items.length === 2) return `${items[0]} et ${items[1]}`;
+  return `${items.slice(0, -1).join(', ')} et ${items[items.length - 1]}`;
 }

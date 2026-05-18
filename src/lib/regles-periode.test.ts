@@ -83,40 +83,82 @@ describe('verifierDatesPeriode (R11, R12)', () => {
   });
 });
 
-describe('verifierCreationPeriode (R13)', () => {
+describe('verifierCreationPeriode (R13 bloquant + R14 avertissement)', () => {
   it("R13 : refuse si pas d'entretien tripartite", () => {
     const r = verifierCreationPeriode([], false);
     expect(r.ok).toBe(false);
     expect(r.raisons[0]).toContain("entretien tripartite");
+    expect(r.avertissements).toEqual([]);
   });
 
-  it("autorise la 1ère période dès lors que l'entretien existe", () => {
+  it("autorise la 1ère période dès lors que l'entretien existe, sans avertissement", () => {
     const r = verifierCreationPeriode([], true);
     expect(r.ok).toBe(true);
+    expect(r.avertissements).toEqual([]);
   });
 
-  it("R13 : refuse si la dernière période est encore en-cours", () => {
+  it("R14 : autorise la création si la N-1 est en-cours, mais émet un avertissement", () => {
     const f = fiche(1, '2026-01-01', '2026-01-31', 'en-cours');
     const r = verifierCreationPeriode([f], true);
-    expect(r.ok).toBe(false);
-    expect(r.raisons[0]).toContain('signée');
+    expect(r.ok).toBe(true);
+    expect(r.raisons).toEqual([]);
+    expect(r.avertissements.length).toBe(1);
+    expect(r.avertissements[0]).toContain('La période 1');
+    expect(r.avertissements[0]).toContain("pas encore été signée");
   });
 
-  it("R13 : refuse si la dernière période est en brouillon", () => {
+  it("R14 : autorise la création si la N-1 est en brouillon (jamais ouverte)", () => {
     const f = fiche(1, '2026-01-01', '2026-01-31', 'brouillon');
     const r = verifierCreationPeriode([f], true);
-    expect(r.ok).toBe(false);
+    expect(r.ok).toBe(true);
+    expect(r.avertissements.length).toBe(1);
   });
 
-  it("R13 : autorise si la dernière période est signée", () => {
+  it("R14 : l'avertissement liste les trois parties quand aucune n'a signé", () => {
+    const f = fiche(1, '2026-01-01', '2026-01-31', 'en-cours');
+    const r = verifierCreationPeriode([f], true);
+    expect(r.avertissements[0]).toContain('apprenti·e');
+    expect(r.avertissements[0]).toMatch(/maître d'apprentissage/);
+    expect(r.avertissements[0]).toContain('formateur·rice référent·e');
+  });
+
+  it("R14 : l'avertissement ne mentionne que les parties manquantes", () => {
+    const f: FicheSuiviPeriode = {
+      ...fiche(1, '2026-01-01', '2026-01-31', 'en-cours'),
+      signatures: {
+        apprenti: { signe: true, dateSignature: '2026-02-01' },
+        maitre: { signe: false },
+        formateur: { signe: false },
+      },
+    };
+    const r = verifierCreationPeriode([f], true);
+    expect(r.avertissements[0]).not.toContain('apprenti·e');
+    expect(r.avertissements[0]).toMatch(/maître d'apprentissage/);
+    expect(r.avertissements[0]).toContain('formateur·rice référent·e');
+  });
+
+  it("R13 : autorise sans avertissement si la dernière période est signée", () => {
     const f = fiche(1, '2026-01-01', '2026-01-31', 'signee');
     const r = verifierCreationPeriode([f], true);
     expect(r.ok).toBe(true);
+    expect(r.avertissements).toEqual([]);
   });
 
-  it("R13 : autorise si la dernière période est verrouillée", () => {
+  it("R13 : autorise sans avertissement si la dernière période est verrouillée", () => {
     const f = fiche(1, '2026-01-01', '2026-01-31', 'verrouillee');
     const r = verifierCreationPeriode([f], true);
     expect(r.ok).toBe(true);
+    expect(r.avertissements).toEqual([]);
+  });
+
+  it("R13 : si l'entretien manque, on bloque sans peupler les avertissements R14", () => {
+    // L'absence d'entretien est plus prioritaire : pas la peine d'ajouter du
+    // bruit en signalant la N-1 non signée, l'utilisateur règle d'abord
+    // l'entretien.
+    const f = fiche(1, '2026-01-01', '2026-01-31', 'en-cours');
+    const r = verifierCreationPeriode([f], false);
+    expect(r.ok).toBe(false);
+    expect(r.raisons[0]).toContain("entretien tripartite");
+    expect(r.avertissements).toEqual([]);
   });
 });

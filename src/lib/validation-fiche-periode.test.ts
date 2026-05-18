@@ -98,18 +98,20 @@ describe('validerSaisieFichePeriode', () => {
     expect(r.erreurs.dateDebut).toMatch(/entretien tripartite/i);
   });
 
-  it("refuse la création si la dernière fiche existante n'est pas signée (R13)", () => {
+  it("autorise la création si la N-1 n'est pas signée, mais propage un avertissement R14 sur dateDebut", () => {
     const enCours = fiche(1, '2025-09-01', '2025-12-15', 'en-cours');
     const r = validerSaisieFichePeriode(
       { ...SAISIE_VALIDE, dateDebut: '2026-01-01', dateFin: '2026-04-01' },
       [enCours],
       true,
     );
-    expect(r.ok).toBe(false);
-    expect(r.erreurs.dateDebut).toMatch(/n'est pas encore signée/i);
+    expect(r.ok).toBe(true);
+    expect(r.erreurs.dateDebut).toBeUndefined();
+    expect(r.avertissements.dateDebut).toMatch(/pas encore été signée/i);
+    expect(r.avertissements.dateDebut).toContain('apprenti·e');
   });
 
-  it('autorise la création si la dernière fiche est signée', () => {
+  it('autorise la création si la dernière fiche est signée, sans avertissement', () => {
     const signee = fiche(1, '2025-09-01', '2025-12-15', 'signee');
     const r = validerSaisieFichePeriode(
       { ...SAISIE_VALIDE, dateDebut: '2026-01-01', dateFin: '2026-04-01' },
@@ -117,6 +119,20 @@ describe('validerSaisieFichePeriode', () => {
       true,
     );
     expect(r.ok).toBe(true);
+    expect(r.avertissements.dateDebut).toBeUndefined();
+  });
+
+  it("ne masque pas une erreur de chevauchement par l'avertissement R14", () => {
+    // Si dateDebut a déjà une erreur (chevauchement R12), l'avertissement R14
+    // ne doit pas l'écraser — l'erreur est plus prioritaire visuellement.
+    const enCours = fiche(1, '2025-09-01', '2025-12-15', 'en-cours');
+    const r = validerSaisieFichePeriode(
+      { ...SAISIE_VALIDE, dateDebut: '2025-12-01', dateFin: '2026-02-01' },
+      [enCours],
+      true,
+    );
+    expect(r.ok).toBe(false);
+    expect(r.erreurs.dateDebut).toMatch(/chevauche/i);
   });
 
   it("avertit si le titre est très long sans bloquer", () => {

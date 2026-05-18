@@ -241,7 +241,7 @@ L'URL interne (`/livret/fiches-suivi`) et le nom technique du type (`FicheSuiviP
 Le formateur référent **et le coordo** peuvent maintenant gérer les fiches :
 - Type `FicheSuiviPeriode.titre?: string` (optionnel) — affichage `Période N — <titre>` ou `Période N` seul.
 - Nouvelles ressources matrice : `fiche.creer-periode`, `fiche.modifier-periode`, `fiche.supprimer-periode` (ouvertes aux 2 rôles).
-- Lib `validation-fiche-periode` (15 tests TDD) : titre + dates + R11/R12/R13/R14, mode édition, `peutSupprimerFichePeriode` (refus si verrouillée ou signée).
+- Lib `validation-fiche-periode` (16 tests TDD) : titre + dates + R11/R12/R13/R14, mode édition, `peutSupprimerFichePeriode` (refus si verrouillée ou signée). **R13 assouplie + R14 activée** (cf. §14.B) : la création de N est autorisée même si N-1 n'est pas signée, avec avertissement non bloquant sur dateDebut listant les parties manquantes.
 - Composant `ModaleFichePeriode` + bouton « + Nouvelle période » + boutons modifier/supprimer par carte (confirmation 2 clics).
 
 ### Sous-fiche « Suivi de la formation au GRETA CFA »
@@ -653,9 +653,19 @@ Points en attente de décision pilote (issus du §8 du PROJECT-STATUS.md) :
 
 Refonte complète — cf. §12 « Sélection par stagiaire des compétences abordées en entreprise ». La question initiale (« doit-on griser la colonne entreprise pour les compétences non abordées ? ») a évolué en un chantier de fond : le choix passe **au niveau du livret** (par stagiaire) avec validation conjointe formateur+maître à la 3ᵉ signature de l'entretien.
 
-### 14.B — R13 : choix de gouvernance
+### 14.B — ~~R13 : choix de gouvernance~~ ✅ tranché et livré (18 mai 2026)
 
-R13 (création période N nécessite que N-1 soit signée) reste actuellement **bloquante**. À décider : l'assouplir en avertissement non-bloquant (le formateur peut créer N même si N-1 non signée, à ses risques) ?
+R13 a été **assouplie** : seule l'absence d'entretien tripartite reste bloquante. La création de la période N est désormais autorisée même si N-1 n'est pas encore signée, accompagnée d'un **avertissement R14 non bloquant** listant les parties qui n'ont pas encore signé (apprenti·e / maître d'apprentissage / formateur·rice référent·e).
+
+Motivation : sur le terrain, les périodes d'alternance sont calendaires (planning annuel CFA), pas conditionnées par la signature. Bloquer la création de P2 jusqu'à signature de P1 par les 3 parties peut paralyser l'apprenti·e pendant le retard d'un signataire (cas typique : maître d'apprentissage en vacances pendant la transition CFA → entreprise).
+
+L'avertissement apparaît en bordure ambre sous le champ « Date de début » de la modale `ModaleFichePeriode`, avec le message :
+
+> *« La période N n'a pas encore été signée par [parties manquantes énumérées]. Vous pouvez créer la nouvelle période, mais pensez à finaliser la précédente (R14). »*
+
+Le mécanisme s'aligne ainsi avec l'**intention originelle du v1.3** (qui spécifiait déjà R14 comme avertissement non bloquant, en contradiction avec R13 strict — la maquette livrée avait initialement choisi le côté strict, ce reset rééquilibre).
+
+Implémentation : `lib/regles-periode.ts` peuple `avertissements: string[]` quand N-1 n'est pas en `signee`/`verrouillee` ; `lib/validation-fiche-periode.ts` propage dans `avertissements.dateDebut` ; `ModaleFichePeriode` affiche le bandeau ambre via le mécanisme `Champ` déjà en place. 7 tests TDD ajoutés (4 sur `regles-periode`, 3 sur `validation-fiche-periode`).
 
 ### 14.C — Signature manuscrite tactile (étape 2 recommandée)
 
@@ -704,7 +714,7 @@ Actions à mener par le pilote :
 | Version | Date | Auteur | Changements |
 |---|---|---|---|
 | 1.0 à 1.3 | avril 2026 | Guillaume + Claude | Cf. §31 du document `cahier-des-charges-livret-apprentissage-v1.3.md`. |
-| **1.5** (addendum) | **mai 2026** | Guillaume + Claude | **Extensions métier post-livraison v1.3** : ajout rôles Coordo + Admin ; refonte modulaire de l'organisation du suivi (renommée « Fiches de suivi ») ; refonte de l'entretien tripartite avec banque de questions configurable ; renommage UI « Fiches de suivi » → « Période en Entreprise » ; nouvelle section §5.7 Pronote WEB avec établissements gérés par l'admin ; matrice droits étendue à **47 ressources × 5 rôles** ; règle §10.4 verrouillage des affectations ; workflow d'import référentiels CSV + XLSX (relation N:1 + nom libre) ; **sélection par stagiaire des compétences abordées en entreprise** (décision conjointe formateur+maître, validation auto à la 3ᵉ signature entretien, R10 motivé — remplace l'ancien flag global) ; polish UX (trio header, audit mobile, cohérence destructive). 8 stores Zustand persistés (au lieu de 4). **332 tests unitaires, 131 tests E2E**. |
+| **1.5** (addendum) | **mai 2026** | Guillaume + Claude | **Extensions métier post-livraison v1.3** : ajout rôles Coordo + Admin ; refonte modulaire de l'organisation du suivi (renommée « Fiches de suivi ») ; refonte de l'entretien tripartite avec banque de questions configurable ; renommage UI « Fiches de suivi » → « Période en Entreprise » ; nouvelle section §5.7 Pronote WEB avec établissements gérés par l'admin ; matrice droits étendue à **47 ressources × 5 rôles** ; règle §10.4 verrouillage des affectations ; workflow d'import référentiels CSV + XLSX (relation N:1 + nom libre) ; **sélection par stagiaire des compétences abordées en entreprise** (décision conjointe formateur+maître, validation auto à la 3ᵉ signature entretien, R10 motivé — remplace l'ancien flag global) ; **R13 assouplie + R14 activée** (18 mai 2026 — création de période N autorisée si N-1 non signée, avertissement non bloquant listant les parties manquantes) ; polish UX (trio header, audit mobile, cohérence destructive). 8 stores Zustand persistés (au lieu de 4). **336 tests unitaires, 131 tests E2E**. |
 
 > **Note** : il n'y a pas de v1.4 publiée — la numérotation passe directement de v1.3 à v1.5 pour refléter l'ampleur des évolutions cumulées.
 
