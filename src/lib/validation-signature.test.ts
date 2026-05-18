@@ -197,6 +197,53 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
       f.observations.formateur = 'Bilan positif.';
       expect(validerSignature(f, 'formateur').peutSigner).toBe(true);
     });
+
+    it("rejette la signature si la seule éval centre est « Non fait »", () => {
+      // Par symétrie avec la règle maître : « Non fait » ne compte pas comme
+      // une éval utilisable, il faut au moins une vraie évaluation.
+      const f = ficheBase();
+      f.suiviGretaCfa = [
+        { id: 'sg', nomCours: 'Tech', nomFormateur: 'X', contenu: '...' },
+      ];
+      f.suiviEntreprise = [
+        {
+          id: 'l1',
+          competenceId: 'c1',
+          evaluationGreta: 'non-fait',
+          evaluationEntreprise: null,
+          retourApprenti: '',
+        },
+      ];
+      f.observations.formateur = 'OK';
+      const r = validerSignature(f, 'formateur');
+      expect(r.peutSigner).toBe(false);
+      expect(r.raisons.some((m) => /abord[ée]e/i.test(m))).toBe(true);
+    });
+
+    it("autorise la signature dès qu'une éval centre est autre que « Non fait »", () => {
+      const f = ficheBase();
+      f.suiviGretaCfa = [
+        { id: 'sg', nomCours: 'Tech', nomFormateur: 'X', contenu: '...' },
+      ];
+      f.suiviEntreprise = [
+        {
+          id: 'l1',
+          competenceId: 'c1',
+          evaluationGreta: 'non-fait',
+          evaluationEntreprise: null,
+          retourApprenti: '',
+        },
+        {
+          id: 'l2',
+          competenceId: 'c2',
+          evaluationGreta: 'maitrise',
+          evaluationEntreprise: null,
+          retourApprenti: '',
+        },
+      ];
+      f.observations.formateur = 'Une compétence acquise, une non abordée.';
+      expect(validerSignature(f, 'formateur').peutSigner).toBe(true);
+    });
   });
 
   describe('Coordo', () => {

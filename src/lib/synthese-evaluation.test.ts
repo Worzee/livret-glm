@@ -23,7 +23,7 @@ const fiche = (
   num: number,
   lignes: Array<{
     competenceId: string | null;
-    evaluationGreta?: 'maitrise' | 'partiel' | 'non-maitrise' | null;
+    evaluationGreta?: 'maitrise' | 'partiel' | 'non-maitrise' | 'non-fait' | null;
     evaluationEntreprise?: 'maitrise' | 'partiel' | 'non-maitrise' | 'non-fait' | null;
   }>,
 ): FicheSuiviPeriode => ({
@@ -100,6 +100,18 @@ describe('synthetiserCompetences', () => {
     const s = synthetiserCompetences(fiches, referentiel);
     // La fiche 2 contient 'non-fait' mais on garde 'partiel' de la fiche 1
     expect(s.get('c1')?.acquisEntreprise).toBe('partiel');
+  });
+
+  it("ignore 'non-fait' côté centre (symétrie entreprise — pas une éval utilisable)", () => {
+    const fiches: FicheSuiviPeriode[] = [
+      fiche(1, [{ competenceId: 'c1', evaluationGreta: 'partiel' }]),
+      fiche(2, [{ competenceId: 'c1', evaluationGreta: 'non-fait' }]),
+    ];
+    const s = synthetiserCompetences(fiches, referentiel);
+    // La fiche 2 contient 'non-fait' mais on garde 'partiel' de la fiche 1
+    expect(s.get('c1')?.acquisCentre).toBe('partiel');
+    // La période d'origine reste la 1 (fiche 2 ignorée car 'non-fait')
+    expect(s.get('c1')?.periodeCentre).toBe(1);
   });
 
   it("traite indépendamment les colonnes greta et entreprise", () => {

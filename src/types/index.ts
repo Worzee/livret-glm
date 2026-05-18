@@ -341,7 +341,14 @@ export interface LigneSuiviEntreprise {
   id: string;
   competenceId: string | null; // null si activité ad hoc
   libelleLibre?: string; // si hors référentiel
-  evaluationGreta: NiveauMaitrise | null;
+  /**
+   * Évaluation côté CFA. Accepte les 4 niveaux entreprise (incl. `'non-fait'`)
+   * pour signaler une compétence non abordée pendant la période côté centre,
+   * par symétrie avec l'évaluation entreprise. La grille finale n'utilise
+   * que les 3 vrais niveaux (`NiveauMaitrise`) — `'non-fait'` est ignoré au
+   * niveau de la synthèse last-write-wins.
+   */
+  evaluationGreta: NiveauMaitriseEntreprise | null;
   evaluationEntreprise: NiveauMaitriseEntreprise | null;
   retourApprenti: string;
 }

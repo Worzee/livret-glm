@@ -80,9 +80,16 @@ export function validerSignature(
       if (fiche.suiviGretaCfa.length === 0) {
         raisons.push("Renseignez au moins une ligne dans le tableau « Suivi GRETA CFA ».");
       }
-      const auMoinsUneEval = fiche.suiviEntreprise.some((l) => l.evaluationGreta !== null);
-      if (!auMoinsUneEval) {
-        raisons.push("Évaluez au moins une compétence dans la colonne « Évaluation GRETA CFA ».");
+      // Symétrie avec la règle maître : `'non-fait'` ne suffit pas — le
+      // formateur référent doit avoir évalué au moins une compétence avec
+      // un vrai niveau de maîtrise.
+      const auMoinsUneAbordee = fiche.suiviEntreprise.some(
+        (l) => l.evaluationGreta !== null && l.evaluationGreta !== 'non-fait',
+      );
+      if (!auMoinsUneAbordee) {
+        raisons.push(
+          "Évaluez au moins une compétence abordée dans la colonne « Évaluation GRETA CFA » (autre que « Non fait »).",
+        );
       }
       if (!fiche.observations.formateur || fiche.observations.formateur.trim().length === 0) {
         raisons.push('La zone d\'observation formateur référent est vide.');

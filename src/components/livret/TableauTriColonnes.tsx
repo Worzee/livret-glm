@@ -257,7 +257,7 @@ function LigneTableau(props: CelluleProps) {
       <td className="px-3 py-3 border-l-2 border-l-role-formateur/20">
         <SelecteurNiveau
           editable={props.peutEditerGreta}
-          mode="greta"
+          mode="entreprise"
           valeur={ligne.evaluationGreta}
           onChange={(v) => props.onChangeGreta(v as LigneSuiviEntreprise['evaluationGreta'])}
           ariaLabel={`Évaluation GRETA pour ${code}`}
@@ -329,7 +329,7 @@ function CarteCompetence(props: CelluleProps) {
         <span className="text-xs font-medium text-role-formateur">🎓 GRETA CFA</span>
         <SelecteurNiveau
           editable={props.peutEditerGreta}
-          mode="greta"
+          mode="entreprise"
           valeur={ligne.evaluationGreta}
           onChange={(v) => props.onChangeGreta(v as LigneSuiviEntreprise['evaluationGreta'])}
           ariaLabel={`Évaluation GRETA pour ${code}`}

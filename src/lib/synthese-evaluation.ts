@@ -52,8 +52,9 @@ export function synthetiserCompetences(
       if (!ligne.competenceId) continue;
       const cible = synthese.get(ligne.competenceId);
       if (!cible) continue;
-      // Centre : tous les niveaux maîtrise/partiel/non-maîtrise
-      if (ligne.evaluationGreta !== null) {
+      // Centre : on ignore 'non-fait' (compétence non abordée — pas une éval
+      // utilisable, symétrique à l'entreprise).
+      if (ligne.evaluationGreta !== null && ligne.evaluationGreta !== 'non-fait') {
         cible.acquisCentre = ligne.evaluationGreta;
         cible.periodeCentre = fiche.numeroPeriode;
       }
