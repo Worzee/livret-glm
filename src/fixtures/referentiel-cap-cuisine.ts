@@ -104,8 +104,3 @@ export const referentielCapCuisine: Referentiel = {
     { id: 'a6', libelle: 'Communication professionnelle' },
   ],
 };
-
-/** Toutes les compétences à plat, pour les recherches par id. */
-export const competencesParId = new Map(
-  referentielCapCuisine.blocs.flatMap((b) => b.competences.map((c) => [c.id, c])),
-);

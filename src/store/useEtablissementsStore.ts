@@ -97,11 +97,3 @@ export const useEtablissementsStore = create<EtablissementsStore>()(
     },
   ),
 );
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers non-réactifs
-// ─────────────────────────────────────────────────────────────────────────────
-
-export function getEtablissementByIdFromStore(id: string): Etablissement | undefined {
-  return useEtablissementsStore.getState().etablissements[id];
-}

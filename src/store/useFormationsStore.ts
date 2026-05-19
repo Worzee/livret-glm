@@ -100,13 +100,3 @@ export const useFormationsStore = create<FormationsStore>()(
     },
   ),
 );
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers non-réactifs — utilisés depuis d'autres stores ou pages dont les
-// composants ne peuvent pas appeler de hook (ex. callbacks asynchrones).
-// Les composants UI doivent passer par le hook ci-dessus.
-// ─────────────────────────────────────────────────────────────────────────────
-
-export function getFormationByIdFromStore(id: string): Formation | undefined {
-  return useFormationsStore.getState().formations[id];
-}

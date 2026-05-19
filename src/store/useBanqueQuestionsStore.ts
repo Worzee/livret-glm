@@ -102,11 +102,3 @@ export const useBanqueQuestionsStore = create<BanqueQuestionsStore>()(
     },
   ),
 );
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers non-réactifs — à utiliser depuis d'autres stores ou callbacks.
-// ─────────────────────────────────────────────────────────────────────────────
-
-export function getQuestionByIdFromStore(id: string): QuestionBanque | undefined {
-  return useBanqueQuestionsStore.getState().questions[id];
-}

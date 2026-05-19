@@ -238,6 +238,17 @@ Audit Playwright Pixel 5 (393×851) sur 11 captures fullPage + viewport. Correct
 
 Helper `peutEncoreEditerFiche(fiche, role)` dans `lib/transitions-fiche.ts` (6 tests TDD) — empêche un rôle de modifier ses zones après avoir signé. Mention UI explicite « Figée par signature ».
 
+#### Nettoyage code mort + dépendances orphelines (18 mai 2026)
+
+Audit `knip` post-livraison v1.5 — suppression de la dette accumulée pendant les sprints :
+
+- **Composant orphelin** : `ChampEditable.tsx` (était utilisé uniquement par `PagePlaceholder`, lui-même supprimé)
+- **Exports inutiles** dans les fixtures : `getLivretByApprentiId`, alias `livretLeaMartin`, re-export `aucuneSignature`, Map `competencesParId` (`TableauTriColonnes` recalcule la sienne via `useMemo`)
+- **4 helpers `getXxxByIdFromStore`** inutilisés (banque-questions, établissements, formations, référentiels) — résidus d'API non utilisés
+- **4 dépendances npm orphelines** : `react-hook-form`, `@hookform/resolvers`, `zod`, `class-variance-authority` (vestiges du template shadcn/ui initial, jamais importés)
+
+Aucun impact runtime visible. Bundle JS final : 137 KB gzip (inchangé — les deps n'étaient pas bundlées). `node_modules` allégé d'environ 4 packages. Code source net : -150 lignes environ.
+
 #### Nettoyage UI — entrée « Export PDF » sidebar supprimée (18 mai 2026)
 
 L'entrée « Export PDF » dans la sidebar (`/livret/export`) était un placeholder résiduel du Sprint 1 qui n'avait jamais été nettoyé après l'arrivée du vrai export PDF en Sprint 5. Le seul vrai export reste le bouton « Exporter le livret » sur la page Évaluation finale (composant `BoutonExportPdf` + chunk lazy `ExportPdfLazy`).

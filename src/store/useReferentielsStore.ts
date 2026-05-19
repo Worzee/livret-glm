@@ -99,12 +99,3 @@ export const useReferentielsStore = create<ReferentielsStore>()(
     },
   ),
 );
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers non-réactifs — utilisés depuis d'autres stores ou pages dont les
-// composants ne peuvent pas appeler de hook (ex. callbacks asynchrones).
-// ─────────────────────────────────────────────────────────────────────────────
-
-export function getReferentielByIdFromStore(id: string): Referentiel | undefined {
-  return useReferentielsStore.getState().referentiels[id];
-}

@@ -1171,15 +1171,6 @@ export const livretsDemo: Record<string, Livret> = {
   [livretLuca.id]: livretLuca,
 };
 
-/** Recherche le livret correspondant à un apprenti·e. Retourne `undefined` si aucun. */
-export function getLivretByApprentiId(apprentiId: string): Livret | undefined {
-  return Object.values(livretsDemo).find((l) => l.apprentiId === apprentiId);
-}
-
-// Compatibilité ascendante : Léa reste exportée pour les anciens usages.
-export const livretLeaMartin: Livret = livretLea;
-export { aucuneSignature };
-
 // Sanity check à la compilation : un livret par apprenti·e démo.
 const _verifIntegrite: void = (() => {
   const ids = new Set(Object.values(livretsDemo).map((l) => l.apprentiId));
