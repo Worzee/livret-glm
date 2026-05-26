@@ -652,4 +652,54 @@ Il reste à faire :
 
 ---
 
+## 13. Chantiers à venir — CDC v1.6 (cadrage en cours)
+
+5 chantiers identifiés post-MCPFA (mai 2026) — **questions ouvertes documentées dans [`cahier-des-charges-livret-apprentissage-v1.6-cadrage.md`](cahier-des-charges-livret-apprentissage-v1.6-cadrage.md)** avant démarrage.
+
+Ces chantiers sont d'**ampleur équivalente à la CDC v1.5 entière** — il est recommandé de démarrer une nouvelle conversation Claude Code après lecture du cadrage.
+
+### 13.1 — Périodes de stage définies par formation
+
+Aujourd'hui les fiches de période (« Période en Entreprise ») sont créées au cas par cas par apprenti·e via la modale `ModaleFichePeriode`. Demain, le **nombre et les dates** des périodes sont définis **au niveau Formation** ; tous les apprenti·e·s d'une même formation héritent automatiquement de ces périodes.
+
+- **Conservé** : la sélection des compétences à l'intérieur de chaque période reste **par stagiaire** (CDC v1.5 §12 inchangé).
+- **Impact modèle** : `Formation` gagne un sous-objet `periodesStage: PeriodeStage[]` (chaque entrée = numéro + dates).
+- **Impact UI** : nouveau bloc dans la modale `ModaleFormation`, dépouillement de `ModaleFichePeriode` (création manuelle remplacée par héritage automatique).
+- **Impact création de livret** : `creerLivretVierge` initialise désormais les `fichesSuivi` à partir des périodes de la formation.
+
+### 13.2 — 2 entretiens tripartites obligatoires déclenchés par événement
+
+L'unique entretien tripartite (R6) devient **2 entretiens distincts**, créés via 2 nouveaux motifs dans le module Fiches de suivi : « Entretien Tripartite 1 » et « Entretien Tripartite 2 ». Le menu sidebar correspondant n'apparaît qu'à la création de l'événement.
+
+- **Impact modèle** : `Livret.entretienTripartite: EntretienTripartite | null` → `entretienTripartite1` + `entretienTripartite2` (ou tableau).
+- **Impact R6** : « 1 entretien par livret » → « 2 entretiens par livret, créés via événement ».
+- **Impact organisation du suivi** : 2 nouveaux motifs ajoutés à `MotifOrganisationSuivi`, avec règle d'unicité par livret.
+- **Impact sidebar** : 2 entrées conditionnelles selon la présence des événements.
+
+### 13.3 — Suivi GRETA CFA en champs texte
+
+Le tableau structuré actuel (`SuiviGretaCfa` avec lignes nomCours/nomFormateur/contenu) disparaît, remplacé par **2 zones texte libre** (apprenti + formateur référent).
+
+- **Impact modèle** : `FicheSuiviPeriode.suiviGretaCfa: LigneSuiviGreta[]` → `{ apprenti: string, formateur: string }`.
+- **Impact composant** : refonte de [`SuiviGretaCfa.tsx`](src/components/livret/SuiviGretaCfa.tsx) en 2 textareas avec droits par rôle.
+- **Impact règle signature formateur** : la condition « ≥ 1 ligne dans suiviGretaCfa » devient « zone formateur non vide ».
+
+### 13.4 — Modèle Maître : Entreprise + Fonction (texte libre)
+
+Le `Maitre.entrepriseId` (référence) est remplacé par 2 champs texte libre : `entreprise` et `fonction`.
+
+- **Impact modèle** : `Maitre.entrepriseId: string` → `entreprise: string, fonction: string`.
+- **Impact UI** : modale `ModaleUtilisateurStaff` adaptée — disparition du select « Identifiant entreprise », ajout de 2 champs texte.
+- **Impact type `Entreprise`** : potentiellement supprimé entièrement (à clarifier — cf. cadrage v1.6).
+
+### 13.5 — Import Excel pour utilisateurs
+
+Nouveau module d'import bulk depuis un fichier Excel pour créer en masse : apprenti·e·s, maîtres d'apprentissage, formateurs référents.
+
+- **Stack réutilisable** : le parser XLSX déjà en place pour les référentiels (`lib/parser-xlsx.ts`).
+- **À définir avec le pilote** : structure exacte du modèle Excel (colonnes, formats, validations).
+- **Impact UI** : nouvelle modale d'import dans `GestionUtilisateurs.tsx`, avec étape de prévisualisation + détection des doublons.
+
+---
+
 *Étape 1 livrée + 3 vagues post-livraison (CDC v1.5) : administration métier complète (CRUD 4 rôles + formations + affectations + référentiels CSV/XLSX + banque de questions + établissements + Pronote WEB) ; organisation du suivi modulaire ; entretien tripartite avec banque de questions configurable ; sélection des compétences abordées en entreprise par stagiaire avec validation conjointe à la 3ᵉ signature ; **R13 assouplie + R14 activée** (création de période N autorisée si N-1 non signée, avertissement non bloquant) ; trio contextuel ; audit mobile complet ; renommages UI cohérents.*
