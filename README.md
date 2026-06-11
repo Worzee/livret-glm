@@ -1,20 +1,21 @@
 # Livret d'apprentissage — GRETA Lyon Métropole
 
-Maquette numérique du livret d'apprentissage, **étape 1 / 3** (CDC v1.3 + addendum v1.5).
+Maquette numérique du livret d'apprentissage, **étape 1 / 3** (CDC v1.3 + addendum v1.5 + chantiers métier mai 2026).
 
 > **À quoi ça sert ?** Démontrer à la direction du GRETA Lyon Métropole, sur une URL réelle protégée
 > par mot de passe, à quoi ressemblerait un livret d'apprentissage numérique : co-édition tripartite
-> (apprenti·e + maître + formateur), entretien tripartite avec banque de questions, fiches de période,
-> évaluations finales, export PDF officiel, administration métier (CRUD utilisateurs, formations,
-> référentiels, établissements). Aucune donnée réelle, aucun tracker, aucune analytics.
+> (apprenti·e + maître + formateur), **2 entretiens tripartites** avec banque de questions, fiches de
+> période **avec planning défini au niveau formation**, évaluations finales, export PDF officiel,
+> administration métier (CRUD utilisateurs, formations, référentiels, établissements, **import XLSX**).
+> Aucune donnée réelle, aucun tracker, aucune analytics.
 
 | | |
 |---|---|
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / mdp partagé hors-canal |
 | **Pilote métier** | Guillaume FERRERI |
-| **État** | Étape 1 livrée + 3 vagues post-livraison (CDC v1.5) |
-| **Tests** | **332 unit ✓ · 131 E2E ✓** |
+| **État** | Étape 1 livrée + 4 vagues post-livraison (CDC v1.5 + chantiers mai 2026) |
+| **Tests** | **435 unit ✓ · 134 E2E ✓** |
 
 ---
 
@@ -52,8 +53,8 @@ npm run lint              # ESLint
 npm run format            # Prettier (écriture)
 
 # Tests
-npm test                  # 332 tests Vitest unit
-npm run e2e               # 131 tests E2E Playwright (build + preview + tests)
+npm test                  # 435 tests Vitest unit
+npm run e2e               # 134 tests E2E Playwright (build + preview + tests)
 npm run e2e:ui            # UI Playwright pour debug
 npm run test:watch        # mode watch (unit)
 
@@ -97,7 +98,10 @@ LIVRET APPRENTISSAGE/
     │   ├── questions-entretien.ts  ← banque de questions
     │   ├── organisation-suivi.ts   ← refonte modulaire (liste d'événements)
     │   ├── import-referentiel.ts + parser-xlsx.ts ← CSV+XLSX
-    │   └── *.test.ts               ← 332 tests Vitest
+    │   ├── import-utilisateurs.ts + generer-xlsx-modele.ts ← chantier #5 (import XLSX users)
+    │   ├── validation-periode-formation.ts ← chantier #1 (planning au niveau formation)
+    │   ├── couleurs-role.ts        ← palette équilibrée mai 2026
+    │   └── *.test.ts               ← 413 tests Vitest
     ├── store/                      ← 8 stores Zustand persistés
     ├── fixtures/                   ← 6 livrets démo + utilisateurs + référentiels
     ├── components/
@@ -129,9 +133,11 @@ LIVRET APPRENTISSAGE/
 | Document | Quand le consulter |
 |---|---|
 | **`DEMO.md`** | Avant chaque présentation. Script minuté + plan B. |
-| **`PROJECT-STATUS.md`** | Faire le point — vagues livrées, ce qui reste, métriques bundle/tests. |
+| **`PROJECT-STATUS.md`** | Faire le point — **résumé exécutif (§0)**, vagues livrées, ce qui reste, métriques bundle/tests, trajectoire étape 2. |
 | **`CONVENTIONS.md`** | Règles de code et conventions du projet (CDC §16). |
 | **`TODO-etape-2.md`** | Pistes reportées étape 2/3 (auth réelle, notifications, signature tactile…). |
+| **`conformite-rgpd.md`** | Liste recentrée des **33 obligations RGPD strictes** + 9 recommandations reportables (gouvernance, droits, sécurité, sous-traitants). Apprenti·e·s majeur·e·s uniquement — AIPD non obligatoire. |
+| **`chantier-creation-comptes.md`** | Spécification du chantier 2.2 (création de comptes apprenti·e·s + maîtres avec activation par email) + 2.3 (gestion mots de passe). Issu de la session de cadrage 2026-05-26. |
 | **`cahier-des-charges-livret-apprentissage-v1.3.md`** | Référence historique scellée (CDC initial). |
 | **`cahier-des-charges-livret-apprentissage-v1.5-addendum.md`** | Évolutions post-livraison v1.3 → v1.5 (3 vagues). |
 | **`scripts/README.md`** | Procédure complète VPS (setup initial, déploiement, sécurité). |
@@ -161,9 +167,11 @@ Procédure complète dans [`scripts/README.md`](./scripts/README.md) § *Sécuri
 
 ## 7. Limites connues (étape 1 — CDC §3)
 
-- Pas d'authentification réelle (role switcher uniquement) — étape 3.
+- Pas d'authentification réelle (role switcher uniquement) — passage prévu en étape 2 via SSO Entra ID (cf. `playbook-sso-entra-greta.md`).
 - Pas de RGPD / RGAA strict — bonnes pratiques seulement.
-- Pas de notifications email — étape 2.
+- Pas de notifications email — étape 2 (couplée à l'auth réelle).
+- Pas de validation par email des nouveaux comptes — étape 2.
+- Pas de gestion de mot de passe (réinit, expiration, 2FA) — étape 2.
 - Pas de multi-établissement — un seul GRETA fictif.
 - Pas de backup automatique — données dans le `localStorage` de chaque navigateur.
 - Pas de monitoring centralisé (Uptime Kuma, logs).
@@ -185,8 +193,8 @@ Procédure complète dans [`scripts/README.md`](./scripts/README.md) § *Sécuri
 - **Aucune dépendance d'analytics ou tracking** (CDC §20)
 
 Bundle production gzippé :
-- JS initial : **~137 KB** (cible CDC §19.1 : < 500 KB) ✓
-- CSS : **~6,4 KB** (cible : < 50 KB) ✓
+- JS initial : **~148 KB** (cible CDC §19.1 : < 500 KB) ✓
+- CSS : **~6,5 KB** (cible : < 50 KB) ✓
 - Chunk PDF lazy : ~493 KB (chargé uniquement au clic « Exporter »)
 
 ---
@@ -206,4 +214,4 @@ Pour tout autre incident, consulter `PROJECT-STATUS.md §9` (limites connues) et
 
 ---
 
-*Étape 1 livrée + 3 vagues post-livraison (CDC v1.5 addendum) — mai 2026.*
+*Étape 1 livrée + 4 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026). Prochaine étape : SSO Entra + gestion comptes/mots de passe — cf. `PROJECT-STATUS.md §12`.*

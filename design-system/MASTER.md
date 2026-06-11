@@ -35,10 +35,17 @@ Référence : cahier des charges v1.3, sections 14 (design system) et 22.2.1 (sk
 | Rôle | Couleur | Token |
 |---|---|---|
 | Apprenti·e | Bleu institutionnel `#1e40af` | `role-apprenti` |
-| Maître d'apprentissage | Vert `#059669` | `role-maitre` |
+| Maître / Tuteur | Vert `#059669` | `role-maitre` |
 | Formateur référent | Violet `#7c3aed` | `role-formateur` |
-| Coordinateur·rice | Cyan `#0e7490` | `role-coordo` |
-| Administrateur·rice | Indigo `#4338ca` | `role-admin` |
+| Coordinateur·rice | Orange foncé `#c2410c` | `role-coordo` |
+| Administrateur·rice | Or foncé `#a16207` | `role-admin` |
+
+> **Note (mai 2026)** — Refonte équilibrage. Coordo et Admin sont passés des
+> tons froids (cyan, indigo) à des tons chauds (orange, or) pour mieux les
+> distinguer des 3 rôles métier qui restent en tons froids (bleu, vert, violet).
+> Le PDF d'export a été aligné sur cette même charte dans
+> `src/components/pdf/styles.ts` (bugfix : l'export PDF utilisait des
+> couleurs incohérentes avec l'UI sur apprenti/maître/formateur).
 
 ## Typographie
 
@@ -72,7 +79,7 @@ Référence : cahier des charges v1.3, sections 14 (design system) et 22.2.1 (sk
 
 Cibles prioritaires (CDC §11.1) :
 - **Apprenti·e** : mobile (375-425px)
-- **Maître d'apprentissage** : tablette (768-1024px)
+- **Maître / Tuteur** : tablette (768-1024px)
 - **Formateur référent** : desktop (≥ 1280px)
 
 Breakpoints Tailwind utilisés : `sm` 640, `md` 768, `lg` 1024, `xl` 1280.

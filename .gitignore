@@ -6,6 +6,7 @@ scripts/.env.deploy
 
 # ─── Config locale Claude Code (personnelle à chaque dev) ────────────────────
 .claude/settings.local.json
+.claude/worktrees/
 
 # ─── Node / Vite ─────────────────────────────────────────────────────────────
 node_modules/

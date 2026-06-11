@@ -6,6 +6,27 @@ Référence : cahier des charges v1.3, section 25.
 > d'intégration qui valide l'étape 1. Il doit être exécutable en **10 minutes chrono**, sans
 > hésitation, sans bug, et sans dépendre d'explications orales du présentateur.
 
+> **⚠ Mise à jour 26 mai 2026** — la vague de chantiers métier de fin mai a fait évoluer plusieurs
+> éléments du script ci-dessous. Adapter mentalement :
+> - Sidebar : « Fiches de suivi » = ancienne « Organisation du suivi » (page d'événements). Les
+>   « Période en Entreprise » sont en-dessous (cahier de période).
+> - **2 entretiens tripartites** désormais possibles par livret. Léa a un événement « Entretien
+>   Tripartite 1 » dans son organisation (entretien signé) + un événement « Entretien Tripartite 2 »
+>   créé mais entretien vide (cas « à initialiser »). Les liens entretien apparaissent dans la
+>   sidebar uniquement quand l'événement existe.
+> - Le **planning des périodes** (nombre, titres, dates) est désormais défini au niveau formation
+>   par Coordo/Admin via le bouton « Planning » sur chaque carte formation. Côté livret apprenti·e,
+>   c'est lecture seule (bandeau d'info bleu).
+> - **Suivi GRETA CFA** dans chaque fiche période = 2 zones de texte (apprenti·e + formateur).
+> - Modale création d'un maître : 2 nouveaux champs « Entreprise » + « Fonction ».
+> - Nouvelle page admin **« Import Excel »** (Coordo + Admin) : modèles XLSX téléchargeables pour
+>   importer apprenti·e·s / maîtres / formateurs en masse.
+> - **Palette équilibrée** : 5 couleurs distinctes par rôle (bleu / vert / violet / orange / or).
+>   Toute l'interface change de teinte selon le rôle actif.
+>
+> Le **fond métier** du script (co-édition tripartite, R10 motivé, R22 clôture, export PDF) reste
+> valide. Réécriture complète du script à prévoir pour l'étape 2 (auth réelle).
+
 ---
 
 ## 1. URL et accès
@@ -65,7 +86,7 @@ Référence : cahier des charges v1.3, section 25.
    - L'**indicateur « Enregistré »** apparaît brièvement en bas à droite (debounce 500 ms).
 4. Faire défiler vers la **zone Observations de fin de période** :
    - 🗣️ *« Chaque rôle a sa propre zone, et — important — une fois que le rôle a signé, sa zone est figée pour respecter l'engagement. »*
-5. **Bascule rôle → Maître d'apprentissage (Karim BENALI)**.
+5. **Bascule rôle → Maître / Tuteur (Karim BENALI)**.
    - Évaluer une nouvelle compétence en colonne entreprise.
 6. **Bascule rôle → Formateur référent (Sophie DUBOIS)**.
    - Faire défiler vers le **bloc Signatures** en bas de fiche.
