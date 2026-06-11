@@ -5,6 +5,7 @@ import {
   CalendarRange,
   ClipboardList,
   ExternalLink,
+  FileSpreadsheet,
   GraduationCap,
   LayoutDashboard,
   Library,
@@ -18,7 +19,11 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUserStore } from '@/store/useUserStore';
+import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { peutEditer, type Ressource } from '@/lib/droits';
+import { FOND_LEGER_ROLE, TEXTE_ROLE } from '@/lib/couleurs-role';
+import { numeroEntretienPourMotif } from '@/lib/organisation-suivi';
+import type { Role } from '@/types';
 
 /**
  * Navigation principale du livret — version desktop ET mobile.
@@ -41,7 +46,9 @@ interface LienItem {
 const LIENS_LIVRET: LienItem[] = [
   { to: '/', label: 'Tableau de bord', Icon: LayoutDashboard },
   { to: '/livret/organisation-suivi', label: 'Fiches de suivi', Icon: CalendarRange },
-  { to: '/livret/entretien', label: 'Entretien tripartite', Icon: ClipboardList },
+  // Les liens « Entretien tripartite 1 » et « 2 » sont insérés dynamiquement
+  // après ce point (cf. NavContenu) — ils n'apparaissent que si l'événement
+  // correspondant existe dans l'organisation du suivi.
   { to: '/livret/fiches-suivi', label: 'Période en Entreprise', Icon: Notebook },
   { to: '/livret/evaluation-finale', label: 'Évaluation finale', Icon: Target },
   { to: '/livret/pronote', label: 'Pronote WEB', Icon: ExternalLink },
@@ -55,6 +62,7 @@ const LIENS_LIVRET: LienItem[] = [
  */
 const LIENS_ADMIN: Array<LienItem & { ressource: Ressource }> = [
   { to: '/admin/utilisateurs', label: 'Utilisateurs', Icon: Users, ressource: 'admin.utilisateurs.creer-apprenti' },
+  { to: '/admin/import-utilisateurs', label: 'Import Excel', Icon: FileSpreadsheet, ressource: 'admin.utilisateurs.import-xlsx' },
   { to: '/admin/formations', label: 'Formations', Icon: GraduationCap, ressource: 'admin.formations.creer' },
   { to: '/admin/affectations', label: 'Affectations', Icon: Link2, ressource: 'admin.affectations.gerer' },
   { to: '/admin/referentiels', label: 'Référentiels', Icon: Library, ressource: 'admin.referentiels.gerer' },
@@ -66,7 +74,13 @@ const LIENS_ADMIN: Array<LienItem & { ressource: Ressource }> = [
 // Lien de navigation (commun desktop / mobile)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function LienNav({ to, label, Icon, onClick }: LienItem & { onClick?: () => void }) {
+function LienNav({
+  to,
+  label,
+  Icon,
+  onClick,
+  roleActif,
+}: LienItem & { onClick?: () => void; roleActif: Role }) {
   return (
     <li>
       <NavLink
@@ -78,7 +92,9 @@ function LienNav({ to, label, Icon, onClick }: LienItem & { onClick?: () => void
             // Touch target ≥ 44 px sur mobile (recommandation WCAG 2.5.5).
             'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors',
             'hover:bg-secondary',
-            isActive && 'bg-secondary text-primary',
+            // État actif : fond léger + texte de la couleur du rôle actuel
+            // (équilibrage graphique mai 2026).
+            isActive && cn(FOND_LEGER_ROLE[roleActif], TEXTE_ROLE[roleActif]),
           )
         }
       >
@@ -95,7 +111,36 @@ function LienNav({ to, label, Icon, onClick }: LienItem & { onClick?: () => void
 
 function NavContenu({ onNavigate }: { onNavigate?: () => void }) {
   const roleActif = useUserStore((s) => s.roleActif);
+  const ctx = useApprentiActif();
   const liensAdminVisibles = LIENS_ADMIN.filter((l) => peutEditer(roleActif, l.ressource));
+
+  // Liens entretien conditionnels — un lien par événement entretien existant
+  // dans l'organisation du suivi du livret actif. Pas de doublons : si E1 a
+  // 2 événements (cas d'erreur de saisie), un seul lien apparaît.
+  const liensEntretiens: LienItem[] = [];
+  if (ctx) {
+    const numerosVus = new Set<1 | 2>();
+    for (const evt of ctx.livret.organisationSuivi.evenements) {
+      const n = numeroEntretienPourMotif(evt.motif);
+      if (n && !numerosVus.has(n)) {
+        numerosVus.add(n);
+        liensEntretiens.push({
+          to: `/livret/entretien/${n}`,
+          label: `Entretien tripartite ${n}`,
+          Icon: ClipboardList,
+        });
+      }
+    }
+    liensEntretiens.sort((a, b) => a.label.localeCompare(b.label, 'fr-FR'));
+  }
+
+  // Insertion entre « Fiches de suivi » (index 1) et « Période en Entreprise ».
+  const liensLivret = [
+    LIENS_LIVRET[0],
+    LIENS_LIVRET[1],
+    ...liensEntretiens,
+    ...LIENS_LIVRET.slice(2),
+  ];
 
   return (
     <nav aria-label="Navigation du livret" className="p-3 space-y-6">
@@ -104,8 +149,8 @@ function NavContenu({ onNavigate }: { onNavigate?: () => void }) {
           Livret
         </h2>
         <ul className="space-y-1">
-          {LIENS_LIVRET.map((lien) => (
-            <LienNav key={lien.to} {...lien} onClick={onNavigate} />
+          {liensLivret.map((lien) => (
+            <LienNav key={lien.to} {...lien} onClick={onNavigate} roleActif={roleActif} />
           ))}
         </ul>
       </div>
@@ -117,7 +162,7 @@ function NavContenu({ onNavigate }: { onNavigate?: () => void }) {
           </h2>
           <ul className="space-y-1">
             {liensAdminVisibles.map((lien) => (
-              <LienNav key={lien.to} {...lien} onClick={onNavigate} />
+              <LienNav key={lien.to} {...lien} onClick={onNavigate} roleActif={roleActif} />
             ))}
           </ul>
         </div>

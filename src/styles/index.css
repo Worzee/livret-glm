@@ -42,6 +42,111 @@
   }
 }
 
+/*
+ * Couleur du ring de focus selon le rôle actif — équilibrage graphique mai 2026.
+ * Le wrapper AppShell applique l'une de ces classes selon `roleActif`, ce qui
+ * recolore automatiquement tous les `focus-visible:ring-ring` du sous-arbre
+ * (boutons, cartes, liens, inputs).
+ *
+ * Valeurs HSL alignées sur les couleurs HEX de tailwind.config.ts :
+ *   apprenti  #1e40af blue-800     → 226 71% 40%
+ *   maitre    #059669 emerald-600  → 161 94% 30%
+ *   formateur #7c3aed violet-600   → 262 83% 58%
+ *   coordo    #c2410c orange-700   →  17 88% 40%
+ *   admin     #a16207 yellow-700   →  38 92% 33%
+ */
+.role-actif-apprenti  { --ring: 226 71% 40%; }
+.role-actif-maitre    { --ring: 161 94% 30%; }
+.role-actif-formateur { --ring: 262 83% 58%; }
+.role-actif-coordo    { --ring:  17 88% 40%; }
+.role-actif-admin     { --ring:  38 92% 33%; }
+
+/*
+ * Utilities suivant la couleur du rôle actif via la variable CSS `--ring`.
+ * Toutes ces classes héritent du token du rôle actuellement actif (apprenti
+ * = bleu, maître = vert, etc.) — défini dans `.role-actif-X` plus haut et
+ * appliqué sur le wrapper AppShell.
+ */
+
+/* Carte interactive : hover qui adopte la couleur du rôle actif. */
+.carte-survol-role {
+  border-color: hsl(var(--border));
+  background-color: hsl(var(--card));
+  transition-property: background-color, border-color;
+  transition-duration: 150ms;
+}
+.carte-survol-role:hover {
+  border-color: hsl(var(--ring) / 0.5);
+  background-color: hsl(var(--ring) / 0.05);
+}
+
+/*
+ * État « actif / sélectionné / en édition » — bordure pleine + fond léger +
+ * texte de la couleur du rôle. Utilisé pour les onglets, items sélectionnés,
+ * boutons-toggle de type radio, etc.
+ */
+.actif-couleur-role {
+  border-color: hsl(var(--ring));
+  background-color: hsl(var(--ring) / 0.05);
+  color: hsl(var(--ring));
+}
+
+/* Texte coloré rôle actif (sans bordure ni fond). */
+.texte-couleur-role {
+  color: hsl(var(--ring));
+}
+.hover-texte-couleur-role:hover {
+  color: hsl(var(--ring));
+}
+
+/*
+ * Bandeau d'information contextuelle suivant la couleur du rôle actif.
+ * Distinct du bleu fixe utilisé pour les états standards (signée, verrouillée)
+ * qui portent une sémantique propre indépendante du rôle qui consulte.
+ *
+ * Usage : bandeaux « Le calendrier est défini au niveau formation… »,
+ * « Vous consultez en mode XXX », pré-requis avant action, etc.
+ */
+.bandeau-info-couleur-role {
+  border-color: hsl(var(--ring) / 0.3);
+  background-color: hsl(var(--ring) / 0.05);
+  color: hsl(var(--ring));
+}
+
+/*
+ * Bouton primaire plein qui adopte la couleur du rôle actif. Remplace
+ * `bg-primary text-primary-foreground` pour tous les boutons d'action
+ * (créer, enregistrer, soumettre, télécharger, etc.).
+ *
+ * Le logo institutionnel « GLM » dans le header conserve `bg-primary`
+ * — c'est la seule identité visuelle qui doit rester stable.
+ */
+.bouton-plein-couleur-role {
+  background-color: hsl(var(--ring));
+  color: white;
+}
+.bouton-plein-couleur-role:hover:not(:disabled) {
+  opacity: 0.9;
+}
+.bouton-plein-couleur-role:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/*
+ * Bouton « action secondaire » coloré rôle actif — fond léger 10% + bordure
+ * légère 40% + texte plein. Cohérent avec le ressort visuel des badges et
+ * boutons d'action mineure.
+ */
+.bouton-leger-couleur-role {
+  border-color: hsl(var(--ring) / 0.4);
+  background-color: hsl(var(--ring) / 0.05);
+  color: hsl(var(--ring));
+}
+.bouton-leger-couleur-role:hover {
+  background-color: hsl(var(--ring) / 0.1);
+}
+
 @layer base {
   * {
     @apply border-border;

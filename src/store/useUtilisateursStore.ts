@@ -10,6 +10,7 @@ import {
 } from '@/fixtures/utilisateurs';
 import { useLivretStore } from './useLivretStore';
 import { useApprentiActifStore } from './useApprentiActifStore';
+import { useFormationsStore } from './useFormationsStore';
 import { creerLivretVierge } from '@/lib/creation-livret';
 
 /**
@@ -88,7 +89,7 @@ interface UtilisateursStore {
   reinitialiser: () => void;
 }
 
-const VERSION_SCHEMA = 1;
+const VERSION_SCHEMA = 2;
 
 /** État initial calculé depuis les fixtures. */
 function etatInitial(): Pick<
@@ -112,9 +113,14 @@ export const useUtilisateursStore = create<UtilisateursStore>()(
       ajouterApprenti: (input, auteurId) => {
         const id = `u-apprenti-${crypto.randomUUID().slice(0, 8)}`;
         const apprenti: Apprenti = { id, role: 'apprenti', ...input };
-        // Crée le livret vierge associé. L'id du livret suit la convention
-        // `livret-<id apprenti>` pour faciliter la traçabilité.
-        const livret = creerLivretVierge(apprenti, `livret-${id}`, auteurId);
+        // Le livret hérite des fiches du planning de la formation rattachée
+        // (chantier #1) — vide si l'apprenti·e n'a pas encore de formation
+        // (cas d'un import XLSX sans affectation).
+        const formation = apprenti.formationId
+          ? useFormationsStore.getState().formations[apprenti.formationId]
+          : undefined;
+        const planning = formation?.periodes ?? [];
+        const livret = creerLivretVierge(apprenti, `livret-${id}`, auteurId, planning);
         useLivretStore.setState((s) => ({
           livrets: { ...s.livrets, [livret.id]: livret },
           derniereModification: new Date().toISOString(),

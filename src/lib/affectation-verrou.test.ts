@@ -31,7 +31,8 @@ function fabriquerLivret(overrides: Partial<Livret> = {}): Livret {
       modifieLe: '2025-09-01T00:00:00.000Z',
       modifiePar: 'u-test',
     },
-    entretienTripartite: null,
+    entretien1: null,
+    entretien2: null,
     fichesSuivi: [],
     evaluationFinaleCompetences: { lignes: [], modifieLe: '2025-09-01T00:00:00.000Z' },
     evaluationFinaleAttitudes: { lignes: [], modifieLe: '2025-09-01T00:00:00.000Z' },
@@ -52,7 +53,7 @@ const FICHE_VIDE: FicheSuiviPeriode = {
   numeroPeriode: 1,
   dateDebut: '2025-09-02',
   dateFin: '2025-12-20',
-  suiviGretaCfa: [],
+  suiviGretaCfa: {},
   suiviEntreprise: [],
   observations: {},
   signatures: {
@@ -67,6 +68,8 @@ const FICHE_VIDE: FicheSuiviPeriode = {
 const ENTRETIEN_VIDE: EntretienTripartite = {
   questionsApprentiSelectionnees: [],
   questionsMaitreSelectionnees: [],
+  questionsImposees: [],
+  questionsObligatoires: [],
   reponsesApprenti: {},
   reponsesMaitre: {},
   appreciationMaitre: {},
@@ -103,27 +106,59 @@ describe('evaluerVerrouAffectation', () => {
     expect(r.raison).toMatch(/Contrat démarré le 02\/09\/2025/);
   });
 
-  it('verrouille si au moins une fiche de période existe (priorité sur contrat)', () => {
-    const apprenti = fabriquerApprenti('2099-09-01'); // contrat futur — sans fiche, pas de verrou
-    const livret = fabriquerLivret({ fichesSuivi: [FICHE_VIDE] });
-    const r = evaluerVerrouAffectation(apprenti, livret, new Date('2026-05-09'));
-    expect(r.verrouille).toBe(true);
-    expect(r.raison).toMatch(/1 fiche de période/);
-  });
-
-  it('verrouille si plusieurs fiches existent (libellé pluriel)', () => {
-    const apprenti = fabriquerApprenti('2099-09-01');
+  it('ne verrouille PAS pour des fiches restées en brouillon (auto-créées par le planning formation)', () => {
+    // Chantier planning au niveau formation : les fiches sont créées vierges
+    // (état brouillon) dès la création du livret. Leur simple existence ne
+    // témoigne d'aucun travail — le verrou ne doit pas se déclencher.
+    const apprenti = fabriquerApprenti('2099-09-01'); // contrat futur
     const livret = fabriquerLivret({
       fichesSuivi: [FICHE_VIDE, { ...FICHE_VIDE, id: 'fp-2' }, { ...FICHE_VIDE, id: 'fp-3' }],
     });
     const r = evaluerVerrouAffectation(apprenti, livret, new Date('2026-05-09'));
+    expect(r.verrouille).toBe(false);
+  });
+
+  it("verrouille dès qu'une fiche est sortie du brouillon (priorité sur contrat)", () => {
+    const apprenti = fabriquerApprenti('2099-09-01'); // contrat futur — sans travail, pas de verrou
+    const livret = fabriquerLivret({
+      fichesSuivi: [{ ...FICHE_VIDE, etat: 'en-cours' }],
+    });
+    const r = evaluerVerrouAffectation(apprenti, livret, new Date('2026-05-09'));
     expect(r.verrouille).toBe(true);
-    expect(r.raison).toMatch(/3 fiches de période créées/);
+    expect(r.raison).toMatch(/1 fiche de période travaillée/);
+  });
+
+  it('verrouille si plusieurs fiches sont travaillées (libellé pluriel)', () => {
+    const apprenti = fabriquerApprenti('2099-09-01');
+    const livret = fabriquerLivret({
+      fichesSuivi: [
+        { ...FICHE_VIDE, etat: 'en-cours' },
+        { ...FICHE_VIDE, id: 'fp-2', etat: 'signee' },
+        { ...FICHE_VIDE, id: 'fp-3', etat: 'verrouillee' },
+      ],
+    });
+    const r = evaluerVerrouAffectation(apprenti, livret, new Date('2026-05-09'));
+    expect(r.verrouille).toBe(true);
+    expect(r.raison).toMatch(/3 fiches de période travaillées/);
+  });
+
+  it('ne compte que les fiches travaillées dans le libellé (mix brouillon + en-cours)', () => {
+    const apprenti = fabriquerApprenti('2099-09-01');
+    const livret = fabriquerLivret({
+      fichesSuivi: [
+        FICHE_VIDE,
+        { ...FICHE_VIDE, id: 'fp-2', etat: 'en-cours' },
+        { ...FICHE_VIDE, id: 'fp-3' },
+      ],
+    });
+    const r = evaluerVerrouAffectation(apprenti, livret, new Date('2026-05-09'));
+    expect(r.verrouille).toBe(true);
+    expect(r.raison).toMatch(/1 fiche de période travaillée/);
   });
 
   it("verrouille si l'entretien tripartite a été initialisé (sans fiche, contrat futur)", () => {
     const apprenti = fabriquerApprenti('2099-09-01');
-    const livret = fabriquerLivret({ entretienTripartite: ENTRETIEN_VIDE });
+    const livret = fabriquerLivret({ entretien1: ENTRETIEN_VIDE });
     const r = evaluerVerrouAffectation(apprenti, livret, new Date('2026-05-09'));
     expect(r.verrouille).toBe(true);
     expect(r.raison).toMatch(/Entretien tripartite initialisé/);
@@ -132,8 +167,8 @@ describe('evaluerVerrouAffectation', () => {
   it("priorise la raison « fiches » sur « entretien » et « contrat »", () => {
     const apprenti = fabriquerApprenti('2025-09-02'); // contrat démarré
     const livret = fabriquerLivret({
-      entretienTripartite: ENTRETIEN_VIDE,
-      fichesSuivi: [FICHE_VIDE],
+      entretien1: ENTRETIEN_VIDE,
+      fichesSuivi: [{ ...FICHE_VIDE, etat: 'en-cours' }],
     });
     const r = evaluerVerrouAffectation(apprenti, livret, new Date('2026-05-09'));
     expect(r.verrouille).toBe(true);
@@ -143,7 +178,7 @@ describe('evaluerVerrouAffectation', () => {
 
   it("priorise « entretien » sur « contrat » quand il n'y a pas de fiche", () => {
     const apprenti = fabriquerApprenti('2025-09-02');
-    const livret = fabriquerLivret({ entretienTripartite: ENTRETIEN_VIDE });
+    const livret = fabriquerLivret({ entretien1: ENTRETIEN_VIDE });
     const r = evaluerVerrouAffectation(apprenti, livret, new Date('2026-05-09'));
     expect(r.verrouille).toBe(true);
     expect(r.raison).toMatch(/Entretien tripartite/);

@@ -17,7 +17,7 @@ const fiche = (
   numeroPeriode: numero,
   dateDebut,
   dateFin,
-  suiviGretaCfa: [],
+  suiviGretaCfa: {},
   suiviEntreprise: [],
   observations: {},
   signatures: {

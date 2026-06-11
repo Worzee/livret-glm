@@ -12,15 +12,23 @@ import { cn } from '@/lib/utils';
  * cohérence des entretiens déjà saisis.
  */
 
+/**
+ * Champs éditables depuis la modale. L'affectation E1/E2 et le caractère
+ * obligatoire se règlent directement dans le tableau de la banque (cases à
+ * cocher) — la modale ne les touche pas pour ne pas écraser la configuration
+ * du coordo lors d'une simple correction de libellé.
+ */
+export type SaisieQuestion = Pick<
+  QuestionBanque,
+  'libelle' | 'cible' | 'type' | 'placeholder'
+>;
+
 interface ModaleQuestionProps {
   ouvert: boolean;
   /** Question existante en édition (sinon création). */
   question?: QuestionBanque;
   onAnnuler: () => void;
-  onValider: (
-    valeurs: Omit<QuestionBanque, 'id'>,
-    questionExistante?: QuestionBanque,
-  ) => void;
+  onValider: (valeurs: SaisieQuestion, questionExistante?: QuestionBanque) => void;
 }
 
 const TYPES: Array<{ valeur: TypeQuestion; libelle: string; description: string }> = [
@@ -35,7 +43,7 @@ const TYPES: Array<{ valeur: TypeQuestion; libelle: string; description: string 
 
 const CIBLES: Array<{ valeur: CibleQuestion; libelle: string }> = [
   { valeur: 'apprenti', libelle: "Apprenti·e" },
-  { valeur: 'maitre', libelle: "Maître d'apprentissage" },
+  { valeur: 'maitre', libelle: 'Maître / Tuteur' },
 ];
 
 export function ModaleQuestion({
@@ -140,7 +148,7 @@ export function ModaleQuestion({
                   className={cn(
                     'rounded-md border px-3 py-1.5 text-sm font-medium transition-colors',
                     cible === c.valeur
-                      ? 'border-primary bg-primary text-primary-foreground'
+                      ? 'border-[hsl(var(--ring))] bg-[hsl(var(--ring))] text-white'
                       : 'border-input bg-background text-muted-foreground hover:bg-secondary',
                     enEdition && cible !== c.valeur && 'opacity-30 cursor-not-allowed',
                   )}
@@ -225,7 +233,7 @@ export function ModaleQuestion({
             type="button"
             onClick={valider}
             data-testid="q-valider"
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex items-center gap-1.5 rounded-md bouton-plein-couleur-role px-4 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Save className="h-4 w-4" aria-hidden="true" />
             {enEdition ? 'Enregistrer' : 'Créer'}

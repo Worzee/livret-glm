@@ -7,6 +7,7 @@ import {
   peutEncoreEditer,
   validerSignatureEntretien,
 } from './regles-entretien';
+import { QUESTIONS_BANQUE_INITIALE, indexerBanque } from './questions-entretien';
 
 const apprenti = (contratDebut: string): Apprenti => ({
   id: 'a',
@@ -41,6 +42,10 @@ const entretienVide = (): EntretienTripartite => ({
     'q-mai-objectifs-embauche',
     'q-mai-organisation-tutorat',
   ],
+  // Snapshots vides par défaut — les cas « questions obligatoires » les
+  // renseignent explicitement.
+  questionsImposees: [],
+  questionsObligatoires: [],
   reponsesApprenti: {},
   reponsesMaitre: {},
   appreciationMaitre: {},
@@ -139,23 +144,25 @@ describe('R8 / R9 — verrouillage progressif des sections', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('validerSignatureEntretien', () => {
+  const BANQUE = indexerBanque(QUESTIONS_BANQUE_INITIALE);
+
   it("apprenti·e ne peut pas signer sans aucune réponse", () => {
     const e = entretienVide();
-    const r = validerSignatureEntretien(e, 'apprenti');
+    const r = validerSignatureEntretien(e, 'apprenti', BANQUE);
     expect(r.peutSigner).toBe(false);
   });
 
   it("apprenti·e peut signer avec au moins une réponse renseignée", () => {
     const e = entretienVide();
     e.reponsesApprenti['q-app-motivations'] = 'Mon projet professionnel.';
-    expect(validerSignatureEntretien(e, 'apprenti').peutSigner).toBe(true);
+    expect(validerSignatureEntretien(e, 'apprenti', BANQUE).peutSigner).toBe(true);
   });
 
   // Refonte mai 2026 : la signature maître exige uniquement au moins un
   // critère d'appréciation. La saisie des questions est laissée libre.
   it("maître ne peut pas signer sans aucun critère d'appréciation", () => {
     const e = entretienVide();
-    const r = validerSignatureEntretien(e, 'maitre');
+    const r = validerSignatureEntretien(e, 'maitre', BANQUE);
     expect(r.peutSigner).toBe(false);
     expect(r.raisons.some((m) => m.includes('appréciation'))).toBe(true);
   });
@@ -163,24 +170,68 @@ describe('validerSignatureEntretien', () => {
   it("maître peut signer dès qu'un critère d'appréciation est renseigné", () => {
     const e = entretienVide();
     e.appreciationMaitre.qualiteTravail = 'plusplus';
-    expect(validerSignatureEntretien(e, 'maitre').peutSigner).toBe(true);
+    expect(validerSignatureEntretien(e, 'maitre', BANQUE).peutSigner).toBe(true);
   });
 
   it("formateur ne peut pas signer sans aucune démarche administrative", () => {
     const e = entretienVide();
-    expect(validerSignatureEntretien(e, 'formateur').peutSigner).toBe(false);
+    expect(validerSignatureEntretien(e, 'formateur', BANQUE).peutSigner).toBe(false);
   });
 
   it("formateur peut signer avec au moins une démarche renseignée", () => {
     const e = entretienVide();
     e.demarchesAdministratives.contratSigne = true;
-    expect(validerSignatureEntretien(e, 'formateur').peutSigner).toBe(true);
+    expect(validerSignatureEntretien(e, 'formateur', BANQUE).peutSigner).toBe(true);
   });
 
   it("coordo et admin ne peuvent jamais signer l'entretien", () => {
     const e = entretienVide();
-    expect(validerSignatureEntretien(e, 'coordo').peutSigner).toBe(false);
-    expect(validerSignatureEntretien(e, 'admin').peutSigner).toBe(false);
+    expect(validerSignatureEntretien(e, 'coordo', BANQUE).peutSigner).toBe(false);
+    expect(validerSignatureEntretien(e, 'admin', BANQUE).peutSigner).toBe(false);
+  });
+
+  // Extension R20 juin 2026 (retours coordos) : questions obligatoires.
+  it("apprenti·e bloqué·e si une question obligatoire (cible apprenti) est sans réponse", () => {
+    const e = entretienVide();
+    e.questionsObligatoires = ['q-app-motivations'];
+    // Une réponse à une AUTRE question ne suffit pas.
+    e.reponsesApprenti['q-app-ressenti-equipe'] = 'Bonne ambiance.';
+    const r = validerSignatureEntretien(e, 'apprenti', BANQUE);
+    expect(r.peutSigner).toBe(false);
+    expect(r.raisons.some((m) => m.includes('obligatoire') && m.includes('motivations'))).toBe(true);
+  });
+
+  it("apprenti·e peut signer une fois la question obligatoire répondue", () => {
+    const e = entretienVide();
+    e.questionsObligatoires = ['q-app-motivations'];
+    e.reponsesApprenti['q-app-motivations'] = 'Devenir chef·fe de partie.';
+    expect(validerSignatureEntretien(e, 'apprenti', BANQUE).peutSigner).toBe(true);
+  });
+
+  it("maître bloqué si une question obligatoire (cible maître) est sans réponse, même avec appréciation", () => {
+    const e = entretienVide();
+    e.questionsObligatoires = ['q-mai-deja-forme'];
+    e.appreciationMaitre.qualiteTravail = 'plus';
+    const r = validerSignatureEntretien(e, 'maitre', BANQUE);
+    expect(r.peutSigner).toBe(false);
+    expect(r.raisons.some((m) => m.includes('obligatoire'))).toBe(true);
+  });
+
+  it("maître : « non » (false) est une réponse valable à une question oui-non obligatoire", () => {
+    const e = entretienVide();
+    e.questionsObligatoires = ['q-mai-deja-forme'];
+    e.appreciationMaitre.qualiteTravail = 'plus';
+    e.reponsesMaitre['q-mai-deja-forme'] = false;
+    expect(validerSignatureEntretien(e, 'maitre', BANQUE).peutSigner).toBe(true);
+  });
+
+  it("les questions obligatoires de l'autre cible ne bloquent pas la signature", () => {
+    const e = entretienVide();
+    e.questionsObligatoires = ['q-app-motivations', 'q-mai-deja-forme'];
+    e.appreciationMaitre.qualiteTravail = 'plus';
+    e.reponsesMaitre['q-mai-deja-forme'] = true;
+    // Le maître signe alors que la question obligatoire APPRENTI est sans réponse.
+    expect(validerSignatureEntretien(e, 'maitre', BANQUE).peutSigner).toBe(true);
   });
 });
 

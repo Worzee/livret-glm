@@ -54,7 +54,7 @@ test('bascule de rôle : chaque rôle ne voit en édition que ses propres zones'
   await expect(sectionObs.locator('textarea')).toHaveCount(0);
 
   // Bascule en maître d'apprentissage — sa zone aussi est figée (signé P3).
-  await selectRole(page, "Maître d'apprentissage");
+  await selectRole(page, 'Maître / Tuteur');
   await expect(sectionObs.locator('textarea')).toHaveCount(0);
 
   // Re-bascule en formateur référent — qui n'a PAS signé : sa zone redevient éditable.

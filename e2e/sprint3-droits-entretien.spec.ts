@@ -17,7 +17,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("la page Entretien tripartite charge avec les fixtures de Léa", async ({ page }) => {
-  await page.getByRole('link', { name: /Entretien tripartite/i }).click();
+  await page.getByRole('link', { name: /Entretien tripartite 1/i }).click();
   await expect(page).toHaveURL(/\/livret\/entretien/);
   await expect(page.getByRole('heading', { name: /Entretien tripartite/i })).toBeVisible();
   // La fixture renseigne motivations / contact entreprise → on s'appuie sur
@@ -30,7 +30,7 @@ test("la page Entretien tripartite charge avec les fixtures de Léa", async ({ p
 });
 
 test("un entretien signé par 3 parties est en lecture seule pour tous (R9)", async ({ page }) => {
-  await page.getByRole('link', { name: /Entretien tripartite/i }).click();
+  await page.getByRole('link', { name: /Entretien tripartite 1/i }).click();
 
   // En formateur (par défaut) : aucune textarea ni input éditable, l'entretien est figé.
   const sectionsEditablesFormateur = await page.locator('textarea, input[type="text"]').count();
@@ -42,14 +42,14 @@ test("un entretien signé par 3 parties est en lecture seule pour tous (R9)", as
   expect(sectionsEditablesApprenti).toBe(0);
 
   // En maître d'apprentissage : idem.
-  await selectRole(page, "Maître d'apprentissage");
+  await selectRole(page, 'Maître / Tuteur');
   const sectionsEditablesMaitre = await page.locator('textarea, input[type="text"]').count();
   expect(sectionsEditablesMaitre).toBe(0);
 });
 
 test("le coordinateur·rice consulte l'entretien sans aucun bouton de signature", async ({ page }) => {
   await selectRole(page, 'Coordinateur·rice');
-  await page.getByRole('link', { name: /Entretien tripartite/i }).click();
+  await page.getByRole('link', { name: /Entretien tripartite 1/i }).click();
 
   // Le coordo n'a pas de slot de signature personnel — il ne voit aucun bouton
   // « Signer en tant que … » même sur les rôles qui auraient des données.

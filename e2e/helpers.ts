@@ -24,11 +24,11 @@ export async function resetState(page: Page): Promise<void> {
 
 /**
  * Bascule de rôle via le `role="radiogroup"` du header.
- * @param label Libellé exact tel qu'affiché ("Apprenti·e", "Maître d'apprentissage", …)
+ * @param label Libellé exact tel qu'affiché ("Apprenti·e", "Maître / Tuteur", …)
  */
 export async function selectRole(
   page: Page,
-  label: 'Apprenti·e' | "Maître d'apprentissage" | 'Formateur référent' | 'Coordinateur·rice' | 'Admin',
+  label: 'Apprenti·e' | 'Maître / Tuteur' | 'Formateur référent' | 'Coordinateur·rice' | 'Admin',
 ): Promise<void> {
   await page.getByRole('radio', { name: label }).click();
   // Petite attente que l'état Zustand soit propagé.

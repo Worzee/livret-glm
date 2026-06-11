@@ -30,7 +30,7 @@ test('admin voit 6 cartes apprenti·e·s', async ({ page }) => {
 });
 
 test('maître d\'apprentissage Karim voit ses 3 apprenti·e·s', async ({ page }) => {
-  await selectRole(page, "Maître d'apprentissage");
+  await selectRole(page, 'Maître / Tuteur');
   const liens = page.getByRole('button', { name: /Ouvrir le livret de/i });
   await expect(liens).toHaveCount(3);
   // Léa, Théo, Sofia sont les 3 apprenti·e·s de Karim (Le Gourmet)
@@ -111,19 +111,22 @@ test("contexte « apprenti·e actif·ve » survit aux changements de page", asyn
 test('Minh (cas démarrage) : page Fiches affiche un état vide', async ({ page }) => {
   await page.getByRole('button', { name: /Ouvrir le livret de Minh NGUYEN/i }).click();
   await page.getByRole('link', { name: /Période en Entreprise/i }).click();
-  await expect(page.getByText(/Aucune période créée/i)).toBeVisible();
+  await expect(page.getByText(/Aucune période planifiée/i)).toBeVisible();
 });
 
 test('Sofia (cas alerte R7) : la page Entretien affiche le bandeau d\'alerte', async ({ page }) => {
   await page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }).click();
-  await page.getByRole('link', { name: /Entretien tripartite/i }).click();
+  // Sofia n'a pas d'événement « Entretien Tripartite 1 » dans son organisation
+  // du suivi → pas de lien sidebar (liens conditionnels, chantier #2). On passe
+  // par l'URL directe.
+  await page.goto('/livret/entretien/1');
   // L'entretien n'est pas initié → bouton « Initialiser l'entretien » visible
   // pour le formateur référent (rôle par défaut).
   await expect(page.getByRole('button', { name: /Initialiser l'entretien/i })).toBeVisible();
 });
 
 test('le sélecteur de maître bascule entre Karim (Le Gourmet) et Hélène (La Brasserie du Rhône)', async ({ page }) => {
-  await selectRole(page, "Maître d'apprentissage");
+  await selectRole(page, 'Maître / Tuteur');
 
   // Karim est actif par défaut → 3 cartes : Léa, Théo, Sofia.
   await expect(page.getByRole('button', { name: /Ouvrir le livret de Léa MARTIN/i })).toBeVisible();
@@ -147,11 +150,11 @@ test('le sélecteur de maître bascule entre Karim (Le Gourmet) et Hélène (La 
 });
 
 test('le sélecteur de maître n\'apparaît PAS pour les autres rôles', async ({ page }) => {
-  // Rôle formateur par défaut → pas de fieldset « Maître d'apprentissage actif ».
-  await expect(page.getByText(/Maître d'apprentissage actif/i)).toHaveCount(0);
+  // Rôle formateur par défaut → pas de fieldset « Maître / Tuteur actif ».
+  await expect(page.getByText(/Maître \/ Tuteur actif/i)).toHaveCount(0);
   // Idem en admin.
   await selectRole(page, 'Admin');
-  await expect(page.getByText(/Maître d'apprentissage actif/i)).toHaveCount(0);
+  await expect(page.getByText(/Maître \/ Tuteur actif/i)).toHaveCount(0);
 });
 
 test('le rôle apprenti·e suit l\'apprenti·e actif·ve sélectionné·e', async ({ page }) => {

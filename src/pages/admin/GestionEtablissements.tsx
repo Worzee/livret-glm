@@ -88,7 +88,7 @@ export function GestionEtablissements() {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-primary" aria-hidden="true" />
+            <Building2 className="h-5 w-5 texte-couleur-role" aria-hidden="true" />
             <h1 className="text-2xl font-semibold">Gestion des établissements</h1>
           </div>
           <p className="text-muted-foreground">
@@ -105,7 +105,7 @@ export function GestionEtablissements() {
           type="button"
           onClick={ouvrirCreation}
           data-testid="etablissement-nouveau"
-          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex items-center gap-1.5 rounded-md bouton-plein-couleur-role px-4 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           Nouvel établissement
@@ -187,7 +187,7 @@ export function GestionEtablissements() {
                   <ExternalLink
                     className={cn(
                       'h-3.5 w-3.5 shrink-0 mt-0.5',
-                      e.urlPronote ? 'text-primary' : 'text-muted-foreground',
+                      e.urlPronote ? 'texte-couleur-role' : 'text-muted-foreground',
                     )}
                     aria-hidden="true"
                   />
@@ -437,7 +437,7 @@ function ModaleEtablissement({
             type="button"
             onClick={valider}
             data-testid="eta-valider"
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex items-center gap-1.5 rounded-md bouton-plein-couleur-role px-4 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Save className="h-4 w-4" aria-hidden="true" />
             {enEdition ? 'Enregistrer' : 'Créer'}

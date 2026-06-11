@@ -46,7 +46,9 @@ interface BanqueQuestionsStore {
   reinitialiser: () => void;
 }
 
-const VERSION_SCHEMA = 1;
+// v2 — retours coordos juin 2026 : `pourEntretien1` / `pourEntretien2` /
+//      `obligatoire` sur chaque question (affectation par le coordo).
+const VERSION_SCHEMA = 2;
 
 function etatInitial(): Pick<BanqueQuestionsStore, 'questions'> {
   return {
@@ -83,7 +85,10 @@ export const useBanqueQuestionsStore = create<BanqueQuestionsStore>()(
         const q = get().questions[id];
         if (!q) return false;
         const livrets = Object.values(useLivretStore.getState().livrets);
-        const entretiens = livrets.map((l) => l.entretienTripartite);
+        // Chantier #2 : on couvre les 2 entretiens par livret pour la
+        // vérification d'utilisation (sinon on autoriserait à supprimer
+        // une question utilisée par E2 par exemple).
+        const entretiens = livrets.flatMap((l) => [l.entretien1, l.entretien2]);
         if (questionEstUtilisee(id, entretiens)) return false;
         const { [id]: _retire, ...sansElle } = get().questions;
         void _retire;

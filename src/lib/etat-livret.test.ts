@@ -145,7 +145,7 @@ function ficheVierge(numero: number): FicheSuiviPeriode {
     numeroPeriode: numero,
     dateDebut: `2026-0${numero}-01`,
     dateFin: `2026-0${numero}-28`,
-    suiviGretaCfa: [],
+    suiviGretaCfa: {},
     suiviEntreprise: [],
     observations: {},
     signatures: {
@@ -252,7 +252,7 @@ describe('calculerResumeLivret — transitions de cas', () => {
     const livretTheo = getLivret(apprentiTheoDubois.id);
     const livretSofiaEntretienSigne: Livret = {
       ...livretSofia,
-      entretienTripartite: livretTheo.entretienTripartite,
+      entretien1: livretTheo.entretien1,
     };
     const r = calculerResumeLivret(apprentiSofiaPereira, livretSofiaEntretienSigne, MAINTENANT);
     expect(r.cas).not.toBe('alerte-r7');

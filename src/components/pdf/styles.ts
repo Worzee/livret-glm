@@ -21,9 +21,14 @@ export const COULEURS = {
   fond: '#ffffff',
   fondSecondaire: '#f1f5f9',
   primaire: '#1e3a8a',
-  apprenti: '#a855f7',
-  maitre: '#0e7490',
-  formateur: '#16a34a',
+  // Aligné sur la charte UI (tailwind.config.ts > theme.colors.role) —
+  // corrige un bug historique où les 3 couleurs étaient inversées entre
+  // PDF et UI (apprenti=violet PDF vs bleu UI, etc.).
+  apprenti: '#1e40af', // bleu (UI: blue-800)
+  maitre: '#059669', // vert (UI: emerald-600)
+  formateur: '#7c3aed', // violet (UI: violet-600)
+  coordo: '#c2410c', // orange foncé (UI: orange-700)
+  admin: '#a16207', // or foncé (UI: yellow-700)
   alerte: '#b45309',
   succes: '#15803d',
 } as const;

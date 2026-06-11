@@ -31,7 +31,7 @@ const fiche = (
   numeroPeriode: num,
   dateDebut: '2026-01-01',
   dateFin: '2026-02-01',
-  suiviGretaCfa: [],
+  suiviGretaCfa: {},
   suiviEntreprise: lignes.map((l, i) => ({
     id: `l${num}-${i}`,
     competenceId: l.competenceId,

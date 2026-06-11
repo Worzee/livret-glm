@@ -48,7 +48,7 @@ test('verrou par défaut : tous les apprenti·e·s des fixtures sont verrouillé
   // Les selects de Léa sont disabled.
   const selectMaitreLea = page
     .locator('tbody tr', { hasText: /Léa MARTIN/ })
-    .getByLabel(/Maître d'apprentissage de Léa MARTIN/i);
+    .getByLabel(/Maître \/ Tuteur de Léa MARTIN/i);
   await expect(selectMaitreLea).toBeDisabled();
 });
 
@@ -61,12 +61,12 @@ test('réaffecter Léa de Karim vers Hélène — synchronisation des compteurs'
 
   // Ligne de Léa : on change son maître pour Hélène
   const ligneLea = page.locator('tbody tr', { hasText: /Léa MARTIN/ });
-  await ligneLea.getByLabel(/Maître d'apprentissage de Léa MARTIN/i).selectOption({
+  await ligneLea.getByLabel(/Maître \/ Tuteur de Léa MARTIN/i).selectOption({
     label: 'Hélène ROCHE',
   });
 
   // Bascule en rôle maître Karim — il ne doit plus avoir Léa (2 apprenti·e·s).
-  await selectRole(page, "Maître d'apprentissage");
+  await selectRole(page, 'Maître / Tuteur');
   await page.goto('/');
   await expect(
     page.getByRole('button', { name: /Karim BENALI/i }).getByText(/2 apprenti·e·s/i),
@@ -91,7 +91,7 @@ test('cas final : déplacer tous les apprenti·e·s de Karim débloque sa suppre
     await deverrouillerLigne(page, new RegExp(nom));
     await page
       .locator('tbody tr', { hasText: nom })
-      .getByLabel(new RegExp(`Maître d'apprentissage de ${nom}`, 'i'))
+      .getByLabel(new RegExp(`Maître / Tuteur de ${nom}`, 'i'))
       .selectOption({ label: 'Hélène ROCHE' });
   }
 

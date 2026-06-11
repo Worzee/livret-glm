@@ -99,7 +99,7 @@ export function validerSaisieApprenti(saisie: SaisieApprenti): ResultatValidatio
     erreurs.formationId = 'La formation est obligatoire.';
   }
   if (!saisie.maitreApprentissageId) {
-    erreurs.maitreApprentissageId = "Le maître d'apprentissage est obligatoire.";
+    erreurs.maitreApprentissageId = 'Le maître / tuteur est obligatoire.';
   }
   if (!saisie.formateurReferentId) {
     erreurs.formateurReferentId = 'Le formateur référent est obligatoire.';

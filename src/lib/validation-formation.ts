@@ -10,7 +10,11 @@ import type { Formation } from '@/types';
  * Pures fonctions — pas d'effet de bord, testables sans React.
  */
 
-export type SaisieFormation = Omit<Formation, 'id'>;
+/**
+ * `periodes` exclu : le planning n'est pas géré via ce formulaire mais
+ * via `ModalePlanningPeriodes` (chantier #1).
+ */
+export type SaisieFormation = Omit<Formation, 'id' | 'periodes'>;
 
 export interface ErreursFormation {
   intitule?: string;

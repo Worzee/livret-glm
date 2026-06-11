@@ -13,15 +13,18 @@ export interface SaisieStaff {
   nom: string;
   email: string;
   telephone?: string;
-  /** Présent uniquement pour les maîtres d'apprentissage. */
-  entrepriseId?: string;
+  /** Nom commercial de l'entreprise — uniquement pour les maîtres d'apprentissage. */
+  entreprise?: string;
+  /** Poste occupé dans l'entreprise — uniquement pour les maîtres d'apprentissage. */
+  fonction?: string;
 }
 
 export interface ErreursStaff {
   prenom?: string;
   nom?: string;
   email?: string;
-  entrepriseId?: string;
+  entreprise?: string;
+  fonction?: string;
 }
 
 export interface ResultatValidationStaff {
@@ -35,7 +38,7 @@ const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * Valide une saisie staff (maître / formateur / coordo).
  *
  * @param saisie       Champs saisis dans la modale.
- * @param exigeEntreprise Si `true`, l'`entrepriseId` est obligatoire (cas du maître).
+ * @param exigeEntreprise Si `true`, `entreprise` ET `fonction` sont obligatoires (cas du maître).
  */
 export function validerSaisieStaff(
   saisie: SaisieStaff,
@@ -55,8 +58,13 @@ export function validerSaisieStaff(
     erreurs.email = "Format d'email invalide.";
   }
 
-  if (exigeEntreprise && !saisie.entrepriseId?.trim()) {
-    erreurs.entrepriseId = "L'identifiant d'entreprise est obligatoire pour un maître.";
+  if (exigeEntreprise) {
+    if (!saisie.entreprise?.trim()) {
+      erreurs.entreprise = "Le nom de l'entreprise est obligatoire pour un maître.";
+    }
+    if (!saisie.fonction?.trim()) {
+      erreurs.fonction = 'La fonction du maître est obligatoire.';
+    }
   }
 
   return { ok: Object.keys(erreurs).length === 0, erreurs };

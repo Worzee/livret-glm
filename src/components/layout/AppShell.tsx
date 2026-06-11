@@ -9,6 +9,21 @@ import { useUserStore } from '@/store/useUserStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { libelleRole } from '@/lib/droits';
+import { cn } from '@/lib/utils';
+import type { Role } from '@/types';
+
+/**
+ * Classe de scoping qui modifie la variable CSS `--ring` selon le rôle actif.
+ * Appliquée sur le wrapper racine, elle recolore tous les `focus-visible:ring-ring`
+ * du sous-arbre (boutons, cartes, liens, inputs). Cf. `src/styles/index.css`.
+ */
+const CLASSE_ROLE_ACTIF: Record<Role, string> = {
+  apprenti: 'role-actif-apprenti',
+  maitre: 'role-actif-maitre',
+  formateur: 'role-actif-formateur',
+  coordo: 'role-actif-coordo',
+  admin: 'role-actif-admin',
+};
 
 /**
  * Coquille applicative — bandeau démo + header + sidebar + outlet.
@@ -33,7 +48,7 @@ export function AppShell() {
     : null;
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className={cn('min-h-screen flex flex-col bg-background', CLASSE_ROLE_ACTIF[roleActif])}>
       <BandeauDemo />
 
       <header className="border-b border-border bg-card">
@@ -150,12 +165,12 @@ function TrioContextuel({ trio, testid }: TrioContextuelProps) {
         <strong className="font-medium text-foreground">{fmt(trio.apprenti)}</strong>
       </span>
       <span aria-hidden="true" className="text-muted-foreground/40">·</span>
-      <span className="inline-flex items-center gap-1" title="Maître d'apprentissage">
+      <span className="inline-flex items-center gap-1" title="Maître / Tuteur">
         <HardHat
           className="h-3.5 w-3.5 shrink-0 text-role-maitre"
           aria-hidden="true"
         />
-        <span className="sr-only">Maître d'apprentissage :</span>
+        <span className="sr-only">Maître / Tuteur :</span>
         <strong className="font-medium text-foreground">{fmt(trio.maitre)}</strong>
       </span>
       <span aria-hidden="true" className="text-muted-foreground/40">·</span>

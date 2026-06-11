@@ -58,7 +58,7 @@ export default function ExportPdfLazy({
     <PDFDownloadLink
       document={document}
       fileName={nomFichierPdf(apprenti.nom, apprenti.prenom)}
-      className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="inline-flex items-center gap-1.5 rounded-md bouton-plein-couleur-role px-3 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       aria-label="Télécharger le livret au format PDF"
     >
       {({ loading, error }) => {

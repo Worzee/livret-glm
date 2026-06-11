@@ -16,13 +16,41 @@ const ROLES_CONFIG: Array<{
   role: Role;
   Icon: typeof GraduationCap;
   classeActive: string;
+  /** Couleur d'icône quand le bouton est inactif — permet d'identifier le rôle d'un coup d'œil. */
+  classeIconeInactive: string;
   libelleCourt?: string;
 }> = [
-  { role: 'apprenti', Icon: GraduationCap, classeActive: 'bg-role-apprenti text-white' },
-  { role: 'maitre', Icon: HardHat, classeActive: 'bg-role-maitre text-white' },
-  { role: 'formateur', Icon: UserCog, classeActive: 'bg-role-formateur text-white' },
-  { role: 'coordo', Icon: ShieldCheck, classeActive: 'bg-role-coordo text-white' },
-  { role: 'admin', Icon: Crown, classeActive: 'bg-role-admin text-white', libelleCourt: 'Admin' },
+  {
+    role: 'apprenti',
+    Icon: GraduationCap,
+    classeActive: 'bg-role-apprenti text-white',
+    classeIconeInactive: 'text-role-apprenti',
+  },
+  {
+    role: 'maitre',
+    Icon: HardHat,
+    classeActive: 'bg-role-maitre text-white',
+    classeIconeInactive: 'text-role-maitre',
+  },
+  {
+    role: 'formateur',
+    Icon: UserCog,
+    classeActive: 'bg-role-formateur text-white',
+    classeIconeInactive: 'text-role-formateur',
+  },
+  {
+    role: 'coordo',
+    Icon: ShieldCheck,
+    classeActive: 'bg-role-coordo text-white',
+    classeIconeInactive: 'text-role-coordo',
+  },
+  {
+    role: 'admin',
+    Icon: Crown,
+    classeActive: 'bg-role-admin text-white',
+    classeIconeInactive: 'text-role-admin',
+    libelleCourt: 'Admin',
+  },
 ];
 
 export function RoleSwitcher() {
@@ -35,7 +63,7 @@ export function RoleSwitcher() {
       aria-label="Sélection du rôle de démonstration"
       className="flex items-center gap-1 rounded-lg border border-border bg-secondary p-1"
     >
-      {ROLES_CONFIG.map(({ role, Icon, classeActive, libelleCourt }) => {
+      {ROLES_CONFIG.map(({ role, Icon, classeActive, classeIconeInactive, libelleCourt }) => {
         const actif = roleActif === role;
         const libelle = libelleCourt ?? libelleRole(role);
         return (
@@ -61,7 +89,15 @@ export function RoleSwitcher() {
             )}
             title={libelleRole(role)}
           >
-            <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <Icon
+              className={cn(
+                'h-4 w-4 shrink-0',
+                // Icône colorée même en inactif → identification visuelle
+                // immédiate des 5 rôles dans le sélecteur.
+                !actif && classeIconeInactive,
+              )}
+              aria-hidden="true"
+            />
             {/* Sur mobile : icône seule (libellé porté par aria-label).
                 À partir de lg : libellé visible. */}
             <span className="hidden lg:inline">{libelle}</span>

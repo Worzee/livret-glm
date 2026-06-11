@@ -237,7 +237,7 @@ export function GestionUtilisateurs() {
             onClick={() => setMenuCreationOuvert((o) => !o)}
             aria-haspopup="menu"
             aria-expanded={menuCreationOuvert}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex items-center gap-1.5 rounded-md bouton-plein-couleur-role px-4 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
             Nouveau · nouvelle…
@@ -268,7 +268,7 @@ export function GestionUtilisateurs() {
                   <OptionCreation
                     Icon={HardHat}
                     couleur="text-role-maitre"
-                    label="Maître d'apprentissage"
+                    label="Maître / Tuteur"
                     onClick={() => ouvrirCreationStaff('maitre')}
                   />
                 )}
@@ -339,8 +339,13 @@ export function GestionUtilisateurs() {
                 // pilote unique). Tout le reste l'est si le rôle actif a les droits.
                 const editable = u.role !== 'admin' && peutModifier;
                 const supprimable = u.role !== 'admin' && peutSupprimer && !blocage.bloque;
+                const classeBordureRole = BORDURES_ROLE[u.role];
+                const classeLibelleRole = cn(LIBELLES_ROLE[u.role], 'font-medium');
                 return (
-                  <tr key={u.id} className={cn(enConfirmation && 'bg-red-50')}>
+                  <tr
+                    key={u.id}
+                    className={cn(classeBordureRole, enConfirmation && 'bg-red-50')}
+                  >
                     <td className="px-2 md:px-4 py-2 font-medium align-top">
                       <span className="inline-flex items-center gap-2">
                         <IconeRole role={u.role} />
@@ -351,7 +356,7 @@ export function GestionUtilisateurs() {
                         {u.email}
                       </p>
                     </td>
-                    <td className="px-2 md:px-4 py-2 text-muted-foreground align-top">
+                    <td className={cn('px-2 md:px-4 py-2 align-top', classeLibelleRole)}>
                       {libelleRole(u.role)}
                     </td>
                     <td className="hidden md:table-cell px-4 py-2 text-muted-foreground align-top">
@@ -450,6 +455,24 @@ const ICONES_ROLE = {
   admin: { Icon: ShieldCheck, classe: 'text-role-admin' },
 } as const;
 
+// Classes Tailwind explicites — évite le bricolage `border-l-role-${role}`
+// qui n'est pas détecté par le scanner Tailwind (purge → classe absente du CSS).
+const BORDURES_ROLE: Record<Role, string> = {
+  apprenti: 'border-l-4 border-l-role-apprenti',
+  maitre: 'border-l-4 border-l-role-maitre',
+  formateur: 'border-l-4 border-l-role-formateur',
+  coordo: 'border-l-4 border-l-role-coordo',
+  admin: 'border-l-4 border-l-role-admin',
+};
+
+const LIBELLES_ROLE: Record<Role, string> = {
+  apprenti: 'text-role-apprenti',
+  maitre: 'text-role-maitre',
+  formateur: 'text-role-formateur',
+  coordo: 'text-role-coordo',
+  admin: 'text-role-admin',
+};
+
 function IconeRole({ role }: { role: Role }) {
   const { Icon, classe } = ICONES_ROLE[role];
   return <Icon className={cn('h-4 w-4 shrink-0', classe)} aria-hidden="true" />;
@@ -496,7 +519,7 @@ function FiltreRoleSelect({ valeur, onChange }: FiltreRoleSelectProps) {
     >
       <option value="tous">Tous les rôles</option>
       <option value="apprenti">Apprenti·e·s</option>
-      <option value="maitre">Maîtres d'apprentissage</option>
+      <option value="maitre">Maîtres / Tuteurs</option>
       <option value="formateur">Formateurs référents</option>
       <option value="coordo">Coordinateur·rice·s</option>
       <option value="admin">Administrateur·rice·s</option>

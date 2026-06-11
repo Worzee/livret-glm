@@ -1,5 +1,7 @@
 import type {
+  CibleQuestion,
   EntretienTripartite,
+  NumeroEntretien,
   QuestionBanque,
   ReponsesEntretien,
   TypeQuestion,
@@ -9,12 +11,19 @@ import type {
 /**
  * Banque de questions de l'entretien tripartite — catalogue par défaut + helpers.
  * Référence : refonte mai 2026 (les questions étaient codées en dur dans
- * `SectionApprenti` / `SectionMaitre`).
+ * `SectionApprenti` / `SectionMaitre`), enrichie juin 2026 (retours coordos) :
+ * le coordo affecte chaque question à l'entretien 1 et/ou 2 (`pourEntretienN`)
+ * et peut la marquer `obligatoire` (non retirable + réponse exigée pour signer).
  *
  * Les 11 questions ci-dessous reprennent celles existantes en les reformulant
  * de manière **neutre** (pas de référence à un domaine ou une formation
  * particulière). Elles servent de point de départ : le coordo / admin peut
  * en ajouter, modifier ou supprimer depuis la page d'administration dédiée.
+ *
+ * Affectations par défaut : toutes les questions sont affectées à E1
+ * (comportement historique) ; les questions de suivi/bilan le sont aussi à E2.
+ * Deux questions sont obligatoires pour la démonstration : les motivations de
+ * l'apprenti·e et l'expérience de formation du maître / tuteur.
  */
 
 export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
@@ -25,6 +34,9 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     type: 'texte-long',
     libelle: 'Quelles sont vos motivations pour cette formation ?',
     placeholder: 'Votre projet, vos objectifs…',
+    pourEntretien1: true,
+    pourEntretien2: false,
+    obligatoire: true,
   },
   {
     id: 'q-app-contact-entreprise',
@@ -32,6 +44,9 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     type: 'texte-court',
     libelle: 'Comment êtes-vous entré·e en contact avec votre entreprise ?',
     placeholder: 'Candidature spontanée, journée portes ouvertes, réseau…',
+    pourEntretien1: true,
+    pourEntretien2: false,
+    obligatoire: false,
   },
   {
     id: 'q-app-connaissance-entreprise',
@@ -39,6 +54,9 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     type: 'texte-court',
     libelle: 'Connaissiez-vous cette entreprise auparavant ?',
     placeholder: 'Stage antérieur, visite, recommandation…',
+    pourEntretien1: true,
+    pourEntretien2: false,
+    obligatoire: false,
   },
   {
     id: 'q-app-metier-representation',
@@ -46,6 +64,9 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     type: 'texte-long',
     libelle: 'Le métier correspond-il à la représentation que vous en aviez ?',
     placeholder: 'Surprises, confirmations, ajustements…',
+    pourEntretien1: true,
+    pourEntretien2: true,
+    obligatoire: false,
   },
   {
     id: 'q-app-difficultes-formation',
@@ -54,6 +75,9 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     libelle:
       'Rencontrez-vous des difficultés dans certaines matières du centre de formation ?',
     placeholder: 'Matières, contenus, méthodes…',
+    pourEntretien1: true,
+    pourEntretien2: true,
+    obligatoire: false,
   },
   {
     id: 'q-app-difficultes-autres',
@@ -62,6 +86,9 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     libelle:
       "Rencontrez-vous d'autres difficultés (matérielles, personnelles) ?",
     placeholder: 'Transport, logement, santé, etc.',
+    pourEntretien1: true,
+    pourEntretien2: true,
+    obligatoire: false,
   },
   {
     id: 'q-app-ressenti-equipe',
@@ -69,13 +96,19 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     type: 'texte-long',
     libelle: 'Comment vous sentez-vous au sein de votre équipe en entreprise ?',
     placeholder: 'Intégration, ambiance, soutien…',
+    pourEntretien1: true,
+    pourEntretien2: true,
+    obligatoire: false,
   },
-  // ── Maître ─────────────────────────────────────────────────────────────────
+  // ── Maître / Tuteur ─────────────────────────────────────────────────────────
   {
     id: 'q-mai-deja-forme',
     cible: 'maitre',
     type: 'oui-non',
     libelle: 'Avez-vous déjà formé un·e apprenti·e auparavant ?',
+    pourEntretien1: true,
+    pourEntretien2: false,
+    obligatoire: true,
   },
   {
     id: 'q-mai-diplomes-deja-formes',
@@ -83,6 +116,9 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     type: 'texte-court',
     libelle: "Si oui, quels diplômes / combien d'apprenti·e·s ?",
     placeholder: 'Ex : 3 CAP sur 8 ans',
+    pourEntretien1: true,
+    pourEntretien2: false,
+    obligatoire: false,
   },
   {
     id: 'q-mai-objectifs-embauche',
@@ -91,6 +127,9 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     libelle:
       "Quels sont vos objectifs en termes d'embauche à l'issue du contrat ?",
     placeholder: 'Embauche envisagée, conditions…',
+    pourEntretien1: true,
+    pourEntretien2: true,
+    obligatoire: false,
   },
   {
     id: 'q-mai-organisation-tutorat',
@@ -98,18 +137,74 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     type: 'texte-long',
     libelle: "Quelle est l'organisation prévue de l'accueil et du tutorat ?",
     placeholder: 'Tuteur·rice·s désigné·e·s, fréquence des points…',
+    pourEntretien1: true,
+    pourEntretien2: true,
+    obligatoire: false,
   },
 ];
 
 /**
- * Récupère les ids initiaux pour pré-sélectionner toutes les questions de la
- * banque dans un nouveau livret (toutes les questions par défaut, dans l'ordre
- * du catalogue). Utilisé par `creerLivretVierge` et les fixtures.
+ * Ids des questions affectées par le coordo à un entretien donné, pour une
+ * cible, dans l'ordre du catalogue. C'est ce sous-ensemble qui est injecté
+ * (snapshot) à l'initialisation d'un entretien.
  */
-export function idsQuestionsInitiales(
-  cible: 'apprenti' | 'maitre',
+export function idsQuestionsAffectees(
+  banque: ReadonlyArray<QuestionBanque>,
+  numero: NumeroEntretien,
+  cible: CibleQuestion,
 ): string[] {
-  return QUESTIONS_BANQUE_INITIALE.filter((q) => q.cible === cible).map((q) => q.id);
+  return banque
+    .filter((q) => q.cible === cible)
+    .filter((q) => (numero === 1 ? q.pourEntretien1 : q.pourEntretien2))
+    .map((q) => q.id);
+}
+
+/**
+ * Ids des questions obligatoires parmi celles affectées à un entretien
+ * (toutes cibles confondues). Snapshot à l'initialisation : non retirables
+ * ET réponse exigée pour la signature de la cible (extension R20).
+ */
+export function idsQuestionsObligatoiresAffectees(
+  banque: ReadonlyArray<QuestionBanque>,
+  numero: NumeroEntretien,
+): string[] {
+  return banque
+    .filter((q) => (numero === 1 ? q.pourEntretien1 : q.pourEntretien2))
+    .filter((q) => q.obligatoire)
+    .map((q) => q.id);
+}
+
+/**
+ * Le formateur référent peut-il retirer cette question de l'entretien ?
+ * Non si elle fait partie du snapshot affecté par le coordo (`questionsImposees`)
+ * ou du snapshot obligatoire (`questionsObligatoires`). Les questions que le
+ * formateur a lui-même ajoutées après l'initialisation restent retirables.
+ */
+export function peutRetirerQuestion(
+  entretien: Pick<EntretienTripartite, 'questionsImposees' | 'questionsObligatoires'>,
+  questionId: string,
+): boolean {
+  return (
+    !entretien.questionsImposees.includes(questionId) &&
+    !entretien.questionsObligatoires.includes(questionId)
+  );
+}
+
+/**
+ * Questions obligatoires de l'entretien (snapshot) ciblant `cible` et dont la
+ * réponse n'est pas renseignée. Sert à bloquer la signature (extension R20) et
+ * à composer les messages d'erreur (libellés).
+ */
+export function questionsObligatoiresSansReponse(
+  entretien: EntretienTripartite,
+  cible: CibleQuestion,
+  banque: Record<string, QuestionBanque>,
+): QuestionBanque[] {
+  const reponses = cible === 'apprenti' ? entretien.reponsesApprenti : entretien.reponsesMaitre;
+  return entretien.questionsObligatoires
+    .map((id) => banque[id])
+    .filter((q): q is QuestionBanque => !!q && q.cible === cible)
+    .filter((q) => !reponseEstRenseignee(q.type, reponses[q.id]));
 }
 
 /**

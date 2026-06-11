@@ -55,13 +55,16 @@ export default {
           DEFAULT: 'hsl(var(--popover))',
           foreground: 'hsl(var(--popover-foreground))',
         },
-        // Couleurs sémantiques métier (cf. CDC §14.2)
+        // Couleurs sémantiques métier (cf. CDC §14.2 + équilibrage mai 2026)
+        // Palette pensée pour identifier chaque rôle d'un coup d'œil :
+        //   - 3 rôles métier en froids (bleu / vert / violet)
+        //   - 2 rôles administratifs en chauds (orange foncé / or foncé)
         role: {
-          apprenti: '#1e40af', // bleu institutionnel
-          maitre: '#059669', // vert
-          formateur: '#7c3aed', // violet
-          coordo: '#0e7490', // cyan-700 (coordination administrative)
-          admin: '#4338ca', // indigo-700 (super-utilisateur)
+          apprenti: '#1e40af', // bleu institutionnel (blue-800)
+          maitre: '#059669', // vert (emerald-600)
+          formateur: '#7c3aed', // violet (violet-600)
+          coordo: '#c2410c', // orange foncé (orange-700) — coordination
+          admin: '#a16207', // or foncé (yellow-700) — super-utilisateur
         },
         niveau: {
           maitrise: '#059669',

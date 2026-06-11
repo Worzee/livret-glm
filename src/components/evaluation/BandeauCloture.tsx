@@ -164,7 +164,7 @@ export function BandeauCloture({ livret }: BandeauClotureProps) {
           <button
             type="button"
             onClick={() => setConfirmation('cloture')}
-            className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700"
+            className="inline-flex items-center gap-1.5 rounded-md bg-role-formateur px-3 py-1.5 text-sm font-medium text-white hover:opacity-90"
           >
             <ShieldCheck className="h-4 w-4" aria-hidden="true" />
             Clôturer le livret

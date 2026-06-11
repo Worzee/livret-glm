@@ -18,7 +18,18 @@ import {
   formatriceSophieDubois,
 } from './utilisateurs';
 import { referentielCapCuisine } from './referentiel-cap-cuisine';
-import { idsQuestionsInitiales } from '@/lib/questions-entretien';
+import {
+  QUESTIONS_BANQUE_INITIALE,
+  idsQuestionsAffectees,
+  idsQuestionsObligatoiresAffectees,
+} from '@/lib/questions-entretien';
+
+// Snapshot E1 de la configuration coordo par défaut — les 4 entretiens de
+// démo sont des E1 initialisés avec la banque initiale (retours coordos
+// juin 2026 : questions affectées par le coordo + obligatoires).
+const QUESTIONS_E1_APPRENTI = idsQuestionsAffectees(QUESTIONS_BANQUE_INITIALE, 1, 'apprenti');
+const QUESTIONS_E1_MAITRE = idsQuestionsAffectees(QUESTIONS_BANQUE_INITIALE, 1, 'maitre');
+const QUESTIONS_E1_OBLIGATOIRES = idsQuestionsObligatoiresAffectees(QUESTIONS_BANQUE_INITIALE, 1);
 
 /**
  * Livrets de démonstration — 6 apprenti·e·s, un livret par cas pédagogique.
@@ -134,11 +145,22 @@ function livretVierge(apprenti: Apprenti, livretId: string): Livret {
           motif: 'bilan-formation',
           commentaire: 'Bilan intermédiaire en janvier, bilan final en juin.',
         },
+        {
+          // Chantier #2 (mai 2026) : événement par défaut pour donner accès à
+          // l'Entretien Tripartite 1 depuis la sidebar. Sofia, qui override
+          // entièrement son `organisationSuivi`, n'hérite pas de cet
+          // événement et conserve son cas « alerte R7 ».
+          id: 'evt-vierge-6',
+          motif: 'entretien-tripartite-1',
+          date: '2025-10-28',
+          commentaire: "Entretien tripartite n° 1 — dans les 2 mois suivant le contrat (R7).",
+        },
       ],
       modifieLe: '2025-09-10T08:00:00.000Z',
       modifiePar: formatriceSophieDubois.id,
     },
-    entretienTripartite: null,
+    entretien1: null,
+    entretien2: null,
     fichesSuivi: [],
     evaluationFinaleCompetences: {
       lignes: lignesVides.competences,
@@ -168,8 +190,10 @@ function livretVierge(apprenti: Apprenti, livretId: string): Livret {
 
 const entretienLea: EntretienTripartite = {
   dateEntretien: '2025-10-28',
-  questionsApprentiSelectionnees: idsQuestionsInitiales('apprenti'),
-  questionsMaitreSelectionnees: idsQuestionsInitiales('maitre'),
+  questionsApprentiSelectionnees: [...QUESTIONS_E1_APPRENTI],
+  questionsMaitreSelectionnees: [...QUESTIONS_E1_MAITRE],
+  questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],
+  questionsObligatoires: [...QUESTIONS_E1_OBLIGATOIRES],
   reponsesApprenti: {
     'q-app-motivations':
       "Devenir cuisinière dans la restauration traditionnelle, idéalement à mon compte d'ici 10 ans.",
@@ -238,24 +262,15 @@ const entretienLea: EntretienTripartite = {
 const leaPeriode1: FicheSuiviPeriode = {
   id: 'fp-lea-1',
   numeroPeriode: 1,
+  periodeFormationId: 'pf-cap-cuisine-2025-p1',
   dateDebut: '2025-09-02',
   dateFin: '2025-12-20',
-  suiviGretaCfa: [
-    {
-      id: 'sg-lea-1-1',
-      nomCours: 'Technologie culinaire',
-      nomFormateur: 'Sophie DUBOIS',
-      contenu: 'Découverte des familles de matières premières. Hygiène HACCP introductive.',
-      evaluations: 'Contrôle continu : 14/20',
-    },
-    {
-      id: 'sg-lea-1-2',
-      nomCours: 'Travaux pratiques',
-      nomFormateur: 'Sophie DUBOIS',
-      contenu: 'Tailles de légumes, fonds de cuisine, première mise en place complète.',
-      evaluations: 'Évaluation finale : 13/20',
-    },
-  ],
+  suiviGretaCfa: {
+    apprenti:
+      "Découverte du métier au CFA. L'hygiène HACCP et les taillages sont bien rentrés ; les fonds demandent encore de la pratique.",
+    formateur:
+      'Technologie culinaire : familles de matières premières, hygiène HACCP introductive. Travaux pratiques : tailles de légumes, fonds, première mise en place complète. Contrôle continu 14/20, évaluation finale 13/20. Profil sérieux.',
+  },
   suiviEntreprise: [
     {
       id: 'se-lea-1-1',
@@ -297,17 +312,15 @@ const leaPeriode1: FicheSuiviPeriode = {
 const leaPeriode2: FicheSuiviPeriode = {
   id: 'fp-lea-2',
   numeroPeriode: 2,
+  periodeFormationId: 'pf-cap-cuisine-2025-p2',
   dateDebut: '2026-01-06',
   dateFin: '2026-02-14',
-  suiviGretaCfa: [
-    {
-      id: 'sg-lea-2-1',
-      nomCours: 'Pâtisserie',
-      nomFormateur: 'Sophie DUBOIS',
-      contenu: 'Pâtes de base, crème pâtissière, premiers desserts à l\'assiette.',
-      evaluations: 'TP noté : 15/20',
-    },
-  ],
+  suiviGretaCfa: {
+    apprenti:
+      "Premiers desserts à l'assiette. La crème pâtissière reste un point que je dois consolider.",
+    formateur:
+      "Pâtisserie : pâtes de base, crème pâtissière, premiers desserts à l'assiette. TP noté 15/20, progression visible.",
+  },
   suiviEntreprise: [
     {
       id: 'se-lea-2-1',
@@ -344,24 +357,15 @@ const leaPeriode2: FicheSuiviPeriode = {
 const leaPeriode3: FicheSuiviPeriode = {
   id: 'fp-lea-3',
   numeroPeriode: 3,
+  periodeFormationId: 'pf-cap-cuisine-2025-p3',
   dateDebut: '2026-03-02',
   dateFin: '2026-04-11',
-  suiviGretaCfa: [
-    {
-      id: 'sg-lea-3-1',
-      nomCours: 'Cuisine méditerranéenne',
-      nomFormateur: 'Sophie DUBOIS',
-      contenu:
-        'Spécialités du pourtour méditerranéen, légumes du soleil, herbes aromatiques, huiles parfumées.',
-      evaluations: 'En cours',
-    },
-    {
-      id: 'sg-lea-3-2',
-      nomCours: 'Pâtisserie de restaurant',
-      nomFormateur: 'Sophie DUBOIS',
-      contenu: 'Crèmes, mousses, parfaits glacés, dressage en assiette individuelle.',
-    },
-  ],
+  suiviGretaCfa: {
+    apprenti:
+      "Période riche entre cuisine méditerranéenne et pâtisserie de restaurant. Beaucoup à retenir sur les herbes aromatiques et le dressage individuel.",
+    formateur:
+      'Cuisine méditerranéenne (légumes du soleil, herbes aromatiques, huiles parfumées) + pâtisserie de restaurant (crèmes, mousses, parfaits glacés, dressage en assiette). Évaluation finale en cours.',
+  },
   suiviEntreprise: [
     {
       id: 'se-lea-3-1',
@@ -451,11 +455,26 @@ const livretLea: Livret = {
         motif: 'bilan-formation',
         commentaire: 'Bilan intermédiaire en janvier, bilan final en juin.',
       },
+      {
+        id: 'evt-lea-9',
+        motif: 'entretien-tripartite-1',
+        date: '2025-10-28',
+        commentaire: 'Réalisé le 28/10/2025 dans les locaux du restaurant Le Gourmet.',
+      },
+      {
+        id: 'evt-lea-10',
+        motif: 'entretien-tripartite-2',
+        date: '2026-05-15',
+        commentaire: 'Bilan mi-parcours — à initialiser et préparer.',
+      },
     ],
     modifieLe: '2025-09-10T08:00:00.000Z',
     modifiePar: formatriceSophieDubois.id,
   },
-  entretienTripartite: entretienLea,
+  entretien1: entretienLea,
+  // Refonte mai 2026 (chantier #2) : événement E2 créé mais entretien
+  // encore vide — démontre le cas « à initialiser ».
+  entretien2: null,
   fichesSuivi: [leaPeriode1, leaPeriode2, leaPeriode3],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiLeaMartin,
@@ -473,8 +492,10 @@ const livretLea: Livret = {
 
 const entretienTheo: EntretienTripartite = {
   dateEntretien: '2025-10-15',
-  questionsApprentiSelectionnees: idsQuestionsInitiales('apprenti'),
-  questionsMaitreSelectionnees: idsQuestionsInitiales('maitre'),
+  questionsApprentiSelectionnees: [...QUESTIONS_E1_APPRENTI],
+  questionsMaitreSelectionnees: [...QUESTIONS_E1_MAITRE],
+  questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],
+  questionsObligatoires: [...QUESTIONS_E1_OBLIGATOIRES],
   reponsesApprenti: {
     'q-app-motivations':
       'Reprendre la cuisine familiale italienne (mes grands-parents) en y ajoutant des techniques actuelles.',
@@ -531,22 +552,23 @@ const entretienTheo: EntretienTripartite = {
 const theoFiche = (numero: number, debut: string, fin: string, signatureDate: string): FicheSuiviPeriode => ({
   id: `fp-theo-${numero}`,
   numeroPeriode: numero,
+  periodeFormationId: `pf-cap-cuisine-2025-p${numero}`,
   dateDebut: debut,
   dateFin: fin,
-  suiviGretaCfa: [
-    {
-      id: `sg-theo-${numero}-1`,
-      nomCours: numero === 1 ? 'Technologie culinaire' : numero === 2 ? 'Pâtisserie' : 'Cuisine méditerranéenne',
-      nomFormateur: 'Sophie DUBOIS',
-      contenu:
-        numero === 1
-          ? 'Bases hygiène, taillages, fonds.'
-          : numero === 2
-            ? 'Pâtes, crèmes, premiers desserts.'
-            : 'Spécialités méditerranéennes.',
-      evaluations: numero === 1 ? '17/20' : numero === 2 ? '18/20' : '17/20',
-    },
-  ],
+  suiviGretaCfa: {
+    apprenti:
+      numero === 1
+        ? "Bases du métier rapidement intégrées, je me sens à l'aise au CFA."
+        : numero === 2
+          ? 'Pâtisserie agréable, je gagne en automatisme sur les gestes.'
+          : 'Cuisine méditerranéenne très inspirante, je prends de l\'aisance en dressage.',
+    formateur:
+      numero === 1
+        ? 'Technologie culinaire : hygiène HACCP, taillages, fonds. Niveau 17/20, profil moteur de la promo.'
+        : numero === 2
+          ? 'Pâtisserie : pâtes, crèmes, premiers desserts. Niveau 18/20, excellente progression.'
+          : 'Cuisine méditerranéenne : spécialités du pourtour méditerranéen. Niveau 17/20.',
+  },
   suiviEntreprise:
     numero === 1
       ? [
@@ -617,7 +639,8 @@ const theoFiche = (numero: number, debut: string, fin: string, signatureDate: st
 
 const livretTheo: Livret = {
   ...livretVierge(apprentiTheoDubois, 'livret-theo'),
-  entretienTripartite: entretienTheo,
+  entretien1: entretienTheo,
+  entretien2: null,
   fichesSuivi: [
     theoFiche(1, '2025-09-02', '2025-12-20', '2025-12-22T14:00:00.000Z'),
     theoFiche(2, '2026-01-06', '2026-02-14', '2026-02-16T10:30:00.000Z'),
@@ -641,17 +664,15 @@ const livretTheo: Livret = {
 const sofiaPeriode1: FicheSuiviPeriode = {
   id: 'fp-sofia-1',
   numeroPeriode: 1,
+  periodeFormationId: 'pf-cap-cuisine-2025-p1',
   dateDebut: '2025-09-02',
   dateFin: '2025-12-20',
-  suiviGretaCfa: [
-    {
-      id: 'sg-sofia-1-1',
-      nomCours: 'Technologie culinaire',
-      nomFormateur: 'Sophie DUBOIS',
-      contenu: 'Hygiène, taillages, fonds.',
-      evaluations: '11/20',
-    },
-  ],
+  suiviGretaCfa: {
+    apprenti:
+      "Démarrage difficile au CFA. J'ai eu du mal à suivre le rythme au début, ça va un peu mieux depuis la Toussaint.",
+    formateur:
+      'Technologie culinaire : hygiène HACCP, taillages, fonds. Niveau 11/20. Soutien individualisé à prévoir, à reprendre lors de l\'entretien tripartite (non encore tenu).',
+  },
   suiviEntreprise: [
     {
       id: 'se-sofia-1-1',
@@ -713,7 +734,8 @@ const livretSofia: Livret = {
     modifieLe: '2025-09-10T08:00:00.000Z',
     modifiePar: formatriceSophieDubois.id,
   },
-  entretienTripartite: null,
+  entretien1: null,
+  entretien2: null,
   fichesSuivi: [sofiaPeriode1],
   modifieLe: '2025-12-15T11:00:00.000Z',
 };
@@ -726,8 +748,10 @@ const livretSofia: Livret = {
 
 const entretienMinh: EntretienTripartite = {
   dateEntretien: '2026-04-20',
-  questionsApprentiSelectionnees: idsQuestionsInitiales('apprenti'),
-  questionsMaitreSelectionnees: idsQuestionsInitiales('maitre'),
+  questionsApprentiSelectionnees: [...QUESTIONS_E1_APPRENTI],
+  questionsMaitreSelectionnees: [...QUESTIONS_E1_MAITRE],
+  questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],
+  questionsObligatoires: [...QUESTIONS_E1_OBLIGATOIRES],
   reponsesApprenti: {
     'q-app-motivations': 'Devenir cuisinier dans la restauration asiatique-fusion.',
     'q-app-contact-entreprise':
@@ -811,11 +835,18 @@ const livretMinh: Livret = {
         motif: 'restitution-activites',
         commentaire: 'Tous les 6 semaines en classe.',
       },
+      {
+        id: 'evt-minh-6',
+        motif: 'entretien-tripartite-1',
+        date: '2026-04-20',
+        commentaire: 'Réalisé en présentiel au CFA.',
+      },
     ],
     modifieLe: '2026-04-20T16:00:00.000Z',
     modifiePar: formatriceSophieDubois.id,
   },
-  entretienTripartite: entretienMinh,
+  entretien1: entretienMinh,
+  entretien2: null,
   fichesSuivi: [],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiMinhNguyen,
@@ -835,17 +866,15 @@ const livretMinh: Livret = {
 const ayaPeriode1: FicheSuiviPeriode = {
   id: 'fp-aya-1',
   numeroPeriode: 1,
+  periodeFormationId: 'pf-cap-cuisine-2025-p1',
   dateDebut: '2025-09-02',
   dateFin: '2025-12-20',
-  suiviGretaCfa: [
-    {
-      id: 'sg-aya-1-1',
-      nomCours: 'Technologie culinaire',
-      nomFormateur: 'Sophie DUBOIS',
-      contenu: 'Hygiène, taillages, fonds.',
-      evaluations: '13/20',
-    },
-  ],
+  suiviGretaCfa: {
+    apprenti:
+      "Période OK au CFA. J'ai bien suivi les cours, sans difficulté particulière.",
+    formateur:
+      'Technologie culinaire : hygiène HACCP, taillages, fonds. Niveau 13/20, progression régulière.',
+  },
   suiviEntreprise: [
     {
       id: 'se-aya-1-1',
@@ -885,17 +914,15 @@ const ayaDeverrouillagePeriode2: EntreeDeverrouillage = {
 const ayaPeriode2: FicheSuiviPeriode = {
   id: 'fp-aya-2',
   numeroPeriode: 2,
+  periodeFormationId: 'pf-cap-cuisine-2025-p2',
   dateDebut: '2026-01-06',
   dateFin: '2026-02-14',
-  suiviGretaCfa: [
-    {
-      id: 'sg-aya-2-1',
-      nomCours: 'Pâtisserie',
-      nomFormateur: 'Sophie DUBOIS',
-      contenu: 'Pâtes, crèmes, desserts à l\'assiette.',
-      evaluations: '12/20',
-    },
-  ],
+  suiviGretaCfa: {
+    apprenti:
+      "Pâtisserie un peu plus difficile pour moi. J'ai besoin de plus d'entraînement pour automatiser les gestes.",
+    formateur:
+      "Pâtisserie : pâtes, crèmes, desserts à l'assiette. Niveau 12/20. Mise en place d'un soutien sur les gestes techniques.",
+  },
   suiviEntreprise: [
     {
       id: 'se-aya-2-1',
@@ -929,7 +956,7 @@ const ayaPeriode2: FicheSuiviPeriode = {
 
 const livretAya: Livret = {
   ...livretVierge(apprentiAyaKouame, 'livret-aya'),
-  entretienTripartite: {
+  entretien1: {
     ...entretienTheo,
     dateEntretien: '2025-10-22',
     reponsesApprenti: {
@@ -952,6 +979,7 @@ const livretAya: Livret = {
     },
     signatures: signaturesCompletes('2025-10-22T17:30:00.000Z'),
   },
+  entretien2: null,
   fichesSuivi: [ayaPeriode1, ayaPeriode2],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiAyaKouame,
@@ -968,8 +996,10 @@ const livretAya: Livret = {
 
 const entretienLuca: EntretienTripartite = {
   dateEntretien: '2025-10-30',
-  questionsApprentiSelectionnees: idsQuestionsInitiales('apprenti'),
-  questionsMaitreSelectionnees: idsQuestionsInitiales('maitre'),
+  questionsApprentiSelectionnees: [...QUESTIONS_E1_APPRENTI],
+  questionsMaitreSelectionnees: [...QUESTIONS_E1_MAITRE],
+  questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],
+  questionsObligatoires: [...QUESTIONS_E1_OBLIGATOIRES],
   reponsesApprenti: {
     'q-app-motivations': "Devenir cuisinier de bistrot, peut-être ouvrir mon affaire à terme.",
     'q-app-contact-entreprise': "J'ai trouvé l'annonce sur le site du GRETA.",
@@ -1021,17 +1051,15 @@ const entretienLuca: EntretienTripartite = {
 const lucaPeriode1: FicheSuiviPeriode = {
   id: 'fp-luca-1',
   numeroPeriode: 1,
+  periodeFormationId: 'pf-cap-cuisine-2025-p1',
   dateDebut: '2025-09-02',
   dateFin: '2025-12-20',
-  suiviGretaCfa: [
-    {
-      id: 'sg-luca-1-1',
-      nomCours: 'Technologie culinaire',
-      nomFormateur: 'Sophie DUBOIS',
-      contenu: 'Hygiène, taillages, fonds.',
-      evaluations: '14/20',
-    },
-  ],
+  suiviGretaCfa: {
+    apprenti:
+      'Premières semaines au CFA dans une ambiance studieuse. Bonne progression sur les techniques de base.',
+    formateur:
+      'Technologie culinaire : hygiène HACCP, taillages, fonds. Niveau 14/20, profil régulier.',
+  },
   suiviEntreprise: [
     {
       id: 'se-luca-1-1',
@@ -1068,17 +1096,15 @@ const lucaPeriode1: FicheSuiviPeriode = {
 const lucaPeriode2: FicheSuiviPeriode = {
   id: 'fp-luca-2',
   numeroPeriode: 2,
+  periodeFormationId: 'pf-cap-cuisine-2025-p2',
   dateDebut: '2026-01-06',
   dateFin: '2026-02-14',
-  suiviGretaCfa: [
-    {
-      id: 'sg-luca-2-1',
-      nomCours: 'Pâtisserie',
-      nomFormateur: 'Sophie DUBOIS',
-      contenu: 'Pâtes, crèmes, premiers desserts.',
-      evaluations: '13/20',
-    },
-  ],
+  suiviGretaCfa: {
+    apprenti:
+      "Pâtisserie agréable, on travaille beaucoup en binôme. Premiers desserts à l'assiette réussis.",
+    formateur:
+      'Pâtisserie : pâtes, crèmes, premiers desserts. Niveau 13/20.',
+  },
   suiviEntreprise: [
     {
       id: 'se-luca-2-1',
@@ -1108,17 +1134,15 @@ const lucaPeriode2: FicheSuiviPeriode = {
 const lucaPeriode3: FicheSuiviPeriode = {
   id: 'fp-luca-3',
   numeroPeriode: 3,
+  periodeFormationId: 'pf-cap-cuisine-2025-p3',
   dateDebut: '2026-03-02',
   dateFin: '2026-04-11',
-  suiviGretaCfa: [
-    {
-      id: 'sg-luca-3-1',
-      nomCours: 'Cuisine méditerranéenne',
-      nomFormateur: 'Sophie DUBOIS',
-      contenu: 'Spécialités méditerranéennes.',
-      evaluations: 'En cours',
-    },
-  ],
+  suiviGretaCfa: {
+    apprenti:
+      'Période en cours sur la cuisine méditerranéenne. Beaucoup de découvertes côté herbes et légumes du soleil.',
+    formateur:
+      'Cuisine méditerranéenne : spécialités du pourtour méditerranéen. Évaluation en cours.',
+  },
   suiviEntreprise: [
     {
       id: 'se-luca-3-1',
@@ -1147,7 +1171,8 @@ const lucaPeriode3: FicheSuiviPeriode = {
 
 const livretLuca: Livret = {
   ...livretVierge(apprentiLucaBianchi, 'livret-luca'),
-  entretienTripartite: entretienLuca,
+  entretien1: entretienLuca,
+  entretien2: null,
   fichesSuivi: [lucaPeriode1, lucaPeriode2, lucaPeriode3],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiLucaBianchi,

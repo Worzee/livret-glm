@@ -125,8 +125,10 @@ function Onglet({ titre, Icon, actif, onClick }: OngletProps) {
       className={cn(
         'inline-flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        // Onglet actif : suit la couleur du rôle actif via la variable --ring
+        // (équilibrage graphique mai 2026).
         actif
-          ? 'border-primary text-primary'
+          ? 'texte-couleur-role border-b-[hsl(var(--ring))]'
           : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border',
       )}
     >

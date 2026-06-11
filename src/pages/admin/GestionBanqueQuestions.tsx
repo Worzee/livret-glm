@@ -60,7 +60,7 @@ export function GestionBanqueQuestions() {
   );
 
   const entretiens = useMemo(
-    () => Object.values(livrets).map((l) => l.entretienTripartite),
+    () => Object.values(livrets).flatMap((l) => [l.entretien1, l.entretien2]),
     [livrets],
   );
 
@@ -96,12 +96,14 @@ export function GestionBanqueQuestions() {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <ListChecks className="h-5 w-5 text-primary" aria-hidden="true" />
+            <ListChecks className="h-5 w-5 texte-couleur-role" aria-hidden="true" />
             <h1 className="text-2xl font-semibold">Banque de questions</h1>
           </div>
           <p className="text-muted-foreground">
-            Catalogue des questions disponibles pour l'entretien tripartite. Le formateur
-            référent en sélectionnera certaines pour chaque livret.
+            Catalogue des questions de l'entretien tripartite. Affectez chaque question à
+            l'entretien 1 et/ou 2 : elles seront posées dans tous les livrets (le formateur
+            référent peut en ajouter d'autres, mais pas retirer celles affectées). Une
+            question <strong>obligatoire</strong> exige une réponse avant signature.
           </p>
           <p className="text-xs text-muted-foreground">
             <strong>{nbQuestionsCible('apprenti')}</strong> questions apprenti·e ·{' '}
@@ -112,7 +114,7 @@ export function GestionBanqueQuestions() {
           type="button"
           onClick={ouvrirCreation}
           data-testid="banque-q-nouveau"
-          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex items-center gap-1.5 rounded-md bouton-plein-couleur-role px-4 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           Nouvelle question
@@ -130,6 +132,8 @@ export function GestionBanqueQuestions() {
               <tr>
                 <th className="px-2 md:px-4 py-2 text-left">Question</th>
                 <th className="px-2 md:px-4 py-2 text-left">Type</th>
+                <th className="px-2 md:px-4 py-2 text-center">Entretiens</th>
+                <th className="px-2 md:px-4 py-2 text-center">Obligatoire</th>
                 <th className="px-2 md:px-4 py-2 text-right">Actions</th>
               </tr>
             </thead>
@@ -150,7 +154,7 @@ export function GestionBanqueQuestions() {
                         <div className="min-w-0">
                           <p className="font-medium text-foreground">{q.libelle}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {q.cible === 'apprenti' ? "Apprenti·e" : "Maître d'apprentissage"}
+                            {q.cible === 'apprenti' ? "Apprenti·e" : 'Maître / Tuteur'}
                             {q.placeholder && (
                               <>
                                 {' · '}
@@ -163,6 +167,52 @@ export function GestionBanqueQuestions() {
                     </td>
                     <td className="px-2 md:px-4 py-2 text-muted-foreground align-top whitespace-nowrap">
                       {libelleType(q.type)}
+                    </td>
+                    {/* Affectation E1 / E2 par le coordo (retours coordos juin 2026).
+                        Snapshot à l'initialisation : ne modifie pas les entretiens
+                        déjà initialisés. */}
+                    <td className="px-2 md:px-4 py-2 align-top text-center whitespace-nowrap">
+                      <div className="inline-flex items-center gap-3">
+                        <label className="inline-flex items-center gap-1 text-xs cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={q.pourEntretien1}
+                            onChange={(e) =>
+                              modifierQuestion(q.id, { pourEntretien1: e.target.checked })
+                            }
+                            data-testid={`banque-q-e1-${q.id}`}
+                            aria-label={`Affecter à l'entretien tripartite 1 : ${q.libelle}`}
+                            className="h-4 w-4 rounded border-input accent-[hsl(var(--ring))] focus-visible:ring-2 focus-visible:ring-ring"
+                          />
+                          E1
+                        </label>
+                        <label className="inline-flex items-center gap-1 text-xs cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={q.pourEntretien2}
+                            onChange={(e) =>
+                              modifierQuestion(q.id, { pourEntretien2: e.target.checked })
+                            }
+                            data-testid={`banque-q-e2-${q.id}`}
+                            aria-label={`Affecter à l'entretien tripartite 2 : ${q.libelle}`}
+                            className="h-4 w-4 rounded border-input accent-[hsl(var(--ring))] focus-visible:ring-2 focus-visible:ring-ring"
+                          />
+                          E2
+                        </label>
+                      </div>
+                    </td>
+                    <td className="px-2 md:px-4 py-2 align-top text-center">
+                      <input
+                        type="checkbox"
+                        checked={q.obligatoire}
+                        onChange={(e) =>
+                          modifierQuestion(q.id, { obligatoire: e.target.checked })
+                        }
+                        data-testid={`banque-q-obligatoire-${q.id}`}
+                        aria-label={`Rendre obligatoire : ${q.libelle}`}
+                        title="Obligatoire : non retirable de l'entretien et réponse exigée pour signer."
+                        className="h-4 w-4 rounded border-input accent-[hsl(var(--ring))] focus-visible:ring-2 focus-visible:ring-ring"
+                      />
                     </td>
                     <td className="px-2 md:px-4 py-2 text-right align-top">
                       <div className="inline-flex items-center gap-1">
@@ -226,9 +276,18 @@ export function GestionBanqueQuestions() {
         }}
         onValider={(valeurs, existante) => {
           if (existante) {
+            // Patch partiel : l'affectation E1/E2/obligatoire (cases du
+            // tableau) n'est pas touchée par la modale.
             modifierQuestion(existante.id, valeurs);
           } else {
-            ajouterQuestion(valeurs);
+            // Une nouvelle question arrive non affectée : le coordo la
+            // branche ensuite sur E1/E2 depuis le tableau.
+            ajouterQuestion({
+              ...valeurs,
+              pourEntretien1: false,
+              pourEntretien2: false,
+              obligatoire: false,
+            });
           }
           setModaleOuverte(false);
           setEnEdition(undefined);

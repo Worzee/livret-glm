@@ -14,7 +14,7 @@ const ficheVide = (): FicheSuiviPeriode => ({
   numeroPeriode: 1,
   dateDebut: '2026-01-01',
   dateFin: '2026-01-31',
-  suiviGretaCfa: [],
+  suiviGretaCfa: {},
   suiviEntreprise: [],
   observations: {},
   signatures: {
@@ -49,15 +49,22 @@ describe('ficheEstVide', () => {
     expect(ficheEstVide(ficheVide())).toBe(true);
   });
 
-  it("retourne false dès qu'une ligne GRETA est ajoutée", () => {
+  it("retourne false dès que la zone GRETA formateur est renseignée", () => {
     const f = ficheVide();
-    f.suiviGretaCfa.push({
-      id: 'sg',
-      nomCours: 'X',
-      nomFormateur: 'Y',
-      contenu: 'Z',
-    });
+    f.suiviGretaCfa = { formateur: 'Contenus de la période.' };
     expect(ficheEstVide(f)).toBe(false);
+  });
+
+  it("retourne false dès que la zone GRETA apprenti est renseignée", () => {
+    const f = ficheVide();
+    f.suiviGretaCfa = { apprenti: "Ce que j'ai appris au CFA." };
+    expect(ficheEstVide(f)).toBe(false);
+  });
+
+  it("ignore les chaînes ne contenant que des espaces", () => {
+    const f = ficheVide();
+    f.suiviGretaCfa = { apprenti: '   ', formateur: '\n\t' };
+    expect(ficheEstVide(f)).toBe(true);
   });
 
   it("retourne false dès qu'une observation est saisie", () => {

@@ -30,6 +30,7 @@ const form1: Formation = {
   dateDebut: '2025-09-01',
   dateFin: '2027-09-01',
   lieuId: eta1.id,
+  periodes: [],
 };
 const form2: Formation = {
   id: 'f-2',
@@ -40,6 +41,7 @@ const form2: Formation = {
   dateDebut: '2025-09-01',
   dateFin: '2027-09-01',
   lieuId: eta2.id,
+  periodes: [],
 };
 
 const app1: Apprenti = {
@@ -63,7 +65,8 @@ const mai1: Maitre = {
   prenom: 'Karim',
   nom: 'BENALI',
   email: 'k@demo.fr',
-  entrepriseId: 'e-1',
+  entreprise: 'Le Gourmet',
+  fonction: 'Chef de cuisine',
   apprentiIds: [app1.id],
 };
 

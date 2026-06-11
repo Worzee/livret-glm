@@ -14,7 +14,8 @@ import { cn } from '@/lib/utils';
  * maître d'apprentissage, formateur référent, coordo.
  *
  * Différences entre rôles :
- *   - le maître a un champ supplémentaire `entrepriseId` (obligatoire)
+ *   - le maître a 2 champs supplémentaires obligatoires : `entreprise` (nom
+ *     commercial) et `fonction` (poste occupé dans l'entreprise)
  *   - les autres champs sont identiques (identité)
  *
  * L'affectation (apprenti·e·s pour le maître, promo pour le formateur,
@@ -42,7 +43,8 @@ const SAISIE_VIDE: SaisieStaff = {
   nom: '',
   email: '',
   telephone: '',
-  entrepriseId: '',
+  entreprise: '',
+  fonction: '',
 };
 
 const ICONES: Record<RoleStaff, { Icon: typeof HardHat; couleur: string }> = {
@@ -77,7 +79,8 @@ export function ModaleUtilisateurStaff({
         nom: utilisateur.nom,
         email: utilisateur.email,
         telephone: utilisateur.telephone ?? '',
-        entrepriseId: 'entrepriseId' in utilisateur ? utilisateur.entrepriseId : '',
+        entreprise: 'entreprise' in utilisateur ? utilisateur.entreprise : '',
+        fonction: 'fonction' in utilisateur ? utilisateur.fonction : '',
       };
     }
     return SAISIE_VIDE;
@@ -126,6 +129,11 @@ export function ModaleUtilisateurStaff({
       telephone: saisie.telephone?.trim(),
     };
 
+    const champsMaitre = {
+      entreprise: saisie.entreprise?.trim() ?? '',
+      fonction: saisie.fonction?.trim() ?? '',
+    };
+
     let resultat: Maitre | Formateur | Coordo;
     if (utilisateur) {
       // Édition
@@ -133,12 +141,12 @@ export function ModaleUtilisateurStaff({
         case 'maitre':
           modifierMaitre(utilisateur.id, {
             ...champsCommuns,
-            entrepriseId: saisie.entrepriseId?.trim() ?? '',
+            ...champsMaitre,
           });
           resultat = {
             ...(utilisateur as Maitre),
             ...champsCommuns,
-            entrepriseId: saisie.entrepriseId?.trim() ?? '',
+            ...champsMaitre,
           };
           break;
         case 'formateur':
@@ -156,7 +164,7 @@ export function ModaleUtilisateurStaff({
         case 'maitre':
           resultat = ajouterMaitre({
             ...champsCommuns,
-            entrepriseId: saisie.entrepriseId?.trim() ?? '',
+            ...champsMaitre,
           });
           break;
         case 'formateur':
@@ -255,15 +263,26 @@ export function ModaleUtilisateurStaff({
               testId="staff-telephone"
             />
             {role === 'maitre' && (
-              <Champ
-                label="Identifiant entreprise"
-                valeur={saisie.entrepriseId ?? ''}
-                onChange={(v) => setSaisie((s) => ({ ...s, entrepriseId: v }))}
-                erreur={erreurs.entrepriseId}
-                obligatoire
-                hint="Code court, ex : e-le-gourmet"
-                testId="staff-entreprise"
-              />
+              <>
+                <Champ
+                  label="Entreprise"
+                  valeur={saisie.entreprise ?? ''}
+                  onChange={(v) => setSaisie((s) => ({ ...s, entreprise: v }))}
+                  erreur={erreurs.entreprise}
+                  obligatoire
+                  hint="Nom commercial — ex : « Restaurant Le Gourmet »"
+                  testId="staff-entreprise"
+                />
+                <Champ
+                  label="Fonction"
+                  valeur={saisie.fonction ?? ''}
+                  onChange={(v) => setSaisie((s) => ({ ...s, fonction: v }))}
+                  erreur={erreurs.fonction}
+                  obligatoire
+                  hint="Poste occupé — ex : « Chef de cuisine »"
+                  testId="staff-fonction"
+                />
+              </>
             )}
           </div>
         </div>
@@ -271,7 +290,7 @@ export function ModaleUtilisateurStaff({
         <div className="sticky bottom-0 flex flex-row-reverse items-center gap-2 border-t border-border bg-secondary/30 p-3">
           <button
             type="submit"
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex items-center gap-1.5 rounded-md bouton-plein-couleur-role px-4 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {utilisateur ? 'Enregistrer les modifications' : `Créer ${libelleRole(role).toLowerCase()}`}
           </button>

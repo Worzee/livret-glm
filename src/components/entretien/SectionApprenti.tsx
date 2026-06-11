@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ListChecks } from 'lucide-react';
-import type { EntretienTripartite, QuestionBanque } from '@/types';
+import { GraduationCap, ListChecks } from 'lucide-react';
+import type { EntretienTripartite, NumeroEntretien, QuestionBanque } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
@@ -23,10 +23,11 @@ import { SelecteurQuestions } from './SelecteurQuestions';
 
 interface SectionApprentiProps {
   livretId: string;
+  numero: NumeroEntretien;
   entretien: EntretienTripartite;
 }
 
-export function SectionApprenti({ livretId, entretien }: SectionApprentiProps) {
+export function SectionApprenti({ livretId, numero, entretien }: SectionApprentiProps) {
   const roleActif = useUserStore((s) => s.roleActif);
   const setReponse = useLivretStore((s) => s.setReponseEntretien);
   const setQuestions = useLivretStore((s) => s.setQuestionsSelectionnees);
@@ -48,21 +49,37 @@ export function SectionApprenti({ livretId, entretien }: SectionApprentiProps) {
     .map((id) => banque[id])
     .filter((q): q is QuestionBanque => !!q && q.cible === 'apprenti');
 
+  // Retours coordos juin 2026 : les questions affectées par le coordo
+  // (snapshot) ne sont pas retirables ; les obligatoires portent un badge.
+  const idsNonRetirables = [
+    ...entretien.questionsImposees,
+    ...entretien.questionsObligatoires,
+  ];
+  const idsObligatoires = new Set(entretien.questionsObligatoires);
+
   return (
     <section className="rounded-lg border border-border border-l-4 border-l-role-apprenti bg-card p-4 space-y-4">
       <header className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h2 className="text-lg font-medium">Questions à l'apprenti·e</h2>
-          <p className="text-xs text-muted-foreground">
-            Réservé à l'apprenti·e. Verrouillé après votre signature.
-          </p>
+        <div className="flex items-start gap-2">
+          <GraduationCap
+            className="mt-1 h-5 w-5 shrink-0 text-role-apprenti"
+            aria-hidden="true"
+          />
+          <div>
+            <h2 className="text-lg font-medium text-role-apprenti">
+              Questions à l'apprenti·e
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Réservé à l'apprenti·e. Verrouillé après votre signature.
+            </p>
+          </div>
         </div>
         {peutChoisirQuestions && (
           <button
             type="button"
             onClick={() => setSelecteurOuvert(true)}
             data-testid="apprenti-choisir-questions"
-            className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex items-center gap-1.5 rounded-md border border-role-formateur/30 bg-role-formateur/10 px-2.5 py-1 text-xs font-medium text-role-formateur hover:bg-role-formateur/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <ListChecks className="h-3.5 w-3.5" aria-hidden="true" />
             Choisir les questions ({questions.length})
@@ -84,8 +101,9 @@ export function SectionApprenti({ livretId, entretien }: SectionApprentiProps) {
               question={q}
               valeur={entretien.reponsesApprenti[q.id]}
               editable={editable}
+              obligatoire={idsObligatoires.has(q.id)}
               onChange={(valeur) =>
-                setReponse(livretId, 'apprenti', q.id, valeur)
+                setReponse(livretId, numero, 'apprenti', q.id, valeur)
               }
             />
           ))
@@ -101,7 +119,7 @@ export function SectionApprenti({ livretId, entretien }: SectionApprentiProps) {
             id="apprenti-commentaire"
             rows={3}
             value={entretien.commentaires.apprenti ?? ''}
-            onChange={(e) => setCommentaire(livretId, 'apprenti', e.target.value)}
+            onChange={(e) => setCommentaire(livretId, numero, 'apprenti', e.target.value)}
             placeholder="Tout ce que vous souhaitez ajouter…"
             className="w-full resize-y rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
@@ -122,9 +140,10 @@ export function SectionApprenti({ livretId, entretien }: SectionApprentiProps) {
         ouvert={selecteurOuvert}
         cible="apprenti"
         selectionInitiale={entretien.questionsApprentiSelectionnees}
+        idsNonRetirables={idsNonRetirables}
         onAnnuler={() => setSelecteurOuvert(false)}
         onValider={(ids) => {
-          setQuestions(livretId, 'apprenti', ids);
+          setQuestions(livretId, numero, 'apprenti', ids);
           setSelecteurOuvert(false);
         }}
       />
@@ -140,16 +159,29 @@ interface ChampQuestionProps {
   question: QuestionBanque;
   valeur: string | boolean | null | undefined;
   editable: boolean;
+  /** Réponse exigée pour signer (extension R20) — affiche un badge. */
+  obligatoire?: boolean;
   onChange: (valeur: string | boolean | null) => void;
 }
 
-function ChampQuestion({ question, valeur, editable, onChange }: ChampQuestionProps) {
+function BadgeObligatoire() {
+  return (
+    <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 align-middle">
+      Obligatoire
+    </span>
+  );
+}
+
+function ChampQuestion({ question, valeur, editable, obligatoire, onChange }: ChampQuestionProps) {
   const id = `entretien-q-${question.id}`;
 
   if (question.type === 'oui-non') {
     return (
       <div className="space-y-1">
-        <span className="text-sm font-medium block">{question.libelle}</span>
+        <span className="text-sm font-medium block">
+          {question.libelle}
+          {obligatoire && <BadgeObligatoire />}
+        </span>
         <CaseOuiNon
           editable={editable}
           valeur={typeof valeur === 'boolean' ? valeur : null}
@@ -167,6 +199,7 @@ function ChampQuestion({ question, valeur, editable, onChange }: ChampQuestionPr
     <div className="space-y-1">
       <label htmlFor={id} className="text-sm font-medium">
         {question.libelle}
+        {obligatoire && <BadgeObligatoire />}
       </label>
       {editable ? (
         question.type === 'texte-long' ? (

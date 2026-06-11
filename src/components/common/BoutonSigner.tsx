@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { PenLine, ShieldAlert } from 'lucide-react';
+import type { Role } from '@/types';
 import { cn } from '@/lib/utils';
 
 /**
@@ -28,7 +29,18 @@ interface BoutonSignerProps {
   raisonsBlocage?: ReadonlyArray<string>;
   /** Callback déclenché au 2ᵉ clic. */
   onConfirmer: () => void;
+  /**
+   * Rôle qui signe — détermine la couleur de fond du bouton.
+   * Refonte mai 2026 (équilibrage graphique) : bg-role-X au lieu de bg-primary.
+   */
+  role: Extract<Role, 'apprenti' | 'maitre' | 'formateur'>;
 }
+
+const CLASSE_BG_ROLE: Record<'apprenti' | 'maitre' | 'formateur', string> = {
+  apprenti: 'bg-role-apprenti text-white',
+  maitre: 'bg-role-maitre text-white',
+  formateur: 'bg-role-formateur text-white',
+};
 
 export function BoutonSigner({
   nomCourt,
@@ -36,6 +48,7 @@ export function BoutonSigner({
   disabled,
   raisonsBlocage,
   onConfirmer,
+  role,
 }: BoutonSignerProps) {
   const [confirmation, setConfirmation] = useState(false);
 
@@ -67,7 +80,7 @@ export function BoutonSigner({
           'inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           disabled
             ? 'bg-muted text-muted-foreground cursor-not-allowed'
-            : 'bg-primary text-primary-foreground hover:opacity-90',
+            : cn(CLASSE_BG_ROLE[role], 'hover:opacity-90'),
         )}
       >
         <PenLine className="h-4 w-4" aria-hidden="true" />
@@ -104,7 +117,10 @@ export function BoutonSigner({
             onConfirmer();
             setConfirmation(false);
           }}
-          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className={cn(
+            'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            CLASSE_BG_ROLE[role],
+          )}
         >
           <PenLine className="h-4 w-4" aria-hidden="true" />
           Confirmer

@@ -98,13 +98,26 @@ export function LivretPdf({
         dateExport={date}
       />
       <PageOrganisation livret={livret} />
-      <PageEntretien
-        entretien={livret.entretienTripartite}
-        apprenti={apprenti}
-        maitre={maitre}
-        formateur={formateur}
-        banqueQuestions={banqueQuestions}
-      />
+      {livret.entretien1 && (
+        <PageEntretien
+          numero={1}
+          entretien={livret.entretien1}
+          apprenti={apprenti}
+          maitre={maitre}
+          formateur={formateur}
+          banqueQuestions={banqueQuestions}
+        />
+      )}
+      {livret.entretien2 && (
+        <PageEntretien
+          numero={2}
+          entretien={livret.entretien2}
+          apprenti={apprenti}
+          maitre={maitre}
+          formateur={formateur}
+          banqueQuestions={banqueQuestions}
+        />
+      )}
       {livret.fichesSuivi.map((fiche) => (
         <PageFiche
           key={fiche.id}
@@ -277,9 +290,11 @@ function PageDeGarde({
             />
             <Ligne label="Centre de formation" valeur={libelleLieu} />
             <Ligne
-              label="Maître d'apprentissage"
+              label="Maître / Tuteur"
               valeur={`${maitre.prenom} ${maitre.nom}`}
             />
+            <Ligne label="Entreprise" valeur={maitre.entreprise} />
+            <Ligne label="Fonction du maître" valeur={maitre.fonction} />
             <Ligne
               label="Formateur référent"
               valeur={`${formateur.prenom} ${formateur.nom}`}
@@ -368,27 +383,20 @@ function PageOrganisation({ livret }: { livret: Livret }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function PageEntretien({
+  numero,
   entretien,
   apprenti,
   maitre,
   formateur,
   banqueQuestions,
 }: {
-  entretien: EntretienTripartite | null;
+  numero: 1 | 2;
+  entretien: EntretienTripartite;
   apprenti: Apprenti;
   maitre: Maitre;
   formateur: Formateur;
   banqueQuestions: Record<string, QuestionBanque>;
 }) {
-  if (!entretien) {
-    return (
-      <Page size="A4" style={styles.page}>
-        <PiedDePage dateExport={new Date().toISOString()} />
-        <Text style={styles.h1}>Entretien tripartite</Text>
-        <Text style={styles.vide}>L'entretien tripartite n'a pas encore été initialisé.</Text>
-      </Page>
-    );
-  }
   const ap = entretien.appreciationMaitre;
   const da = entretien.demarchesAdministratives;
   const cp = entretien.conditionsPratiques;
@@ -431,7 +439,7 @@ function PageEntretien({
     <Page size="A4" style={styles.page}>
       <PiedDePage dateExport={new Date().toISOString()} />
       <View>
-        <Text style={styles.h1}>Entretien tripartite</Text>
+        <Text style={styles.h1}>Entretien tripartite n° {numero}</Text>
         <Champ
           label="Date de l'entretien"
           valeur={entretien.dateEntretien ? formaterDateLongue(entretien.dateEntretien) : undefined}
@@ -444,7 +452,7 @@ function PageEntretien({
           'apprenti',
         )}
 
-        <Text style={styles.h2}>Maître d'apprentissage</Text>
+        <Text style={styles.h2}>Maître / Tuteur</Text>
         {renduQuestions(
           entretien.questionsMaitreSelectionnees,
           entretien.reponsesMaitre,
@@ -539,37 +547,10 @@ function PageFiche({
           Du {formaterDateLongue(fiche.dateDebut)} au {formaterDateLongue(fiche.dateFin)}
         </Text>
 
-        {/* Suivi GRETA CFA */}
-        <Text style={styles.h2}>Suivi GRETA CFA</Text>
-        {fiche.suiviGretaCfa.length === 0 ? (
-          <Text style={styles.vide}>Aucune ligne renseignée.</Text>
-        ) : (
-          <View style={styles.tableau}>
-            <View style={[styles.tableauLigne, styles.tableauEnTete]}>
-              <Text style={[styles.tableauCellule, { width: '20%' }]}>Cours</Text>
-              <Text style={[styles.tableauCellule, { width: '20%' }]}>Formateur</Text>
-              <Text style={[styles.tableauCellule, { width: '40%' }]}>Contenu</Text>
-              <Text style={[styles.tableauCelluleDerniere, { width: '20%' }]}>Évaluations</Text>
-            </View>
-            {fiche.suiviGretaCfa.map((l, idx) => (
-              <View
-                key={l.id}
-                style={
-                  idx === fiche.suiviGretaCfa.length - 1
-                    ? styles.tableauLigneSansBordure
-                    : styles.tableauLigne
-                }
-              >
-                <Text style={[styles.tableauCellule, { width: '20%' }]}>{l.nomCours || '—'}</Text>
-                <Text style={[styles.tableauCellule, { width: '20%' }]}>{l.nomFormateur || '—'}</Text>
-                <Text style={[styles.tableauCellule, { width: '40%' }]}>{l.contenu || '—'}</Text>
-                <Text style={[styles.tableauCelluleDerniere, { width: '20%' }]}>
-                  {l.evaluations || '—'}
-                </Text>
-              </View>
-            ))}
-          </View>
-        )}
+        {/* Suivi GRETA CFA — 2 zones de texte (refonte mai 2026) */}
+        <Text style={styles.h2}>Suivi de la formation au GRETA CFA</Text>
+        <ParagrapheLibre titre="Apprenti·e" valeur={fiche.suiviGretaCfa.apprenti} />
+        <ParagrapheLibre titre="Formateur référent" valeur={fiche.suiviGretaCfa.formateur} />
 
         {/* Tableau tri-colonnes (compétences + évaluations + retour apprenti) */}
         <Text style={styles.h2}>Activités et évaluations</Text>
@@ -619,7 +600,7 @@ function PageFiche({
         {/* Observations */}
         <Text style={styles.h2}>Observations</Text>
         <ParagrapheLibre titre="Apprenti·e" valeur={fiche.observations.apprenti} />
-        <ParagrapheLibre titre="Maître d'apprentissage" valeur={fiche.observations.maitre} />
+        <ParagrapheLibre titre="Maître / Tuteur" valeur={fiche.observations.maitre} />
         <ParagrapheLibre titre="Formateur référent" valeur={fiche.observations.formateur} />
 
         {/* Signatures */}

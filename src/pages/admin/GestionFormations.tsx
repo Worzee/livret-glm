@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   CalendarDays,
+  CalendarRange,
   GraduationCap,
   Lock,
   MapPin,
@@ -18,6 +19,7 @@ import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
 import { evaluerVerrouFormation } from '@/lib/formation-verrou';
 import { ModaleFormation } from '@/components/admin/ModaleFormation';
+import { ModalePlanningPeriodes } from '@/components/admin/ModalePlanningPeriodes';
 import { cn } from '@/lib/utils';
 
 /**
@@ -39,6 +41,7 @@ export function GestionFormations() {
   const [requete, setRequete] = useState('');
   const [modaleOuverte, setModaleOuverte] = useState(false);
   const [formationEnEdition, setFormationEnEdition] = useState<Formation | undefined>();
+  const [formationEnPlanning, setFormationEnPlanning] = useState<Formation | undefined>();
   const [confirmationSuppression, setConfirmationSuppression] = useState<string | null>(null);
 
   // Auto-annulation 10 s de la confirmation (cohérent avec les autres patterns).
@@ -107,7 +110,7 @@ export function GestionFormations() {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <GraduationCap className="h-5 w-5 text-primary" aria-hidden="true" />
+            <GraduationCap className="h-5 w-5 texte-couleur-role" aria-hidden="true" />
             <h1 className="text-2xl font-semibold">Gestion des formations</h1>
           </div>
           <p className="text-muted-foreground">
@@ -117,7 +120,7 @@ export function GestionFormations() {
         <button
           type="button"
           onClick={ouvrirCreation}
-          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex items-center gap-1.5 rounded-md bouton-plein-couleur-role px-4 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           Nouvelle formation
@@ -169,6 +172,21 @@ export function GestionFormations() {
                     </p>
                   </div>
                   <div className="inline-flex items-center gap-1">
+                    {editable && (
+                      <button
+                        type="button"
+                        onClick={() => setFormationEnPlanning(f)}
+                        aria-label={`Planning des périodes de ${f.intitule}`}
+                        title="Planning des périodes"
+                        className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-2 py-1.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        data-testid={`planning-${f.id}`}
+                      >
+                        <CalendarRange className="h-3.5 w-3.5" aria-hidden="true" />
+                        <span className="hidden sm:inline">
+                          Planning ({f.periodes.length})
+                        </span>
+                      </button>
+                    )}
                     {editable && (
                       <button
                         type="button"
@@ -303,6 +321,15 @@ export function GestionFormations() {
           setFormationEnEdition(undefined);
         }}
       />
+
+      {formationEnPlanning && (
+        <ModalePlanningPeriodes
+          key={`planning-${formationEnPlanning.id}`}
+          ouvert
+          formation={formationEnPlanning}
+          onFermer={() => setFormationEnPlanning(undefined)}
+        />
+      )}
     </div>
   );
 }

@@ -1,16 +1,18 @@
-import type { Apprenti, EntretienTripartite, Role } from '@/types';
+import type { Apprenti, EntretienTripartite, QuestionBanque, Role } from '@/types';
+import { questionsObligatoiresSansReponse } from './questions-entretien';
 
 /**
- * Règles métier de l'entretien tripartite.
- * Référence : cahier des charges v1.3, sections 8.2 (R6 → R10) et 5.2.
+ * Règles métier des entretiens tripartites.
+ * Référence : cahier des charges v1.3 §8.2 + refonte mai 2026 (chantier #2).
  *
- *   R6  : un seul entretien tripartite par livret
- *   R7  : devrait avoir lieu dans les 60 jours suivant contratDebut
- *         → bandeau d'alerte ambre, NE PAS bloquer
+ *   R6  : au plus 2 entretiens tripartites par livret (E1 + E2)
+ *   R7  : E1 devrait avoir lieu dans les 60 jours suivant contratDebut
+ *         → bandeau d'alerte ambre, NE PAS bloquer. E2 n'est pas concerné
+ *         par cette contrainte de délai (bilan mi-parcours).
  *   R8  : éditable tant qu'aucune signature ; dès la 1ère signature, les
  *         champs du rôle signataire passent en lecture seule (les autres
  *         rôles peuvent encore remplir leur partie)
- *   R9  : 3 signatures → fiche entière en lecture seule pour tous
+ *   R9  : 3 signatures → entretien entier en lecture seule pour tous
  *   R10 : déverrouillage formateur avec motif obligatoire (impl. différée)
  */
 
@@ -32,8 +34,14 @@ export interface AlerteR7 {
 
 /**
  * Détermine si l'alerte R7 doit s'afficher pour un livret donné.
- * - Pas d'alerte si l'entretien existe ET est signé par les 3 parties.
+ * - Pas d'alerte si l'**entretien 1** existe ET est signé par les 3 parties.
  * - Sinon, alerte dès que `today > contratDebut + 60 jours`.
+ *
+ * Refonte mai 2026 (chantier #2) : R7 s'applique uniquement à E1 (qui doit
+ * se tenir tôt dans le parcours). E2 = bilan mi-parcours, sans contrainte
+ * de délai.
+ *
+ * @param entretien L'entretien 1 du livret (ou `null` si pas encore initialisé).
  */
 export function calculerAlerteR7(
   apprenti: Apprenti,
@@ -103,10 +111,16 @@ export function peutEncoreEditer(
  * doit comporter au moins une saisie significative. Ces critères sont
  * volontairement souples (différents de R20 sur les fiches de période)
  * car l'entretien est un acte de cadrage, pas une évaluation périodique.
+ *
+ * Extension juin 2026 (retours coordos) : les questions marquées obligatoires
+ * par le coordo (snapshot `entretien.questionsObligatoires`) doivent avoir une
+ * réponse renseignée pour que la cible concernée (apprenti·e ou maître) puisse
+ * signer. La `banque` sert à résoudre cible, type et libellé de chaque id.
  */
 export function validerSignatureEntretien(
   entretien: EntretienTripartite,
   role: Role,
+  banque: Record<string, QuestionBanque>,
 ): { peutSigner: boolean; raisons: string[] } {
   const raisons: string[] = [];
 
@@ -129,6 +143,9 @@ export function validerSignatureEntretien(
       if (!auMoinsUneReponse) {
         raisons.push('Renseignez au moins une réponse à vos questions.');
       }
+      for (const q of questionsObligatoiresSansReponse(entretien, 'apprenti', banque)) {
+        raisons.push(`Répondez à la question obligatoire « ${q.libelle} ».`);
+      }
       break;
     }
 
@@ -141,6 +158,9 @@ export function validerSignatureEntretien(
         !!(ap.ponctualite || ap.comprehensionConsignes || ap.qualiteTravail || ap.integration);
       if (!auMoinsUnCritere) {
         raisons.push("Évaluez au moins un critère d'appréciation (++, +, -, --).");
+      }
+      for (const q of questionsObligatoiresSansReponse(entretien, 'maitre', banque)) {
+        raisons.push(`Répondez à la question obligatoire « ${q.libelle} ».`);
       }
       break;
     }

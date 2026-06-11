@@ -136,7 +136,8 @@ export const maitreKarimBenali: Maitre = {
   prenom: 'Karim',
   email: 'karim.benali@gourmet.demo',
   telephone: '01 99 99 99 02',
-  entrepriseId: 'e-le-gourmet',
+  entreprise: 'Restaurant Le Gourmet',
+  fonction: 'Chef de cuisine',
   apprentiIds: [
     apprentiLeaMartin.id,
     apprentiTheoDubois.id,
@@ -151,7 +152,8 @@ export const maitreHeleneRoche: Maitre = {
   prenom: 'Hélène',
   email: 'helene.roche@brasserierhone.demo',
   telephone: '01 99 99 99 22',
-  entrepriseId: 'e-brasserie-rhone',
+  entreprise: 'La Brasserie du Rhône',
+  fonction: 'Cheffe de cuisine',
   apprentiIds: [
     apprentiMinhNguyen.id,
     apprentiAyaKouame.id,

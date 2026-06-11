@@ -228,7 +228,7 @@ export function ModaleImportReferentiel({
       <div className="relative w-full max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-lg border border-border bg-card shadow-lg">
         <div className="sticky top-0 flex items-start justify-between gap-3 border-b border-border bg-card p-4">
           <div className="flex items-start gap-3">
-            <FileSpreadsheet className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+            <FileSpreadsheet className="h-5 w-5 shrink-0 texte-couleur-role" aria-hidden="true" />
             <div>
               <h2 id={titreId} className="text-lg font-semibold">
                 Importer un référentiel
@@ -389,7 +389,7 @@ export function ModaleImportReferentiel({
             <button
               type="button"
               onClick={importer}
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex items-center gap-1.5 rounded-md bouton-plein-couleur-role px-4 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Upload className="h-4 w-4" aria-hidden="true" />
               Importer ({apercu.rapport.stats.nbCompetences} compétences)
@@ -398,7 +398,7 @@ export function ModaleImportReferentiel({
             <button
               type="button"
               onClick={genererApercu}
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex items-center gap-1.5 rounded-md bouton-plein-couleur-role px-4 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               Aperçu
             </button>

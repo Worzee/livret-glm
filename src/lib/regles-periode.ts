@@ -93,7 +93,7 @@ export function verifierCreationPeriode(
     if (derniere.etat !== 'signee' && derniere.etat !== 'verrouillee') {
       const partiesManquantes: string[] = [];
       if (!derniere.signatures.apprenti.signe) partiesManquantes.push('apprenti·e');
-      if (!derniere.signatures.maitre.signe) partiesManquantes.push("maître d'apprentissage");
+      if (!derniere.signatures.maitre.signe) partiesManquantes.push('maître / tuteur');
       if (!derniere.signatures.formateur.signe)
         partiesManquantes.push('formateur·rice référent·e');
 

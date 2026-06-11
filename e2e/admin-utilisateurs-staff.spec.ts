@@ -23,7 +23,7 @@ test('le menu de création propose apprenti·e + maître + formateur en coordo (
   await page.goto('/admin/utilisateurs');
   await page.getByRole('button', { name: /Nouveau · nouvelle/i }).click();
   await expect(page.getByRole('menuitem', { name: /^Apprenti·e/i })).toBeVisible();
-  await expect(page.getByRole('menuitem', { name: /^Maître d'apprentissage/i })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: /^Maître \/ Tuteur/i })).toBeVisible();
   await expect(page.getByRole('menuitem', { name: /^Formateur référent/i })).toBeVisible();
   // Coordo masqué en rôle coordo (droit exclusif admin).
   await expect(page.getByRole('menuitem', { name: /^Coordinateur·rice/i })).toHaveCount(0);
@@ -41,20 +41,21 @@ test("création d'un maître — apparaît dans la table et dans le sélecteur d
   await page.goto('/admin/utilisateurs');
 
   await page.getByRole('button', { name: /Nouveau · nouvelle/i }).click();
-  await page.getByRole('menuitem', { name: /^Maître d'apprentissage/i }).click();
+  await page.getByRole('menuitem', { name: /^Maître \/ Tuteur/i }).click();
 
   const modale = page.getByRole('dialog');
   await modale.getByTestId('staff-entreprise').waitFor({ state: 'visible' });
   await modale.getByTestId('staff-prenom').fill('Antoine');
   await modale.getByTestId('staff-nom').fill('Marchand');
   await modale.getByTestId('staff-email').fill('antoine.marchand@chez-tony.demo');
-  await modale.getByTestId('staff-entreprise').fill('e-chez-tony');
+  await modale.getByTestId('staff-entreprise').fill('Chez Tony');
+  await modale.getByTestId('staff-fonction').fill('Responsable de salle');
   await modale.getByRole('button', { name: /Créer maître/i }).click();
 
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
   // Le maître apparaît dans le tableau de bord en mode maître (3ᵉ bouton du sélecteur).
-  await selectRole(page, "Maître d'apprentissage");
+  await selectRole(page, 'Maître / Tuteur');
   await page.goto('/');
   await expect(page.getByRole('button', { name: /Antoine MARCHAND/i })).toBeVisible();
   // 0 apprenti·e à ce stade (pas d'affectation).
@@ -79,13 +80,14 @@ test("suppression d'un maître sans apprenti·e — succès", async ({ page }) =
 
   // Crée un maître éphémère sans apprenti·e
   await page.getByRole('button', { name: /Nouveau · nouvelle/i }).click();
-  await page.getByRole('menuitem', { name: /^Maître d'apprentissage/i }).click();
+  await page.getByRole('menuitem', { name: /^Maître \/ Tuteur/i }).click();
   const modale = page.getByRole('dialog');
   await modale.getByTestId('staff-entreprise').waitFor({ state: 'visible' });
   await modale.getByTestId('staff-prenom').fill('Test');
   await modale.getByTestId('staff-nom').fill('Eph');
   await modale.getByTestId('staff-email').fill('test.eph@demo.fr');
-  await modale.getByTestId('staff-entreprise').fill('e-test');
+  await modale.getByTestId('staff-entreprise').fill('Test SARL');
+  await modale.getByTestId('staff-fonction').fill('Gérant');
   await modale.getByRole('button', { name: /Créer maître/i }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
@@ -156,7 +158,7 @@ test("le formateur référent peut créer un·e apprenti·e et un maître (pas f
   // Le menu de création propose Apprenti·e + Maître, mais pas Formateur ni Coordo.
   await page.getByRole('button', { name: /Nouveau · nouvelle/i }).click();
   await expect(page.getByRole('menuitem', { name: /^Apprenti·e/i })).toBeVisible();
-  await expect(page.getByRole('menuitem', { name: /^Maître d'apprentissage/i })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: /^Maître \/ Tuteur/i })).toBeVisible();
   await expect(page.getByRole('menuitem', { name: /^Formateur référent/i })).toHaveCount(0);
   await expect(page.getByRole('menuitem', { name: /^Coordinateur·rice/i })).toHaveCount(0);
 

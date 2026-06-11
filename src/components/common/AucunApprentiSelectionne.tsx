@@ -21,7 +21,7 @@ export function AucunApprentiSelectionne() {
       </p>
       <Link
         to="/"
-        className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+        className="mt-4 inline-flex items-center gap-2 rounded-md bouton-plein-couleur-role px-4 py-2 text-sm font-medium"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         Retour au tableau de bord

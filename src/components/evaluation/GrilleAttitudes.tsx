@@ -38,7 +38,7 @@ export function GrilleAttitudes({ referentiel }: GrilleAttitudesProps) {
       <header>
         <h2 className="text-lg font-medium">Attitudes professionnelles</h2>
         <p className="text-xs text-muted-foreground">
-          Évaluation conjointe par le maître d'apprentissage et le formateur référent.
+          Évaluation conjointe par le maître / tuteur et le formateur référent.
         </p>
       </header>
 
@@ -47,7 +47,7 @@ export function GrilleAttitudes({ referentiel }: GrilleAttitudesProps) {
           <thead className="bg-secondary/50 text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
               <th className="px-3 py-2 text-left w-1/3">Critère</th>
-              <th className="px-3 py-2 text-left">Maître d'apprentissage</th>
+              <th className="px-3 py-2 text-left">Maître / Tuteur</th>
               <th className="px-3 py-2 text-left">Formateur référent</th>
             </tr>
           </thead>

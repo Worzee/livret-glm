@@ -20,7 +20,7 @@ test.beforeEach(async ({ page }) => {
 const PAGES_PRINCIPALES = [
   { url: '/', titre: /Tableau de bord|MARTIN/i },
   { url: '/livret/organisation-suivi', titre: /Fiches de suivi/i },
-  { url: '/livret/entretien', titre: /Entretien tripartite/i },
+  { url: '/livret/entretien/1', titre: /Entretien tripartite n° 1/i },
   { url: '/livret/fiches-suivi', titre: /Période en Entreprise/i },
   { url: '/livret/evaluation-finale', titre: /Évaluation finale/i },
 ];
@@ -56,9 +56,10 @@ test('le bouton hamburger est visible et ouvre le drawer de navigation', async (
   const drawer = page.getByRole('dialog', { name: /Menu de navigation/i });
   await expect(drawer).toBeVisible();
 
-  // Les liens de la sidebar sont présents dans le drawer.
+  // Les liens de la sidebar sont présents dans le drawer (Léa a 2 entretiens →
+  // on cible le lien E1 pour éviter la violation strict mode).
   await expect(drawer.getByRole('link', { name: /Fiches de suivi/i })).toBeVisible();
-  await expect(drawer.getByRole('link', { name: /Entretien tripartite/i })).toBeVisible();
+  await expect(drawer.getByRole('link', { name: /Entretien tripartite 1/i })).toBeVisible();
 });
 
 test('navigation mobile : clic sur un lien du drawer change la page et ferme le drawer', async ({

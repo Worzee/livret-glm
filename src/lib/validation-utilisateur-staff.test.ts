@@ -12,7 +12,7 @@ const STAFF_VALIDE: SaisieStaff = {
 };
 
 describe('validerSaisieStaff', () => {
-  it('valide une saisie correcte (sans entreprise)', () => {
+  it('valide une saisie correcte (sans entreprise ni fonction)', () => {
     const r = validerSaisieStaff(STAFF_VALIDE);
     expect(r.ok).toBe(true);
     expect(r.erreurs).toEqual({});
@@ -32,20 +32,45 @@ describe('validerSaisieStaff', () => {
     expect(validerSaisieStaff({ ...STAFF_VALIDE, email: '' }).erreurs.email).toBeDefined();
   });
 
-  it("n'exige pas d'entrepriseId par défaut (formateur, coordo)", () => {
-    const r = validerSaisieStaff({ ...STAFF_VALIDE, entrepriseId: undefined });
+  it("n'exige ni entreprise ni fonction par défaut (formateur, coordo)", () => {
+    const r = validerSaisieStaff({
+      ...STAFF_VALIDE,
+      entreprise: undefined,
+      fonction: undefined,
+    });
     expect(r.ok).toBe(true);
   });
 
-  it("exige un entrepriseId quand `exigeEntreprise` est true (cas maître)", () => {
+  it('exige entreprise ET fonction quand `exigeEntreprise` est true (cas maître)', () => {
     const r = validerSaisieStaff({ ...STAFF_VALIDE }, true);
     expect(r.ok).toBe(false);
-    expect(r.erreurs.entrepriseId).toBeDefined();
+    expect(r.erreurs.entreprise).toBeDefined();
+    expect(r.erreurs.fonction).toBeDefined();
   });
 
-  it('valide un maître quand entrepriseId fourni', () => {
+  it('refuse un maître si seule la fonction est renseignée (entreprise manquante)', () => {
     const r = validerSaisieStaff(
-      { ...STAFF_VALIDE, entrepriseId: 'e-le-gourmet' },
+      { ...STAFF_VALIDE, fonction: 'Chef de cuisine' },
+      true,
+    );
+    expect(r.ok).toBe(false);
+    expect(r.erreurs.entreprise).toBeDefined();
+    expect(r.erreurs.fonction).toBeUndefined();
+  });
+
+  it("refuse un maître si seule l'entreprise est renseignée (fonction manquante)", () => {
+    const r = validerSaisieStaff(
+      { ...STAFF_VALIDE, entreprise: 'Le Gourmet' },
+      true,
+    );
+    expect(r.ok).toBe(false);
+    expect(r.erreurs.fonction).toBeDefined();
+    expect(r.erreurs.entreprise).toBeUndefined();
+  });
+
+  it('valide un maître quand entreprise et fonction sont fournies', () => {
+    const r = validerSaisieStaff(
+      { ...STAFF_VALIDE, entreprise: 'Le Gourmet', fonction: 'Chef de cuisine' },
       true,
     );
     expect(r.ok).toBe(true);

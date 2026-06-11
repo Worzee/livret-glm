@@ -83,7 +83,7 @@ export function ModaleApprenti({
       formationId: formation?.id ?? '',
       maitreApprentissageId: maitre?.id ?? '',
       formateurReferentId: formateur?.id ?? '',
-      entrepriseId: maitre?.entrepriseId ?? '',
+      entrepriseId: maitre?.entreprise ?? '',
     };
   }
 
@@ -128,7 +128,7 @@ export function ModaleApprenti({
     setSaisie((s) => ({
       ...s,
       maitreApprentissageId: id,
-      entrepriseId: maitre?.entrepriseId ?? s.entrepriseId,
+      entrepriseId: maitre?.entreprise ?? s.entrepriseId,
     }));
   }
 
@@ -284,7 +284,7 @@ export function ModaleApprenti({
               obligatoire
             />
             <ChampSelect
-              label="Maître d'apprentissage"
+              label="Maître / Tuteur"
               valeur={saisie.maitreApprentissageId}
               onChange={changerMaitre}
               options={maitresList.map((m) => ({
@@ -319,7 +319,7 @@ export function ModaleApprenti({
         <div className="sticky bottom-0 flex flex-row-reverse items-center gap-2 border-t border-border bg-secondary/30 p-3">
           <button
             type="submit"
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex items-center gap-1.5 rounded-md bouton-plein-couleur-role px-4 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {apprenti ? 'Enregistrer les modifications' : 'Créer l\'apprenti·e'}
           </button>

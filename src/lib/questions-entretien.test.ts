@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import type { EntretienTripartite } from '@/types';
+import type { EntretienTripartite, QuestionBanque } from '@/types';
 import {
   QUESTIONS_BANQUE_INITIALE,
-  idsQuestionsInitiales,
+  idsQuestionsAffectees,
+  idsQuestionsObligatoiresAffectees,
   indexerBanque,
   nettoyerReponses,
+  peutRetirerQuestion,
   questionEstUtilisee,
+  questionsObligatoiresSansReponse,
   reponseEstRenseignee,
 } from './questions-entretien';
 
@@ -42,19 +45,177 @@ describe('QUESTIONS_BANQUE_INITIALE', () => {
       }
     }
   });
+
+  it('toutes les questions sont affectées à E1 par défaut (comportement historique)', () => {
+    for (const q of QUESTIONS_BANQUE_INITIALE) {
+      expect(q.pourEntretien1).toBe(true);
+    }
+  });
+
+  it('exactement 2 questions obligatoires par défaut (1 apprenti + 1 maître), toutes affectées', () => {
+    const obligatoires = QUESTIONS_BANQUE_INITIALE.filter((q) => q.obligatoire);
+    expect(obligatoires.map((q) => q.id).sort()).toEqual([
+      'q-app-motivations',
+      'q-mai-deja-forme',
+    ]);
+    // Cohérence : une question obligatoire doit être affectée à au moins un entretien.
+    for (const q of obligatoires) {
+      expect(q.pourEntretien1 || q.pourEntretien2).toBe(true);
+    }
+  });
 });
 
-describe('idsQuestionsInitiales', () => {
-  it('renvoie les 7 ids apprenti·e (dans l\'ordre du catalogue)', () => {
-    const ids = idsQuestionsInitiales('apprenti');
+describe('idsQuestionsAffectees', () => {
+  it('E1 apprenti : les 7 questions (toutes affectées à E1), motivations en tête', () => {
+    const ids = idsQuestionsAffectees(QUESTIONS_BANQUE_INITIALE, 1, 'apprenti');
     expect(ids).toHaveLength(7);
     expect(ids[0]).toBe('q-app-motivations');
   });
 
-  it('renvoie les 4 ids maître', () => {
-    const ids = idsQuestionsInitiales('maitre');
+  it('E1 maître : les 4 questions', () => {
+    const ids = idsQuestionsAffectees(QUESTIONS_BANQUE_INITIALE, 1, 'maitre');
     expect(ids).toHaveLength(4);
     expect(ids).toContain('q-mai-deja-forme');
+  });
+
+  it('E2 : seulement les questions de suivi/bilan (4 apprenti + 2 maître)', () => {
+    const apprenti = idsQuestionsAffectees(QUESTIONS_BANQUE_INITIALE, 2, 'apprenti');
+    const maitre = idsQuestionsAffectees(QUESTIONS_BANQUE_INITIALE, 2, 'maitre');
+    expect(apprenti).toHaveLength(4);
+    expect(apprenti).not.toContain('q-app-motivations');
+    expect(maitre).toEqual(['q-mai-objectifs-embauche', 'q-mai-organisation-tutorat']);
+  });
+
+  it("respecte l'ordre du catalogue", () => {
+    const ids = idsQuestionsAffectees(QUESTIONS_BANQUE_INITIALE, 2, 'apprenti');
+    expect(ids).toEqual([
+      'q-app-metier-representation',
+      'q-app-difficultes-formation',
+      'q-app-difficultes-autres',
+      'q-app-ressenti-equipe',
+    ]);
+  });
+});
+
+describe('idsQuestionsObligatoiresAffectees', () => {
+  it('E1 : les 2 obligatoires par défaut (toutes cibles confondues)', () => {
+    expect(idsQuestionsObligatoiresAffectees(QUESTIONS_BANQUE_INITIALE, 1).sort()).toEqual([
+      'q-app-motivations',
+      'q-mai-deja-forme',
+    ]);
+  });
+
+  it("E2 : aucune (les 2 obligatoires par défaut ne sont affectées qu'à E1)", () => {
+    expect(idsQuestionsObligatoiresAffectees(QUESTIONS_BANQUE_INITIALE, 2)).toEqual([]);
+  });
+
+  it("une question obligatoire non affectée à l'entretien n'est pas retenue", () => {
+    const banque: QuestionBanque[] = [
+      {
+        id: 'q-x',
+        cible: 'apprenti',
+        type: 'texte-court',
+        libelle: 'Question test ?',
+        pourEntretien1: false,
+        pourEntretien2: true,
+        obligatoire: true,
+      },
+    ];
+    expect(idsQuestionsObligatoiresAffectees(banque, 1)).toEqual([]);
+    expect(idsQuestionsObligatoiresAffectees(banque, 2)).toEqual(['q-x']);
+  });
+});
+
+// Helper local — entretien minimal pour les tests.
+function entretien(overrides: Partial<EntretienTripartite> = {}): EntretienTripartite {
+  return {
+    questionsApprentiSelectionnees: [],
+    questionsMaitreSelectionnees: [],
+    questionsImposees: [],
+    questionsObligatoires: [],
+    reponsesApprenti: {},
+    reponsesMaitre: {},
+    appreciationMaitre: {},
+    demarchesAdministratives: {
+      contratSigne: null,
+      visiteMedicale: null,
+      permisConduire: null,
+      voiture: null,
+    },
+    conditionsPratiques: {},
+    aidesDemandees: { logement: null, premierEquipement: null, permis: null },
+    commentaires: {},
+    signatures: {
+      apprenti: { signe: false },
+      maitre: { signe: false },
+      formateur: { signe: false },
+    },
+    ...overrides,
+  };
+}
+
+describe('peutRetirerQuestion', () => {
+  it('une question imposée par le coordo (snapshot) ne peut pas être retirée', () => {
+    const e = entretien({ questionsImposees: ['q-app-motivations'] });
+    expect(peutRetirerQuestion(e, 'q-app-motivations')).toBe(false);
+  });
+
+  it('une question obligatoire (snapshot) ne peut pas être retirée', () => {
+    const e = entretien({ questionsObligatoires: ['q-mai-deja-forme'] });
+    expect(peutRetirerQuestion(e, 'q-mai-deja-forme')).toBe(false);
+  });
+
+  it('une question ajoutée par le formateur (hors snapshots) peut être retirée', () => {
+    const e = entretien({
+      questionsImposees: ['q-app-motivations'],
+      questionsObligatoires: ['q-app-motivations'],
+    });
+    expect(peutRetirerQuestion(e, 'q-app-ressenti-equipe')).toBe(true);
+  });
+});
+
+describe('questionsObligatoiresSansReponse', () => {
+  const banque = indexerBanque(QUESTIONS_BANQUE_INITIALE);
+
+  it('liste la question obligatoire de la cible sans réponse', () => {
+    const e = entretien({
+      questionsObligatoires: ['q-app-motivations', 'q-mai-deja-forme'],
+    });
+    const apprenti = questionsObligatoiresSansReponse(e, 'apprenti', banque);
+    expect(apprenti.map((q) => q.id)).toEqual(['q-app-motivations']);
+    const maitre = questionsObligatoiresSansReponse(e, 'maitre', banque);
+    expect(maitre.map((q) => q.id)).toEqual(['q-mai-deja-forme']);
+  });
+
+  it('une réponse renseignée (texte non vide) lève le blocage', () => {
+    const e = entretien({
+      questionsObligatoires: ['q-app-motivations'],
+      reponsesApprenti: { 'q-app-motivations': 'Devenir cheffe de partie.' },
+    });
+    expect(questionsObligatoiresSansReponse(e, 'apprenti', banque)).toEqual([]);
+  });
+
+  it('une réponse vide ou blanche ne compte pas', () => {
+    const e = entretien({
+      questionsObligatoires: ['q-app-motivations'],
+      reponsesApprenti: { 'q-app-motivations': '   ' },
+    });
+    expect(
+      questionsObligatoiresSansReponse(e, 'apprenti', banque).map((q) => q.id),
+    ).toEqual(['q-app-motivations']);
+  });
+
+  it('oui-non : false est une réponse valable', () => {
+    const e = entretien({
+      questionsObligatoires: ['q-mai-deja-forme'],
+      reponsesMaitre: { 'q-mai-deja-forme': false },
+    });
+    expect(questionsObligatoiresSansReponse(e, 'maitre', banque)).toEqual([]);
+  });
+
+  it('ignore les ids absents de la banque (question supprimée — cas non nominal)', () => {
+    const e = entretien({ questionsObligatoires: ['q-fantome'] });
+    expect(questionsObligatoiresSansReponse(e, 'apprenti', banque)).toEqual([]);
   });
 });
 
@@ -86,46 +247,27 @@ describe('indexerBanque', () => {
 });
 
 describe('questionEstUtilisee', () => {
-  const entretien = (
-    apprentiIds: string[],
-    maitreIds: string[],
-  ): EntretienTripartite => ({
-    questionsApprentiSelectionnees: apprentiIds,
-    questionsMaitreSelectionnees: maitreIds,
-    reponsesApprenti: {},
-    reponsesMaitre: {},
-    appreciationMaitre: {},
-    demarchesAdministratives: {
-      contratSigne: null,
-      visiteMedicale: null,
-      permisConduire: null,
-      voiture: null,
-    },
-    conditionsPratiques: {},
-    aidesDemandees: { logement: null, premierEquipement: null, permis: null },
-    commentaires: {},
-    signatures: {
-      apprenti: { signe: false },
-      maitre: { signe: false },
-      formateur: { signe: false },
-    },
-  });
-
   it('détecte une utilisation côté apprenti·e', () => {
     expect(
-      questionEstUtilisee('q-app-motivations', [entretien(['q-app-motivations'], [])]),
+      questionEstUtilisee('q-app-motivations', [
+        entretien({ questionsApprentiSelectionnees: ['q-app-motivations'] }),
+      ]),
     ).toBe(true);
   });
 
   it('détecte une utilisation côté maître', () => {
     expect(
-      questionEstUtilisee('q-mai-deja-forme', [entretien([], ['q-mai-deja-forme'])]),
+      questionEstUtilisee('q-mai-deja-forme', [
+        entretien({ questionsMaitreSelectionnees: ['q-mai-deja-forme'] }),
+      ]),
     ).toBe(true);
   });
 
   it("retourne false si aucun entretien ne référence l'id", () => {
     expect(
-      questionEstUtilisee('q-inexistante', [entretien(['q-app-motivations'], [])]),
+      questionEstUtilisee('q-inexistante', [
+        entretien({ questionsApprentiSelectionnees: ['q-app-motivations'] }),
+      ]),
     ).toBe(false);
   });
 

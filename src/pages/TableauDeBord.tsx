@@ -85,7 +85,7 @@ export function TableauDeBord() {
         <fieldset className="rounded-lg border border-role-maitre/40 bg-role-maitre/5 p-3">
           <legend className="flex items-center gap-1.5 px-1.5 text-xs font-medium text-role-maitre">
             <Briefcase className="h-3.5 w-3.5" aria-hidden="true" />
-            Maître d'apprentissage actif
+            Maître / Tuteur actif
           </legend>
           <div className="flex flex-wrap gap-2">
             {maitresList.map((m) => {
@@ -158,7 +158,7 @@ export function TableauDeBord() {
                   type="button"
                   onClick={() => ouvrirLivret(apprenti.id)}
                   aria-label={`Ouvrir le livret de ${apprenti.prenom} ${apprenti.nom}`}
-                  className="group flex h-full w-full flex-col gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:border-primary/50 hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="carte-survol-role group flex h-full w-full flex-col gap-3 rounded-lg border p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">

@@ -1,3 +1,4 @@
+import { GraduationCap, HardHat, UserCog } from 'lucide-react';
 import type { FicheSuiviPeriode, Role } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
@@ -19,17 +20,29 @@ const ROLES_AVEC_OBSERVATION: Array<{
   role: Exclude<Role, 'coordo' | 'admin'>;
   ressource: Ressource;
   bordure: string;
+  Icon: typeof GraduationCap;
+  classeRole: string;
 }> = [
   {
     role: 'apprenti',
     ressource: 'fiche.observation-apprenti',
     bordure: 'border-l-role-apprenti',
+    Icon: GraduationCap,
+    classeRole: 'text-role-apprenti',
   },
-  { role: 'maitre', ressource: 'fiche.observation-maitre', bordure: 'border-l-role-maitre' },
+  {
+    role: 'maitre',
+    ressource: 'fiche.observation-maitre',
+    bordure: 'border-l-role-maitre',
+    Icon: HardHat,
+    classeRole: 'text-role-maitre',
+  },
   {
     role: 'formateur',
     ressource: 'fiche.observation-formateur',
     bordure: 'border-l-role-formateur',
+    Icon: UserCog,
+    classeRole: 'text-role-formateur',
   },
 ];
 
@@ -41,7 +54,7 @@ export function ZoneObservation({ livretId, fiche }: ZoneObservationProps) {
     <section className="space-y-3">
       <h3 className="text-lg font-medium">Observations de fin de période</h3>
       <div className="grid gap-3 md:grid-cols-3">
-        {ROLES_AVEC_OBSERVATION.map(({ role, ressource, bordure }) => {
+        {ROLES_AVEC_OBSERVATION.map(({ role, ressource, bordure, Icon, classeRole }) => {
           // R21 : une observation devient en lecture seule dès que le rôle a signé,
           // pour ne pas modifier ce qui a été signé. Réactivable uniquement via R10.
           const editable =
@@ -57,10 +70,19 @@ export function ZoneObservation({ livretId, fiche }: ZoneObservationProps) {
               )}
             >
               <header className="flex items-center justify-between">
-                <span className="text-sm font-medium">{libelleRole(role)}</span>
+                <span className={cn('inline-flex items-center gap-1.5 text-sm font-medium', classeRole)}>
+                  <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  {libelleRole(role)}
+                </span>
                 {!editable && (
                   <span
-                    className="text-xs italic text-muted-foreground"
+                    className={cn(
+                      'text-xs italic',
+                      // « Figée par signature » prend la couleur du rôle propriétaire
+                      // pour rester cohérent avec le ressort visuel de la zone.
+                      // « Lecture » reste neutre (utilisateur autre que propriétaire).
+                      dejaSigne ? cn(classeRole, 'opacity-80') : 'text-muted-foreground',
+                    )}
                     title={
                       dejaSigne
                         ? 'Cette observation est figée : le rôle a déjà signé. Un déverrouillage R10 est nécessaire pour la rouvrir.'

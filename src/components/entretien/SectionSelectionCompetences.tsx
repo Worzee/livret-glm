@@ -80,11 +80,11 @@ export function SectionSelectionCompetences({
           id="titre-selection-competences"
           className="text-lg font-medium flex items-center gap-2"
         >
-          <ListChecks className="h-5 w-5 text-primary" aria-hidden="true" />
+          <ListChecks className="h-5 w-5 texte-couleur-role" aria-hidden="true" />
           Compétences abordées en entreprise
         </h2>
         <p className="text-xs text-muted-foreground">
-          Décision conjointe formateur référent + maître d'apprentissage. Cochez les compétences
+          Décision conjointe formateur référent + maître / tuteur. Cochez les compétences
           que l'apprenti·e abordera sur le terrain. La sélection sera figée à la 3<sup>ᵉ</sup>{' '}
           signature de l'entretien.
         </p>
@@ -200,7 +200,7 @@ function BadgeStatut({
             Sélection validée — {nbCochees} compétence{nbCochees > 1 ? 's' : ''} sur {totalCompetences}
           </p>
           <p className="text-xs">
-            Figée le {date} par {formateurNom} (formateur référent) et {maitreNom} (maître d'apprentissage).
+            Figée le {date} par {formateurNom} (formateur référent) et {maitreNom} (maître / tuteur).
           </p>
         </div>
       </div>
@@ -238,7 +238,7 @@ function CompetenceCase({ competence, cochee, editable, onToggle }: CompetenceCa
         onChange={onToggle}
         aria-label={`Compétence ${competence.code} abordée en entreprise`}
         data-testid={`selection-comp-${competence.id}`}
-        className="mt-1 h-4 w-4 rounded border-input text-primary focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-1 h-4 w-4 rounded border-input accent-[hsl(var(--ring))] focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
       />
       <span
         className={cn(

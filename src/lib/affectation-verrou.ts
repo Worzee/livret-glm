@@ -6,7 +6,12 @@ import type { Apprenti, Livret } from '@/types';
  * Référence : cahier des charges v1.3, section 10.4 (note de gouvernance).
  *
  * Trois critères déclenchent le verrou (du plus engageant au moins) :
- *   1. Au moins une fiche de période existe (le travail pédagogique a démarré)
+ *   1. Au moins une fiche de période est sortie de l'état brouillon (le
+ *      travail pédagogique a démarré). Depuis le chantier « planning au
+ *      niveau formation », les fiches sont auto-créées vierges (brouillon) à
+ *      la création du livret : leur simple existence ne témoigne d'aucun
+ *      travail. R16 garantit que toute modification fait passer une fiche
+ *      de brouillon à en-cours.
  *   2. L'entretien tripartite a été initialisé (l'engagement formel a eu lieu)
  *   3. La date courante est postérieure ou égale à `contratDebut`
  *
@@ -32,17 +37,19 @@ export function evaluerVerrouAffectation(
   livret: Livret,
   maintenant: Date = new Date(),
 ): ResultatVerrou {
-  // Critère 1 : fiches de période existantes (priorité — c'est le plus visible).
-  const nbFiches = livret.fichesSuivi.length;
+  // Critère 1 : fiches de période travaillées (priorité — c'est le plus
+  // visible). Les fiches restées en brouillon (auto-créées par le planning
+  // de la formation) ne comptent pas.
+  const nbFiches = livret.fichesSuivi.filter((f) => f.etat !== 'brouillon').length;
   if (nbFiches > 0) {
     return {
       verrouille: true,
-      raison: `${nbFiches} fiche${nbFiches > 1 ? 's' : ''} de période créée${nbFiches > 1 ? 's' : ''} — modifier l'affectation effacerait le travail en cours.`,
+      raison: `${nbFiches} fiche${nbFiches > 1 ? 's' : ''} de période travaillée${nbFiches > 1 ? 's' : ''} — modifier l'affectation effacerait le travail en cours.`,
     };
   }
 
-  // Critère 2 : entretien tripartite initialisé.
-  if (livret.entretienTripartite !== null) {
+  // Critère 2 : au moins un entretien tripartite initialisé (E1 ou E2).
+  if (livret.entretien1 !== null || livret.entretien2 !== null) {
     return {
       verrouille: true,
       raison: "Entretien tripartite initialisé — modifier l'affectation invaliderait l'engagement formel.",

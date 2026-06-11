@@ -7,7 +7,7 @@ const ficheBase = (): FicheSuiviPeriode => ({
   numeroPeriode: 1,
   dateDebut: '2026-01-01',
   dateFin: '2026-01-31',
-  suiviGretaCfa: [],
+  suiviGretaCfa: {},
   suiviEntreprise: [],
   observations: {},
   signatures: {
@@ -41,6 +41,25 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
       ];
       f.observations.apprenti = 'Période formatrice.';
       expect(validerSignature(f, 'apprenti')).toEqual({ peutSigner: true, raisons: [] });
+    });
+
+    it('autorise la signature même si la zone « Suivi GRETA CFA — apprenti » est vide', () => {
+      // Refonte mai 2026 : le champ apprenti GRETA reste optionnel pour la
+      // signature, contrairement au champ formateur. Pas de fardeau ajouté
+      // côté apprenti·e.
+      const f = ficheBase();
+      f.suiviGretaCfa = {};
+      f.suiviEntreprise = [
+        {
+          id: 'l1',
+          competenceId: 'c1',
+          evaluationGreta: null,
+          evaluationEntreprise: null,
+          retourApprenti: 'OK',
+        },
+      ];
+      f.observations.apprenti = 'Période formatrice.';
+      expect(validerSignature(f, 'apprenti').peutSigner).toBe(true);
     });
 
     it("rejette une observation composée uniquement d'espaces", () => {
@@ -152,7 +171,9 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
   });
 
   describe('Formateur référent', () => {
-    it("interdit la signature sans suivi GRETA CFA", () => {
+    it("interdit la signature si la zone « Suivi GRETA CFA — Formateur » est vide", () => {
+      // Refonte mai 2026 : R20 formateur exige désormais que la zone texte
+      // formateur soit non vide (au lieu de « ≥ 1 ligne »).
       const f = ficheBase();
       f.suiviEntreprise = [
         {
@@ -166,13 +187,20 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
       f.observations.formateur = 'OK';
       const r = validerSignature(f, 'formateur');
       expect(r.peutSigner).toBe(false);
-      expect(r.raisons.some((m) => m.includes('GRETA'))).toBe(true);
+      expect(r.raisons.some((m) => m.includes('GRETA CFA'))).toBe(true);
     });
 
-    it("interdit la signature sans évaluation GRETA d'au moins une compétence", () => {
+    it("rejette la signature si la zone formateur ne contient que des espaces", () => {
       const f = ficheBase();
-      f.suiviGretaCfa = [
-        { id: 'sg', nomCours: 'Tech', nomFormateur: 'X', contenu: '...' },
+      f.suiviGretaCfa = { formateur: '   \n  ' };
+      f.suiviEntreprise = [
+        {
+          id: 'l1',
+          competenceId: 'c1',
+          evaluationGreta: 'maitrise',
+          evaluationEntreprise: null,
+          retourApprenti: '',
+        },
       ];
       f.observations.formateur = 'OK';
       const r = validerSignature(f, 'formateur');
@@ -180,11 +208,35 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
       expect(r.raisons.some((m) => m.includes('GRETA CFA'))).toBe(true);
     });
 
+    it("n'exige pas que la zone apprenti GRETA soit remplie pour la signature formateur", () => {
+      // Seule la zone formateur est requise. La zone apprenti reste optionnelle.
+      const f = ficheBase();
+      f.suiviGretaCfa = { formateur: 'Contenus pédagogiques de la période.' };
+      f.suiviEntreprise = [
+        {
+          id: 'l1',
+          competenceId: 'c1',
+          evaluationGreta: 'maitrise',
+          evaluationEntreprise: null,
+          retourApprenti: '',
+        },
+      ];
+      f.observations.formateur = 'Bilan positif.';
+      expect(validerSignature(f, 'formateur').peutSigner).toBe(true);
+    });
+
+    it("interdit la signature sans évaluation GRETA d'au moins une compétence", () => {
+      const f = ficheBase();
+      f.suiviGretaCfa = { formateur: 'Contenus abordés.' };
+      f.observations.formateur = 'OK';
+      const r = validerSignature(f, 'formateur');
+      expect(r.peutSigner).toBe(false);
+      expect(r.raisons.some((m) => m.includes('Évaluation GRETA CFA'))).toBe(true);
+    });
+
     it("autorise la signature avec les 3 prérequis remplis", () => {
       const f = ficheBase();
-      f.suiviGretaCfa = [
-        { id: 'sg', nomCours: 'Tech', nomFormateur: 'X', contenu: '...' },
-      ];
+      f.suiviGretaCfa = { formateur: 'Contenus abordés.' };
       f.suiviEntreprise = [
         {
           id: 'l1',
@@ -202,9 +254,7 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
       // Par symétrie avec la règle maître : « Non fait » ne compte pas comme
       // une éval utilisable, il faut au moins une vraie évaluation.
       const f = ficheBase();
-      f.suiviGretaCfa = [
-        { id: 'sg', nomCours: 'Tech', nomFormateur: 'X', contenu: '...' },
-      ];
+      f.suiviGretaCfa = { formateur: 'Contenus abordés.' };
       f.suiviEntreprise = [
         {
           id: 'l1',
@@ -222,9 +272,7 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
 
     it("autorise la signature dès qu'une éval centre est autre que « Non fait »", () => {
       const f = ficheBase();
-      f.suiviGretaCfa = [
-        { id: 'sg', nomCours: 'Tech', nomFormateur: 'X', contenu: '...' },
-      ];
+      f.suiviGretaCfa = { formateur: 'Contenus abordés.' };
       f.suiviEntreprise = [
         {
           id: 'l1',
@@ -250,7 +298,7 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
     it("ne peut jamais signer une fiche de période", () => {
       const f = ficheBase();
       // Même avec tout rempli :
-      f.suiviGretaCfa = [{ id: 'sg', nomCours: 'X', nomFormateur: 'Y', contenu: 'Z' }];
+      f.suiviGretaCfa = { formateur: 'Contenus abordés.', apprenti: 'OK' };
       f.suiviEntreprise = [
         {
           id: 'l1',

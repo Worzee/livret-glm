@@ -37,7 +37,16 @@ export type Ressource =
    */
   | 'entretien.selection-competences-entreprise'
   // Fiche de suivi par période (CDC §5.3)
-  | 'fiche.suivi-greta-cfa'
+  /**
+   * Zone de texte du suivi GRETA CFA renseignée par l'apprenti·e
+   * (ce qu'il/elle retient de la période en centre).
+   */
+  | 'fiche.suivi-greta-cfa-apprenti'
+  /**
+   * Zone de texte du suivi GRETA CFA renseignée par le formateur référent
+   * (contenus abordés, points d'attention pédagogiques).
+   */
+  | 'fiche.suivi-greta-cfa-formateur'
   | 'fiche.evaluation-entreprise' // colonne entreprise
   | 'fiche.evaluation-greta' // colonne centre
   | 'fiche.retour-apprenti'
@@ -47,9 +56,9 @@ export type Ressource =
   | 'fiche.signature-apprenti'
   | 'fiche.signature-maitre'
   | 'fiche.signature-formateur'
-  | 'fiche.creer-periode'
-  | 'fiche.modifier-periode' // titre / dates
-  | 'fiche.supprimer-periode'
+  // Refonte mai 2026 (chantier #1) : la création/modification/suppression
+  // d'une période passe désormais par le planning de la formation
+  // (`admin.formations.modifier`) ; plus de gestion individuelle par fiche.
   | 'fiche.deverrouiller' // R10
   // Grilles d'évaluation finales (CDC §5.4-5.5)
   | 'grille-competences.entreprise'
@@ -66,6 +75,13 @@ export type Ressource =
   | 'admin.utilisateurs.creer-coordo'
   | 'admin.utilisateurs.modifier'
   | 'admin.utilisateurs.supprimer'
+  /**
+   * Import par lot d'utilisateur·rice·s depuis un fichier Excel.
+   * Refonte mai 2026 : page `/admin/import-utilisateurs` réservée à
+   * coordo + admin (le formateur peut créer un compte à la volée via la
+   * modale standard, mais pas par lot).
+   */
+  | 'admin.utilisateurs.import-xlsx'
   | 'admin.formations.creer'
   | 'admin.formations.modifier'
   | 'admin.formations.supprimer'
@@ -102,7 +118,8 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'entretien.selection-competences-entreprise': ['formateur', 'maitre'],
 
   // Fiche de suivi
-  'fiche.suivi-greta-cfa': ['formateur'],
+  'fiche.suivi-greta-cfa-apprenti': ['apprenti'],
+  'fiche.suivi-greta-cfa-formateur': ['formateur'],
   'fiche.evaluation-entreprise': ['maitre'],
   'fiche.evaluation-greta': ['formateur'],
   'fiche.retour-apprenti': ['apprenti'],
@@ -112,12 +129,6 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'fiche.signature-apprenti': ['apprenti'],
   'fiche.signature-maitre': ['maitre'],
   'fiche.signature-formateur': ['formateur'],
-  // Création / suppression / modification de l'enveloppe d'une fiche de
-  // période : formateur référent et coordo (besoin terrain : le coordo peut
-  // ouvrir/fermer le calendrier des périodes en lieu et place du formateur).
-  'fiche.creer-periode': ['formateur', 'coordo'],
-  'fiche.modifier-periode': ['formateur', 'coordo'],
-  'fiche.supprimer-periode': ['formateur', 'coordo'],
   'fiche.deverrouiller': ['formateur'],
 
   // Grilles d'évaluation finales
@@ -146,6 +157,7 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'admin.utilisateurs.creer-coordo': ['admin'], // exclusif admin
   'admin.utilisateurs.modifier': ['coordo', 'admin'],
   'admin.utilisateurs.supprimer': ['coordo', 'admin'],
+  'admin.utilisateurs.import-xlsx': ['coordo', 'admin'],
   'admin.formations.creer': ['coordo', 'admin'],
   'admin.formations.modifier': ['coordo', 'admin'],
   'admin.formations.supprimer': ['coordo', 'admin'],
@@ -193,7 +205,7 @@ export function libelleRole(role: Role): string {
     case 'apprenti':
       return 'Apprenti·e';
     case 'maitre':
-      return "Maître d'apprentissage";
+      return 'Maître / Tuteur';
     case 'formateur':
       return 'Formateur référent';
     case 'coordo':

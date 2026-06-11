@@ -13,10 +13,10 @@ import type {
   LigneEvaluationFinaleAttitude,
   LigneEvaluationFinaleCompetence,
   LigneSuiviEntreprise,
-  LigneSuiviGreta,
   Livret,
   MotifOrganisationSuivi,
   NiveauMaitriseEntreprise,
+  NumeroEntretien,
   ObservationsFiche,
   ValeurReponseEntretien,
   Role,
@@ -25,7 +25,13 @@ import { livretsDemo } from '@/fixtures/livret-demo';
 import { deduireEtat } from '@/lib/transitions-fiche';
 import { creerCloture } from '@/lib/cloture-livret';
 import { creerEvenementVierge } from '@/lib/organisation-suivi';
-import { idsQuestionsInitiales, nettoyerReponses } from '@/lib/questions-entretien';
+import {
+  idsQuestionsAffectees,
+  idsQuestionsObligatoiresAffectees,
+  nettoyerReponses,
+  peutRetirerQuestion,
+} from '@/lib/questions-entretien';
+import { useBanqueQuestionsStore } from './useBanqueQuestionsStore';
 import {
   creerSelectionVierge,
   invaliderAvecMotif as invaliderSelection,
@@ -58,7 +64,23 @@ import { useUtilisateursStore } from './useUtilisateursStore';
 //   v8 — sélection des compétences abordées en entreprise (cf. CDC v1.5
 //        addendum) ; nouveau sous-objet `Livret.selectionCompetencesEntreprise`
 //        + auto-marquage à la 3ᵉ signature de l'entretien tripartite
-const VERSION_SCHEMA = 8;
+//   v9 — refonte `FicheSuiviPeriode.suiviGretaCfa` : ancien tableau
+//        `LigneSuiviGreta[]` (cours / formateur / contenu / évaluations)
+//        remplacé par 2 zones de texte libre (apprenti + formateur référent).
+//        R20 formateur exige désormais que la zone formateur soit non vide
+//        (au lieu de « ≥ 1 ligne »).
+//   v10 — chantier #2 mai 2026 : `Livret.entretienTripartite` remplacé par
+//        `entretien1` + `entretien2`. Les 2 entretiens se génèrent via un
+//        événement d'organisation du suivi de motif
+//        `entretien-tripartite-{1|2}`. Auto-marquage de la sélection des
+//        compétences abordées en entreprise à la 3ᵉ signature de E1
+//        uniquement (E2 = bilan mi-parcours, sans effet sur la sélection).
+//   v11 — retours coordos juin 2026 : affectation des questions par le coordo.
+//        `EntretienTripartite.questionsImposees` + `questionsObligatoires`
+//        (snapshots à l'initialisation depuis la banque `pourEntretienN` /
+//        `obligatoire`). Le formateur ne peut plus retirer les questions
+//        affectées ; les obligatoires exigent une réponse pour signer (R20).
+const VERSION_SCHEMA = 11;
 
 interface LivretStore {
   livrets: Record<string, Livret>;
@@ -89,19 +111,16 @@ interface LivretStore {
     valeur: string,
   ) => void;
 
-  /** Met à jour une ligne du suivi GRETA CFA. */
-  setLigneSuiviGreta: (
+  /**
+   * Met à jour l'une des deux zones de texte du suivi GRETA CFA (apprenti·e ou
+   * formateur référent). Auto-horodatage `modifieLe` côté store.
+   */
+  setSuiviGretaCfaChamp: (
     livretId: string,
     ficheId: string,
-    ligneId: string,
-    patch: Partial<Omit<LigneSuiviGreta, 'id'>>,
+    champ: 'apprenti' | 'formateur',
+    valeur: string,
   ) => void;
-
-  /** Ajoute une ligne au suivi GRETA CFA. */
-  ajouterLigneSuiviGreta: (livretId: string, ficheId: string) => string;
-
-  /** Supprime une ligne du suivi GRETA CFA. */
-  supprimerLigneSuiviGreta: (livretId: string, ficheId: string, ligneId: string) => void;
 
   /** Ajoute une ligne au suivi entreprise (compétence du référentiel ou ad hoc). */
   ajouterLigneSuiviEntreprise: (
@@ -172,10 +191,14 @@ interface LivretStore {
     evenementId: string,
   ) => void;
 
-  // ── Mutations sur l'entretien tripartite (CDC §5.2, refonte mai 2026) ────
-  /** Initialise une fiche d'entretien vierge si elle n'existe pas encore (R6). */
-  initialiserEntretien: (livretId: string) => void;
-  setEntretienDate: (livretId: string, dateEntretien: string) => void;
+  // ── Mutations sur les entretiens tripartites (CDC §5.2, refonte mai 2026) ─
+  // Refonte chantier #2 mai 2026 : 2 entretiens par livret. Toutes les
+  // mutations prennent un paramètre `numero` (1 ou 2) pour cibler le bon
+  // entretien. Seul l'entretien 1 déclenche l'auto-marquage de la sélection
+  // des compétences abordées en entreprise à la 3ᵉ signature (CDC v1.5 §12).
+  /** Initialise un entretien vierge (E1 ou E2) si pas encore présent (R6 par entretien). */
+  initialiserEntretien: (livretId: string, numero: NumeroEntretien) => void;
+  setEntretienDate: (livretId: string, numero: NumeroEntretien, dateEntretien: string) => void;
   /**
    * Met à jour la liste ordonnée des questions sélectionnées par le formateur
    * référent. Les réponses orphelines (questions désélectionnées) sont
@@ -183,29 +206,49 @@ interface LivretStore {
    */
   setQuestionsSelectionnees: (
     livretId: string,
+    numero: NumeroEntretien,
     cible: 'apprenti' | 'maitre',
     questionIds: string[],
   ) => void;
   /** Met à jour la réponse à une question. */
   setReponseEntretien: (
     livretId: string,
+    numero: NumeroEntretien,
     cible: 'apprenti' | 'maitre',
     questionId: string,
     valeur: ValeurReponseEntretien,
   ) => void;
-  setAppreciationMaitre: (livretId: string, patch: Partial<AppreciationMaitre>) => void;
+  setAppreciationMaitre: (
+    livretId: string,
+    numero: NumeroEntretien,
+    patch: Partial<AppreciationMaitre>,
+  ) => void;
   setDemarchesAdministratives: (
     livretId: string,
+    numero: NumeroEntretien,
     patch: Partial<DemarchesAdministratives>,
   ) => void;
-  setConditionsPratiques: (livretId: string, patch: Partial<ConditionsPratiques>) => void;
-  setAidesDemandees: (livretId: string, patch: Partial<AidesDemandees>) => void;
+  setConditionsPratiques: (
+    livretId: string,
+    numero: NumeroEntretien,
+    patch: Partial<ConditionsPratiques>,
+  ) => void;
+  setAidesDemandees: (
+    livretId: string,
+    numero: NumeroEntretien,
+    patch: Partial<AidesDemandees>,
+  ) => void;
   setCommentaireEntretien: (
     livretId: string,
+    numero: NumeroEntretien,
     role: 'apprenti' | 'maitre' | 'formateur',
     valeur: string,
   ) => void;
-  signerEntretien: (livretId: string, role: 'apprenti' | 'maitre' | 'formateur') => void;
+  signerEntretien: (
+    livretId: string,
+    numero: NumeroEntretien,
+    role: 'apprenti' | 'maitre' | 'formateur',
+  ) => void;
 
   // ── Sélection des compétences abordées en entreprise (CDC v1.5 addendum) ─
   /**
@@ -297,14 +340,46 @@ function muterLivret(
   };
 }
 
+/** Lit l'entretien E1 ou E2 d'un livret selon le numéro (1 ou 2). */
+function lireEntretien(livret: Livret, numero: NumeroEntretien): EntretienTripartite | null {
+  return numero === 1 ? livret.entretien1 : livret.entretien2;
+}
+
+/** Écrit un entretien (E1 ou E2) dans un livret, retourne le livret muté. */
+function ecrireEntretien(
+  livret: Livret,
+  numero: NumeroEntretien,
+  entretien: EntretienTripartite,
+): Livret {
+  return numero === 1
+    ? { ...livret, entretien1: entretien }
+    : { ...livret, entretien2: entretien };
+}
+
 /**
- * Crée un entretien tripartite vide (R6 — un seul par livret).
+ * Crée un entretien tripartite vide.
  * Pré-sélectionne les questions par défaut de la banque (les 11 historiques).
  */
-function entretienVierge(): EntretienTripartite {
+/**
+ * Entretien vierge initialisé avec le snapshot de la configuration coordo
+ * (retours coordos juin 2026) : questions affectées à E{numero} dans la banque
+ * vivante + ids obligatoires. Les changements ultérieurs de la banque ne
+ * cascadent pas sur les entretiens déjà initialisés.
+ *
+ * Lecture cross-store `useBanqueQuestionsStore.getState()` au runtime — le
+ * cycle d'import ESM avec useBanqueQuestionsStore est résolu car aucun des
+ * deux modules ne déréférence l'autre à l'évaluation (pattern identique aux
+ * autres stores croisés, cf. §11 PROJECT-STATUS).
+ */
+function entretienVierge(numero: NumeroEntretien): EntretienTripartite {
+  const banque = Object.values(useBanqueQuestionsStore.getState().questions);
+  const apprenti = idsQuestionsAffectees(banque, numero, 'apprenti');
+  const maitre = idsQuestionsAffectees(banque, numero, 'maitre');
   return {
-    questionsApprentiSelectionnees: idsQuestionsInitiales('apprenti'),
-    questionsMaitreSelectionnees: idsQuestionsInitiales('maitre'),
+    questionsApprentiSelectionnees: apprenti,
+    questionsMaitreSelectionnees: maitre,
+    questionsImposees: [...apprenti, ...maitre],
+    questionsObligatoires: idsQuestionsObligatoiresAffectees(banque, numero),
     reponsesApprenti: {},
     reponsesMaitre: {},
     appreciationMaitre: {},
@@ -396,36 +471,15 @@ export const useLivretStore = create<LivretStore>()(
           }),
         ),
 
-      setLigneSuiviGreta: (livretId, ficheId, ligneId, patch) =>
-        set((s) =>
-          muterFiche(s, livretId, ficheId, (f) => {
-            const idx = f.suiviGretaCfa.findIndex((l) => l.id === ligneId);
-            if (idx === -1) return f;
-            const nouvelles = [...f.suiviGretaCfa];
-            nouvelles[idx] = { ...nouvelles[idx], ...patch };
-            return { ...f, suiviGretaCfa: nouvelles };
-          }),
-        ),
-
-      ajouterLigneSuiviGreta: (livretId, ficheId) => {
-        const nouvelId = `sg-${crypto.randomUUID()}`;
+      setSuiviGretaCfaChamp: (livretId, ficheId, champ, valeur) =>
         set((s) =>
           muterFiche(s, livretId, ficheId, (f) => ({
             ...f,
-            suiviGretaCfa: [
+            suiviGretaCfa: {
               ...f.suiviGretaCfa,
-              { id: nouvelId, nomCours: '', nomFormateur: '', contenu: '' },
-            ],
-          })),
-        );
-        return nouvelId;
-      },
-
-      supprimerLigneSuiviGreta: (livretId, ficheId, ligneId) =>
-        set((s) =>
-          muterFiche(s, livretId, ficheId, (f) => ({
-            ...f,
-            suiviGretaCfa: f.suiviGretaCfa.filter((l) => l.id !== ligneId),
+              [champ]: valeur,
+              modifieLe: new Date().toISOString(),
+            },
           })),
         ),
 
@@ -490,7 +544,7 @@ export const useLivretStore = create<LivretStore>()(
               titre: input.titre?.trim() || undefined,
               dateDebut: input.dateDebut,
               dateFin: input.dateFin,
-              suiviGretaCfa: [],
+              suiviGretaCfa: {},
               suiviEntreprise: [],
               observations: {},
               signatures: {
@@ -576,159 +630,145 @@ export const useLivretStore = create<LivretStore>()(
           })),
         ),
 
-      // ── Entretien tripartite ──────────────────────────────────────────────
-      initialiserEntretien: (livretId) =>
+      // ── Entretiens tripartites (refonte chantier #2 mai 2026) ────────────
+      initialiserEntretien: (livretId, numero) =>
         set((s) =>
           muterLivret(s, livretId, (l) => {
-            // R6 : un seul entretien par livret — ne pas écraser s'il existe déjà
-            if (l.entretienTripartite) return l;
-            return { ...l, entretienTripartite: entretienVierge() };
+            // R6 par entretien : pas d'écrasement si déjà initialisé
+            if (lireEntretien(l, numero)) return l;
+            return ecrireEntretien(l, numero, entretienVierge(numero));
           }),
         ),
 
-      setEntretienDate: (livretId, dateEntretien) =>
-        set((s) =>
-          muterLivret(s, livretId, (l) => ({
-            ...l,
-            entretienTripartite: {
-              ...(l.entretienTripartite ?? entretienVierge()),
-              dateEntretien,
-            },
-          })),
-        ),
-
-      setQuestionsSelectionnees: (livretId, cible, questionIds) =>
+      setEntretienDate: (livretId, numero, dateEntretien) =>
         set((s) =>
           muterLivret(s, livretId, (l) => {
-            const e = l.entretienTripartite ?? entretienVierge();
-            // Nettoie les réponses orphelines (questions désélectionnées) pour
-            // ne pas peser dans le store. La sélection sert aussi de garde
-            // d'affichage côté UI.
+            const e = lireEntretien(l, numero) ?? entretienVierge(numero);
+            return ecrireEntretien(l, numero, { ...e, dateEntretien });
+          }),
+        ),
+
+      setQuestionsSelectionnees: (livretId, numero, cible, questionIds) =>
+        set((s) =>
+          muterLivret(s, livretId, (l) => {
+            const e = lireEntretien(l, numero) ?? entretienVierge(numero);
+            // Garde-fou (retours coordos juin 2026) : les questions imposées /
+            // obligatoires (snapshots) ne peuvent pas être retirées, même si
+            // l'UI envoie une liste qui les omet. On les réinjecte en tête,
+            // dans leur ordre actuel.
+            const actuelles =
+              cible === 'apprenti'
+                ? e.questionsApprentiSelectionnees
+                : e.questionsMaitreSelectionnees;
+            const reinjectees = actuelles.filter(
+              (id) => !peutRetirerQuestion(e, id) && !questionIds.includes(id),
+            );
+            const finales = [...reinjectees, ...questionIds];
             if (cible === 'apprenti') {
-              return {
-                ...l,
-                entretienTripartite: {
-                  ...e,
-                  questionsApprentiSelectionnees: questionIds,
-                  reponsesApprenti: nettoyerReponses(e.reponsesApprenti, questionIds),
-                },
-              };
+              return ecrireEntretien(l, numero, {
+                ...e,
+                questionsApprentiSelectionnees: finales,
+                reponsesApprenti: nettoyerReponses(e.reponsesApprenti, finales),
+              });
             }
-            return {
-              ...l,
-              entretienTripartite: {
-                ...e,
-                questionsMaitreSelectionnees: questionIds,
-                reponsesMaitre: nettoyerReponses(e.reponsesMaitre, questionIds),
-              },
-            };
+            return ecrireEntretien(l, numero, {
+              ...e,
+              questionsMaitreSelectionnees: finales,
+              reponsesMaitre: nettoyerReponses(e.reponsesMaitre, finales),
+            });
           }),
         ),
 
-      setReponseEntretien: (livretId, cible, questionId, valeur) =>
+      setReponseEntretien: (livretId, numero, cible, questionId, valeur) =>
         set((s) =>
           muterLivret(s, livretId, (l) => {
-            const e = l.entretienTripartite ?? entretienVierge();
+            const e = lireEntretien(l, numero) ?? entretienVierge(numero);
             const champ = cible === 'apprenti' ? 'reponsesApprenti' : 'reponsesMaitre';
-            return {
-              ...l,
-              entretienTripartite: {
-                ...e,
-                [champ]: { ...e[champ], [questionId]: valeur },
-              },
-            };
+            return ecrireEntretien(l, numero, {
+              ...e,
+              [champ]: { ...e[champ], [questionId]: valeur },
+            });
           }),
         ),
 
-      setAppreciationMaitre: (livretId, patch) =>
+      setAppreciationMaitre: (livretId, numero, patch) =>
         set((s) =>
           muterLivret(s, livretId, (l) => {
-            const e = l.entretienTripartite ?? entretienVierge();
-            return {
-              ...l,
-              entretienTripartite: {
-                ...e,
-                appreciationMaitre: { ...e.appreciationMaitre, ...patch },
-              },
-            };
+            const e = lireEntretien(l, numero) ?? entretienVierge(numero);
+            return ecrireEntretien(l, numero, {
+              ...e,
+              appreciationMaitre: { ...e.appreciationMaitre, ...patch },
+            });
           }),
         ),
 
-      setDemarchesAdministratives: (livretId, patch) =>
+      setDemarchesAdministratives: (livretId, numero, patch) =>
         set((s) =>
           muterLivret(s, livretId, (l) => {
-            const e = l.entretienTripartite ?? entretienVierge();
-            return {
-              ...l,
-              entretienTripartite: {
-                ...e,
-                demarchesAdministratives: { ...e.demarchesAdministratives, ...patch },
-              },
-            };
+            const e = lireEntretien(l, numero) ?? entretienVierge(numero);
+            return ecrireEntretien(l, numero, {
+              ...e,
+              demarchesAdministratives: { ...e.demarchesAdministratives, ...patch },
+            });
           }),
         ),
 
-      setConditionsPratiques: (livretId, patch) =>
+      setConditionsPratiques: (livretId, numero, patch) =>
         set((s) =>
           muterLivret(s, livretId, (l) => {
-            const e = l.entretienTripartite ?? entretienVierge();
-            return {
-              ...l,
-              entretienTripartite: {
-                ...e,
-                conditionsPratiques: { ...e.conditionsPratiques, ...patch },
-              },
-            };
+            const e = lireEntretien(l, numero) ?? entretienVierge(numero);
+            return ecrireEntretien(l, numero, {
+              ...e,
+              conditionsPratiques: { ...e.conditionsPratiques, ...patch },
+            });
           }),
         ),
 
-      setAidesDemandees: (livretId, patch) =>
+      setAidesDemandees: (livretId, numero, patch) =>
         set((s) =>
           muterLivret(s, livretId, (l) => {
-            const e = l.entretienTripartite ?? entretienVierge();
-            return {
-              ...l,
-              entretienTripartite: {
-                ...e,
-                aidesDemandees: { ...e.aidesDemandees, ...patch },
-              },
-            };
+            const e = lireEntretien(l, numero) ?? entretienVierge(numero);
+            return ecrireEntretien(l, numero, {
+              ...e,
+              aidesDemandees: { ...e.aidesDemandees, ...patch },
+            });
           }),
         ),
 
-      setCommentaireEntretien: (livretId, role, valeur) =>
+      setCommentaireEntretien: (livretId, numero, role, valeur) =>
         set((s) =>
           muterLivret(s, livretId, (l) => {
-            const e = l.entretienTripartite ?? entretienVierge();
-            return {
-              ...l,
-              entretienTripartite: {
-                ...e,
-                commentaires: { ...e.commentaires, [role]: valeur },
-              },
-            };
+            const e = lireEntretien(l, numero) ?? entretienVierge(numero);
+            return ecrireEntretien(l, numero, {
+              ...e,
+              commentaires: { ...e.commentaires, [role]: valeur },
+            });
           }),
         ),
 
-      signerEntretien: (livretId, role) =>
+      signerEntretien: (livretId, numero, role) =>
         set((s) =>
           muterLivret(s, livretId, (l) => {
-            const e = l.entretienTripartite ?? entretienVierge();
+            const e = lireEntretien(l, numero) ?? entretienVierge(numero);
             const maintenant = new Date();
             const signatures = {
               ...e.signatures,
               [role]: { signe: true, dateSignature: maintenant.toISOString() },
             };
+            const entretienMaj: EntretienTripartite = { ...e, signatures };
+            const livretAvecEntretien = ecrireEntretien(l, numero, entretienMaj);
+
             // Auto-marquage de la sélection des compétences abordées en
-            // entreprise (CDC v1.5 addendum) : dès que les 3 signatures sont
-            // apposées, la sélection passe en lecture seule pour tous.
-            // Les ids du formateur référent et du maître sont récupérés via
-            // l'apprenti·e du livret.
+            // entreprise (CDC v1.5 §12) : seul l'entretien 1 fige la
+            // sélection à la 3ᵉ signature. L'entretien 2 est un bilan
+            // mi-parcours, sans effet sur la sélection.
+            if (numero !== 1) return livretAvecEntretien;
+
             const toutesSignees =
               signatures.apprenti.signe && signatures.maitre.signe && signatures.formateur.signe;
-            // Fallback : un livret persisté avant le bump v7→v8 peut ne pas
-            // avoir le sous-objet (cas où la migration store n'a pas reset).
-            let selection = l.selectionCompetencesEntreprise ?? creerSelectionVierge(maintenant);
+            let selection =
+              livretAvecEntretien.selectionCompetencesEntreprise ??
+              creerSelectionVierge(maintenant);
             if (toutesSignees && selection.validePar === undefined) {
               const apprenti = useUtilisateursStore.getState().apprentis[l.apprentiId];
               if (apprenti) {
@@ -741,8 +781,7 @@ export const useLivretStore = create<LivretStore>()(
               }
             }
             return {
-              ...l,
-              entretienTripartite: { ...e, signatures },
+              ...livretAvecEntretien,
               selectionCompetencesEntreprise: selection,
             };
           }),

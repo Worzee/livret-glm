@@ -58,7 +58,7 @@ test("Léa : la section dans l'entretien affiche le badge « Sélection validée
 }) => {
   await selectRole(page, 'Formateur référent');
   // Léa est l'apprenti·e actif·ve par défaut
-  await page.goto('/livret/entretien');
+  await page.goto('/livret/entretien/1');
   await expect(
     page.getByRole('heading', { name: /Compétences abordées en entreprise/i }),
   ).toBeVisible();
@@ -74,7 +74,7 @@ test("Léa : la section dans l'entretien affiche le badge « Sélection validée
 test("Léa : la grille finale grise la colonne « Acquis en entreprise » pour c2-4 (non sélectionnée)", async ({
   page,
 }) => {
-  await selectRole(page, "Maître d'apprentissage");
+  await selectRole(page, 'Maître / Tuteur');
   await page.goto('/livret/evaluation-finale');
   // Cellule entreprise pour c2-4 (non sélectionnée) → texte « — » + aria-label dédié
   await expect(
@@ -96,7 +96,7 @@ test("Sofia + formateur : après initialisation de l'entretien, les cases sont �
 }) => {
   await selectRole(page, 'Formateur référent');
   await page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }).click();
-  await page.goto('/livret/entretien');
+  await page.goto('/livret/entretien/1');
   // Initialiser l'entretien
   await page.getByRole('button', { name: /Initialiser l'entretien/i }).click();
   // La section sélection est visible avec des cases activées
@@ -119,7 +119,7 @@ test("Léa + apprenti·e : la section sélection est en lecture seule (matrice d
   page,
 }) => {
   await selectRole(page, 'Apprenti·e');
-  await page.goto('/livret/entretien');
+  await page.goto('/livret/entretien/1');
   // Toutes les cases sont disabled (apprenti·e n'a pas le droit d'éditer)
   await expect(page.getByTestId('selection-comp-c1-1')).toBeDisabled();
   await expect(page.getByTestId('selection-comp-c2-4')).toBeDisabled();

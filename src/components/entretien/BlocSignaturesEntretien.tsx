@@ -1,7 +1,8 @@
 import { CheckCircle2, GraduationCap, HardHat, Lock, UserCog } from 'lucide-react';
-import type { EntretienTripartite, Role } from '@/types';
+import type { EntretienTripartite, NumeroEntretien, Role } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
+import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
 import { libelleRole } from '@/lib/droits';
 import { validerSignatureEntretien } from '@/lib/regles-entretien';
 import { BoutonSigner } from '@/components/common/BoutonSigner';
@@ -19,6 +20,7 @@ import { cn } from '@/lib/utils';
 
 interface BlocSignaturesEntretienProps {
   livretId: string;
+  numero: NumeroEntretien;
   entretien: EntretienTripartite;
   /** Vrai si la fiche est figée (R9 : 3 signatures complètes). */
   ficheVerrouillee: boolean;
@@ -28,21 +30,47 @@ const SIGNATAIRES: Array<{
   role: Exclude<Role, 'coordo' | 'admin'>;
   Icon: typeof GraduationCap;
   cleSig: 'apprenti' | 'maitre' | 'formateur';
-  classeRole: string;
+  classeBordure: string;
+  classeIcone: string;
+  classeTexte: string;
 }> = [
-  { role: 'apprenti', Icon: GraduationCap, cleSig: 'apprenti', classeRole: 'border-l-role-apprenti' },
-  { role: 'maitre', Icon: HardHat, cleSig: 'maitre', classeRole: 'border-l-role-maitre' },
-  { role: 'formateur', Icon: UserCog, cleSig: 'formateur', classeRole: 'border-l-role-formateur' },
+  {
+    role: 'apprenti',
+    Icon: GraduationCap,
+    cleSig: 'apprenti',
+    classeBordure: 'border-l-role-apprenti',
+    classeIcone: 'text-role-apprenti',
+    classeTexte: 'text-role-apprenti',
+  },
+  {
+    role: 'maitre',
+    Icon: HardHat,
+    cleSig: 'maitre',
+    classeBordure: 'border-l-role-maitre',
+    classeIcone: 'text-role-maitre',
+    classeTexte: 'text-role-maitre',
+  },
+  {
+    role: 'formateur',
+    Icon: UserCog,
+    cleSig: 'formateur',
+    classeBordure: 'border-l-role-formateur',
+    classeIcone: 'text-role-formateur',
+    classeTexte: 'text-role-formateur',
+  },
 ];
 
 export function BlocSignaturesEntretien({
   livretId,
+  numero,
   entretien,
   ficheVerrouillee,
 }: BlocSignaturesEntretienProps) {
   const roleActif = useUserStore((s) => s.roleActif);
   const utilisateurActif = useUserStore((s) => s.utilisateurActif);
   const signer = useLivretStore((s) => s.signerEntretien);
+  // Banque indexée — nécessaire à la validation R20 des questions obligatoires.
+  const banque = useBanqueQuestionsStore((s) => s.questions);
 
   return (
     <section className="space-y-3">
@@ -54,35 +82,39 @@ export function BlocSignaturesEntretien({
       </header>
 
       {ficheVerrouillee && (
-        <div className="inline-flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs text-blue-900">
+        <div className="bandeau-info-couleur-role inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs">
           <Lock className="h-3.5 w-3.5" aria-hidden="true" />
           Entretien validé — toutes les sections sont en lecture seule.
         </div>
       )}
 
       <div className="grid gap-3 sm:grid-cols-3">
-        {SIGNATAIRES.map(({ role, Icon, cleSig, classeRole }) => {
+        {SIGNATAIRES.map(({ role, Icon, cleSig, classeBordure, classeIcone, classeTexte }) => {
           const sig = entretien.signatures[cleSig];
           const estSonRole = roleActif === role;
           const validation =
-            estSonRole && !ficheVerrouillee ? validerSignatureEntretien(entretien, role) : null;
+            estSonRole && !ficheVerrouillee
+              ? validerSignatureEntretien(entretien, role, banque)
+              : null;
 
           return (
             <article
               key={role}
               className={cn(
                 'rounded-lg border-l-4 border border-border bg-card p-4 space-y-3',
-                classeRole,
+                classeBordure,
               )}
             >
               <header className="flex items-center gap-2">
-                <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span className="text-sm font-medium">{libelleRole(role)}</span>
+                <Icon className={cn('h-4 w-4 shrink-0', classeIcone)} aria-hidden="true" />
+                <span className={cn('text-sm font-medium', classeTexte)}>
+                  {libelleRole(role)}
+                </span>
               </header>
 
               {sig.signe ? (
                 <div className="space-y-1">
-                  <div className="inline-flex items-center gap-1.5 text-emerald-700 text-sm font-medium">
+                  <div className={cn('inline-flex items-center gap-1.5 text-sm font-medium', classeTexte)}>
                     <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
                     Signé
                   </div>
@@ -100,14 +132,17 @@ export function BlocSignaturesEntretien({
                 </div>
               ) : estSonRole && !ficheVerrouillee ? (
                 <BoutonSigner
+                  role={role}
                   nomCourt={utilisateurActif.prenom}
                   libelleEngagement={`${libelleRole(role)} — ${utilisateurActif.prenom} ${utilisateurActif.nom}`}
                   disabled={!validation?.peutSigner}
                   raisonsBlocage={validation?.raisons}
-                  onConfirmer={() => signer(livretId, role)}
+                  onConfirmer={() => signer(livretId, numero, role)}
                 />
               ) : (
-                <p className="text-xs text-muted-foreground italic">En attente de signature.</p>
+                <p className={cn('text-xs italic opacity-70', classeTexte)}>
+                  En attente de signature.
+                </p>
               )}
 
               {estSonRole && !sig.signe && validation && !validation.peutSigner && (

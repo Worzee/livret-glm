@@ -91,19 +91,19 @@ export function GestionAffectations() {
     <div className="space-y-6">
       <header className="space-y-2">
         <div className="flex items-center gap-2">
-          <Link2 className="h-5 w-5 text-primary" aria-hidden="true" />
+          <Link2 className="h-5 w-5 texte-couleur-role" aria-hidden="true" />
           <h1 className="text-2xl font-semibold">Gestion des affectations</h1>
         </div>
         <p className="text-muted-foreground">
-          Association apprenti·e ↔ formation ↔ maître d'apprentissage ↔ formateur référent.
+          Association apprenti·e ↔ formation ↔ maître / tuteur ↔ formateur référent.
           Les modifications sont enregistrées immédiatement.
         </p>
       </header>
 
       {nbVerrouilles > 0 && (
-        <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+        <div className="bandeau-info-couleur-role rounded-md border p-3 text-sm">
           <div className="flex items-start gap-2">
-            <Lock className="h-4 w-4 shrink-0 mt-0.5 text-blue-700" aria-hidden="true" />
+            <Lock className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
             <div>
               <strong>{nbVerrouilles} apprenti·e{nbVerrouilles > 1 ? 's' : ''} verrouillé·e{nbVerrouilles > 1 ? 's' : ''} par défaut.</strong>{' '}
               Les affectations sont protégées dès que le contrat a démarré, qu'une
@@ -173,7 +173,7 @@ export function GestionAffectations() {
                 <th className="px-4 py-2 text-left">
                   <span className="inline-flex items-center gap-1.5">
                     <HardHat className="h-3.5 w-3.5 text-role-maitre" aria-hidden="true" />
-                    Maître d'apprentissage
+                    Maître / Tuteur
                   </span>
                 </th>
                 <th className="px-4 py-2 text-left">
@@ -225,7 +225,7 @@ interface LigneAffectationProps {
   apprenti: Apprenti;
   livret: Livret | undefined;
   formations: Array<{ id: string; intitule: string; annee: string }>;
-  maitres: Array<{ id: string; prenom: string; nom: string; entrepriseId: string }>;
+  maitres: Array<{ id: string; prenom: string; nom: string; entreprise: string }>;
   formateurs: Array<{ id: string; prenom: string; nom: string }>;
   deverrouilleTemp: boolean;
   onBasculerVerrou: () => void;
@@ -270,7 +270,7 @@ function LigneAffectation({
     patcher(
       {
         maitreApprentissageId: nouveauId,
-        entrepriseId: m?.entrepriseId ?? apprenti.entrepriseId,
+        entrepriseId: m?.entreprise ?? apprenti.entrepriseId,
       },
       'maitre',
     );
@@ -311,7 +311,7 @@ function LigneAffectation({
           onChange={changerMaitre}
           aDestinationDuFlash={champFlash === 'maitre'}
           desactive={!editable}
-          ariaLabel={`Maître d'apprentissage de ${apprenti.prenom} ${apprenti.nom}`}
+          ariaLabel={`Maître / Tuteur de ${apprenti.prenom} ${apprenti.nom}`}
         >
           {maitres.map((m) => (
             <option key={m.id} value={m.id}>

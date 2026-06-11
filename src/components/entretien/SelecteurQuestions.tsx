@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useState } from 'react';
-import { ArrowDown, ArrowUp, Check, ListChecks, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, Check, ListChecks, Lock, X } from 'lucide-react';
 import type { CibleQuestion, QuestionBanque } from '@/types';
 import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,12 @@ interface SelecteurQuestionsProps {
   cible: CibleQuestion;
   /** Liste actuelle (ids) — détermine l'état initial des checkboxes + ordre. */
   selectionInitiale: string[];
+  /**
+   * Ids non retirables (retours coordos juin 2026) : questions affectées par
+   * le coordo et/ou obligatoires (snapshots de l'entretien). Affichées avec
+   * un cadenas, leur case est verrouillée — le formateur ne peut qu'ajouter.
+   */
+  idsNonRetirables: string[];
   onAnnuler: () => void;
   onValider: (questionIds: string[]) => void;
 }
@@ -33,6 +39,7 @@ export function SelecteurQuestions({
   ouvert,
   cible,
   selectionInitiale,
+  idsNonRetirables,
   onAnnuler,
   onValider,
 }: SelecteurQuestionsProps) {
@@ -66,10 +73,17 @@ export function SelecteurQuestions({
 
   if (!ouvert) return null;
 
+  const nonRetirables = new Set(idsNonRetirables);
+
   function toggle(id: string) {
-    setSelection((s) =>
-      s.includes(id) ? s.filter((i) => i !== id) : [...s, id],
-    );
+    setSelection((s) => {
+      if (s.includes(id)) {
+        // Une question imposée/obligatoire ne peut pas être décochée.
+        if (nonRetirables.has(id)) return s;
+        return s.filter((i) => i !== id);
+      }
+      return [...s, id];
+    });
   }
 
   function deplacer(id: string, sens: -1 | 1) {
@@ -113,14 +127,15 @@ export function SelecteurQuestions({
       <div className="relative w-full max-w-xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-lg border border-border bg-card shadow-lg">
         <div className="sticky top-0 flex items-start justify-between gap-3 border-b border-border bg-card p-4">
           <div className="flex items-start gap-3">
-            <ListChecks className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+            <ListChecks className="h-5 w-5 shrink-0 texte-couleur-role" aria-hidden="true" />
             <div>
               <h2 id={titreId} className="text-lg font-semibold">
                 Choisir les questions à poser à {titreCible}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Cochez les questions à inclure. Les flèches ↑/↓ déterminent l'ordre
-                d'affichage.
+                Cochez les questions à ajouter. Les flèches ↑/↓ déterminent l'ordre
+                d'affichage. Les questions marquées d'un cadenas ont été affectées
+                par le coordinateur·rice et ne peuvent pas être retirées.
               </p>
             </div>
           </div>
@@ -148,6 +163,7 @@ export function SelecteurQuestions({
                 const peutMonter = coche && positionDansSelection > 0;
                 const peutDescendre =
                   coche && positionDansSelection < selection.length - 1;
+                const verrouillee = coche && nonRetirables.has(q.id);
                 return (
                   <li
                     key={q.id}
@@ -155,24 +171,44 @@ export function SelecteurQuestions({
                     className={cn(
                       'flex items-start gap-2 rounded-md border px-2 py-2 text-sm',
                       coche
-                        ? 'border-primary/40 bg-primary/5'
+                        ? 'actif-couleur-role'
                         : 'border-border bg-background',
                     )}
                   >
-                    <label className="flex items-start gap-2 flex-1 cursor-pointer">
+                    <label
+                      className={cn(
+                        'flex items-start gap-2 flex-1',
+                        verrouillee ? 'cursor-not-allowed' : 'cursor-pointer',
+                      )}
+                    >
                       <input
                         type="checkbox"
                         checked={coche}
+                        disabled={verrouillee}
                         onChange={() => toggle(q.id)}
-                        className="mt-0.5 h-4 w-4 rounded border-input text-primary focus-visible:ring-2 focus-visible:ring-ring"
+                        aria-label={
+                          verrouillee
+                            ? `${q.libelle} — affectée par le coordinateur·rice, non retirable`
+                            : q.libelle
+                        }
+                        className="mt-0.5 h-4 w-4 rounded border-input accent-[hsl(var(--ring))] focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
                       />
                       <span className="flex-1">
                         <span className="font-medium text-foreground">{q.libelle}</span>
                         <span className="ml-2 text-xs text-muted-foreground">
                           ({libelleType(q.type)})
                         </span>
+                        {verrouillee && (
+                          <span
+                            className="ml-2 inline-flex items-center gap-0.5 rounded bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground align-middle"
+                            title="Affectée par le coordinateur·rice — non retirable."
+                          >
+                            <Lock className="h-2.5 w-2.5" aria-hidden="true" />
+                            Affectée
+                          </span>
+                        )}
                         {coche && positionDansSelection >= 0 && (
-                          <span className="ml-2 inline-block rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                          <span className="ml-2 inline-block rounded bg-[hsl(var(--ring)/0.15)] px-1.5 py-0.5 text-[10px] font-medium texte-couleur-role">
                             #{positionDansSelection + 1}
                           </span>
                         )}
@@ -222,7 +258,7 @@ export function SelecteurQuestions({
             type="button"
             onClick={() => onValider(selection)}
             data-testid="selecteur-q-valider"
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex items-center gap-1.5 rounded-md bouton-plein-couleur-role px-4 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Check className="h-4 w-4" aria-hidden="true" />
             Enregistrer ({selection.length} sélectionnée

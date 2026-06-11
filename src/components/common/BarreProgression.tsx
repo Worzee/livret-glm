@@ -39,7 +39,10 @@ export function BarreProgression({
         className="h-2 w-full overflow-hidden rounded-full bg-secondary"
       >
         <div
-          className={cn('h-full rounded-full transition-all', classeBarre ?? 'bg-primary')}
+          className={cn(
+            'h-full rounded-full transition-all',
+            classeBarre ?? 'bg-[hsl(var(--ring))]',
+          )}
           style={{ width: `${pct}%` }}
         />
       </div>

@@ -12,7 +12,7 @@ const fiche = (
   numeroPeriode: num,
   dateDebut,
   dateFin,
-  suiviGretaCfa: [],
+  suiviGretaCfa: {},
   suiviEntreprise: [],
   observations: {},
   signatures: {
@@ -118,7 +118,7 @@ describe('verifierCreationPeriode (R13 bloquant + R14 avertissement)', () => {
     const f = fiche(1, '2026-01-01', '2026-01-31', 'en-cours');
     const r = verifierCreationPeriode([f], true);
     expect(r.avertissements[0]).toContain('apprenti·e');
-    expect(r.avertissements[0]).toMatch(/maître d'apprentissage/);
+    expect(r.avertissements[0]).toMatch(/maître \/ tuteur/);
     expect(r.avertissements[0]).toContain('formateur·rice référent·e');
   });
 
@@ -133,7 +133,7 @@ describe('verifierCreationPeriode (R13 bloquant + R14 avertissement)', () => {
     };
     const r = verifierCreationPeriode([f], true);
     expect(r.avertissements[0]).not.toContain('apprenti·e');
-    expect(r.avertissements[0]).toMatch(/maître d'apprentissage/);
+    expect(r.avertissements[0]).toMatch(/maître \/ tuteur/);
     expect(r.avertissements[0]).toContain('formateur·rice référent·e');
   });
 

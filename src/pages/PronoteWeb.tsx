@@ -62,7 +62,7 @@ export function PronoteWeb() {
     <div className="space-y-6 max-w-3xl">
       <header className="space-y-2">
         <div className="flex items-center gap-2">
-          <Link2 className="h-5 w-5 text-primary" aria-hidden="true" />
+          <Link2 className="h-5 w-5 texte-couleur-role" aria-hidden="true" />
           <h1 className="text-2xl font-semibold">Pronote WEB</h1>
         </div>
         <p className="text-muted-foreground">
@@ -74,7 +74,7 @@ export function PronoteWeb() {
       {/* Bloc explicatif */}
       <section className="rounded-lg border border-border bg-card p-5 space-y-3">
         <div className="flex items-start gap-3">
-          <Info className="h-5 w-5 shrink-0 text-primary mt-0.5" aria-hidden="true" />
+          <Info className="h-5 w-5 shrink-0 texte-couleur-role mt-0.5" aria-hidden="true" />
           <div className="space-y-2 text-sm">
             <h2 className="font-medium text-foreground">À propos de Pronote</h2>
             <p>
@@ -115,7 +115,7 @@ export function PronoteWeb() {
               Rendez-vous sur la page{' '}
               <a
                 href="/admin/etablissements"
-                className="font-medium text-primary underline-offset-2 hover:underline"
+                className="font-medium texte-couleur-role underline-offset-2 hover:underline"
               >
                 Administration → Établissements
               </a>{' '}
@@ -142,10 +142,10 @@ export function PronoteWeb() {
                     target="_blank"
                     rel="noopener noreferrer"
                     data-testid={`pronote-eta-${e.id}`}
-                    className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="carte-survol-role flex items-start gap-3 rounded-lg border p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <ExternalLink
-                      className="h-5 w-5 shrink-0 text-primary mt-0.5"
+                      className="h-5 w-5 shrink-0 texte-couleur-role mt-0.5"
                       aria-hidden="true"
                     />
                     <div className="flex-1 min-w-0">
@@ -189,7 +189,7 @@ export function PronoteWeb() {
           Configuration réservée au rôle Administrateur·rice —{' '}
           <a
             href="/admin/etablissements"
-            className="text-primary underline-offset-2 hover:underline"
+            className="texte-couleur-role underline-offset-2 hover:underline"
           >
             modifier les établissements
           </a>

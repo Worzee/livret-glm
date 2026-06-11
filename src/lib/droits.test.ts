@@ -67,9 +67,16 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
   });
 
   describe('Fiche de suivi par période (CDC §5.3)', () => {
-    it("formateur édite la colonne GRETA CFA et l'évaluation centre", () => {
-      expect(peutEditer('formateur', 'fiche.suivi-greta-cfa')).toBe(true);
+    it("formateur édite sa zone du suivi GRETA CFA et l'évaluation centre", () => {
+      expect(peutEditer('formateur', 'fiche.suivi-greta-cfa-formateur')).toBe(true);
       expect(peutEditer('formateur', 'fiche.evaluation-greta')).toBe(true);
+    });
+
+    it("apprenti·e édite sa zone du suivi GRETA CFA (refonte mai 2026)", () => {
+      expect(peutEditer('apprenti', 'fiche.suivi-greta-cfa-apprenti')).toBe(true);
+      expect(peutEditer('formateur', 'fiche.suivi-greta-cfa-apprenti')).toBe(false);
+      expect(peutEditer('maitre', 'fiche.suivi-greta-cfa-apprenti')).toBe(false);
+      expect(peutEditer('apprenti', 'fiche.suivi-greta-cfa-formateur')).toBe(false);
     });
 
     it("maître édite la colonne évaluation entreprise", () => {
@@ -98,21 +105,16 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('maitre', 'fiche.observation-formateur')).toBe(false);
     });
 
-    it("formateur et coordo peuvent créer / modifier / supprimer une période", () => {
-      // Gestion calendaire (création / renommage / suppression) : ouverte au
-      // coordo également (besoin terrain — il/elle peut piloter le calendrier
-      // des périodes en lieu et place du formateur).
-      expect(peutEditer('formateur', 'fiche.creer-periode')).toBe(true);
-      expect(peutEditer('coordo', 'fiche.creer-periode')).toBe(true);
-      expect(peutEditer('formateur', 'fiche.modifier-periode')).toBe(true);
-      expect(peutEditer('coordo', 'fiche.modifier-periode')).toBe(true);
-      expect(peutEditer('formateur', 'fiche.supprimer-periode')).toBe(true);
-      expect(peutEditer('coordo', 'fiche.supprimer-periode')).toBe(true);
-      // Apprenti·e et maître restent en lecture seule
-      expect(peutEditer('apprenti', 'fiche.creer-periode')).toBe(false);
-      expect(peutEditer('maitre', 'fiche.creer-periode')).toBe(false);
-      expect(peutEditer('apprenti', 'fiche.supprimer-periode')).toBe(false);
-      expect(peutEditer('maitre', 'fiche.supprimer-periode')).toBe(false);
+    it("la gestion calendaire passe désormais par le planning de formation", () => {
+      // Refonte mai 2026 (chantier #1) : les ressources `fiche.creer-periode`,
+      // `fiche.modifier-periode`, `fiche.supprimer-periode` ont été retirées
+      // de la matrice. Le coordo/admin gère le planning via
+      // `admin.formations.modifier` ; cette mutation propage en cascade
+      // les fiches dans les livrets de la promo.
+      expect(peutEditer('coordo', 'admin.formations.modifier')).toBe(true);
+      expect(peutEditer('admin', 'admin.formations.modifier')).toBe(true);
+      // Le formateur ne pilote plus le planning lui-même.
+      expect(peutEditer('formateur', 'admin.formations.modifier')).toBe(false);
     });
 
     it("seul le formateur peut déverrouiller une fiche signée (R10)", () => {
@@ -183,7 +185,8 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
         'entretien.appreciation-maitre',
         'entretien.demarches-administratives',
         'entretien.selection-competences-entreprise',
-        'fiche.suivi-greta-cfa',
+        'fiche.suivi-greta-cfa-apprenti',
+        'fiche.suivi-greta-cfa-formateur',
         'fiche.evaluation-entreprise',
         'fiche.evaluation-greta',
         'fiche.retour-apprenti',
@@ -253,6 +256,17 @@ describe('Administration — droits du rôle coordo', () => {
     expect(peutEditer('formateur', 'admin.utilisateurs.supprimer')).toBe(false);
   });
 
+  it("import XLSX d'utilisateur·rice·s : coordo + admin uniquement", () => {
+    // Refonte mai 2026 : nouvelle ressource `admin.utilisateurs.import-xlsx`.
+    // Le formateur peut créer un compte à la volée via la modale mais
+    // PAS importer par lot (action structurelle).
+    expect(peutEditer('coordo', 'admin.utilisateurs.import-xlsx')).toBe(true);
+    expect(peutEditer('admin', 'admin.utilisateurs.import-xlsx')).toBe(true);
+    expect(peutEditer('formateur', 'admin.utilisateurs.import-xlsx')).toBe(false);
+    expect(peutEditer('maitre', 'admin.utilisateurs.import-xlsx')).toBe(false);
+    expect(peutEditer('apprenti', 'admin.utilisateurs.import-xlsx')).toBe(false);
+  });
+
   it('seul le coordo gère les formations (création, modification, suppression)', () => {
     expect(peutEditer('coordo', 'admin.formations.creer')).toBe(true);
     expect(peutEditer('coordo', 'admin.formations.modifier')).toBe(true);
@@ -281,7 +295,7 @@ describe('rolesAutorises', () => {
 describe('libelleRole', () => {
   it('retourne un libellé humain pour chaque rôle', () => {
     expect(libelleRole('apprenti')).toBe('Apprenti·e');
-    expect(libelleRole('maitre')).toBe("Maître d'apprentissage");
+    expect(libelleRole('maitre')).toBe('Maître / Tuteur');
     expect(libelleRole('formateur')).toBe('Formateur référent');
     expect(libelleRole('coordo')).toBe('Coordinateur·rice');
     expect(libelleRole('admin')).toBe('Administrateur·rice');

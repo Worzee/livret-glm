@@ -7,11 +7,12 @@ import type { FicheSuiviPeriode, Role } from '@/types';
  * Tableau §8.4 — champs requis par rôle pour signer une fiche de période :
  *
  *   Apprenti·e  : ≥ 1 entrée "retour apprenti·e" + zone observation apprenti non vide
+ *                 (le champ « Suivi GRETA CFA — apprenti » reste optionnel)
  *   Maître      : ≥ 1 compétence **réellement abordée** (col entreprise, valeur
  *                 autre que `null` et autre que `non-fait`) + zone observation
  *                 maître non vide
- *   Formateur   : ≥ 1 entrée "suivi GRETA CFA" + ≥ 1 compétence évaluée (col centre) +
- *                 zone observation formateur non vide
+ *   Formateur   : zone « Suivi GRETA CFA — formateur » non vide + ≥ 1 compétence
+ *                 évaluée (col centre) + zone observation formateur non vide
  */
 
 export interface ResultatValidation {
@@ -77,8 +78,11 @@ export function validerSignature(
     }
 
     case 'formateur': {
-      if (fiche.suiviGretaCfa.length === 0) {
-        raisons.push("Renseignez au moins une ligne dans le tableau « Suivi GRETA CFA ».");
+      const champFormateur = fiche.suiviGretaCfa.formateur?.trim() ?? '';
+      if (champFormateur.length === 0) {
+        raisons.push(
+          "Renseignez la zone « Suivi de la formation au GRETA CFA — Formateur référent ».",
+        );
       }
       // Symétrie avec la règle maître : `'non-fait'` ne suffit pas — le
       // formateur référent doit avoir évalué au moins une compétence avec

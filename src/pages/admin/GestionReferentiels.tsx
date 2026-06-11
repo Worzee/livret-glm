@@ -70,7 +70,7 @@ export function GestionReferentiels() {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <Library className="h-5 w-5 text-primary" aria-hidden="true" />
+            <Library className="h-5 w-5 texte-couleur-role" aria-hidden="true" />
             <h1 className="text-2xl font-semibold">Gestion des référentiels</h1>
           </div>
           <p className="text-muted-foreground">
@@ -81,7 +81,7 @@ export function GestionReferentiels() {
         <button
           type="button"
           onClick={() => setModaleImportOuverte(true)}
-          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex items-center gap-1.5 rounded-md bouton-plein-couleur-role px-4 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           Importer un référentiel
@@ -119,7 +119,7 @@ export function GestionReferentiels() {
                 <header className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h3 className="font-semibold flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                      <BookOpen className="h-4 w-4 shrink-0 texte-couleur-role" aria-hidden="true" />
                       <span className="truncate">{r.formation}</span>
                     </h3>
                     <p className="text-xs text-muted-foreground mt-0.5">
@@ -265,7 +265,7 @@ function FormationsRattachees({ formations }: { formations: ReadonlyArray<Format
       data-testid="ref-formations-rattachees"
     >
       <GraduationCap
-        className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary"
+        className="h-3.5 w-3.5 shrink-0 mt-0.5 texte-couleur-role"
         aria-hidden="true"
       />
       <span>

@@ -1,8 +1,10 @@
+import { UserCog } from 'lucide-react';
 import type {
   AidesDemandees,
   ConditionsPratiques,
   DemarchesAdministratives,
   EntretienTripartite,
+  NumeroEntretien,
 } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
@@ -21,6 +23,7 @@ import { cn } from '@/lib/utils';
 
 interface SectionFormateurProps {
   livretId: string;
+  numero: NumeroEntretien;
   entretien: EntretienTripartite;
 }
 
@@ -44,7 +47,7 @@ const AIDES: Array<{ cle: keyof Omit<AidesDemandees, 'autres'>; libelle: string 
   { cle: 'permis', libelle: 'Aide au permis de conduire' },
 ];
 
-export function SectionFormateur({ livretId, entretien }: SectionFormateurProps) {
+export function SectionFormateur({ livretId, numero, entretien }: SectionFormateurProps) {
   const roleActif = useUserStore((s) => s.roleActif);
   const setDemarches = useLivretStore((s) => s.setDemarchesAdministratives);
   const setConditions = useLivretStore((s) => s.setConditionsPratiques);
@@ -60,11 +63,19 @@ export function SectionFormateur({ livretId, entretien }: SectionFormateurProps)
 
   return (
     <section className="rounded-lg border border-border border-l-4 border-l-role-formateur bg-card p-4 space-y-5">
-      <header>
-        <h2 className="text-lg font-medium">Formateur référent</h2>
-        <p className="text-xs text-muted-foreground">
-          Réservé au formateur référent. Verrouillé après votre signature.
-        </p>
+      <header className="flex items-start gap-2">
+        <UserCog
+          className="mt-1 h-5 w-5 shrink-0 text-role-formateur"
+          aria-hidden="true"
+        />
+        <div>
+          <h2 className="text-lg font-medium text-role-formateur">
+            Formateur référent
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Réservé au formateur référent. Verrouillé après votre signature.
+          </p>
+        </div>
       </header>
 
       {/* ── Démarches administratives ─────────────────────────────────────── */}
@@ -80,7 +91,7 @@ export function SectionFormateur({ livretId, entretien }: SectionFormateurProps)
               <CaseOuiNon
                 editable={editable}
                 valeur={entretien.demarchesAdministratives[d.cle]}
-                onChange={(v) => setDemarches(livretId, { [d.cle]: v })}
+                onChange={(v) => setDemarches(livretId, numero, { [d.cle]: v })}
                 ariaLabel={d.libelle}
               />
             </div>
@@ -90,7 +101,7 @@ export function SectionFormateur({ livretId, entretien }: SectionFormateurProps)
           label="Remarques"
           valeur={entretien.demarchesAdministratives.remarques ?? ''}
           editable={editable}
-          onChange={(v) => setDemarches(livretId, { remarques: v })}
+          onChange={(v) => setDemarches(livretId, numero, { remarques: v })}
           placeholder="Précisions, dates, observations…"
         />
       </div>
@@ -105,7 +116,7 @@ export function SectionFormateur({ livretId, entretien }: SectionFormateurProps)
               label={c.libelle}
               valeur={entretien.conditionsPratiques[c.cle] ?? ''}
               editable={editable}
-              onChange={(v) => setConditions(livretId, { [c.cle]: v })}
+              onChange={(v) => setConditions(livretId, numero, { [c.cle]: v })}
               placeholder={c.placeholder}
             />
           ))}
@@ -125,7 +136,7 @@ export function SectionFormateur({ livretId, entretien }: SectionFormateurProps)
               <CaseOuiNon
                 editable={editable}
                 valeur={entretien.aidesDemandees[a.cle]}
-                onChange={(v) => setAides(livretId, { [a.cle]: v })}
+                onChange={(v) => setAides(livretId, numero, { [a.cle]: v })}
                 ariaLabel={a.libelle}
               />
             </div>
@@ -135,7 +146,7 @@ export function SectionFormateur({ livretId, entretien }: SectionFormateurProps)
           label="Autres aides / précisions"
           valeur={entretien.aidesDemandees.autres ?? ''}
           editable={editable}
-          onChange={(v) => setAides(livretId, { autres: v })}
+          onChange={(v) => setAides(livretId, numero, { autres: v })}
           placeholder="Préciser le type d'aide, l'organisme…"
         />
       </div>
@@ -146,7 +157,7 @@ export function SectionFormateur({ livretId, entretien }: SectionFormateurProps)
           label="Commentaire libre du formateur référent"
           valeur={entretien.commentaires.formateur ?? ''}
           editable={editableCommentaire}
-          onChange={(v) => setCommentaire(livretId, 'formateur', v)}
+          onChange={(v) => setCommentaire(livretId, numero, 'formateur', v)}
           placeholder="Synthèse, points de vigilance, recommandations…"
           rows={3}
         />

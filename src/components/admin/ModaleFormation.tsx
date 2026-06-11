@@ -150,7 +150,7 @@ export function ModaleFormation({
         <div className="sticky top-0 flex items-start justify-between gap-3 border-b border-border bg-card p-4">
           <div className="flex items-start gap-3">
             <GraduationCap
-              className="h-5 w-5 shrink-0 text-primary"
+              className="h-5 w-5 shrink-0 texte-couleur-role"
               aria-hidden="true"
             />
             <div>
@@ -269,7 +269,7 @@ export function ModaleFormation({
         <div className="sticky bottom-0 flex flex-row-reverse items-center gap-2 border-t border-border bg-secondary/30 p-3">
           <button
             type="submit"
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex items-center gap-1.5 rounded-md bouton-plein-couleur-role px-4 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {formation ? 'Enregistrer les modifications' : 'Créer la formation'}
           </button>

@@ -8,6 +8,7 @@ import { FicheSuiviPeriodes } from '@/pages/FicheSuiviPeriodes';
 import { FicheSuiviPeriodeDetail } from '@/pages/FicheSuiviPeriodeDetail';
 import { EvaluationFinale } from '@/pages/EvaluationFinale';
 import { GestionUtilisateurs } from '@/pages/admin/GestionUtilisateurs';
+import { ImportUtilisateurs } from '@/pages/admin/ImportUtilisateurs';
 import { GestionFormations } from '@/pages/admin/GestionFormations';
 import { GestionAffectations } from '@/pages/admin/GestionAffectations';
 import { GestionReferentiels } from '@/pages/admin/GestionReferentiels';
@@ -29,7 +30,7 @@ export function App() {
         <Route path="livret/:apprentiId" element={<Navigate to="/livret/organisation-suivi" replace />} />
 
         <Route path="livret/organisation-suivi" element={<OrganisationSuivi />} />
-        <Route path="livret/entretien" element={<EntretienTripartite />} />
+        <Route path="livret/entretien/:numero" element={<EntretienTripartite />} />
         <Route path="livret/fiches-suivi" element={<FicheSuiviPeriodes />} />
         <Route path="livret/fiches-suivi/:ficheId" element={<FicheSuiviPeriodeDetail />} />
         <Route path="livret/evaluation-finale" element={<EvaluationFinale />} />
@@ -37,6 +38,7 @@ export function App() {
 
         {/* ── Administration (rôle coordo) ──────────────────────────────── */}
         <Route path="admin/utilisateurs" element={<GestionUtilisateurs />} />
+        <Route path="admin/import-utilisateurs" element={<ImportUtilisateurs />} />
         <Route path="admin/formations" element={<GestionFormations />} />
         <Route path="admin/affectations" element={<GestionAffectations />} />
         <Route path="admin/referentiels" element={<GestionReferentiels />} />

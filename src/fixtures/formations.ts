@@ -1,13 +1,40 @@
-import type { Formation } from '@/types';
+import type { Formation, PeriodeFormation } from '@/types';
 import { etablissementSiteDiderot } from './etablissements';
 
 /**
  * Formations fictives de démonstration.
  * Référence : cahier des charges v1.3, sections 24 et 30 (annexes).
  *
- * Refonte mai 2026 : `lieu` inline remplacé par `lieuId` qui pointe vers
- * une entrée du store `useEtablissementsStore`.
+ * Refonte mai 2026 (chantier #1) : la formation porte désormais le
+ * planning des périodes d'alternance — commun à tous les apprenti·e·s de
+ * la promo. Chaque période matérialise une fiche dans chaque livret.
  */
+
+/**
+ * Planning des 3 périodes de démo pour la CAP Cuisine 2025-2026.
+ * Reproduit les dates utilisées par les livrets existants (Léa, Théo, ...)
+ * pour que les fiches déjà signées se rattachent à leur période parente.
+ */
+export const periodesCapCuisine: PeriodeFormation[] = [
+  {
+    id: 'pf-cap-cuisine-2025-p1',
+    numero: 1,
+    dateDebut: '2025-09-02',
+    dateFin: '2025-12-20',
+  },
+  {
+    id: 'pf-cap-cuisine-2025-p2',
+    numero: 2,
+    dateDebut: '2026-01-06',
+    dateFin: '2026-02-14',
+  },
+  {
+    id: 'pf-cap-cuisine-2025-p3',
+    numero: 3,
+    dateDebut: '2026-03-02',
+    dateFin: '2026-04-11',
+  },
+];
 
 export const formationCapCuisine: Formation = {
   id: 'f-cap-cuisine-2025',
@@ -18,6 +45,7 @@ export const formationCapCuisine: Formation = {
   dateDebut: '2025-09-02',
   dateFin: '2027-09-01',
   lieuId: etablissementSiteDiderot.id,
+  periodes: periodesCapCuisine,
 };
 
 /**

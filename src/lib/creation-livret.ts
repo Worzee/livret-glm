@@ -1,4 +1,4 @@
-import type { Apprenti, Livret } from '@/types';
+import type { Apprenti, FicheSuiviPeriode, Livret, PeriodeFormation } from '@/types';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
 import { creerSelectionVierge } from './selection-competences-entreprise';
 
@@ -13,18 +13,23 @@ import { creerSelectionVierge } from './selection-competences-entreprise';
  * Le livret est rempli avec :
  *   - une `OrganisationSuivi` minimale (champs vides + horodatage)
  *   - un entretien tripartite null (à initialiser explicitement par le formateur)
- *   - aucune fiche de période
+ *   - une fiche de période par entrée du `planning` fourni (refonte mai
+ *     2026 — chantier #1 : le planning vient de la formation, pas du livret)
  *   - les lignes d'évaluation finale instanciées depuis le référentiel actuel
  *
  * @param livretId  Id voulu pour le livret (souvent `livret-${apprenti.id}`).
  * @param auteurId  Id de l'utilisateur·rice à l'origine de la création
  *                  (pour `organisationSuivi.modifiePar`).
+ * @param planning  Planning des périodes hérité de la formation. Pour les
+ *                  livrets de fixtures qui définissent leurs propres fiches,
+ *                  passer `[]` (les fiches seront ajoutées explicitement).
  * @param maintenant Permet de passer une date pour les tests déterministes.
  */
 export function creerLivretVierge(
   apprenti: Apprenti,
   livretId: string,
   auteurId: string,
+  planning: ReadonlyArray<PeriodeFormation> = [],
   maintenant: Date = new Date(),
 ): Livret {
   const iso = maintenant.toISOString();
@@ -52,8 +57,28 @@ export function creerLivretVierge(
       modifieLe: iso,
       modifiePar: auteurId,
     },
-    entretienTripartite: null,
-    fichesSuivi: [],
+    // Chantier #2 : 2 entretiens tripartites, initialisés via événement
+    // dans l'organisation du suivi (motifs `entretien-tripartite-{1|2}`).
+    entretien1: null,
+    entretien2: null,
+    fichesSuivi: planning.map((p): FicheSuiviPeriode => ({
+      id: `fp-${livretId}-${p.id}`,
+      numeroPeriode: p.numero,
+      titre: p.titre,
+      periodeFormationId: p.id,
+      dateDebut: p.dateDebut,
+      dateFin: p.dateFin,
+      suiviGretaCfa: {},
+      suiviEntreprise: [],
+      observations: {},
+      signatures: {
+        apprenti: { signe: false },
+        maitre: { signe: false },
+        formateur: { signe: false },
+      },
+      etat: 'brouillon',
+      historiqueDeverrouillages: [],
+    })),
     evaluationFinaleCompetences: {
       lignes: lignesCompetences,
       modifieLe: iso,

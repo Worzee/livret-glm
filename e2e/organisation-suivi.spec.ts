@@ -14,13 +14,14 @@ test.beforeEach(async ({ page }) => {
   await resetState(page);
 });
 
-test('le formateur voit les événements scénarisés de Léa MARTIN (8 événements dont 3 visites)', async ({
+test('le formateur voit les événements scénarisés de Léa MARTIN (10 événements dont 3 visites)', async ({
   page,
 }) => {
   // Reset → rôle = formateur, apprenti·e actif·ve = Léa MARTIN.
   await page.goto('/livret/organisation-suivi');
-  // Léa a 8 événements dans la fixture (5 standards + 3 visites en entreprise).
-  await expect(page.locator('article[data-testid^="org-evt-"]')).toHaveCount(8);
+  // Léa a 10 événements dans la fixture (5 standards + 3 visites en entreprise
+  // + 2 entretiens tripartites — chantier #2).
+  await expect(page.locator('article[data-testid^="org-evt-"]')).toHaveCount(10);
   // Les 3 visites doivent porter chacune un titre custom (« Visite n°1/2/3 »).
   // Côté formateur, le titre est dans un <input> éditable → on lit `value`.
   const titres = await page

@@ -9,7 +9,7 @@ export function NotFound() {
       </p>
       <Link
         to="/"
-        className="inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+        className="inline-block rounded-md bouton-plein-couleur-role px-4 py-2 text-sm font-medium"
       >
         Retour au tableau de bord
       </Link>

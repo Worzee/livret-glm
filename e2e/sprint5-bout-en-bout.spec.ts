@@ -25,8 +25,8 @@ test('parcours formateur : navigation complète + signature R10/R22 visibles', a
   await page.getByRole('link', { name: /^Fiches de suivi$/i }).click();
   await expect(page).toHaveURL(/\/livret\/organisation-suivi/);
 
-  // 3. Entretien tripartite (signé dans la fixture)
-  await page.getByRole('link', { name: /Entretien tripartite/i }).click();
+  // 3. Entretien tripartite 1 (signé dans la fixture — Léa a aussi un lien E2)
+  await page.getByRole('link', { name: /Entretien tripartite 1/i }).click();
   await expect(page).toHaveURL(/\/livret\/entretien/);
   await expect(page.getByRole('heading', { name: /Entretien tripartite/i })).toBeVisible();
 

@@ -31,7 +31,9 @@ export function nombreSignatures(signatures: SignaturesTripartite): number {
  * Une fiche vide reste en `brouillon`.
  */
 export function ficheEstVide(fiche: FicheSuiviPeriode): boolean {
-  if (fiche.suiviGretaCfa.length > 0) return false;
+  // Refonte mai 2026 : le suivi GRETA CFA est désormais 2 zones de texte.
+  if (fiche.suiviGretaCfa.apprenti?.trim()) return false;
+  if (fiche.suiviGretaCfa.formateur?.trim()) return false;
   if (fiche.suiviEntreprise.length > 0) return false;
   if (fiche.observations.apprenti) return false;
   if (fiche.observations.maitre) return false;

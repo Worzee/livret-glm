@@ -25,7 +25,7 @@ test('le rôle Formateur référent est actif par défaut', async ({ page }) => 
 test("bascule entre les 5 rôles et l'aria-checked suit", async ({ page }) => {
   for (const label of [
     'Apprenti·e',
-    "Maître d'apprentissage",
+    'Maître / Tuteur',
     'Coordinateur·rice',
     'Admin',
     'Formateur référent',

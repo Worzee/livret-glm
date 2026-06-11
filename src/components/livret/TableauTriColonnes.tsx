@@ -93,8 +93,11 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
     peutEditer(roleActif, 'fiche.evaluation-entreprise') && peutEncoreEditerFiche(fiche, 'maitre');
   const peutEditerRetour =
     peutEditer(roleActif, 'fiche.retour-apprenti') && peutEncoreEditerFiche(fiche, 'apprenti');
+  // Ajout d'une ligne ouvert au formateur — la grille des compétences à
+  // évaluer relève de sa colonne « centre ». On réutilise ce droit comme
+  // garde-fou plutôt que d'ajouter une ressource matrice dédiée.
   const peutAjouterLigne =
-    peutEditer(roleActif, 'fiche.suivi-greta-cfa') && peutEncoreEditerFiche(fiche, 'formateur');
+    peutEditer(roleActif, 'fiche.evaluation-greta') && peutEncoreEditerFiche(fiche, 'formateur');
   // Note : ajout d'une ligne ouvert au formateur (qui structure la grille).
   // Le maître/apprenti peuvent compléter mais pas créer de ligne.
 
@@ -127,7 +130,7 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
             <p className="font-medium">Sélection des compétences abordées en entreprise non validée</p>
             <p className="text-xs">
               La liste des compétences à travailler en entreprise pour cet·te apprenti·e doit être
-              définie conjointement par le formateur référent et le maître d'apprentissage, puis
+              définie conjointement par le formateur référent et le maître / tuteur, puis
               validée à l'<Link className="underline hover:no-underline" to="/livret/entretien">entretien tripartite</Link>.
               Les lignes déjà saisies restent visibles ci-dessous.
             </p>

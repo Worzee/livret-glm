@@ -6,11 +6,12 @@ import {
   libelleEvenement,
   libelleMotif,
   metadonneesMotif,
+  numeroEntretienPourMotif,
   peutSupprimerEvenement,
 } from './organisation-suivi';
 
 describe('MOTIFS_ORGANISATION_SUIVI', () => {
-  it('expose exactement les 7 motifs convenus avec le pilote (mai 2026)', () => {
+  it('expose les 9 motifs (chantier #2 mai 2026 : +2 entretiens tripartites)', () => {
     const cles = MOTIFS_ORGANISATION_SUIVI.map((m) => m.motif);
     expect(cles).toEqual([
       'reunion-rentree',
@@ -19,6 +20,8 @@ describe('MOTIFS_ORGANISATION_SUIVI', () => {
       'visite-entreprise',
       'restitution-activites',
       'bilan-formation',
+      'entretien-tripartite-1',
+      'entretien-tripartite-2',
       'autre',
     ]);
   });
@@ -28,6 +31,31 @@ describe('MOTIFS_ORGANISATION_SUIVI', () => {
       expect(meta.libelle.length).toBeGreaterThan(0);
       expect(meta.description.length).toBeGreaterThan(0);
       expect(meta.placeholderCommentaire.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('numeroEntretienPourMotif (chantier #2)', () => {
+  it('retourne 1 pour le motif entretien-tripartite-1', () => {
+    expect(numeroEntretienPourMotif('entretien-tripartite-1')).toBe(1);
+  });
+
+  it('retourne 2 pour le motif entretien-tripartite-2', () => {
+    expect(numeroEntretienPourMotif('entretien-tripartite-2')).toBe(2);
+  });
+
+  it('retourne null pour tous les autres motifs', () => {
+    const autres: MotifOrganisationSuivi[] = [
+      'reunion-rentree',
+      'entretien-individuel',
+      'accueil-tuteur',
+      'visite-entreprise',
+      'restitution-activites',
+      'bilan-formation',
+      'autre',
+    ];
+    for (const m of autres) {
+      expect(numeroEntretienPourMotif(m)).toBeNull();
     }
   });
 });

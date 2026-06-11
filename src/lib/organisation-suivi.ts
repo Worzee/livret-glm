@@ -35,7 +35,7 @@ export const MOTIFS_ORGANISATION_SUIVI: ReadonlyArray<MetadonneesMotif> = [
   {
     motif: 'accueil-tuteur',
     libelle: 'Accueil tuteur',
-    description: "Journée d'information dédiée aux maîtres d'apprentissage.",
+    description: "Journée d'information dédiée aux maîtres / tuteurs.",
     placeholderCommentaire: 'Lieu, horaires, programme abrégé…',
   },
   {
@@ -55,6 +55,20 @@ export const MOTIFS_ORGANISATION_SUIVI: ReadonlyArray<MetadonneesMotif> = [
     libelle: 'Bilans de formation',
     description: 'Bilan intermédiaire ou final de la formation.',
     placeholderCommentaire: 'Période, intervenants, modalités…',
+  },
+  {
+    motif: 'entretien-tripartite-1',
+    libelle: 'Entretien Tripartite 1',
+    description:
+      "Premier entretien tripartite — typiquement dans les 2 mois suivant la signature du contrat (R7).",
+    placeholderCommentaire: 'Date prévue, modalités, participants…',
+  },
+  {
+    motif: 'entretien-tripartite-2',
+    libelle: 'Entretien Tripartite 2',
+    description:
+      'Second entretien tripartite — bilan mi-parcours ou réajustement en cours de formation.',
+    placeholderCommentaire: 'Date prévue, modalités, participants…',
   },
   {
     motif: 'autre',
@@ -139,4 +153,17 @@ export function peutSupprimerEvenement(
     };
   }
   return { supprimable: true };
+}
+
+/**
+ * Retourne le numéro d'entretien tripartite associé à un motif, ou `null`
+ * si le motif n'est pas un entretien. Pratique pour aiguiller l'UI :
+ * « cet événement ouvre-t-il un entretien tripartite et lequel ? ».
+ */
+export function numeroEntretienPourMotif(
+  motif: MotifOrganisationSuivi,
+): 1 | 2 | null {
+  if (motif === 'entretien-tripartite-1') return 1;
+  if (motif === 'entretien-tripartite-2') return 2;
+  return null;
 }

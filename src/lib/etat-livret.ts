@@ -60,10 +60,12 @@ export function calculerResumeLivret(
       f.etat !== 'verrouillee',
   );
 
-  const alerteR7Result = calculerAlerteR7(apprenti, livret.entretienTripartite, maintenant);
+  // Refonte mai 2026 (chantier #2) : R7 et le cas pédagogique « entretien
+  // manquant » s'appliquent à E1. E2 = bilan mi-parcours, hors délai légal.
+  const alerteR7Result = calculerAlerteR7(apprenti, livret.entretien1, maintenant);
   const alerteR7 = alerteR7Result.declenchee;
 
-  const entretien = livret.entretienTripartite;
+  const entretien = livret.entretien1;
   const entretienAbsent = entretien === null;
   const entretienComplet =
     !!entretien &&

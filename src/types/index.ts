@@ -57,6 +57,27 @@ export interface Etablissement {
   urlPronote?: string;
 }
 
+/**
+ * Une période d'alternance définie au niveau de la formation (refonte
+ * mai 2026 — chantier #1).
+ *
+ * Le planning des périodes est désormais commun à tous les apprenti·e·s
+ * d'une même promo et géré par le coordo / admin. Chaque période ici
+ * matérialise UNE fiche de suivi dans chaque livret de la promo (créée
+ * automatiquement à la sauvegarde du planning).
+ */
+export interface PeriodeFormation {
+  id: string;
+  /** Rang chronologique 1-based — calculé à l'ajout, modifiable via réordonnancement. */
+  numero: number;
+  /** Titre libre optionnel (ex : « Période d'automne »). */
+  titre?: string;
+  /** Date de début (ISO 8601 YYYY-MM-DD). */
+  dateDebut: string;
+  /** Date de fin (ISO 8601 YYYY-MM-DD). */
+  dateFin: string;
+}
+
 export interface Formation {
   id: string;
   intitule: string;
@@ -70,6 +91,13 @@ export interface Formation {
   dateFin: string;
   /** Id de l'établissement où se déroule la formation (cf. `Etablissement`). */
   lieuId: string;
+  /**
+   * Planning des périodes d'alternance — commun à tous les apprenti·e·s
+   * de la promo. Géré par le coordo / admin uniquement (chantier mai 2026).
+   * Chaque période génère une fiche dans le livret de chaque apprenti·e
+   * (cf. `FicheSuiviPeriode.periodeFormationId`).
+   */
+  periodes: PeriodeFormation[];
 }
 
 export interface Entreprise {
@@ -94,7 +122,10 @@ export interface Apprenti extends Utilisateur {
 
 export interface Maitre extends Utilisateur {
   role: 'maitre';
-  entrepriseId: string;
+  /** Nom commercial de l'entreprise dans laquelle le maître exerce (texte libre). */
+  entreprise: string;
+  /** Fonction du maître dans l'entreprise (ex. « Chef de cuisine », « Responsable de salle »). */
+  fonction: string;
   apprentiIds: string[];
 }
 
@@ -194,7 +225,23 @@ export type MotifOrganisationSuivi =
   | 'visite-entreprise'
   | 'restitution-activites'
   | 'bilan-formation'
+  /**
+   * Entretien tripartite n° 1 (typiquement dans les 2 mois suivant la
+   * signature du contrat — cf. R7). Refonte mai 2026 (chantier #2) : la
+   * création de cet événement donne accès à l'ouverture de l'entretien
+   * correspondant via le bouton « Ouvrir cet entretien » sur la carte.
+   */
+  | 'entretien-tripartite-1'
+  /**
+   * Entretien tripartite n° 2 — bilan mi-parcours ou réajustement.
+   * Refonte mai 2026 (chantier #2). Contrairement à E1, sa signature ne
+   * fige PAS la sélection des compétences abordées en entreprise.
+   */
+  | 'entretien-tripartite-2'
   | 'autre';
+
+/** Numérotation des entretiens tripartites — 2 entretiens par livret max. */
+export type NumeroEntretien = 1 | 2;
 
 /**
  * Un événement planifié dans l'organisation du suivi (CDC §5.1, refonte
@@ -257,6 +304,19 @@ export interface QuestionBanque {
   libelle: string;
   /** Aide de saisie facultative (placeholder). Ignorée pour le type oui-non. */
   placeholder?: string;
+  /**
+   * Affectation par le coordo (retours coordos juin 2026) : la question fait
+   * partie du tronc commun de l'entretien tripartite 1 et/ou 2. Une question
+   * affectée est injectée à l'initialisation de l'entretien (snapshot) et ne
+   * peut pas en être retirée par le formateur référent.
+   */
+  pourEntretien1: boolean;
+  pourEntretien2: boolean;
+  /**
+   * Question obligatoire : non retirable de l'entretien ET réponse exigée
+   * pour que la personne concernée (cible) puisse signer (extension R20).
+   */
+  obligatoire: boolean;
 }
 
 /**
@@ -310,12 +370,26 @@ export interface CommentairesEntretien {
 export interface EntretienTripartite {
   dateEntretien?: string;
   /**
-   * IDs des questions sélectionnées par le formateur référent pour chaque
-   * cible. L'ordre du tableau détermine l'ordre d'affichage. Vide = aucune
-   * question sélectionnée (le formateur doit en choisir avant la saisie).
+   * IDs des questions posées pour chaque cible. L'ordre du tableau détermine
+   * l'ordre d'affichage. À l'initialisation, la liste reçoit les questions
+   * affectées par le coordo (snapshot — cf. `questionsImposees`) ; le
+   * formateur référent peut ensuite en ajouter depuis la banque.
    */
   questionsApprentiSelectionnees: string[];
   questionsMaitreSelectionnees: string[];
+  /**
+   * Snapshot à l'initialisation : ids des questions affectées par le coordo
+   * à cet entretien (`pourEntretienN` dans la banque). Non retirables par le
+   * formateur. Les modifications ultérieures de la banque ne cascadent pas
+   * (un entretien fige sa configuration au moment où il est initialisé).
+   */
+  questionsImposees: string[];
+  /**
+   * Snapshot à l'initialisation : ids des questions marquées obligatoires
+   * dans la banque parmi celles affectées à cet entretien. Non retirables ET
+   * réponse exigée pour la signature de la cible concernée (extension R20).
+   */
+  questionsObligatoires: string[];
   /** Réponses indexées par `questionId` (cf. `ReponsesEntretien`). */
   reponsesApprenti: ReponsesEntretien;
   reponsesMaitre: ReponsesEntretien;
@@ -329,12 +403,21 @@ export interface EntretienTripartite {
 
 export type EtatFiche = 'brouillon' | 'en-cours' | 'signee' | 'verrouillee';
 
-export interface LigneSuiviGreta {
-  id: string;
-  nomCours: string;
-  nomFormateur: string;
-  contenu: string;
-  evaluations?: string;
+/**
+ * Suivi de la formation au GRETA CFA pour une période donnée.
+ *
+ * Refonte mai 2026 : ancien tableau `LigneSuiviGreta[]` remplacé par 2 zones
+ * de texte libre, l'une renseignée par l'apprenti·e (ce qu'il/elle retient
+ * de la période en centre), l'autre par le formateur référent (contenus
+ * abordés, points d'attention). R20 formateur exige désormais que `formateur`
+ * soit non vide ; le champ `apprenti` reste optionnel pour la signature
+ * (pas de fardeau supplémentaire côté apprenti·e).
+ */
+export interface SuiviGretaCfa {
+  apprenti?: string;
+  formateur?: string;
+  /** Horodatage ISO 8601 de la dernière modification (pour debug/audit). */
+  modifieLe?: string;
 }
 
 export interface LigneSuiviEntreprise {
@@ -365,13 +448,23 @@ export interface FicheSuiviPeriode {
   /**
    * Titre libre optionnel. Quand renseigné, l'UI affiche
    * « Période N — <titre> » (ex. « Période 2 — Stage automne »). Quand vide
-   * ou absent, l'UI affiche « Période N » seul. Édité par le formateur
-   * référent ou le coordo.
+   * ou absent, l'UI affiche « Période N » seul.
+   *
+   * Refonte mai 2026 (chantier #1) : ce champ est désormais propagé depuis
+   * `PeriodeFormation.titre` au niveau de la formation — il n'est plus
+   * édité par fiche individuellement.
    */
   titre?: string;
+  /**
+   * Référence vers la période parente définie sur la formation. Présent
+   * pour toutes les fiches créées via le planning de formation. `undefined`
+   * uniquement pour les fixtures héritées de l'ancienne maquette
+   * (compatibilité — toléré le temps de la transition).
+   */
+  periodeFormationId?: string;
   dateDebut: string;
   dateFin: string;
-  suiviGretaCfa: LigneSuiviGreta[];
+  suiviGretaCfa: SuiviGretaCfa;
   suiviEntreprise: LigneSuiviEntreprise[];
   observations: ObservationsFiche;
   signatures: SignaturesTripartite;
@@ -482,7 +575,17 @@ export interface Livret {
   apprentiId: string;
   formationId: string;
   organisationSuivi: OrganisationSuivi;
-  entretienTripartite: EntretienTripartite | null;
+  /**
+   * Refonte mai 2026 (chantier #2) : 2 entretiens tripartites par livret.
+   * Chacun est généré via un événement de motif `entretien-tripartite-{1|2}`
+   * dans l'organisation du suivi.
+   *
+   * `entretien1` : signature des 3 parties → fige la sélection des
+   * compétences abordées en entreprise (auto-marquage cf. CDC v1.5 §12).
+   * `entretien2` : bilan mi-parcours — n'a PAS d'effet sur la sélection.
+   */
+  entretien1: EntretienTripartite | null;
+  entretien2: EntretienTripartite | null;
   fichesSuivi: FicheSuiviPeriode[];
   evaluationFinaleCompetences: EvaluationFinaleCompetences;
   evaluationFinaleAttitudes: EvaluationFinaleAttitudes;

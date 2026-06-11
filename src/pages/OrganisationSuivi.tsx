@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
+  ArrowRight,
   CalendarDays,
   Lock,
   LockOpen,
@@ -7,6 +8,7 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
@@ -14,6 +16,7 @@ import { libelleRole, peutEditer } from '@/lib/droits';
 import {
   MOTIFS_ORGANISATION_SUIVI,
   metadonneesMotif,
+  numeroEntretienPourMotif,
   peutSupprimerEvenement,
 } from '@/lib/organisation-suivi';
 import type {
@@ -85,7 +88,7 @@ export function OrganisationSuivi() {
         <h1 className="text-2xl font-semibold">Fiches de suivi</h1>
         <p className="text-muted-foreground">
           Cadre de suivi de la promo, défini par le formateur référent. Consultable par
-          l'apprenti·e et le maître d'apprentissage.
+          l'apprenti·e et le maître / tuteur.
         </p>
         <p className="text-xs text-muted-foreground">
           Apprenti·e : <strong>{apprenti.prenom} {apprenti.nom}</strong>
@@ -136,7 +139,7 @@ export function OrganisationSuivi() {
             disabled={!motifAAjouter}
             data-testid="org-ajouter-evt"
             className={cn(
-              'inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition-opacity',
+              'inline-flex items-center justify-center gap-1.5 rounded-md bouton-plein-couleur-role px-4 py-1.5 text-sm font-medium transition-opacity',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               motifAAjouter ? 'hover:opacity-90' : 'cursor-not-allowed opacity-50',
             )}
@@ -276,6 +279,22 @@ function CarteEvenement({
           </button>
         )}
       </header>
+
+      {/* Lien direct vers l'entretien correspondant — si motif entretien-tripartite */}
+      {(() => {
+        const numero = numeroEntretienPourMotif(evenement.motif);
+        if (numero === null) return null;
+        return (
+          <Link
+            to={`/livret/entretien/${numero}`}
+            data-testid={`ouvrir-entretien-${numero}`}
+            className="bouton-leger-couleur-role inline-flex w-fit items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium"
+          >
+            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            Ouvrir cet entretien
+          </Link>
+        );
+      })()}
 
       {/* Titre custom — affiché en lecture seule pour les autres rôles si renseigné */}
       {peutEditerChamp ? (

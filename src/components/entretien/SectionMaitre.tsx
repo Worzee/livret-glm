@@ -1,6 +1,11 @@
 import { useState } from 'react';
-import { ListChecks } from 'lucide-react';
-import type { AppreciationMaitre, EntretienTripartite, QuestionBanque } from '@/types';
+import { HardHat, ListChecks } from 'lucide-react';
+import type {
+  AppreciationMaitre,
+  EntretienTripartite,
+  NumeroEntretien,
+  QuestionBanque,
+} from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
@@ -23,6 +28,7 @@ import { cn } from '@/lib/utils';
 
 interface SectionMaitreProps {
   livretId: string;
+  numero: NumeroEntretien;
   entretien: EntretienTripartite;
 }
 
@@ -36,7 +42,7 @@ const CRITERES_APPRECIATION: Array<{
   { cle: 'integration', libelle: "Intégration dans l'équipe" },
 ];
 
-export function SectionMaitre({ livretId, entretien }: SectionMaitreProps) {
+export function SectionMaitre({ livretId, numero, entretien }: SectionMaitreProps) {
   const roleActif = useUserStore((s) => s.roleActif);
   const setReponse = useLivretStore((s) => s.setReponseEntretien);
   const setQuestions = useLivretStore((s) => s.setQuestionsSelectionnees);
@@ -61,21 +67,37 @@ export function SectionMaitre({ livretId, entretien }: SectionMaitreProps) {
     .map((id) => banque[id])
     .filter((q): q is QuestionBanque => !!q && q.cible === 'maitre');
 
+  // Retours coordos juin 2026 : les questions affectées par le coordo
+  // (snapshot) ne sont pas retirables ; les obligatoires portent un badge.
+  const idsNonRetirables = [
+    ...entretien.questionsImposees,
+    ...entretien.questionsObligatoires,
+  ];
+  const idsObligatoires = new Set(entretien.questionsObligatoires);
+
   return (
     <section className="rounded-lg border border-border border-l-4 border-l-role-maitre bg-card p-4 space-y-5">
       <header className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h2 className="text-lg font-medium">Maître d'apprentissage</h2>
-          <p className="text-xs text-muted-foreground">
-            Réservé au maître d'apprentissage. Verrouillé après votre signature.
-          </p>
+        <div className="flex items-start gap-2">
+          <HardHat
+            className="mt-1 h-5 w-5 shrink-0 text-role-maitre"
+            aria-hidden="true"
+          />
+          <div>
+            <h2 className="text-lg font-medium text-role-maitre">
+              Maître / Tuteur
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Réservé au maître / tuteur. Verrouillé après votre signature.
+            </p>
+          </div>
         </div>
         {peutChoisirQuestions && (
           <button
             type="button"
             onClick={() => setSelecteurOuvert(true)}
             data-testid="maitre-choisir-questions"
-            className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex items-center gap-1.5 rounded-md border border-role-formateur/30 bg-role-formateur/10 px-2.5 py-1 text-xs font-medium text-role-formateur hover:bg-role-formateur/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <ListChecks className="h-3.5 w-3.5" aria-hidden="true" />
             Choisir les questions ({questions.length})
@@ -99,7 +121,8 @@ export function SectionMaitre({ livretId, entretien }: SectionMaitreProps) {
               question={q}
               valeur={entretien.reponsesMaitre[q.id]}
               editable={editableQuestions}
-              onChange={(valeur) => setReponse(livretId, 'maitre', q.id, valeur)}
+              obligatoire={idsObligatoires.has(q.id)}
+              onChange={(valeur) => setReponse(livretId, numero, 'maitre', q.id, valeur)}
             />
           ))
         )}
@@ -123,7 +146,7 @@ export function SectionMaitre({ livretId, entretien }: SectionMaitreProps) {
               <SelecteurAppreciation
                 editable={editableAppreciation}
                 valeur={entretien.appreciationMaitre[c.cle]}
-                onChange={(v) => setAppreciation(livretId, { [c.cle]: v ?? undefined })}
+                onChange={(v) => setAppreciation(livretId, numero, { [c.cle]: v ?? undefined })}
                 ariaLabel={c.libelle}
               />
             </div>
@@ -133,7 +156,7 @@ export function SectionMaitre({ livretId, entretien }: SectionMaitreProps) {
           label="Commentaires d'appréciation"
           valeur={entretien.appreciationMaitre.commentaires ?? ''}
           editable={editableAppreciation}
-          onChange={(v) => setAppreciation(livretId, { commentaires: v })}
+          onChange={(v) => setAppreciation(livretId, numero, { commentaires: v })}
           placeholder="Précisions sur l'appréciation portée."
         />
       </div>
@@ -141,10 +164,10 @@ export function SectionMaitre({ livretId, entretien }: SectionMaitreProps) {
       {/* ── Commentaire libre ───────────────────────────────────────────────── */}
       <div className="space-y-1 border-t border-border pt-3">
         <ChampTexte
-          label="Commentaire libre du maître d'apprentissage"
+          label="Commentaire libre du maître / tuteur"
           valeur={entretien.commentaires.maitre ?? ''}
           editable={editableCommentaire}
-          onChange={(v) => setCommentaire(livretId, 'maitre', v)}
+          onChange={(v) => setCommentaire(livretId, numero, 'maitre', v)}
           placeholder="Tout ce que vous souhaitez ajouter…"
           rows={3}
         />
@@ -155,9 +178,10 @@ export function SectionMaitre({ livretId, entretien }: SectionMaitreProps) {
         ouvert={selecteurOuvert}
         cible="maitre"
         selectionInitiale={entretien.questionsMaitreSelectionnees}
+        idsNonRetirables={idsNonRetirables}
         onAnnuler={() => setSelecteurOuvert(false)}
         onValider={(ids) => {
-          setQuestions(livretId, 'maitre', ids);
+          setQuestions(livretId, numero, 'maitre', ids);
           setSelecteurOuvert(false);
         }}
       />
@@ -169,16 +193,29 @@ interface ChampQuestionProps {
   question: QuestionBanque;
   valeur: string | boolean | null | undefined;
   editable: boolean;
+  /** Réponse exigée pour signer (extension R20) — affiche un badge. */
+  obligatoire?: boolean;
   onChange: (valeur: string | boolean | null) => void;
 }
 
-function ChampQuestion({ question, valeur, editable, onChange }: ChampQuestionProps) {
+function BadgeObligatoire() {
+  return (
+    <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 align-middle">
+      Obligatoire
+    </span>
+  );
+}
+
+function ChampQuestion({ question, valeur, editable, obligatoire, onChange }: ChampQuestionProps) {
   const id = `entretien-q-${question.id}`;
 
   if (question.type === 'oui-non') {
     return (
       <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-sm">{question.libelle}</span>
+        <span className="text-sm">
+          {question.libelle}
+          {obligatoire && <BadgeObligatoire />}
+        </span>
         <CaseOuiNon
           editable={editable}
           valeur={typeof valeur === 'boolean' ? valeur : null}
@@ -196,6 +233,7 @@ function ChampQuestion({ question, valeur, editable, onChange }: ChampQuestionPr
     <div className="space-y-1">
       <label htmlFor={id} className="text-sm font-medium block">
         {question.libelle}
+        {obligatoire && <BadgeObligatoire />}
       </label>
       {editable ? (
         question.type === 'texte-long' ? (
