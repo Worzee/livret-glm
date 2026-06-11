@@ -11,10 +11,11 @@ import type { Formation } from '@/types';
  */
 
 /**
- * `periodes` exclu : le planning n'est pas géré via ce formulaire mais
- * via `ModalePlanningPeriodes` (chantier #1).
+ * `periodes` et `nombreEntretiens` exclus : le planning (périodes + nombre
+ * d'entretiens tripartites) n'est pas géré via ce formulaire mais via
+ * `ModalePlanningPeriodes` (chantier #1 + retours coordos juin 2026).
  */
-export type SaisieFormation = Omit<Formation, 'id' | 'periodes'>;
+export type SaisieFormation = Omit<Formation, 'id' | 'periodes' | 'nombreEntretiens'>;
 
 export interface ErreursFormation {
   intitule?: string;

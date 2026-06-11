@@ -21,9 +21,11 @@ import type {
  * en ajouter, modifier ou supprimer depuis la page d'administration dédiée.
  *
  * Affectations par défaut : toutes les questions sont affectées à E1
- * (comportement historique) ; les questions de suivi/bilan le sont aussi à E2.
- * Deux questions sont obligatoires pour la démonstration : les motivations de
- * l'apprenti·e et l'expérience de formation du maître / tuteur.
+ * (comportement historique) ; les questions de suivi/bilan le sont aussi à
+ * E2, E3 et E4 (jusqu'à 4 entretiens pour les formations de 2 ans — le
+ * nombre effectif est défini par formation). Deux questions sont
+ * obligatoires pour la démonstration : les motivations de l'apprenti·e et
+ * l'expérience de formation du maître / tuteur.
  */
 
 export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
@@ -34,8 +36,7 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     type: 'texte-long',
     libelle: 'Quelles sont vos motivations pour cette formation ?',
     placeholder: 'Votre projet, vos objectifs…',
-    pourEntretien1: true,
-    pourEntretien2: false,
+    pourEntretiens: [1],
     obligatoire: true,
   },
   {
@@ -44,8 +45,7 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     type: 'texte-court',
     libelle: 'Comment êtes-vous entré·e en contact avec votre entreprise ?',
     placeholder: 'Candidature spontanée, journée portes ouvertes, réseau…',
-    pourEntretien1: true,
-    pourEntretien2: false,
+    pourEntretiens: [1],
     obligatoire: false,
   },
   {
@@ -54,8 +54,7 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     type: 'texte-court',
     libelle: 'Connaissiez-vous cette entreprise auparavant ?',
     placeholder: 'Stage antérieur, visite, recommandation…',
-    pourEntretien1: true,
-    pourEntretien2: false,
+    pourEntretiens: [1],
     obligatoire: false,
   },
   {
@@ -64,8 +63,7 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     type: 'texte-long',
     libelle: 'Le métier correspond-il à la représentation que vous en aviez ?',
     placeholder: 'Surprises, confirmations, ajustements…',
-    pourEntretien1: true,
-    pourEntretien2: true,
+    pourEntretiens: [1, 2, 3, 4],
     obligatoire: false,
   },
   {
@@ -75,8 +73,7 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     libelle:
       'Rencontrez-vous des difficultés dans certaines matières du centre de formation ?',
     placeholder: 'Matières, contenus, méthodes…',
-    pourEntretien1: true,
-    pourEntretien2: true,
+    pourEntretiens: [1, 2, 3, 4],
     obligatoire: false,
   },
   {
@@ -86,8 +83,7 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     libelle:
       "Rencontrez-vous d'autres difficultés (matérielles, personnelles) ?",
     placeholder: 'Transport, logement, santé, etc.',
-    pourEntretien1: true,
-    pourEntretien2: true,
+    pourEntretiens: [1, 2, 3, 4],
     obligatoire: false,
   },
   {
@@ -96,8 +92,7 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     type: 'texte-long',
     libelle: 'Comment vous sentez-vous au sein de votre équipe en entreprise ?',
     placeholder: 'Intégration, ambiance, soutien…',
-    pourEntretien1: true,
-    pourEntretien2: true,
+    pourEntretiens: [1, 2, 3, 4],
     obligatoire: false,
   },
   // ── Maître / Tuteur ─────────────────────────────────────────────────────────
@@ -106,8 +101,7 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     cible: 'maitre',
     type: 'oui-non',
     libelle: 'Avez-vous déjà formé un·e apprenti·e auparavant ?',
-    pourEntretien1: true,
-    pourEntretien2: false,
+    pourEntretiens: [1],
     obligatoire: true,
   },
   {
@@ -116,8 +110,7 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     type: 'texte-court',
     libelle: "Si oui, quels diplômes / combien d'apprenti·e·s ?",
     placeholder: 'Ex : 3 CAP sur 8 ans',
-    pourEntretien1: true,
-    pourEntretien2: false,
+    pourEntretiens: [1],
     obligatoire: false,
   },
   {
@@ -127,8 +120,7 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     libelle:
       "Quels sont vos objectifs en termes d'embauche à l'issue du contrat ?",
     placeholder: 'Embauche envisagée, conditions…',
-    pourEntretien1: true,
-    pourEntretien2: true,
+    pourEntretiens: [1, 2, 3, 4],
     obligatoire: false,
   },
   {
@@ -137,8 +129,7 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     type: 'texte-long',
     libelle: "Quelle est l'organisation prévue de l'accueil et du tutorat ?",
     placeholder: 'Tuteur·rice·s désigné·e·s, fréquence des points…',
-    pourEntretien1: true,
-    pourEntretien2: true,
+    pourEntretiens: [1, 2, 3, 4],
     obligatoire: false,
   },
 ];
@@ -155,7 +146,7 @@ export function idsQuestionsAffectees(
 ): string[] {
   return banque
     .filter((q) => q.cible === cible)
-    .filter((q) => (numero === 1 ? q.pourEntretien1 : q.pourEntretien2))
+    .filter((q) => q.pourEntretiens.includes(numero))
     .map((q) => q.id);
 }
 
@@ -169,7 +160,7 @@ export function idsQuestionsObligatoiresAffectees(
   numero: NumeroEntretien,
 ): string[] {
   return banque
-    .filter((q) => (numero === 1 ? q.pourEntretien1 : q.pourEntretien2))
+    .filter((q) => q.pourEntretiens.includes(numero))
     .filter((q) => q.obligatoire)
     .map((q) => q.id);
 }

@@ -150,6 +150,31 @@ test('un événement verrouillé ne peut pas être supprimé tant qu\'on ne le d
   await expect(page.locator(`[data-testid="org-evt-${evtId}"]`)).toHaveCount(0);
 });
 
+test('le coordo peut gérer les événements de suivi (juin 2026)', async ({ page }) => {
+  await selectRole(page, 'Coordinateur·rice');
+  await page.goto('/livret/organisation-suivi');
+
+  // Le sélecteur d'ajout est visible (plus de lecture seule pour le coordo).
+  await expect(page.getByTestId('ajout-evenement')).toBeVisible();
+
+  // Ajout d'un événement « Autre ».
+  const avant = await page.locator('article[data-testid^="org-evt-"]').count();
+  await page.getByTestId('org-motif-ajout').selectOption('autre');
+  await page.getByTestId('org-ajouter-evt').click();
+  await expect(page.locator('article[data-testid^="org-evt-"]')).toHaveCount(avant + 1);
+});
+
+test("le coordo ne peut PAS initialiser un entretien (acte pédagogique du formateur)", async ({
+  page,
+}) => {
+  await selectRole(page, 'Coordinateur·rice');
+  // Sofia n'a pas d'entretien 1 initialisé — URL directe.
+  await page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }).click();
+  await page.goto('/livret/entretien/1');
+  await expect(page.getByText(/n'a pas encore été initialisé/i)).toBeVisible();
+  await expect(page.getByTestId('init-entretien-1')).toHaveCount(0);
+});
+
 test('persistance après reload : un nouvel événement survit', async ({ page }) => {
   await page.goto('/livret/organisation-suivi');
   await page.getByTestId('org-motif-ajout').selectOption('bilan-formation');

@@ -21,12 +21,15 @@ import { BlocSignaturesEntretien } from '@/components/entretien/BlocSignaturesEn
 import { creerSelectionVierge } from '@/lib/selection-competences-entreprise';
 
 /**
- * Page Entretien tripartite (CDC §5.2 + chantier #2 mai 2026).
+ * Page Entretien tripartite (CDC §5.2 + chantier #2 mai 2026, étendu
+ * juin 2026 : jusqu'à 4 entretiens pour les formations de 2 ans).
  *
- * Refonte : 2 entretiens par livret (E1, E2), accessibles via la route
- * `/livret/entretien/:numero`. Chaque entretien est généré par un
- * événement de motif `entretien-tripartite-{1|2}` dans l'organisation
- * du suivi — voir page « Fiches de suivi ».
+ * Jusqu'à 4 entretiens par livret (E1..E4), accessibles via la route
+ * `/livret/entretien/:numero`. Le nombre autorisé est défini par la
+ * formation (`Formation.nombreEntretiens`) — un numéro au-delà rend un
+ * NotFound. Chaque entretien est généré par un événement de motif
+ * `entretien-tripartite-{N}` dans l'organisation du suivi — voir page
+ * « Fiches de suivi ».
  *
  * Particularité E1 vs E2 :
  *   - **E1 uniquement** : auto-marquage de la sélection des compétences
@@ -48,8 +51,13 @@ export function EntretienTripartite() {
   if (!ctx) return <AucunApprentiSelectionne />;
   const { apprenti, livret } = ctx;
   const formation = formations[apprenti.formationId] ?? formationCapCuisine;
-  const entretien = numero === 1 ? livret.entretien1 : livret.entretien2;
-  const peutInitialiser = peutEditer(roleActif, 'organisation-suivi');
+  // Le numéro demandé doit exister pour cette formation (juin 2026 : le
+  // nombre d'entretiens est défini par le coordo au niveau formation).
+  if (numero > formation.nombreEntretiens) return <NotFound />;
+  const entretien = livret.entretiens[numero];
+  // L'initialisation reste un acte pédagogique du formateur référent —
+  // ressource dédiée depuis l'ouverture d'`organisation-suivi` au coordo.
+  const peutInitialiser = peutEditer(roleActif, 'entretien.gestion');
 
   const titre = `Entretien tripartite n° ${numero}`;
   const isE1 = numero === 1;
@@ -63,7 +71,7 @@ export function EntretienTripartite() {
           <p className="text-muted-foreground">
             {isE1
               ? "L'entretien doit avoir lieu dans les 60 jours suivant la signature du contrat (R7)."
-              : 'Bilan mi-parcours — à programmer selon l\'organisation du suivi.'}
+              : 'Bilan de suivi — à programmer selon l\'organisation du suivi.'}
           </p>
         </header>
         <div className="rounded-lg border border-border bg-card p-6 text-center space-y-3">
@@ -157,5 +165,7 @@ export function EntretienTripartite() {
 function parseNumeroEntretien(s: string | undefined): NumeroEntretien | null {
   if (s === '1') return 1;
   if (s === '2') return 2;
+  if (s === '3') return 3;
+  if (s === '4') return 4;
   return null;
 }

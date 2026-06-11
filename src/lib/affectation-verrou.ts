@@ -48,8 +48,8 @@ export function evaluerVerrouAffectation(
     };
   }
 
-  // Critère 2 : au moins un entretien tripartite initialisé (E1 ou E2).
-  if (livret.entretien1 !== null || livret.entretien2 !== null) {
+  // Critère 2 : au moins un entretien tripartite initialisé (E1 à E4).
+  if (Object.values(livret.entretiens).some((e) => e !== null)) {
     return {
       verrouille: true,
       raison: "Entretien tripartite initialisé — modifier l'affectation invaliderait l'engagement formel.",

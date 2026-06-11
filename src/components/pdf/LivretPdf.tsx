@@ -8,10 +8,12 @@ import type {
   Formation,
   Livret,
   Maitre,
+  NumeroEntretien,
   QuestionBanque,
   Referentiel,
   SignaturesTripartite,
 } from '@/types';
+import { NUMEROS_ENTRETIEN } from '@/types';
 import { libelleRole } from '@/lib/droits';
 import { synthetiserCompetences, valeurEffective } from '@/lib/synthese-evaluation';
 import { calculerStatsParBloc } from '@/lib/stats-bloc';
@@ -98,26 +100,21 @@ export function LivretPdf({
         dateExport={date}
       />
       <PageOrganisation livret={livret} />
-      {livret.entretien1 && (
-        <PageEntretien
-          numero={1}
-          entretien={livret.entretien1}
-          apprenti={apprenti}
-          maitre={maitre}
-          formateur={formateur}
-          banqueQuestions={banqueQuestions}
-        />
-      )}
-      {livret.entretien2 && (
-        <PageEntretien
-          numero={2}
-          entretien={livret.entretien2}
-          apprenti={apprenti}
-          maitre={maitre}
-          formateur={formateur}
-          banqueQuestions={banqueQuestions}
-        />
-      )}
+      {NUMEROS_ENTRETIEN.map((numero) => {
+        const entretien = livret.entretiens[numero];
+        if (!entretien) return null;
+        return (
+          <PageEntretien
+            key={numero}
+            numero={numero}
+            entretien={entretien}
+            apprenti={apprenti}
+            maitre={maitre}
+            formateur={formateur}
+            banqueQuestions={banqueQuestions}
+          />
+        );
+      })}
       {livret.fichesSuivi.map((fiche) => (
         <PageFiche
           key={fiche.id}
@@ -390,7 +387,7 @@ function PageEntretien({
   formateur,
   banqueQuestions,
 }: {
-  numero: 1 | 2;
+  numero: NumeroEntretien;
   entretien: EntretienTripartite;
   apprenti: Apprenti;
   maitre: Maitre;

@@ -153,14 +153,13 @@ function livretVierge(apprenti: Apprenti, livretId: string): Livret {
           id: 'evt-vierge-6',
           motif: 'entretien-tripartite-1',
           date: '2025-10-28',
-          commentaire: "Entretien tripartite n° 1 — dans les 2 mois suivant le contrat (R7).",
+          commentaire: 'Entretien tripartite n° 1 — dans les 2 mois suivant le contrat (R7).',
         },
       ],
       modifieLe: '2025-09-10T08:00:00.000Z',
       modifiePar: formatriceSophieDubois.id,
     },
-    entretien1: null,
-    entretien2: null,
+    entretiens: { 1: null, 2: null, 3: null, 4: null },
     fichesSuivi: [],
     evaluationFinaleCompetences: {
       lignes: lignesVides.competences,
@@ -200,23 +199,24 @@ const entretienLea: EntretienTripartite = {
     'q-app-contact-entreprise':
       "J'ai connu Le Gourmet via une journée portes ouvertes du GRETA, puis un stage de 2 jours en juin 2025.",
     'q-app-connaissance-entreprise':
-      "Je connaissais le restaurant comme cliente avec mes parents depuis quelques années.",
+      'Je connaissais le restaurant comme cliente avec mes parents depuis quelques années.',
     'q-app-metier-representation':
       "Plus exigeant en rythme que je ne l'imaginais, mais le travail d'équipe me plaît beaucoup.",
     'q-app-difficultes-formation':
       'La technologie culinaire (vocabulaire spécifique) demande de la mémorisation.',
-    'q-app-difficultes-autres': "Réveil tôt pour les services du midi, je m'adapte progressivement.",
+    'q-app-difficultes-autres':
+      "Réveil tôt pour les services du midi, je m'adapte progressivement.",
     'q-app-ressenti-equipe':
-      "Très bien intégrée dans la brigade. Karim me fait confiance et me confie des tâches variées.",
+      'Très bien intégrée dans la brigade. Karim me fait confiance et me confie des tâches variées.',
   },
   reponsesMaitre: {
     'q-mai-deja-forme': true,
     'q-mai-diplomes-deja-formes':
       'CAP Cuisine (3 apprenti·e·s formé·e·s sur les 8 dernières années).',
     'q-mai-objectifs-embauche':
-      "Embauche envisagée à la fin du contrat si Léa confirme sa progression actuelle.",
+      'Embauche envisagée à la fin du contrat si Léa confirme sa progression actuelle.',
     'q-mai-organisation-tutorat':
-      "Tutorat réparti entre moi-même (Karim) et notre second de cuisine. Briefing hebdomadaire le lundi matin.",
+      'Tutorat réparti entre moi-même (Karim) et notre second de cuisine. Briefing hebdomadaire le lundi matin.',
   },
   appreciationMaitre: {
     ponctualite: 'plusplus',
@@ -243,14 +243,13 @@ const entretienLea: EntretienTripartite = {
     logement: false,
     premierEquipement: true,
     permis: false,
-    autres:
-      "Aide premier équipement obtenue via la région (kit couteaux + tenue professionnelle).",
+    autres: 'Aide premier équipement obtenue via la région (kit couteaux + tenue professionnelle).',
   },
   commentaires: {
     apprenti: "Merci à Karim et à l'équipe pour l'accueil. Hâte de progresser sur les 2 années.",
-    maitre: "Profil sérieux et motivé. Bon dialogue avec le centre de formation.",
+    maitre: 'Profil sérieux et motivé. Bon dialogue avec le centre de formation.',
     formateur:
-      "Cohérence parcours/projet. Tutorat solide en entreprise. Pas de point de vigilance particulier.",
+      'Cohérence parcours/projet. Tutorat solide en entreprise. Pas de point de vigilance particulier.',
   },
   signatures: {
     apprenti: { signe: true, dateSignature: '2025-10-28T15:30:00.000Z' },
@@ -298,11 +297,11 @@ const leaPeriode1: FicheSuiviPeriode = {
     },
   ],
   observations: {
-    apprenti: 'Période très formatrice, équipe accueillante. J\'ai pris confiance progressivement.',
+    apprenti: "Période très formatrice, équipe accueillante. J'ai pris confiance progressivement.",
     maitre:
       "Léa est ponctuelle et appliquée. Elle gagne en autonomie semaine après semaine. À encourager sur la prise d'initiative.",
     formateur:
-      "Bon démarrage. Cohérence visible entre les apprentissages au CFA et la pratique en entreprise.",
+      'Bon démarrage. Cohérence visible entre les apprentissages au CFA et la pratique en entreprise.',
   },
   signatures: signaturesCompletes('2025-12-22T14:00:00.000Z'),
   etat: 'verrouillee',
@@ -341,11 +340,11 @@ const leaPeriode2: FicheSuiviPeriode = {
       competenceId: 'c3-1',
       evaluationGreta: 'maitrise',
       evaluationEntreprise: 'non-fait',
-      retourApprenti: 'Pas encore eu l\'occasion de réaliser de la pâtisserie en service.',
+      retourApprenti: "Pas encore eu l'occasion de réaliser de la pâtisserie en service.",
     },
   ],
   observations: {
-    apprenti: 'Période plus dense. J\'ai gagné en vitesse mais je dois soigner les finitions.',
+    apprenti: "Période plus dense. J'ai gagné en vitesse mais je dois soigner les finitions.",
     maitre: 'Progression nette. Léa prend des initiatives sur la mise en place.',
     formateur: 'Adéquation CFA/entreprise correcte. À renforcer côté pâtisserie en entreprise.',
   },
@@ -362,7 +361,7 @@ const leaPeriode3: FicheSuiviPeriode = {
   dateFin: '2026-04-11',
   suiviGretaCfa: {
     apprenti:
-      "Période riche entre cuisine méditerranéenne et pâtisserie de restaurant. Beaucoup à retenir sur les herbes aromatiques et le dressage individuel.",
+      'Période riche entre cuisine méditerranéenne et pâtisserie de restaurant. Beaucoup à retenir sur les herbes aromatiques et le dressage individuel.',
     formateur:
       'Cuisine méditerranéenne (légumes du soleil, herbes aromatiques, huiles parfumées) + pâtisserie de restaurant (crèmes, mousses, parfaits glacés, dressage en assiette). Évaluation finale en cours.',
   },
@@ -380,7 +379,7 @@ const leaPeriode3: FicheSuiviPeriode = {
       competenceId: 'c2-3',
       evaluationGreta: null,
       evaluationEntreprise: 'partiel',
-      retourApprenti: 'Le dressage à l\'assiette me prend encore beaucoup de temps en service.',
+      retourApprenti: "Le dressage à l'assiette me prend encore beaucoup de temps en service.",
     },
     {
       id: 'se-lea-3-3',
@@ -430,7 +429,7 @@ const livretLea: Livret = {
         motif: 'visite-entreprise',
         titre: 'Visite n°1',
         date: '2025-11-12',
-        commentaire: 'Premier point d\'étape avec Karim BENALI.',
+        commentaire: "Premier point d'étape avec Karim BENALI.",
       },
       {
         id: 'evt-lea-5',
@@ -471,10 +470,9 @@ const livretLea: Livret = {
     modifieLe: '2025-09-10T08:00:00.000Z',
     modifiePar: formatriceSophieDubois.id,
   },
-  entretien1: entretienLea,
-  // Refonte mai 2026 (chantier #2) : événement E2 créé mais entretien
-  // encore vide — démontre le cas « à initialiser ».
-  entretien2: null,
+  // Événement E2 créé mais entretien encore vide — démontre le cas
+  // « à initialiser » (E3/E4 hors périmètre : la formation est à 2 entretiens).
+  entretiens: { 1: entretienLea, 2: null, 3: null, 4: null },
   fichesSuivi: [leaPeriode1, leaPeriode2, leaPeriode3],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiLeaMartin,
@@ -501,10 +499,9 @@ const entretienTheo: EntretienTripartite = {
       'Reprendre la cuisine familiale italienne (mes grands-parents) en y ajoutant des techniques actuelles.',
     'q-app-contact-entreprise': 'Mon oncle connaissait Karim. Première rencontre en juillet 2025.',
     'q-app-connaissance-entreprise':
-      "Pas de visite préalable, mais bonne réputation auprès de mes proches.",
-    'q-app-metier-representation':
-      'Conforme à mes attentes. Je découvre le rythme du soir.',
-    'q-app-difficultes-formation': 'Aucune particulière jusqu\'ici.',
+      'Pas de visite préalable, mais bonne réputation auprès de mes proches.',
+    'q-app-metier-representation': 'Conforme à mes attentes. Je découvre le rythme du soir.',
+    'q-app-difficultes-formation': "Aucune particulière jusqu'ici.",
     'q-app-difficultes-autres': '',
     'q-app-ressenti-equipe': "Excellent. Karim et l'équipe sont très pédagogues.",
   },
@@ -512,8 +509,7 @@ const entretienTheo: EntretienTripartite = {
     'q-mai-deja-forme': true,
     'q-mai-diplomes-deja-formes': 'CAP Cuisine.',
     'q-mai-objectifs-embauche': 'Embauche très probable à la fin du contrat.',
-    'q-mai-organisation-tutorat':
-      'Mêmes modalités que pour Léa (briefing hebdo, tutorat partagé).',
+    'q-mai-organisation-tutorat': 'Mêmes modalités que pour Léa (briefing hebdo, tutorat partagé).',
   },
   appreciationMaitre: {
     ponctualite: 'plusplus',
@@ -549,7 +545,12 @@ const entretienTheo: EntretienTripartite = {
   signatures: signaturesCompletes('2025-10-15T17:00:00.000Z'),
 };
 
-const theoFiche = (numero: number, debut: string, fin: string, signatureDate: string): FicheSuiviPeriode => ({
+const theoFiche = (
+  numero: number,
+  debut: string,
+  fin: string,
+  signatureDate: string,
+): FicheSuiviPeriode => ({
   id: `fp-theo-${numero}`,
   numeroPeriode: numero,
   periodeFormationId: `pf-cap-cuisine-2025-p${numero}`,
@@ -561,7 +562,7 @@ const theoFiche = (numero: number, debut: string, fin: string, signatureDate: st
         ? "Bases du métier rapidement intégrées, je me sens à l'aise au CFA."
         : numero === 2
           ? 'Pâtisserie agréable, je gagne en automatisme sur les gestes.'
-          : 'Cuisine méditerranéenne très inspirante, je prends de l\'aisance en dressage.',
+          : "Cuisine méditerranéenne très inspirante, je prends de l'aisance en dressage.",
     formateur:
       numero === 1
         ? 'Technologie culinaire : hygiène HACCP, taillages, fonds. Niveau 17/20, profil moteur de la promo.'
@@ -577,7 +578,7 @@ const theoFiche = (numero: number, debut: string, fin: string, signatureDate: st
             competenceId: 'c1-1',
             evaluationGreta: 'maitrise',
             evaluationEntreprise: 'maitrise',
-            retourApprenti: 'Très à l\'aise avec les contrôles de réception.',
+            retourApprenti: "Très à l'aise avec les contrôles de réception.",
           },
           {
             id: `se-theo-${numero}-2`,
@@ -639,8 +640,7 @@ const theoFiche = (numero: number, debut: string, fin: string, signatureDate: st
 
 const livretTheo: Livret = {
   ...livretVierge(apprentiTheoDubois, 'livret-theo'),
-  entretien1: entretienTheo,
-  entretien2: null,
+  entretiens: { 1: entretienTheo, 2: null, 3: null, 4: null },
   fichesSuivi: [
     theoFiche(1, '2025-09-02', '2025-12-20', '2025-12-22T14:00:00.000Z'),
     theoFiche(2, '2026-01-06', '2026-02-14', '2026-02-16T10:30:00.000Z'),
@@ -671,7 +671,7 @@ const sofiaPeriode1: FicheSuiviPeriode = {
     apprenti:
       "Démarrage difficile au CFA. J'ai eu du mal à suivre le rythme au début, ça va un peu mieux depuis la Toussaint.",
     formateur:
-      'Technologie culinaire : hygiène HACCP, taillages, fonds. Niveau 11/20. Soutien individualisé à prévoir, à reprendre lors de l\'entretien tripartite (non encore tenu).',
+      "Technologie culinaire : hygiène HACCP, taillages, fonds. Niveau 11/20. Soutien individualisé à prévoir, à reprendre lors de l'entretien tripartite (non encore tenu).",
   },
   suiviEntreprise: [
     {
@@ -690,8 +690,8 @@ const sofiaPeriode1: FicheSuiviPeriode = {
     },
   ],
   observations: {
-    apprenti: 'J\'ai eu du mal à m\'intégrer au début. Mieux depuis la Toussaint.',
-    maitre: 'Démarrage difficile, à reprendre lors de l\'entretien tripartite.',
+    apprenti: "J'ai eu du mal à m'intégrer au début. Mieux depuis la Toussaint.",
+    maitre: "Démarrage difficile, à reprendre lors de l'entretien tripartite.",
     formateur: '',
   },
   signatures: aucuneSignature,
@@ -734,8 +734,7 @@ const livretSofia: Livret = {
     modifieLe: '2025-09-10T08:00:00.000Z',
     modifiePar: formatriceSophieDubois.id,
   },
-  entretien1: null,
-  entretien2: null,
+  entretiens: { 1: null, 2: null, 3: null, 4: null },
   fichesSuivi: [sofiaPeriode1],
   modifieLe: '2025-12-15T11:00:00.000Z',
 };
@@ -758,7 +757,7 @@ const entretienMinh: EntretienTripartite = {
       "J'ai déposé une candidature spontanée au début du mois de février 2026.",
     'q-app-connaissance-entreprise':
       "J'ai mangé plusieurs fois à la Brasserie du Rhône. J'aime leur carte.",
-    'q-app-metier-representation': 'Plus physique que je ne l\'imaginais.',
+    'q-app-metier-representation': "Plus physique que je ne l'imaginais.",
     'q-app-difficultes-formation': '',
     'q-app-difficultes-autres': '',
     'q-app-ressenti-equipe': 'Bonne intégration, équipe accueillante.',
@@ -845,8 +844,7 @@ const livretMinh: Livret = {
     modifieLe: '2026-04-20T16:00:00.000Z',
     modifiePar: formatriceSophieDubois.id,
   },
-  entretien1: entretienMinh,
-  entretien2: null,
+  entretiens: { 1: entretienMinh, 2: null, 3: null, 4: null },
   fichesSuivi: [],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiMinhNguyen,
@@ -870,8 +868,7 @@ const ayaPeriode1: FicheSuiviPeriode = {
   dateDebut: '2025-09-02',
   dateFin: '2025-12-20',
   suiviGretaCfa: {
-    apprenti:
-      "Période OK au CFA. J'ai bien suivi les cours, sans difficulté particulière.",
+    apprenti: "Période OK au CFA. J'ai bien suivi les cours, sans difficulté particulière.",
     formateur:
       'Technologie culinaire : hygiène HACCP, taillages, fonds. Niveau 13/20, progression régulière.',
   },
@@ -943,10 +940,9 @@ const ayaPeriode2: FicheSuiviPeriode = {
   observations: {
     apprenti:
       "L'évaluation entreprise sur le dressage me semble injuste. Je demande à en discuter lors de la visite.",
-    maitre:
-      'Période globalement OK. Point de désaccord sur le dressage à clarifier ensemble.',
+    maitre: 'Période globalement OK. Point de désaccord sur le dressage à clarifier ensemble.',
     formateur:
-      "Désaccord identifié sur C2-3. Fiche déverrouillée le 10/03/2026 pour permettre une nouvelle évaluation après visite (cf. historique).",
+      'Désaccord identifié sur C2-3. Fiche déverrouillée le 10/03/2026 pour permettre une nouvelle évaluation après visite (cf. historique).',
   },
   // Signatures invalidées par le déverrouillage R10/R21.
   signatures: aucuneSignature,
@@ -956,30 +952,35 @@ const ayaPeriode2: FicheSuiviPeriode = {
 
 const livretAya: Livret = {
   ...livretVierge(apprentiAyaKouame, 'livret-aya'),
-  entretien1: {
-    ...entretienTheo,
-    dateEntretien: '2025-10-22',
-    reponsesApprenti: {
-      ...entretienTheo.reponsesApprenti,
-      'q-app-motivations': 'Travailler dans la restauration de brigade, viser le Bac Pro à terme.',
-      'q-app-contact-entreprise':
-        'Candidature spontanée. Hélène a accepté après un essai d\'une journée.',
+  entretiens: {
+    1: {
+      ...entretienTheo,
+      dateEntretien: '2025-10-22',
+      reponsesApprenti: {
+        ...entretienTheo.reponsesApprenti,
+        'q-app-motivations':
+          'Travailler dans la restauration de brigade, viser le Bac Pro à terme.',
+        'q-app-contact-entreprise':
+          "Candidature spontanée. Hélène a accepté après un essai d'une journée.",
+      },
+      appreciationMaitre: {
+        ponctualite: 'plus',
+        comprehensionConsignes: 'plus',
+        qualiteTravail: 'plus',
+        integration: 'plus',
+        commentaires: 'Profil sérieux, sait défendre ses idées.',
+      },
+      commentaires: {
+        apprenti: "Bonne ambiance d'équipe, je me sens à ma place.",
+        maitre: 'À surveiller sur la prise de feedback.',
+        formateur: 'Cohérence parcours/projet OK.',
+      },
+      signatures: signaturesCompletes('2025-10-22T17:30:00.000Z'),
     },
-    appreciationMaitre: {
-      ponctualite: 'plus',
-      comprehensionConsignes: 'plus',
-      qualiteTravail: 'plus',
-      integration: 'plus',
-      commentaires: 'Profil sérieux, sait défendre ses idées.',
-    },
-    commentaires: {
-      apprenti: 'Bonne ambiance d\'équipe, je me sens à ma place.',
-      maitre: 'À surveiller sur la prise de feedback.',
-      formateur: 'Cohérence parcours/projet OK.',
-    },
-    signatures: signaturesCompletes('2025-10-22T17:30:00.000Z'),
+    2: null,
+    3: null,
+    4: null,
   },
-  entretien2: null,
   fichesSuivi: [ayaPeriode1, ayaPeriode2],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiAyaKouame,
@@ -1001,18 +1002,18 @@ const entretienLuca: EntretienTripartite = {
   questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],
   questionsObligatoires: [...QUESTIONS_E1_OBLIGATOIRES],
   reponsesApprenti: {
-    'q-app-motivations': "Devenir cuisinier de bistrot, peut-être ouvrir mon affaire à terme.",
+    'q-app-motivations': 'Devenir cuisinier de bistrot, peut-être ouvrir mon affaire à terme.',
     'q-app-contact-entreprise': "J'ai trouvé l'annonce sur le site du GRETA.",
-    'q-app-connaissance-entreprise': 'Je connaissais l\'enseigne par réputation.',
-    'q-app-metier-representation': "Conforme à mes attentes, rythme soutenu mais gérable.",
-    'q-app-difficultes-formation': 'La pâtisserie demande un peu plus d\'attention.',
+    'q-app-connaissance-entreprise': "Je connaissais l'enseigne par réputation.",
+    'q-app-metier-representation': 'Conforme à mes attentes, rythme soutenu mais gérable.',
+    'q-app-difficultes-formation': "La pâtisserie demande un peu plus d'attention.",
     'q-app-difficultes-autres': '',
     'q-app-ressenti-equipe': 'Bonne intégration progressive.',
   },
   reponsesMaitre: {
     'q-mai-deja-forme': true,
     'q-mai-diplomes-deja-formes': 'CAP Cuisine + Bac Pro.',
-    'q-mai-objectifs-embauche': 'Possibilité d\'embauche à confirmer.',
+    'q-mai-objectifs-embauche': "Possibilité d'embauche à confirmer.",
     'q-mai-organisation-tutorat': 'Tutorat par moi-même, briefing de service.',
   },
   appreciationMaitre: {
@@ -1102,8 +1103,7 @@ const lucaPeriode2: FicheSuiviPeriode = {
   suiviGretaCfa: {
     apprenti:
       "Pâtisserie agréable, on travaille beaucoup en binôme. Premiers desserts à l'assiette réussis.",
-    formateur:
-      'Pâtisserie : pâtes, crèmes, premiers desserts. Niveau 13/20.',
+    formateur: 'Pâtisserie : pâtes, crèmes, premiers desserts. Niveau 13/20.',
   },
   suiviEntreprise: [
     {
@@ -1118,7 +1118,7 @@ const lucaPeriode2: FicheSuiviPeriode = {
       competenceId: 'c3-1',
       evaluationGreta: 'partiel',
       evaluationEntreprise: 'non-fait',
-      retourApprenti: 'Pas encore d\'occasion en service de pâtisserie.',
+      retourApprenti: "Pas encore d'occasion en service de pâtisserie.",
     },
   ],
   observations: {
@@ -1171,8 +1171,7 @@ const lucaPeriode3: FicheSuiviPeriode = {
 
 const livretLuca: Livret = {
   ...livretVierge(apprentiLucaBianchi, 'livret-luca'),
-  entretien1: entretienLuca,
-  entretien2: null,
+  entretiens: { 1: entretienLuca, 2: null, 3: null, 4: null },
   fichesSuivi: [lucaPeriode1, lucaPeriode2, lucaPeriode3],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiLucaBianchi,

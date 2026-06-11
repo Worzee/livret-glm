@@ -80,7 +80,11 @@ import { useUtilisateursStore } from './useUtilisateursStore';
 //        (snapshots à l'initialisation depuis la banque `pourEntretienN` /
 //        `obligatoire`). Le formateur ne peut plus retirer les questions
 //        affectées ; les obligatoires exigent une réponse pour signer (R20).
-const VERSION_SCHEMA = 11;
+//   v12 — retours coordos juin 2026 : jusqu'à 4 entretiens tripartites par
+//        livret (formations de 2 ans). `Livret.entretien1`/`entretien2`
+//        remplacés par `entretiens: Record<1|2|3|4, EntretienTripartite|null>`.
+//        Le nombre autorisé est défini par `Formation.nombreEntretiens`.
+const VERSION_SCHEMA = 12;
 
 interface LivretStore {
   livrets: Record<string, Livret>;
@@ -340,26 +344,20 @@ function muterLivret(
   };
 }
 
-/** Lit l'entretien E1 ou E2 d'un livret selon le numéro (1 ou 2). */
+/** Lit l'entretien E1..E4 d'un livret selon le numéro. */
 function lireEntretien(livret: Livret, numero: NumeroEntretien): EntretienTripartite | null {
-  return numero === 1 ? livret.entretien1 : livret.entretien2;
+  return livret.entretiens[numero];
 }
 
-/** Écrit un entretien (E1 ou E2) dans un livret, retourne le livret muté. */
+/** Écrit un entretien (E1..E4) dans un livret, retourne le livret muté. */
 function ecrireEntretien(
   livret: Livret,
   numero: NumeroEntretien,
   entretien: EntretienTripartite,
 ): Livret {
-  return numero === 1
-    ? { ...livret, entretien1: entretien }
-    : { ...livret, entretien2: entretien };
+  return { ...livret, entretiens: { ...livret.entretiens, [numero]: entretien } };
 }
 
-/**
- * Crée un entretien tripartite vide.
- * Pré-sélectionne les questions par défaut de la banque (les 11 historiques).
- */
 /**
  * Entretien vierge initialisé avec le snapshot de la configuration coordo
  * (retours coordos juin 2026) : questions affectées à E{numero} dans la banque

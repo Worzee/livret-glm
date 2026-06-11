@@ -39,9 +39,10 @@ export function EntretienHeader({
   const roleActif = useUserStore((s) => s.roleActif);
   const setEntretienDate = useLivretStore((s) => s.setEntretienDate);
 
+  // La date relève de la conduite de l'entretien (formateur référent) —
+  // ressource dédiée depuis l'ouverture d'`organisation-suivi` au coordo.
   const editableDate =
-    peutEditer(roleActif, 'organisation-suivi') && !ficheVerrouillee;
-  // (la date relève du formateur, on réutilise sa ressource — droit cohérent)
+    peutEditer(roleActif, 'entretien.gestion') && !ficheVerrouillee;
 
   return (
     <section className="rounded-lg border border-border bg-card p-4">

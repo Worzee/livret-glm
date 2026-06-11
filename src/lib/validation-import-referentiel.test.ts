@@ -117,6 +117,7 @@ describe('genererNomReferentiel', () => {
     dateFin: '2026-08-31',
     lieuId: 'eta-test',
     periodes: [],
+    nombreEntretiens: 2,
   });
 
   it("compose le libellé `Referentiel_<intitulé>_<YYYY-MM-DD>`", () => {

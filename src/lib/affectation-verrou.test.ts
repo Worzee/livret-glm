@@ -31,8 +31,7 @@ function fabriquerLivret(overrides: Partial<Livret> = {}): Livret {
       modifieLe: '2025-09-01T00:00:00.000Z',
       modifiePar: 'u-test',
     },
-    entretien1: null,
-    entretien2: null,
+    entretiens: { 1: null, 2: null, 3: null, 4: null },
     fichesSuivi: [],
     evaluationFinaleCompetences: { lignes: [], modifieLe: '2025-09-01T00:00:00.000Z' },
     evaluationFinaleAttitudes: { lignes: [], modifieLe: '2025-09-01T00:00:00.000Z' },
@@ -158,7 +157,7 @@ describe('evaluerVerrouAffectation', () => {
 
   it("verrouille si l'entretien tripartite a été initialisé (sans fiche, contrat futur)", () => {
     const apprenti = fabriquerApprenti('2099-09-01');
-    const livret = fabriquerLivret({ entretien1: ENTRETIEN_VIDE });
+    const livret = fabriquerLivret({ entretiens: { 1: ENTRETIEN_VIDE, 2: null, 3: null, 4: null } });
     const r = evaluerVerrouAffectation(apprenti, livret, new Date('2026-05-09'));
     expect(r.verrouille).toBe(true);
     expect(r.raison).toMatch(/Entretien tripartite initialisé/);
@@ -167,7 +166,7 @@ describe('evaluerVerrouAffectation', () => {
   it("priorise la raison « fiches » sur « entretien » et « contrat »", () => {
     const apprenti = fabriquerApprenti('2025-09-02'); // contrat démarré
     const livret = fabriquerLivret({
-      entretien1: ENTRETIEN_VIDE,
+      entretiens: { 1: ENTRETIEN_VIDE, 2: null, 3: null, 4: null },
       fichesSuivi: [{ ...FICHE_VIDE, etat: 'en-cours' }],
     });
     const r = evaluerVerrouAffectation(apprenti, livret, new Date('2026-05-09'));
@@ -178,7 +177,7 @@ describe('evaluerVerrouAffectation', () => {
 
   it("priorise « entretien » sur « contrat » quand il n'y a pas de fiche", () => {
     const apprenti = fabriquerApprenti('2025-09-02');
-    const livret = fabriquerLivret({ entretien1: ENTRETIEN_VIDE });
+    const livret = fabriquerLivret({ entretiens: { 1: ENTRETIEN_VIDE, 2: null, 3: null, 4: null } });
     const r = evaluerVerrouAffectation(apprenti, livret, new Date('2026-05-09'));
     expect(r.verrouille).toBe(true);
     expect(r.raison).toMatch(/Entretien tripartite/);

@@ -48,7 +48,17 @@ describe('QUESTIONS_BANQUE_INITIALE', () => {
 
   it('toutes les questions sont affectées à E1 par défaut (comportement historique)', () => {
     for (const q of QUESTIONS_BANQUE_INITIALE) {
-      expect(q.pourEntretien1).toBe(true);
+      expect(q.pourEntretiens).toContain(1);
+    }
+  });
+
+  it('les questions de suivi/bilan sont affectées à E2, E3 et E4 par défaut', () => {
+    // Jusqu'à 4 entretiens (formations de 2 ans) : les questions de suivi
+    // valent pour tous les entretiens de bilan.
+    const suivi = QUESTIONS_BANQUE_INITIALE.filter((q) => q.pourEntretiens.includes(2));
+    expect(suivi.length).toBeGreaterThan(0);
+    for (const q of suivi) {
+      expect(q.pourEntretiens).toEqual([1, 2, 3, 4]);
     }
   });
 
@@ -60,7 +70,7 @@ describe('QUESTIONS_BANQUE_INITIALE', () => {
     ]);
     // Cohérence : une question obligatoire doit être affectée à au moins un entretien.
     for (const q of obligatoires) {
-      expect(q.pourEntretien1 || q.pourEntretien2).toBe(true);
+      expect(q.pourEntretiens.length).toBeGreaterThan(0);
     }
   });
 });
@@ -116,13 +126,14 @@ describe('idsQuestionsObligatoiresAffectees', () => {
         cible: 'apprenti',
         type: 'texte-court',
         libelle: 'Question test ?',
-        pourEntretien1: false,
-        pourEntretien2: true,
+        pourEntretiens: [2, 4],
         obligatoire: true,
       },
     ];
     expect(idsQuestionsObligatoiresAffectees(banque, 1)).toEqual([]);
     expect(idsQuestionsObligatoiresAffectees(banque, 2)).toEqual(['q-x']);
+    expect(idsQuestionsObligatoiresAffectees(banque, 3)).toEqual([]);
+    expect(idsQuestionsObligatoiresAffectees(banque, 4)).toEqual(['q-x']);
   });
 });
 

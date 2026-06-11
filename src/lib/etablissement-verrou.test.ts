@@ -12,6 +12,7 @@ const formation = (id: string, lieuId: string): Formation => ({
   dateFin: '2027-09-01',
   lieuId,
   periodes: [],
+  nombreEntretiens: 2,
 });
 
 describe('evaluerVerrouEtablissement', () => {

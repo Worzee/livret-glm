@@ -8,7 +8,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import type { Formation, PeriodeFormation } from '@/types';
+import type { Formation, NumeroEntretien, PeriodeFormation } from '@/types';
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
@@ -21,13 +21,14 @@ import {
 import { cn } from '@/lib/utils';
 
 /**
- * Modale de gestion du planning des périodes d'une formation
- * (refonte mai 2026 — chantier #1).
+ * Modale de gestion du planning d'une formation (refonte mai 2026 —
+ * chantier #1, étendue juin 2026 : nombre d'entretiens tripartites).
  *
- * Affiche la liste des périodes définies + un formulaire d'ajout. Chaque
- * période existante peut être éditée (titre, dates) ou supprimée, sauf si
- * au moins une fiche d'apprenti·e est déjà signée ou verrouillée (cf.
- * `evaluerVerrouPeriode`).
+ * Affiche le nombre d'entretiens tripartites (1 à 4, verrou de réduction
+ * si un entretien est déjà engagé dans la promo), la liste des périodes
+ * définies + un formulaire d'ajout. Chaque période existante peut être
+ * éditée (titre, dates) ou supprimée, sauf si au moins une fiche
+ * d'apprenti·e est déjà signée ou verrouillée (cf. `evaluerVerrouPeriode`).
  *
  * Toutes les mutations propagent en cascade dans les livrets de la promo
  * via `useFormationsStore.ajouterPeriode / modifierPeriode / supprimerPeriode`.
@@ -49,6 +50,7 @@ export function ModalePlanningPeriodes({
   const ajouter = useFormationsStore((s) => s.ajouterPeriode);
   const modifier = useFormationsStore((s) => s.modifierPeriode);
   const supprimer = useFormationsStore((s) => s.supprimerPeriode);
+  const setNombreEntretiens = useFormationsStore((s) => s.setNombreEntretiens);
   const livretsTous = useLivretStore((s) => s.livrets);
   const apprentis = useUtilisateursStore((s) => s.apprentis);
 
@@ -56,6 +58,7 @@ export function ModalePlanningPeriodes({
   const [editionId, setEditionId] = useState<string | null>(null);
   const [saisie, setSaisie] = useState<SaisiePeriode>(SAISIE_VIDE);
   const [erreurServeur, setErreurServeur] = useState<string | null>(null);
+  const [erreurEntretiens, setErreurEntretiens] = useState<string | null>(null);
   const [confirmationSuppression, setConfirmationSuppression] = useState<string | null>(null);
 
   // Live re-read : la formation dans le store évolue à chaque mutation.
@@ -180,6 +183,45 @@ export function ModalePlanningPeriodes({
         </div>
 
         <div className="space-y-5 p-4">
+          {/* Nombre d'entretiens tripartites (retours coordos juin 2026) ── */}
+          <section className="space-y-2">
+            <h3 className="text-sm font-medium">Entretiens tripartites</h3>
+            <div className="flex flex-wrap items-center gap-3 rounded-md border border-border bg-secondary/30 p-3">
+              <label htmlFor="planning-nb-entretiens" className="text-sm">
+                Nombre d'entretiens de la formation
+              </label>
+              <select
+                id="planning-nb-entretiens"
+                data-testid="planning-nb-entretiens"
+                value={formationCourante.nombreEntretiens}
+                onChange={(e) => {
+                  const r = setNombreEntretiens(
+                    formation.id,
+                    Number(e.target.value) as NumeroEntretien,
+                  );
+                  setErreurEntretiens(r.ok ? null : (r.raison ?? 'Modification refusée.'));
+                }}
+                className="rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {[1, 2, 3, 4].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+              <p className="flex-1 min-w-[14rem] text-xs text-muted-foreground">
+                Jusqu'à 4 pour les formations de 2 ans. Seuls les motifs « Entretien
+                Tripartite 1 à {formationCourante.nombreEntretiens} » sont proposés dans
+                les fiches de suivi des livrets de la promo.
+              </p>
+            </div>
+            {erreurEntretiens && (
+              <p role="alert" className="rounded-md border border-red-200 bg-red-50 p-2 text-xs text-red-700">
+                {erreurEntretiens}
+              </p>
+            )}
+          </section>
+
           {/* Liste des périodes existantes ─────────────────────────────── */}
           <section className="space-y-2">
             <h3 className="text-sm font-medium">

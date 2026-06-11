@@ -14,10 +14,18 @@ const ROLES_METIER: Role[] = ['apprenti', 'maitre', 'formateur', 'coordo'];
 
 describe('peutEditer — droits par ressource (CDC §6)', () => {
   describe('Module organisation du suivi', () => {
-    it('seul le formateur peut éditer organisation-suivi', () => {
+    it('le formateur et le coordo peuvent gérer organisation-suivi (juin 2026)', () => {
       expect(peutEditer('formateur', 'organisation-suivi')).toBe(true);
+      expect(peutEditer('coordo', 'organisation-suivi')).toBe(true);
       expect(peutEditer('apprenti', 'organisation-suivi')).toBe(false);
       expect(peutEditer('maitre', 'organisation-suivi')).toBe(false);
+    });
+
+    it("la gestion de l'entretien (initialisation, date) reste au formateur seul", () => {
+      expect(peutEditer('formateur', 'entretien.gestion')).toBe(true);
+      expect(peutEditer('coordo', 'entretien.gestion')).toBe(false);
+      expect(peutEditer('apprenti', 'entretien.gestion')).toBe(false);
+      expect(peutEditer('maitre', 'entretien.gestion')).toBe(false);
     });
   });
 
@@ -162,8 +170,10 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
 
   describe('Cohérence transverse', () => {
     it("chaque ressource du livret est éditable par exactement 1 rôle métier (hors admin)", () => {
+      // `organisation-suivi` sortie de la liste depuis juin 2026 (gestion
+      // partagée formateur + coordo) — remplacée ici par `entretien.gestion`.
       const RESSOURCES_LIVRET: Ressource[] = [
-        'organisation-suivi',
+        'entretien.gestion',
         'entretien.questions-apprenti',
         'entretien.questions-maitre',
         'fiche.evaluation-entreprise',
@@ -178,8 +188,12 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
     });
 
     it("ni le coordo ni l'admin n'ont de droits sur le contenu pédagogique du livret", () => {
+      // `organisation-suivi` sortie de la liste depuis juin 2026 : la gestion
+      // des événements est calendaire/organisationnelle (ouverte au coordo),
+      // pas pédagogique. La conduite de l'entretien (`entretien.gestion`)
+      // reste pédagogique et figure dans la liste.
       const RESSOURCES_PEDAGOGIQUES: Ressource[] = [
-        'organisation-suivi',
+        'entretien.gestion',
         'entretien.questions-apprenti',
         'entretien.questions-maitre',
         'entretien.appreciation-maitre',
@@ -286,7 +300,7 @@ describe('Administration — droits du rôle coordo', () => {
 
 describe('rolesAutorises', () => {
   it('retourne la liste exacte des rôles autorisés', () => {
-    expect(rolesAutorises('organisation-suivi')).toEqual(['formateur']);
+    expect(rolesAutorises('organisation-suivi')).toEqual(['formateur', 'coordo']);
     expect(rolesAutorises('fiche.evaluation-entreprise')).toEqual(['maitre']);
     expect(rolesAutorises('fiche.retour-apprenti')).toEqual(['apprenti']);
   });

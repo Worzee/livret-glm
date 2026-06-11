@@ -1,4 +1,8 @@
-import type { EvenementOrganisationSuivi, MotifOrganisationSuivi } from '@/types';
+import type {
+  EvenementOrganisationSuivi,
+  MotifOrganisationSuivi,
+  NumeroEntretien,
+} from '@/types';
 
 /**
  * Catalogue des motifs disponibles pour l'organisation du suivi (CDC §5.1).
@@ -67,7 +71,21 @@ export const MOTIFS_ORGANISATION_SUIVI: ReadonlyArray<MetadonneesMotif> = [
     motif: 'entretien-tripartite-2',
     libelle: 'Entretien Tripartite 2',
     description:
-      'Second entretien tripartite — bilan mi-parcours ou réajustement en cours de formation.',
+      'Deuxième entretien tripartite — bilan ou réajustement en cours de formation.',
+    placeholderCommentaire: 'Date prévue, modalités, participants…',
+  },
+  {
+    motif: 'entretien-tripartite-3',
+    libelle: 'Entretien Tripartite 3',
+    description:
+      'Troisième entretien tripartite — formations longues (2 ans), bilan de progression.',
+    placeholderCommentaire: 'Date prévue, modalités, participants…',
+  },
+  {
+    motif: 'entretien-tripartite-4',
+    libelle: 'Entretien Tripartite 4',
+    description:
+      'Quatrième entretien tripartite — formations longues (2 ans), bilan final.',
     placeholderCommentaire: 'Date prévue, modalités, participants…',
   },
   {
@@ -162,8 +180,33 @@ export function peutSupprimerEvenement(
  */
 export function numeroEntretienPourMotif(
   motif: MotifOrganisationSuivi,
-): 1 | 2 | null {
-  if (motif === 'entretien-tripartite-1') return 1;
-  if (motif === 'entretien-tripartite-2') return 2;
-  return null;
+): NumeroEntretien | null {
+  switch (motif) {
+    case 'entretien-tripartite-1':
+      return 1;
+    case 'entretien-tripartite-2':
+      return 2;
+    case 'entretien-tripartite-3':
+      return 3;
+    case 'entretien-tripartite-4':
+      return 4;
+    default:
+      return null;
+  }
+}
+
+/**
+ * Catalogue des motifs proposables pour une formation donnée : les motifs
+ * `entretien-tripartite-N` au-delà de `nombreEntretiens` sont masqués
+ * (retours coordos juin 2026 — le nombre d'entretiens est défini par le
+ * coordo au niveau de la formation). Les autres motifs sont toujours
+ * proposés.
+ */
+export function motifsDisponibles(
+  nombreEntretiens: NumeroEntretien,
+): ReadonlyArray<MetadonneesMotif> {
+  return MOTIFS_ORGANISATION_SUIVI.filter((m) => {
+    const n = numeroEntretienPourMotif(m.motif);
+    return n === null || n <= nombreEntretiens;
+  });
 }

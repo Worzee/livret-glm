@@ -115,11 +115,12 @@ function NavContenu({ onNavigate }: { onNavigate?: () => void }) {
   const liensAdminVisibles = LIENS_ADMIN.filter((l) => peutEditer(roleActif, l.ressource));
 
   // Liens entretien conditionnels — un lien par événement entretien existant
-  // dans l'organisation du suivi du livret actif. Pas de doublons : si E1 a
-  // 2 événements (cas d'erreur de saisie), un seul lien apparaît.
+  // dans l'organisation du suivi du livret actif (jusqu'à 4 — juin 2026).
+  // Pas de doublons : si E1 a 2 événements (cas d'erreur de saisie), un
+  // seul lien apparaît.
   const liensEntretiens: LienItem[] = [];
   if (ctx) {
-    const numerosVus = new Set<1 | 2>();
+    const numerosVus = new Set<number>();
     for (const evt of ctx.livret.organisationSuivi.evenements) {
       const n = numeroEntretienPourMotif(evt.motif);
       if (n && !numerosVus.has(n)) {

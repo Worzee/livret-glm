@@ -46,6 +46,9 @@ export const formationCapCuisine: Formation = {
   dateFin: '2027-09-01',
   lieuId: etablissementSiteDiderot.id,
   periodes: periodesCapCuisine,
+  // Retours coordos juin 2026 : nombre d'entretiens tripartites (1 à 4).
+  // Le CAP Cuisine reste au défaut historique de 2.
+  nombreEntretiens: 2,
 };
 
 /**

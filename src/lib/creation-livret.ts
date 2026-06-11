@@ -57,10 +57,10 @@ export function creerLivretVierge(
       modifieLe: iso,
       modifiePar: auteurId,
     },
-    // Chantier #2 : 2 entretiens tripartites, initialisés via événement
-    // dans l'organisation du suivi (motifs `entretien-tripartite-{1|2}`).
-    entretien1: null,
-    entretien2: null,
+    // Jusqu'à 4 entretiens tripartites (juin 2026), initialisés via
+    // événement dans l'organisation du suivi (motifs
+    // `entretien-tripartite-{1..N}`, N = Formation.nombreEntretiens).
+    entretiens: { 1: null, 2: null, 3: null, 4: null },
     fichesSuivi: planning.map((p): FicheSuiviPeriode => ({
       id: `fp-${livretId}-${p.id}`,
       numeroPeriode: p.numero,

@@ -6,12 +6,13 @@ import {
   libelleEvenement,
   libelleMotif,
   metadonneesMotif,
+  motifsDisponibles,
   numeroEntretienPourMotif,
   peutSupprimerEvenement,
 } from './organisation-suivi';
 
 describe('MOTIFS_ORGANISATION_SUIVI', () => {
-  it('expose les 9 motifs (chantier #2 mai 2026 : +2 entretiens tripartites)', () => {
+  it('expose les 11 motifs (juin 2026 : jusqu\'à 4 entretiens tripartites)', () => {
     const cles = MOTIFS_ORGANISATION_SUIVI.map((m) => m.motif);
     expect(cles).toEqual([
       'reunion-rentree',
@@ -22,8 +23,31 @@ describe('MOTIFS_ORGANISATION_SUIVI', () => {
       'bilan-formation',
       'entretien-tripartite-1',
       'entretien-tripartite-2',
+      'entretien-tripartite-3',
+      'entretien-tripartite-4',
       'autre',
     ]);
+  });
+
+  it('motifsDisponibles masque les entretiens au-delà du nombre de la formation', () => {
+    const pour2 = motifsDisponibles(2).map((m) => m.motif);
+    expect(pour2).toContain('entretien-tripartite-2');
+    expect(pour2).not.toContain('entretien-tripartite-3');
+    expect(pour2).not.toContain('entretien-tripartite-4');
+    expect(pour2).toContain('autre'); // les motifs non-entretien restent
+
+    const pour4 = motifsDisponibles(4).map((m) => m.motif);
+    expect(pour4).toContain('entretien-tripartite-4');
+
+    const pour1 = motifsDisponibles(1).map((m) => m.motif);
+    expect(pour1).toContain('entretien-tripartite-1');
+    expect(pour1).not.toContain('entretien-tripartite-2');
+  });
+
+  it('numeroEntretienPourMotif couvre les 4 entretiens', () => {
+    expect(numeroEntretienPourMotif('entretien-tripartite-3')).toBe(3);
+    expect(numeroEntretienPourMotif('entretien-tripartite-4')).toBe(4);
+    expect(numeroEntretienPourMotif('visite-entreprise')).toBeNull();
   });
 
   it('chaque motif porte un libellé, une description et un placeholder non vides', () => {

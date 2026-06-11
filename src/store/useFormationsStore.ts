@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { FicheSuiviPeriode, Formation, PeriodeFormation } from '@/types';
+import type {
+  FicheSuiviPeriode,
+  Formation,
+  NumeroEntretien,
+  PeriodeFormation,
+} from '@/types';
 import { formationsDemo } from '@/fixtures/formations';
 import { useUtilisateursStore } from './useUtilisateursStore';
 import { useLivretStore } from './useLivretStore';
@@ -10,6 +15,10 @@ import {
   type SaisiePeriode,
   validerSaisiePeriode,
 } from '@/lib/validation-periode-formation';
+import {
+  NOMBRE_ENTRETIENS_DEFAUT,
+  peutDefinirNombreEntretiens,
+} from '@/lib/nombre-entretiens';
 
 /**
  * Store des formations du dispositif.
@@ -43,10 +52,13 @@ interface FormationsStore {
   formations: Record<string, Formation>;
 
   /**
-   * Crée une nouvelle formation.
+   * Crée une nouvelle formation. Le nombre d'entretiens tripartites démarre
+   * au défaut (2) — il se règle ensuite dans la modale Planning.
    * @returns la formation créée (avec id auto-généré).
    */
-  ajouterFormation: (input: Omit<Formation, 'id' | 'periodes'>) => Formation;
+  ajouterFormation: (
+    input: Omit<Formation, 'id' | 'periodes' | 'nombreEntretiens'>,
+  ) => Formation;
   /** Met à jour les champs d'une formation existante (hors `periodes`). */
   modifierFormation: (
     id: string,
@@ -89,6 +101,17 @@ interface FormationsStore {
     periodeId: string,
   ) => ResultatMutationPeriode;
 
+  /**
+   * Définit le nombre d'entretiens tripartites de la formation (1 à 4 —
+   * retours coordos juin 2026). Refus si la réduction passe en dessous d'un
+   * entretien déjà engagé (initialisé ou planifié) dans un livret de la
+   * promo (cf. `lib/nombre-entretiens`).
+   */
+  setNombreEntretiens: (
+    formationId: string,
+    nombre: NumeroEntretien,
+  ) => ResultatMutationPeriode;
+
   /** Réinitialise le store aux fixtures (utilisé par BoutonReinitialiserDemo). */
   reinitialiser: () => void;
 }
@@ -100,7 +123,10 @@ interface FormationsStore {
 //   v3 — chantier #1 mai 2026 : `Formation.periodes: PeriodeFormation[]`
 //        (planning commun à toute la promo, propage en cascade vers les
 //        livrets via `useLivretStore`).
-const VERSION_SCHEMA = 3;
+//   v4 — retours coordos juin 2026 : `Formation.nombreEntretiens` (1 à 4,
+//        défaut 2) — nombre d'entretiens tripartites de la formation, réglé
+//        dans la modale Planning.
+const VERSION_SCHEMA = 4;
 
 function etatInitial(): Pick<FormationsStore, 'formations'> {
   return { formations: { ...formationsDemo } };
@@ -113,7 +139,12 @@ export const useFormationsStore = create<FormationsStore>()(
 
       ajouterFormation: (input) => {
         const id = `f-${crypto.randomUUID().slice(0, 8)}`;
-        const formation: Formation = { id, periodes: [], ...input };
+        const formation: Formation = {
+          id,
+          periodes: [],
+          nombreEntretiens: NOMBRE_ENTRETIENS_DEFAUT,
+          ...input,
+        };
         set({ formations: { ...get().formations, [id]: formation } });
         return formation;
       },
@@ -234,6 +265,29 @@ export const useFormationsStore = create<FormationsStore>()(
         for (const p of periodes) {
           propagerModificationFiche(formationId, p);
         }
+        return { ok: true };
+      },
+
+      // ── Nombre d'entretiens tripartites (retours coordos juin 2026) ──
+      setNombreEntretiens: (formationId, nombre) => {
+        const formation = get().formations[formationId];
+        if (!formation) return { ok: false, raison: 'Formation introuvable.' };
+        // Verrou : pas de réduction en dessous d'un entretien déjà engagé
+        // dans un livret de la promo (lecture cross-store au runtime). Le
+        // rattachement passe par l'apprenti·e (source de vérité des
+        // affectations) — même filtre que le verrou des périodes.
+        const apprentis = useUtilisateursStore.getState().apprentis;
+        const livretsPromo = Object.values(useLivretStore.getState().livrets).filter(
+          (l) => apprentis[l.apprentiId]?.formationId === formationId,
+        );
+        const verif = peutDefinirNombreEntretiens(nombre, livretsPromo);
+        if (!verif.ok) return verif;
+        set((s) => ({
+          formations: {
+            ...s.formations,
+            [formationId]: { ...formation, nombreEntretiens: nombre },
+          },
+        }));
         return { ok: true };
       },
 

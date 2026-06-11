@@ -98,6 +98,14 @@ export interface Formation {
    * (cf. `FicheSuiviPeriode.periodeFormationId`).
    */
   periodes: PeriodeFormation[];
+  /**
+   * Nombre d'entretiens tripartites de la formation (1 à 4, défaut 2 —
+   * retours coordos juin 2026 : 4 pour les formations de 2 ans). Défini par
+   * le coordo dans la modale Planning, au même endroit que les périodes.
+   * Seuls les motifs `entretien-tripartite-{1..N}` sont proposés dans
+   * l'organisation du suivi des livrets de la promo.
+   */
+  nombreEntretiens: NumeroEntretien;
 }
 
 export interface Entreprise {
@@ -233,15 +241,25 @@ export type MotifOrganisationSuivi =
    */
   | 'entretien-tripartite-1'
   /**
-   * Entretien tripartite n° 2 — bilan mi-parcours ou réajustement.
-   * Refonte mai 2026 (chantier #2). Contrairement à E1, sa signature ne
-   * fige PAS la sélection des compétences abordées en entreprise.
+   * Entretiens tripartites n° 2 à 4 — bilans de suivi ou réajustement
+   * (jusqu'à 4 entretiens pour les formations de 2 ans — retours coordos
+   * juin 2026). Contrairement à E1, leur signature ne fige PAS la
+   * sélection des compétences abordées en entreprise.
    */
   | 'entretien-tripartite-2'
+  | 'entretien-tripartite-3'
+  | 'entretien-tripartite-4'
   | 'autre';
 
-/** Numérotation des entretiens tripartites — 2 entretiens par livret max. */
-export type NumeroEntretien = 1 | 2;
+/**
+ * Numérotation des entretiens tripartites — jusqu'à 4 par livret (retours
+ * coordos juin 2026 : formations de 2 ans). Le nombre effectif est défini
+ * par le coordo au niveau de la formation (`Formation.nombreEntretiens`).
+ */
+export type NumeroEntretien = 1 | 2 | 3 | 4;
+
+/** Liste ordonnée des numéros d'entretien possibles (pour itérer). */
+export const NUMEROS_ENTRETIEN: ReadonlyArray<NumeroEntretien> = [1, 2, 3, 4];
 
 /**
  * Un événement planifié dans l'organisation du suivi (CDC §5.1, refonte
@@ -305,13 +323,13 @@ export interface QuestionBanque {
   /** Aide de saisie facultative (placeholder). Ignorée pour le type oui-non. */
   placeholder?: string;
   /**
-   * Affectation par le coordo (retours coordos juin 2026) : la question fait
-   * partie du tronc commun de l'entretien tripartite 1 et/ou 2. Une question
-   * affectée est injectée à l'initialisation de l'entretien (snapshot) et ne
-   * peut pas en être retirée par le formateur référent.
+   * Affectation par le coordo (retours coordos juin 2026) : numéros des
+   * entretiens tripartites (1 à 4) dont la question fait partie du tronc
+   * commun. Une question affectée est injectée à l'initialisation de
+   * l'entretien concerné (snapshot) et ne peut pas en être retirée par le
+   * formateur référent. Tableau vide = question au catalogue mais inactive.
    */
-  pourEntretien1: boolean;
-  pourEntretien2: boolean;
+  pourEntretiens: NumeroEntretien[];
   /**
    * Question obligatoire : non retirable de l'entretien ET réponse exigée
    * pour que la personne concernée (cible) puisse signer (extension R20).
@@ -576,16 +594,18 @@ export interface Livret {
   formationId: string;
   organisationSuivi: OrganisationSuivi;
   /**
-   * Refonte mai 2026 (chantier #2) : 2 entretiens tripartites par livret.
-   * Chacun est généré via un événement de motif `entretien-tripartite-{1|2}`
-   * dans l'organisation du suivi.
+   * Jusqu'à 4 entretiens tripartites par livret (retours coordos juin 2026 —
+   * formations de 2 ans). Chacun est généré via un événement de motif
+   * `entretien-tripartite-{N}` dans l'organisation du suivi ; le nombre
+   * d'entretiens autorisé est défini au niveau de la formation
+   * (`Formation.nombreEntretiens`, 1 à 4).
    *
-   * `entretien1` : signature des 3 parties → fige la sélection des
-   * compétences abordées en entreprise (auto-marquage cf. CDC v1.5 §12).
-   * `entretien2` : bilan mi-parcours — n'a PAS d'effet sur la sélection.
+   * E1 : signature des 3 parties → fige la sélection des compétences
+   * abordées en entreprise (auto-marquage cf. CDC v1.5 §12) ; R7 (alerte
+   * > 60 j) ne concerne que lui. E2..E4 : bilans de suivi — sans effet sur
+   * la sélection.
    */
-  entretien1: EntretienTripartite | null;
-  entretien2: EntretienTripartite | null;
+  entretiens: Record<NumeroEntretien, EntretienTripartite | null>;
   fichesSuivi: FicheSuiviPeriode[];
   evaluationFinaleCompetences: EvaluationFinaleCompetences;
   evaluationFinaleAttitudes: EvaluationFinaleAttitudes;

@@ -1,6 +1,6 @@
 # État du projet — Livret d'apprentissage GRETA Lyon Métropole
 
-**Dernière mise à jour** : 2026-06-11 (retours coordonnateurs pédagogiques — renommage « Maître / Tuteur » + affectation des questions d'entretien par le coordo)
+**Dernière mise à jour** : 2026-06-11 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites)
 **Version applicative** : 0.1.0
 **Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3) **livrée + 4 vagues post-livraison**
 **Pilote métier** : Guillaume FERRERI
@@ -11,7 +11,7 @@
 
 ### État global
 
-L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 4 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **435 tests unitaires + 134 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
+L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 4 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **451 tests unitaires + 141 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
 
 ### Ce qui est livré
 
@@ -46,7 +46,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | Aperçu général et démarrage | [`README.md`](README.md) |
 | Modules livrés et périmètre fonctionnel | §4 |
 | Règles métier R1 → R24 | §5 |
-| État des tests (435 unit + 134 E2E) | §6 |
+| État des tests (451 unit + 141 E2E) | §6 |
 | Architecture des fichiers | §7 |
 | Reste à faire | §8 |
 | Limites connues | §9 |
@@ -68,8 +68,8 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
-| **Tests unitaires** | **435 / 435 ✓** (Vitest, 29 fichiers de test) |
-| **Tests E2E** | **134 / 134 ✓** (Playwright — 122 desktop + 12 mobile Pixel 5, 18 specs) |
+| **Tests unitaires** | **451 / 451 ✓** (Vitest, 30 fichiers de test) |
+| **Tests E2E** | **141 / 141 ✓** (Playwright — 129 desktop + 12 mobile Pixel 5, 19 specs) |
 | **Bundle JS gzippé** | 148 KB (cible CDC §19.1 : < 500 KB → marge × 3,4) |
 | **Bundle CSS gzippé** | 6,5 KB (cible : < 50 KB → marge × 7) |
 | **Chunk PDF lazy** | 493 KB (chargé uniquement au clic « Exporter ») |
@@ -84,13 +84,13 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 - **Frontend** : Vite 6 + React 18 + TypeScript 5.7 (strict)
 - **Style** : Tailwind CSS 3 + shadcn/ui (tokens CSS variables, palette 5 rôles équilibrée mai 2026)
 - **State** : Zustand 5 + middleware `persist` — **8 stores** persistés en localStorage :
-  - `livret-donnees` (schema v11) — livrets, fiches, **2 entretiens tripartites par livret** (avec snapshots questions imposées/obligatoires), évaluations, sélection des compétences abordées en entreprise
+  - `livret-donnees` (schema v12) — livrets, fiches, **jusqu'à 4 entretiens tripartites par livret** (avec snapshots questions imposées/obligatoires), évaluations, sélection des compétences abordées en entreprise
   - `livret-role-actif` — rôle + maître actif
   - `livret-apprenti-actif` — id de l'apprenti·e affiché·e
   - `livret-utilisateurs` (schema v2) — apprenti·e·s, maîtres (avec `entreprise` + `fonction`), formateurs, coordos, admins
-  - `livret-formations` (schema v3) — formations + **planning des périodes** au niveau formation (`lieuId`, référentiel, dates de promo, `periodes[]`)
+  - `livret-formations` (schema v4) — formations + **planning des périodes** au niveau formation (`lieuId`, référentiel, dates de promo, `periodes[]`, **`nombreEntretiens` 1-4**)
   - `livret-referentiels` (schema v2) — référentiels de compétences (Bloc → Sous-famille? → Compétence)
-  - `livret-banque-questions` (schema v2) — banque centrale des questions de l'entretien tripartite, **affectées E1/E2 + obligatoires par le coordo** (juin 2026)
+  - `livret-banque-questions` (schema v3) — banque centrale des questions de l'entretien tripartite, **affectées E1..E4 + obligatoires par le coordo** (juin 2026)
   - `livret-etablissements` (schema v1) — lieux de formation + URL Pronote (gestion admin uniquement)
 - **Routing** : React Router v6
 - **PDF** : `@react-pdf/renderer` 4 (lazy-loaded — chargé uniquement au clic « Exporter », palette PDF alignée sur charte UI mai 2026)
@@ -196,6 +196,25 @@ Refonte du modèle de gouvernance des questions de l'entretien tripartite :
 - Une question créée par le coordo arrive **non affectée** (il la branche ensuite sur E1/E2 depuis le tableau) ; la modale d'édition ne touche pas à l'affectation
 - Bumps : `livret-banque-questions` v1 → v2, `livret-donnees` v10 → v11 (reset)
 - 20 tests TDD ajoutés (`questions-entretien` 14 → 29, `regles-entretien` 18 → 23) + 3 nouveaux scénarios E2E (cases coordo persistées, verrou sélecteur, snapshot + R20 bout-en-bout)
+
+#### Jusqu'à 4 entretiens tripartites par livret (11 juin 2026 — retours coordonnateurs pédagogiques)
+
+Pour les formations de 2 ans, le livret peut désormais porter jusqu'à **4 entretiens tripartites** :
+
+- **Nombre défini par le coordo au niveau de la formation** (1 à 4, défaut 2) — dans la modale Planning, au même endroit que les périodes (`Formation.nombreEntretiens`)
+- **Modèle refondu** : `Livret.entretien1`/`entretien2` remplacés par `entretiens: Record<1|2|3|4, EntretienTripartite | null>` ; banque de questions `pourEntretien1/2` remplacés par `pourEntretiens: NumeroEntretien[]` (cases E1..E4 dans le tableau ; questions de suivi/bilan affectées E2+E3+E4 par défaut)
+- **Motifs filtrés** : l'organisation du suivi ne propose `Entretien Tripartite 1..N` que selon le nombre de la formation (2 nouveaux motifs `entretien-tripartite-3`/`-4`)
+- **Verrou de réduction** : impossible de descendre en dessous du plus haut entretien déjà engagé (initialisé ou planifié) dans un livret de la promo — message explicite dans la modale (`lib/nombre-entretiens`, 13 tests TDD)
+- **Inchangé** : R7 (alerte > 60 j) et l'auto-marquage de la sélection des compétences restent propres à E1 ; la route `/livret/entretien/:numero` rend un 404 au-delà du nombre de la formation ; PDF en boucle sur les entretiens existants
+- Bumps : `livret-donnees` v11 → v12, `livret-formations` v3 → v4, `livret-banque-questions` v2 → v3
+- +15 tests unitaires (lib `nombre-entretiens` + motifs + affectations) et +5 scénarios E2E (`entretiens-multiples.spec.ts`)
+
+#### Événements de suivi gérables par le coordo (11 juin 2026 — retours coordonnateurs pédagogiques)
+
+- La ressource `organisation-suivi` (création / modification / suppression des événements de la page « Fiches de suivi ») passe de `formateur` seul à **`formateur` + `coordo`** — gestion calendaire/organisationnelle, pas de contenu pédagogique
+- **Nouvelle ressource `entretien.gestion`** (formateur uniquement) : l'initialisation des entretiens et l'édition de leur date — auparavant adossées à `organisation-suivi` — restent des actes pédagogiques fermés au coordo. La doctrine « coordo/admin sans droit pédagogique » est préservée (test transverse adapté)
+- Matrice : 47 → **48 ressources × 5 rôles**
+- +1 test unitaire droits, +2 scénarios E2E (coordo gère un événement ; coordo ne peut pas initialiser un entretien)
 
 #### Corrections de fond découvertes au passage (11 juin 2026)
 
@@ -337,7 +356,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 | R3 | Apprenti·e voit son livret seul | ✓ matrice + `apprentis-accessibles` |
 | R4 | Maître voit ses apprenti·e·s | ✓ matrice |
 | R5 | Formateur voit sa promo | ✓ matrice |
-| **R6** | **Au plus 2 entretiens par livret (chantier #2)** | ✓ E1 + E2 |
+| **R6** | **Jusqu'à 4 entretiens par livret — nombre défini par la formation (juin 2026)** | ✓ E1..E4, verrou de réduction |
 | **R7** | **Alerte si > 60 j sans E1** (chantier #2 : ne concerne plus E2) | ✓ 5 tests |
 | R8 | Verrouillage progressif entretien | ✓ par entretien |
 | R9 | 3 signatures = entretien figé | ✓ par entretien |
@@ -359,13 +378,13 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 
 ---
 
-## 6. Tests (435 unitaires + 134 E2E)
+## 6. Tests (451 unitaires + 141 E2E)
 
 ### Tests unitaires Vitest (29 fichiers de test)
 
 | Fichier | Tests | Périmètre |
 |---|---|---|
-| `lib/droits.test.ts` | 40 | Matrice 47 ressources × 5 rôles |
+| `lib/droits.test.ts` | 41 | Matrice 48 ressources × 5 rôles (organisation-suivi partagée + `entretien.gestion`) |
 | `lib/transitions-fiche.test.ts` | 22 | R15/R16/R17/R21 + adaptation suivi GRETA texte |
 | `lib/validation-signature.test.ts` | 18 | R18/R20 — refonte chantier #3 |
 | `lib/regles-periode.test.ts` | 18 | R11/R12/R13/R14 |
@@ -397,9 +416,9 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 
 *Les modules `creation-livret.ts`, `couleurs-role.ts` et `utils.ts` sont couverts indirectement via les tests E2E.*
 
-### Tests E2E Playwright (18 specs)
+### Tests E2E Playwright (19 specs)
 
-134 tests (131 + 3 scénarios « affectation des questions par le coordo » juin 2026). Quelques specs ont été adaptés aux refontes :
+141 tests (131 + 3 scénarios « affectation des questions par le coordo » + 5 scénarios « jusqu'à 4 entretiens » + 2 scénarios « événements gérés par le coordo » — juin 2026). Quelques specs ont été adaptés aux refontes :
 - `fiches-periodes.spec.ts` : 8 tests réécrits pour le nouveau flow planning au niveau formation
 - `sprint3-droits-entretien.spec.ts` : route `/livret/entretien/1`
 - `entretien-selection-competences.spec.ts` : route `/livret/entretien/1` + auto-marquage E1 uniquement
@@ -432,7 +451,7 @@ LIVRET APPRENTISSAGE/
     ├── styles/index.css            # variables CSS + utilities couleur-role
     ├── types/index.ts              # modèle (CDC §7 + chantiers mai 2026)
     ├── lib/                        # 32 modules + 29 fichiers tests
-    │   ├── droits.ts               # matrice §6 (47 ressources × 5 rôles)
+    │   ├── droits.ts               # matrice §6 (48 ressources × 5 rôles)
     │   ├── transitions-fiche.ts    # R15/R16/R17/R21
     │   ├── validation-signature.ts # R18/R20 (zone GRETA texte chantier #3)
     │   ├── regles-periode.ts       # R11/R12/R13/R14
@@ -615,8 +634,8 @@ npm run dev            # serveur Vite sur http://localhost:5173
 ### Tests / qualité
 
 ```bash
-npm test               # 435 tests Vitest
-npm run e2e            # 134 tests E2E Playwright (build + preview + tests)
+npm test               # 451 tests Vitest
+npm run e2e            # 141 tests E2E Playwright (build + preview + tests)
 npm run e2e:ui         # UI Playwright pour debug
 npm run typecheck      # tsc --noEmit
 npm run lint           # ESLint

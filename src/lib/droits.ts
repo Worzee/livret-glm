@@ -14,9 +14,20 @@ import type { Role } from '@/types';
  * Une ressource = un champ ou groupe de champs ayant la même règle de droits.
  */
 export type Ressource =
-  // Module organisation du suivi (CDC §5.1)
+  // Module organisation du suivi (CDC §5.1). Retours coordos juin 2026 :
+  // la gestion des événements (création / modification / suppression) est
+  // ouverte au coordo en plus du formateur référent — c'est de
+  // l'organisation calendaire, pas du contenu pédagogique.
   | 'organisation-suivi'
   // Entretien tripartite (CDC §5.2)
+  /**
+   * Gestion de l'entretien par le formateur référent : initialisation
+   * (bouton « Initialiser l'entretien ») et date de l'entretien. Séparée
+   * d'`organisation-suivi` depuis l'ouverture de celle-ci au coordo (juin
+   * 2026) : conduire un entretien reste un acte pédagogique, le coordo n'y
+   * a pas accès.
+   */
+  | 'entretien.gestion'
   | 'entretien.questions-apprenti'
   | 'entretien.questions-maitre'
   | 'entretien.appreciation-maitre'
@@ -99,10 +110,13 @@ export type Ressource =
  * Source : tableau §6 du cahier des charges.
  */
 const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
-  // Organisation du suivi : formateur uniquement
-  'organisation-suivi': ['formateur'],
+  // Organisation du suivi : formateur + coordo (retours coordos juin 2026 —
+  // gestion calendaire des événements, pas de contenu pédagogique)
+  'organisation-suivi': ['formateur', 'coordo'],
 
   // Entretien tripartite — questions/zones par rôle propriétaire
+  // Initialisation + date de l'entretien : formateur uniquement
+  'entretien.gestion': ['formateur'],
   'entretien.questions-apprenti': ['apprenti'],
   'entretien.questions-maitre': ['maitre'],
   'entretien.appreciation-maitre': ['maitre'],

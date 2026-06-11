@@ -11,11 +11,12 @@ import {
 import { Link } from 'react-router-dom';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
+import { useFormationsStore } from '@/store/useFormationsStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
 import {
-  MOTIFS_ORGANISATION_SUIVI,
   metadonneesMotif,
+  motifsDisponibles,
   numeroEntretienPourMotif,
   peutSupprimerEvenement,
 } from '@/lib/organisation-suivi';
@@ -30,12 +31,12 @@ import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelec
  * Module — Fiches de suivi (ex « Organisation du suivi », renommé mai 2026).
  * Référence CDC §5.1, refonte modulaire mai 2026.
  *
- * Le formateur référent ajoute à la demande chaque événement (réunion de
- * rentrée, visites en entreprise multiples, conseil de classe, etc.) en
- * choisissant un motif parmi le catalogue (`MOTIFS_ORGANISATION_SUIVI`).
+ * Le formateur référent ou le coordo (retours coordos juin 2026) ajoute à
+ * la demande chaque événement (réunion de rentrée, visites en entreprise
+ * multiples, conseil de classe, etc.) en choisissant un motif parmi le
+ * catalogue filtré par la formation (`motifsDisponibles`).
  *
- * Lecture seule pour l'apprenti·e et le maître. Les rôles admin et coordo
- * n'ont pas accès en édition (ils peuvent consulter, comme tout livret).
+ * Lecture seule pour l'apprenti·e, le maître et l'admin.
  *
  * Auto-save : chaque modification est persistée immédiatement dans le store.
  */
@@ -47,6 +48,7 @@ export function OrganisationSuivi() {
   const supprimerEvt = useLivretStore((s) => s.supprimerEvenementOrganisation);
   const roleActif = useUserStore((s) => s.roleActif);
   const utilisateurActif = useUserStore((s) => s.utilisateurActif);
+  const formations = useFormationsStore((s) => s.formations);
 
   // Le motif sélectionné dans le sélecteur d'ajout — réinitialisé après ajout.
   const [motifAAjouter, setMotifAAjouter] = useState<MotifOrganisationSuivi | ''>('');
@@ -66,6 +68,11 @@ export function OrganisationSuivi() {
   const editable = peutEditer(roleActif, 'organisation-suivi');
   const org = livret.organisationSuivi;
   const evenements = org.evenements;
+
+  // Juin 2026 : seuls les motifs entretien-tripartite-{1..N} de la formation
+  // sont proposés (N = nombre d'entretiens défini par le coordo).
+  const formation = formations[apprenti.formationId];
+  const motifsProposables = motifsDisponibles(formation?.nombreEntretiens ?? 2);
 
   function ajouter() {
     if (!motifAAjouter) return;
@@ -87,8 +94,8 @@ export function OrganisationSuivi() {
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold">Fiches de suivi</h1>
         <p className="text-muted-foreground">
-          Cadre de suivi de la promo, défini par le formateur référent. Consultable par
-          l'apprenti·e et le maître / tuteur.
+          Cadre de suivi de la promo, défini par le formateur référent ou le
+          coordinateur·rice. Consultable par l'apprenti·e et le maître / tuteur.
         </p>
         <p className="text-xs text-muted-foreground">
           Apprenti·e : <strong>{apprenti.prenom} {apprenti.nom}</strong>
@@ -99,7 +106,7 @@ export function OrganisationSuivi() {
         <div className="inline-flex items-center gap-2 rounded-md bg-muted px-3 py-1.5 text-xs text-muted-foreground">
           <Lock className="h-3.5 w-3.5" aria-hidden="true" />
           Vous consultez en mode <strong className="text-foreground">{libelleRole(roleActif)}</strong>{' '}
-          — modification réservée au formateur référent.
+          — modification réservée au formateur référent et au coordinateur·rice.
         </div>
       )}
 
@@ -126,7 +133,7 @@ export function OrganisationSuivi() {
               className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">— Choisir un motif —</option>
-              {MOTIFS_ORGANISATION_SUIVI.map((m) => (
+              {motifsProposables.map((m) => (
                 <option key={m.motif} value={m.motif}>
                   {m.libelle}
                 </option>

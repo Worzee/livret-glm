@@ -9,6 +9,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import type { CibleQuestion, QuestionBanque, Role } from '@/types';
+import { NUMEROS_ENTRETIEN } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
 import { useLivretStore } from '@/store/useLivretStore';
@@ -60,7 +61,7 @@ export function GestionBanqueQuestions() {
   );
 
   const entretiens = useMemo(
-    () => Object.values(livrets).flatMap((l) => [l.entretien1, l.entretien2]),
+    () => Object.values(livrets).flatMap((l) => Object.values(l.entretiens)),
     [livrets],
   );
 
@@ -168,37 +169,34 @@ export function GestionBanqueQuestions() {
                     <td className="px-2 md:px-4 py-2 text-muted-foreground align-top whitespace-nowrap">
                       {libelleType(q.type)}
                     </td>
-                    {/* Affectation E1 / E2 par le coordo (retours coordos juin 2026).
-                        Snapshot à l'initialisation : ne modifie pas les entretiens
-                        déjà initialisés. */}
+                    {/* Affectation E1..E4 par le coordo (retours coordos juin 2026 —
+                        jusqu'à 4 entretiens pour les formations de 2 ans). Snapshot
+                        à l'initialisation : ne modifie pas les entretiens déjà
+                        initialisés. */}
                     <td className="px-2 md:px-4 py-2 align-top text-center whitespace-nowrap">
-                      <div className="inline-flex items-center gap-3">
-                        <label className="inline-flex items-center gap-1 text-xs cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={q.pourEntretien1}
-                            onChange={(e) =>
-                              modifierQuestion(q.id, { pourEntretien1: e.target.checked })
-                            }
-                            data-testid={`banque-q-e1-${q.id}`}
-                            aria-label={`Affecter à l'entretien tripartite 1 : ${q.libelle}`}
-                            className="h-4 w-4 rounded border-input accent-[hsl(var(--ring))] focus-visible:ring-2 focus-visible:ring-ring"
-                          />
-                          E1
-                        </label>
-                        <label className="inline-flex items-center gap-1 text-xs cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={q.pourEntretien2}
-                            onChange={(e) =>
-                              modifierQuestion(q.id, { pourEntretien2: e.target.checked })
-                            }
-                            data-testid={`banque-q-e2-${q.id}`}
-                            aria-label={`Affecter à l'entretien tripartite 2 : ${q.libelle}`}
-                            className="h-4 w-4 rounded border-input accent-[hsl(var(--ring))] focus-visible:ring-2 focus-visible:ring-ring"
-                          />
-                          E2
-                        </label>
+                      <div className="inline-flex items-center gap-2.5">
+                        {NUMEROS_ENTRETIEN.map((n) => (
+                          <label
+                            key={n}
+                            className="inline-flex items-center gap-1 text-xs cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={q.pourEntretiens.includes(n)}
+                              onChange={(e) =>
+                                modifierQuestion(q.id, {
+                                  pourEntretiens: e.target.checked
+                                    ? [...q.pourEntretiens, n].sort((a, b) => a - b)
+                                    : q.pourEntretiens.filter((x) => x !== n),
+                                })
+                              }
+                              data-testid={`banque-q-e${n}-${q.id}`}
+                              aria-label={`Affecter à l'entretien tripartite ${n} : ${q.libelle}`}
+                              className="h-4 w-4 rounded border-input accent-[hsl(var(--ring))] focus-visible:ring-2 focus-visible:ring-ring"
+                            />
+                            E{n}
+                          </label>
+                        ))}
                       </div>
                     </td>
                     <td className="px-2 md:px-4 py-2 align-top text-center">
@@ -281,11 +279,10 @@ export function GestionBanqueQuestions() {
             modifierQuestion(existante.id, valeurs);
           } else {
             // Une nouvelle question arrive non affectée : le coordo la
-            // branche ensuite sur E1/E2 depuis le tableau.
+            // branche ensuite sur E1..E4 depuis le tableau.
             ajouterQuestion({
               ...valeurs,
-              pourEntretien1: false,
-              pourEntretien2: false,
+              pourEntretiens: [],
               obligatoire: false,
             });
           }
