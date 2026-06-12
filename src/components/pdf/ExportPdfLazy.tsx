@@ -25,6 +25,8 @@ interface ExportPdfLazyProps {
   livret: Livret;
   apprenti: Apprenti;
   maitre: Maitre;
+  /** Second maître / tuteur optionnel (juin 2026). */
+  maitreSecond?: Maitre;
   formateur: Formateur;
   formation: Formation;
   referentiel: Referentiel;
@@ -37,6 +39,7 @@ export default function ExportPdfLazy({
   livret,
   apprenti,
   maitre,
+  maitreSecond,
   formateur,
   formation,
   referentiel,
@@ -49,6 +52,7 @@ export default function ExportPdfLazy({
       livret={livret}
       apprenti={apprenti}
       maitre={maitre}
+      maitreSecond={maitreSecond}
       formateur={formateur}
       formation={formation}
       referentiel={referentiel}

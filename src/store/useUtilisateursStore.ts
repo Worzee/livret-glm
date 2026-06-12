@@ -12,6 +12,7 @@ import { useLivretStore } from './useLivretStore';
 import { useApprentiActifStore } from './useApprentiActifStore';
 import { useFormationsStore } from './useFormationsStore';
 import { creerLivretVierge } from '@/lib/creation-livret';
+import { maitresIdsDeLApprenti } from '@/lib/maitres-apprenti';
 
 /**
  * Store des utilisateurs du dispositif (4 rôles métier + admin).
@@ -45,10 +46,7 @@ interface UtilisateursStore {
    * Crée un·e nouvel·le apprenti·e + son livret vierge associé.
    * @returns l'apprenti·e créé·e (avec id auto-généré).
    */
-  ajouterApprenti: (
-    input: Omit<Apprenti, 'id' | 'role'>,
-    auteurId: string,
-  ) => Apprenti;
+  ajouterApprenti: (input: Omit<Apprenti, 'id' | 'role'>, auteurId: string) => Apprenti;
   /** Met à jour les champs d'un·e apprenti·e existant·e. */
   modifierApprenti: (id: string, patch: Partial<Omit<Apprenti, 'id' | 'role'>>) => void;
   /**
@@ -71,7 +69,10 @@ interface UtilisateursStore {
 
   // ── Formateurs référents ─────────────────────────────────────────────────
   ajouterFormateur: (input: Omit<Formateur, 'id' | 'role' | 'promoIds'>) => Formateur;
-  modifierFormateur: (id: string, patch: Partial<Omit<Formateur, 'id' | 'role' | 'promoIds'>>) => void;
+  modifierFormateur: (
+    id: string,
+    patch: Partial<Omit<Formateur, 'id' | 'role' | 'promoIds'>>,
+  ) => void;
   /**
    * Supprime un formateur. Empêche la suppression si des apprenti·e·s le
    * référencent encore via `formateurReferentId`.
@@ -81,7 +82,10 @@ interface UtilisateursStore {
   // ── Coordo (administratif·ve) ────────────────────────────────────────────
   /** Création réservée au rôle admin (matrice §6). Vérification UI préalable. */
   ajouterCoordo: (input: Omit<Coordo, 'id' | 'role' | 'formationIds'>) => Coordo;
-  modifierCoordo: (id: string, patch: Partial<Omit<Coordo, 'id' | 'role' | 'formationIds'>>) => void;
+  modifierCoordo: (
+    id: string,
+    patch: Partial<Omit<Coordo, 'id' | 'role' | 'formationIds'>>,
+  ) => void;
   /** Suppression libre — aucune référence vers le coordo dans les autres types. */
   supprimerCoordo: (id: string) => void;
 
@@ -89,7 +93,9 @@ interface UtilisateursStore {
   reinitialiser: () => void;
 }
 
-const VERSION_SCHEMA = 2;
+// v3 — second maître / tuteur optionnel (juin 2026) : fixtures rechargées
+//      pour inclure le double tutorat de Luca (Hélène + Karim).
+const VERSION_SCHEMA = 3;
 
 /** État initial calculé depuis les fixtures. */
 function etatInitial(): Pick<
@@ -125,17 +131,18 @@ export const useUtilisateursStore = create<UtilisateursStore>()(
           livrets: { ...s.livrets, [livret.id]: livret },
           derniereModification: new Date().toISOString(),
         }));
-        // Si l'apprenti·e a un maître désigné, l'ajouter à ses apprentiIds.
-        const maitre = get().maitres[apprenti.maitreApprentissageId];
-        const nouveauxMaitres = maitre
-          ? {
-              ...get().maitres,
-              [maitre.id]: {
-                ...maitre,
-                apprentiIds: [...maitre.apprentiIds, id],
-              },
-            }
-          : get().maitres;
+        // Ajoute l'apprenti·e aux `apprentiIds` de ses maîtres désignés
+        // (principal + second éventuel — juin 2026).
+        const nouveauxMaitres = { ...get().maitres };
+        for (const maitreId of maitresIdsDeLApprenti(apprenti)) {
+          const maitre = nouveauxMaitres[maitreId];
+          if (maitre && !maitre.apprentiIds.includes(id)) {
+            nouveauxMaitres[maitreId] = {
+              ...maitre,
+              apprentiIds: [...maitre.apprentiIds, id],
+            };
+          }
+        }
         set({
           apprentis: { ...get().apprentis, [id]: apprenti },
           maitres: nouveauxMaitres,
@@ -151,24 +158,26 @@ export const useUtilisateursStore = create<UtilisateursStore>()(
         const updates: Partial<UtilisateursStore> = {
           apprentis: { ...s.apprentis, [id]: nouveau },
         };
-        // Si le maître a changé, mettre à jour les `apprentiIds` des deux maîtres concernés.
-        if (patch.maitreApprentissageId && patch.maitreApprentissageId !== apprenti.maitreApprentissageId) {
-          const ancien = s.maitres[apprenti.maitreApprentissageId];
-          const nouveauMaitre = s.maitres[patch.maitreApprentissageId];
+        // Si un maître (principal ou second) a changé, resynchroniser les
+        // `apprentiIds` par différence ensembliste anciens/nouveaux maîtres.
+        if ('maitreApprentissageId' in patch || 'maitreApprentissageSecondId' in patch) {
+          const anciensIds = maitresIdsDeLApprenti(apprenti);
+          const nouveauxIds = maitresIdsDeLApprenti(nouveau);
           const nouveauxMaitres = { ...s.maitres };
-          if (ancien) {
-            nouveauxMaitres[ancien.id] = {
-              ...ancien,
-              apprentiIds: ancien.apprentiIds.filter((aid) => aid !== id),
-            };
+          for (const mid of anciensIds.filter((x) => !nouveauxIds.includes(x))) {
+            const m = nouveauxMaitres[mid];
+            if (m) {
+              nouveauxMaitres[mid] = {
+                ...m,
+                apprentiIds: m.apprentiIds.filter((aid) => aid !== id),
+              };
+            }
           }
-          if (nouveauMaitre) {
-            nouveauxMaitres[nouveauMaitre.id] = {
-              ...nouveauMaitre,
-              apprentiIds: nouveauMaitre.apprentiIds.includes(id)
-                ? nouveauMaitre.apprentiIds
-                : [...nouveauMaitre.apprentiIds, id],
-            };
+          for (const mid of nouveauxIds.filter((x) => !anciensIds.includes(x))) {
+            const m = nouveauxMaitres[mid];
+            if (m && !m.apprentiIds.includes(id)) {
+              nouveauxMaitres[mid] = { ...m, apprentiIds: [...m.apprentiIds, id] };
+            }
           }
           updates.maitres = nouveauxMaitres;
         }
@@ -200,17 +209,17 @@ export const useUtilisateursStore = create<UtilisateursStore>()(
         const s = get();
         const apprenti = s.apprentis[id];
         if (!apprenti) return;
-        // Retire l'apprenti·e du maître concerné.
-        const maitre = s.maitres[apprenti.maitreApprentissageId];
-        const nouveauxMaitres = maitre
-          ? {
-              ...s.maitres,
-              [maitre.id]: {
-                ...maitre,
-                apprentiIds: maitre.apprentiIds.filter((aid) => aid !== id),
-              },
-            }
-          : s.maitres;
+        // Retire l'apprenti·e de tous ses maîtres (principal + second).
+        const nouveauxMaitres = { ...s.maitres };
+        for (const maitreId of maitresIdsDeLApprenti(apprenti)) {
+          const maitre = nouveauxMaitres[maitreId];
+          if (maitre) {
+            nouveauxMaitres[maitreId] = {
+              ...maitre,
+              apprentiIds: maitre.apprentiIds.filter((aid) => aid !== id),
+            };
+          }
+        }
         // Retire l'apprenti·e du store.
         const { [id]: _retire, ...apprentisSansLui } = s.apprentis;
         void _retire;

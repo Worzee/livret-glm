@@ -67,11 +67,12 @@ test("création d'un maître — apparaît dans la table et dans le sélecteur d
 test('suppression bloquée pour un maître avec apprenti·e·s rattaché·e·s', async ({ page }) => {
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/utilisateurs');
-  // Karim a 3 apprenti·e·s dans la fixture → suppression désactivée
+  // Karim a 4 apprenti·e·s dans la fixture (3 en principal + Luca en second
+  // — juin 2026) → suppression désactivée
   const ligneKarim = page.locator('tbody tr', { hasText: /Karim BENALI/ });
   const boutonSupprimer = ligneKarim.getByRole('button', { name: /^Supprimer/i });
   await expect(boutonSupprimer).toBeDisabled();
-  await expect(ligneKarim.getByText(/3 apprenti·e·s rattaché·e·s/i)).toBeVisible();
+  await expect(ligneKarim.getByText(/4 apprenti·e·s rattaché·e·s/i)).toBeVisible();
 });
 
 test("suppression d'un maître sans apprenti·e — succès", async ({ page }) => {

@@ -10,10 +10,7 @@ import { useAttitudesStore } from '@/store/useAttitudesStore';
 import { peutEditer } from '@/lib/droits';
 import { libelleRole } from '@/lib/droits';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
-import {
-  formatriceSophieDubois,
-  maitreKarimBenali,
-} from '@/fixtures/utilisateurs';
+import { formatriceSophieDubois, maitreKarimBenali } from '@/fixtures/utilisateurs';
 import { getMaitreByIdFromStore } from '@/store/useUtilisateursStore';
 import { formationCapCuisine } from '@/fixtures/formations';
 import { GrilleCompetences } from '@/components/evaluation/GrilleCompetences';
@@ -53,10 +50,12 @@ export function EvaluationFinale() {
   // Résolution du référentiel via la formation. Fallback sur le CAP Cuisine
   // si la formation n'a pas (encore) de référentiel défini ou si l'id pointe
   // vers un référentiel supprimé — comportement raisonnable pour la maquette.
-  const referentiel =
-    referentiels[formation.referentielId] ?? referentielCapCuisine;
+  const referentiel = referentiels[formation.referentielId] ?? referentielCapCuisine;
   const etablissement = etablissements[formation.lieuId];
   const maitre = getMaitreByIdFromStore(apprenti.maitreApprentissageId) ?? maitreKarimBenali;
+  const maitreSecond = apprenti.maitreApprentissageSecondId
+    ? getMaitreByIdFromStore(apprenti.maitreApprentissageSecondId)
+    : undefined;
 
   // Les attitudes ne se saisissent plus ici (synthèse lecture seule depuis
   // juin 2026) — seules les grilles de compétences restent éditables.
@@ -75,7 +74,10 @@ export function EvaluationFinale() {
             par période.
           </p>
           <p className="text-xs text-muted-foreground">
-            Apprenti·e : <strong>{apprenti.prenom} {apprenti.nom}</strong>
+            Apprenti·e :{' '}
+            <strong>
+              {apprenti.prenom} {apprenti.nom}
+            </strong>
           </p>
           {!aDroitEdition && (
             <p className="text-xs text-muted-foreground italic">
@@ -88,6 +90,7 @@ export function EvaluationFinale() {
           livret={livret}
           apprenti={apprenti}
           maitre={maitre}
+          maitreSecond={maitreSecond}
           formateur={formatriceSophieDubois}
           formation={formation}
           referentiel={referentiel}
@@ -99,9 +102,23 @@ export function EvaluationFinale() {
 
       <BandeauCloture livret={livret} />
 
-      <div role="tablist" aria-label="Sections de l'évaluation finale" className="border-b border-border">
-        <Onglet titre="Compétences" Icon={Target} actif={onglet === 'competences'} onClick={() => setOnglet('competences')} />
-        <Onglet titre="Attitudes professionnelles" Icon={Activity} actif={onglet === 'attitudes'} onClick={() => setOnglet('attitudes')} />
+      <div
+        role="tablist"
+        aria-label="Sections de l'évaluation finale"
+        className="border-b border-border"
+      >
+        <Onglet
+          titre="Compétences"
+          Icon={Target}
+          actif={onglet === 'competences'}
+          onClick={() => setOnglet('competences')}
+        />
+        <Onglet
+          titre="Attitudes professionnelles"
+          Icon={Activity}
+          actif={onglet === 'attitudes'}
+          onClick={() => setOnglet('attitudes')}
+        />
       </div>
 
       <div role="tabpanel">

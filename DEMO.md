@@ -45,7 +45,6 @@ Référence : cahier des charges v1.3, section 25.
 - [ ] `bash scripts/verifier-vps.sh` retourne `11 OK / 0 KO`
 - [ ] Données réinitialisées : footer → bouton **« Réinitialiser la démo »** → confirmer
 - [ ] Le rôle actif par défaut est **Formateur référent** (Sophie DUBOIS)
-- [ ] Bandeau orange **« MAQUETTE DE DÉMONSTRATION »** bien visible en haut
 - [ ] Navigateur en plein écran, onglet unique, aucune extension qui parasite (AdBlock peut bloquer rien dans cette app, mais les barres de password manager polluent les captures)
 - [ ] Son du poste coupé
 - [ ] Connexion Internet du présentateur stable (la maquette est statique, mais Basic Auth + TLS demandent une requête)
@@ -62,7 +61,7 @@ Référence : cahier des charges v1.3, section 25.
 1. Ouvrir l'URL, saisir le Basic Auth devant le public.
    - 🗣️ *« L'accès est protégé par mot de passe et HTTPS, hébergé sur un VPS européen, sans aucun tracker ni télémétrie. »*
 2. L'application charge sur le **Tableau de bord du formateur référent** (rôle par défaut).
-3. Pointer le **bandeau démo** persistant en haut de l'écran et le **role switcher** en haut à droite (5 rôles : apprenti·e, maître, formateur, coordo, admin).
+3. Pointer le **role switcher** en haut à droite (5 rôles : apprenti·e, maître, formateur, coordo, admin). *(Le bandeau « MAQUETTE DE DÉMONSTRATION » a été retiré en juin 2026 — préciser oralement si besoin que les données sont fictives.)*
 4. Montrer rapidement les **6 cartes apprenti·e·s** du tableau de bord (Léa MARTIN — cas principal, Théo DUBOIS — « bon élève », Sofia PEREIRA — alerte R7, Minh NGUYEN — démarrage, Aya KOUAMÉ — désaccord R10, Luca BIANCHI — mi-parcours).
 5. Cliquer sur **« Ouvrir le livret de Léa MARTIN »**.
 

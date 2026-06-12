@@ -8,6 +8,9 @@ import type { Admin, Apprenti, Coordo, Formateur, Maitre } from '@/types';
  *   - Le Gourmet (Lyon 8e) → maître Karim BENALI : Léa, Théo, Sofia
  *   - La Brasserie du Rhône (Lyon 2e) → maître Hélène ROCHE : Minh, Aya, Luca
  *
+ * Luca a en plus Karim comme SECOND maître / tuteur (retours coordos juin
+ * 2026 — démontre le double tutorat) : il apparaît donc chez les 2 maîtres.
+ *
  * Chaque apprenti·e a un livret avec un état pédagogique distinct (cf.
  * `livret-demo.ts`) pour démontrer chaque cas du CDC §24.5.
  */
@@ -107,6 +110,8 @@ export const apprentiLucaBianchi: Apprenti = {
   formationId: 'f-cap-cuisine-2025',
   entrepriseId: 'e-brasserie-rhone',
   maitreApprentissageId: 'u-maitre-helene',
+  // Double tutorat (juin 2026) : Karim suit aussi Luca (second maître).
+  maitreApprentissageSecondId: 'u-maitre-karim',
   formateurReferentId: 'u-formateur-sophie',
   contratDebut: '2025-09-02',
   contratFin: '2027-09-01',
@@ -142,6 +147,8 @@ export const maitreKarimBenali: Maitre = {
     apprentiLeaMartin.id,
     apprentiTheoDubois.id,
     apprentiSofiaPereira.id,
+    // Second maître de Luca (double tutorat juin 2026).
+    apprentiLucaBianchi.id,
   ],
 };
 
@@ -154,11 +161,7 @@ export const maitreHeleneRoche: Maitre = {
   telephone: '01 99 99 99 22',
   entreprise: 'La Brasserie du Rhône',
   fonction: 'Cheffe de cuisine',
-  apprentiIds: [
-    apprentiMinhNguyen.id,
-    apprentiAyaKouame.id,
-    apprentiLucaBianchi.id,
-  ],
+  apprentiIds: [apprentiMinhNguyen.id, apprentiAyaKouame.id, apprentiLucaBianchi.id],
 };
 
 export const maitresDemo: Maitre[] = [maitreKarimBenali, maitreHeleneRoche];

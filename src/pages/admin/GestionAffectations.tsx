@@ -16,10 +16,7 @@ import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
-import {
-  filtrerApprentis,
-  trierApprentis,
-} from '@/lib/apprentis-accessibles';
+import { filtrerApprentis, trierApprentis } from '@/lib/apprentis-accessibles';
 import { evaluerVerrouAffectation } from '@/lib/affectation-verrou';
 import { cn } from '@/lib/utils';
 
@@ -95,8 +92,8 @@ export function GestionAffectations() {
           <h1 className="text-2xl font-semibold">Gestion des affectations</h1>
         </div>
         <p className="text-muted-foreground">
-          Association apprenti·e ↔ formation ↔ maître / tuteur ↔ formateur référent.
-          Les modifications sont enregistrées immédiatement.
+          Association apprenti·e ↔ formation ↔ maître / tuteur ↔ formateur référent. Les
+          modifications sont enregistrées immédiatement.
         </p>
       </header>
 
@@ -105,11 +102,13 @@ export function GestionAffectations() {
           <div className="flex items-start gap-2">
             <Lock className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
             <div>
-              <strong>{nbVerrouilles} apprenti·e{nbVerrouilles > 1 ? 's' : ''} verrouillé·e{nbVerrouilles > 1 ? 's' : ''} par défaut.</strong>{' '}
-              Les affectations sont protégées dès que le contrat a démarré, qu'une
-              fiche de période existe ou que l'entretien tripartite est initialisé
-              — pour éviter d'effacer du travail en cours. Utilisez{' '}
-              <em>Déverrouiller</em> sur une ligne pour corriger une erreur de
+              <strong>
+                {nbVerrouilles} apprenti·e{nbVerrouilles > 1 ? 's' : ''} verrouillé·e
+                {nbVerrouilles > 1 ? 's' : ''} par défaut.
+              </strong>{' '}
+              Les affectations sont protégées dès que le contrat a démarré, qu'une fiche de période
+              existe ou que l'entretien tripartite est initialisé — pour éviter d'effacer du travail
+              en cours. Utilisez <em>Déverrouiller</em> sur une ligne pour corriger une erreur de
               saisie initiale (le verrou se réactive à la prochaine ouverture).
             </div>
           </div>
@@ -161,55 +160,55 @@ export function GestionAffectations() {
           </p>
           <div className="rounded-lg border border-border bg-card overflow-x-auto">
             <table className="w-full text-sm min-w-[42rem]">
-            <thead className="bg-secondary/50 text-xs uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th className="px-4 py-2 text-left">
-                  <span className="inline-flex items-center gap-1.5">
-                    <GraduationCap className="h-3.5 w-3.5" aria-hidden="true" />
-                    Apprenti·e
-                  </span>
-                </th>
-                <th className="px-4 py-2 text-left">Formation</th>
-                <th className="px-4 py-2 text-left">
-                  <span className="inline-flex items-center gap-1.5">
-                    <HardHat className="h-3.5 w-3.5 text-role-maitre" aria-hidden="true" />
-                    Maître / Tuteur
-                  </span>
-                </th>
-                <th className="px-4 py-2 text-left">
-                  <span className="inline-flex items-center gap-1.5">
-                    <UserCog className="h-3.5 w-3.5 text-role-formateur" aria-hidden="true" />
-                    Formateur référent
-                  </span>
-                </th>
-                <th className="px-4 py-2 text-left">
-                  <span className="inline-flex items-center gap-1.5">
-                    <Building2 className="h-3.5 w-3.5" aria-hidden="true" />
-                    Entreprise
-                  </span>
-                </th>
-                <th className="px-4 py-2 text-right">État</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {liste.map((a) => {
-                const livret = Object.values(livrets).find((l) => l.apprentiId === a.id);
-                return (
-                  <LigneAffectation
-                    key={a.id}
-                    apprenti={a}
-                    livret={livret}
-                    formations={formationsList}
-                    maitres={maitresList}
-                    formateurs={formateursList}
-                    deverrouilleTemp={deverrouillesTemp.has(a.id)}
-                    onBasculerVerrou={() => basculerDeverrouTemp(a.id)}
-                    onChange={(patch) => modifierApprenti(a.id, patch)}
-                  />
-                );
-              })}
-            </tbody>
-          </table>
+              <thead className="bg-secondary/50 text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-2 text-left">
+                    <span className="inline-flex items-center gap-1.5">
+                      <GraduationCap className="h-3.5 w-3.5" aria-hidden="true" />
+                      Apprenti·e
+                    </span>
+                  </th>
+                  <th className="px-4 py-2 text-left">Formation</th>
+                  <th className="px-4 py-2 text-left">
+                    <span className="inline-flex items-center gap-1.5">
+                      <HardHat className="h-3.5 w-3.5 text-role-maitre" aria-hidden="true" />
+                      Maître / Tuteur
+                    </span>
+                  </th>
+                  <th className="px-4 py-2 text-left">
+                    <span className="inline-flex items-center gap-1.5">
+                      <UserCog className="h-3.5 w-3.5 text-role-formateur" aria-hidden="true" />
+                      Formateur référent
+                    </span>
+                  </th>
+                  <th className="px-4 py-2 text-left">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Building2 className="h-3.5 w-3.5" aria-hidden="true" />
+                      Entreprise
+                    </span>
+                  </th>
+                  <th className="px-4 py-2 text-right">État</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {liste.map((a) => {
+                  const livret = Object.values(livrets).find((l) => l.apprentiId === a.id);
+                  return (
+                    <LigneAffectation
+                      key={a.id}
+                      apprenti={a}
+                      livret={livret}
+                      formations={formationsList}
+                      maitres={maitresList}
+                      formateurs={formateursList}
+                      deverrouilleTemp={deverrouillesTemp.has(a.id)}
+                      onBasculerVerrou={() => basculerDeverrouTemp(a.id)}
+                      onChange={(patch) => modifierApprenti(a.id, patch)}
+                    />
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </>
       )}
@@ -276,6 +275,12 @@ function LigneAffectation({
     );
   }
 
+  // Second maître optionnel (juin 2026) — '' = aucun. L'entreprise de
+  // référence reste celle du principal.
+  function changerMaitreSecond(nouveauId: string) {
+    patcher({ maitreApprentissageSecondId: nouveauId || undefined }, 'maitre-second');
+  }
+
   function declencherDeverrou() {
     if (confirmationDeverrou) {
       onBasculerVerrou();
@@ -306,19 +311,39 @@ function LigneAffectation({
         </SelectAutoSave>
       </td>
       <td className="px-2 py-2">
-        <SelectAutoSave
-          valeur={apprenti.maitreApprentissageId}
-          onChange={changerMaitre}
-          aDestinationDuFlash={champFlash === 'maitre'}
-          desactive={!editable}
-          ariaLabel={`Maître / Tuteur de ${apprenti.prenom} ${apprenti.nom}`}
-        >
-          {maitres.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.prenom} {m.nom}
-            </option>
-          ))}
-        </SelectAutoSave>
+        <div className="space-y-1.5">
+          <SelectAutoSave
+            valeur={apprenti.maitreApprentissageId}
+            onChange={changerMaitre}
+            aDestinationDuFlash={champFlash === 'maitre'}
+            desactive={!editable}
+            ariaLabel={`Maître / Tuteur de ${apprenti.prenom} ${apprenti.nom}`}
+          >
+            {maitres
+              .filter((m) => m.id !== apprenti.maitreApprentissageSecondId)
+              .map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.prenom} {m.nom}
+                </option>
+              ))}
+          </SelectAutoSave>
+          <SelectAutoSave
+            valeur={apprenti.maitreApprentissageSecondId ?? ''}
+            onChange={changerMaitreSecond}
+            aDestinationDuFlash={champFlash === 'maitre-second'}
+            desactive={!editable}
+            ariaLabel={`Second maître / tuteur de ${apprenti.prenom} ${apprenti.nom}`}
+          >
+            <option value="">— Second (optionnel) —</option>
+            {maitres
+              .filter((m) => m.id !== apprenti.maitreApprentissageId)
+              .map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.prenom} {m.nom}
+                </option>
+              ))}
+          </SelectAutoSave>
+        </div>
       </td>
       <td className="px-2 py-2">
         <SelectAutoSave
@@ -335,9 +360,7 @@ function LigneAffectation({
           ))}
         </SelectAutoSave>
       </td>
-      <td className="px-4 py-2 text-muted-foreground text-xs">
-        {apprenti.entrepriseId}
-      </td>
+      <td className="px-4 py-2 text-muted-foreground text-xs">{apprenti.entrepriseId}</td>
       <td className="px-2 py-2 text-right">
         {verrou.verrouille && !deverrouilleTemp && (
           <div className="inline-flex flex-col items-end gap-1">
@@ -424,7 +447,9 @@ function SelectAutoSave({
         className={cn(
           'w-full rounded-md border bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-colors',
           aDestinationDuFlash && 'border-emerald-400 bg-emerald-50',
-          !aDestinationDuFlash && desactive && 'border-input bg-muted/40 text-muted-foreground cursor-not-allowed',
+          !aDestinationDuFlash &&
+            desactive &&
+            'border-input bg-muted/40 text-muted-foreground cursor-not-allowed',
           !aDestinationDuFlash && !desactive && 'border-input',
         )}
       >
@@ -442,19 +467,20 @@ function SelectAutoSave({
   );
 }
 
-function AccesRefuse({ roleActif }: { roleActif: ReturnType<typeof useUserStore.getState>['roleActif'] }) {
+function AccesRefuse({
+  roleActif,
+}: {
+  roleActif: ReturnType<typeof useUserStore.getState>['roleActif'];
+}) {
   return (
     <div className="rounded-lg border border-amber-300 bg-amber-50 p-6">
       <div className="flex items-start gap-3">
         <Lock className="h-5 w-5 shrink-0 text-amber-700 mt-0.5" aria-hidden="true" />
         <div>
-          <h1 className="text-lg font-medium text-amber-900">
-            Accès réservé à l'administration
-          </h1>
+          <h1 className="text-lg font-medium text-amber-900">Accès réservé à l'administration</h1>
           <p className="mt-2 text-sm text-amber-900/80">
-            Vous êtes actuellement connecté·e en tant que{' '}
-            <strong>{libelleRole(roleActif)}</strong>. La gestion des affectations
-            est réservée aux rôles <strong>Coordinateur·rice</strong> et{' '}
+            Vous êtes actuellement connecté·e en tant que <strong>{libelleRole(roleActif)}</strong>.
+            La gestion des affectations est réservée aux rôles <strong>Coordinateur·rice</strong> et{' '}
             <strong>Administrateur·rice</strong>.
           </p>
         </div>

@@ -4,10 +4,7 @@ import type { Apprenti, Maitre } from '@/types';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { useUserStore } from '@/store/useUserStore';
-import {
-  type SaisieApprenti,
-  validerSaisieApprenti,
-} from '@/lib/validation-apprenti';
+import { type SaisieApprenti, validerSaisieApprenti } from '@/lib/validation-apprenti';
 import { cn } from '@/lib/utils';
 
 /**
@@ -43,15 +40,11 @@ const SAISIE_VIDE: SaisieApprenti = {
   formationId: '',
   entrepriseId: '',
   maitreApprentissageId: '',
+  maitreApprentissageSecondId: undefined,
   formateurReferentId: '',
 };
 
-export function ModaleApprenti({
-  ouvert,
-  apprenti,
-  onAnnuler,
-  onValide,
-}: ModaleApprentiProps) {
+export function ModaleApprenti({ ouvert, apprenti, onAnnuler, onValide }: ModaleApprentiProps) {
   const ajouter = useUtilisateursStore((s) => s.ajouterApprenti);
   const modifier = useUtilisateursStore((s) => s.modifierApprenti);
   const maitres = useUtilisateursStore((s) => s.maitres);
@@ -142,6 +135,7 @@ export function ModaleApprenti({
       nom: saisie.nom.trim().toUpperCase(),
       email: saisie.email.trim(),
       telephone: saisie.telephone?.trim(),
+      maitreApprentissageSecondId: saisie.maitreApprentissageSecondId || undefined,
     };
     if (apprenti) {
       modifier(apprenti.id, nettoyee);
@@ -153,7 +147,9 @@ export function ModaleApprenti({
     onAnnuler();
   }
 
-  const titre = apprenti ? `Modifier l'apprenti·e ${apprenti.prenom} ${apprenti.nom}` : 'Nouvel·le apprenti·e';
+  const titre = apprenti
+    ? `Modifier l'apprenti·e ${apprenti.prenom} ${apprenti.nom}`
+    : 'Nouvel·le apprenti·e';
 
   return (
     <div
@@ -175,10 +171,7 @@ export function ModaleApprenti({
       >
         <div className="sticky top-0 flex items-start justify-between gap-3 border-b border-border bg-card p-4">
           <div className="flex items-start gap-3">
-            <GraduationCap
-              className="h-5 w-5 shrink-0 text-role-apprenti"
-              aria-hidden="true"
-            />
+            <GraduationCap className="h-5 w-5 shrink-0 text-role-apprenti" aria-hidden="true" />
             <div>
               <h2 id={titreId} className="text-lg font-semibold">
                 {titre}
@@ -287,12 +280,29 @@ export function ModaleApprenti({
               label="Maître / Tuteur"
               valeur={saisie.maitreApprentissageId}
               onChange={changerMaitre}
-              options={maitresList.map((m) => ({
-                value: m.id,
-                libelle: `${m.prenom} ${m.nom}`,
-              }))}
+              options={maitresList
+                .filter((m) => m.id !== saisie.maitreApprentissageSecondId)
+                .map((m) => ({
+                  value: m.id,
+                  libelle: `${m.prenom} ${m.nom}`,
+                }))}
               erreur={erreurs.maitreApprentissageId}
               obligatoire
+            />
+            <ChampSelect
+              label="Second maître / tuteur"
+              valeur={saisie.maitreApprentissageSecondId ?? ''}
+              onChange={(v) =>
+                setSaisie((s) => ({ ...s, maitreApprentissageSecondId: v || undefined }))
+              }
+              options={maitresList
+                .filter((m) => m.id !== saisie.maitreApprentissageId)
+                .map((m) => ({
+                  value: m.id,
+                  libelle: `${m.prenom} ${m.nom}`,
+                }))}
+              erreur={erreurs.maitreApprentissageSecondId}
+              optionVide="— Aucun —"
             />
             <Champ
               label="Identifiant entreprise"
@@ -321,7 +331,7 @@ export function ModaleApprenti({
             type="submit"
             className="inline-flex items-center gap-1.5 rounded-md bouton-plein-couleur-role px-4 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            {apprenti ? 'Enregistrer les modifications' : 'Créer l\'apprenti·e'}
+            {apprenti ? 'Enregistrer les modifications' : "Créer l'apprenti·e"}
           </button>
           <button
             type="button"
@@ -409,9 +419,7 @@ function Champ({
           !erreur && !avertissement && 'border-input',
         )}
       />
-      {hint && !erreur && !avertissement && (
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      )}
+      {hint && !erreur && !avertissement && <p className="text-xs text-muted-foreground">{hint}</p>}
       {erreur && (
         <p id={messageId} role="alert" className="text-xs text-red-700">
           {erreur}
@@ -433,9 +441,22 @@ interface ChampSelectProps {
   options: Array<{ value: string; libelle: string }>;
   erreur?: string;
   obligatoire?: boolean;
+  /**
+   * Libellé d'une option vide SÉLECTIONNABLE (champ optionnel, ex. second
+   * maître). Sans cette prop, l'option vide est « — Choisir — » désactivée.
+   */
+  optionVide?: string;
 }
 
-function ChampSelect({ label, valeur, onChange, options, erreur, obligatoire }: ChampSelectProps) {
+function ChampSelect({
+  label,
+  valeur,
+  onChange,
+  options,
+  erreur,
+  obligatoire,
+  optionVide,
+}: ChampSelectProps) {
   const id = useId();
   const erreurId = useId();
   return (
@@ -455,9 +476,13 @@ function ChampSelect({ label, valeur, onChange, options, erreur, obligatoire }: 
           erreur ? 'border-red-400' : 'border-input',
         )}
       >
-        <option value="" disabled>
-          — Choisir —
-        </option>
+        {optionVide ? (
+          <option value="">{optionVide}</option>
+        ) : (
+          <option value="" disabled>
+            — Choisir —
+          </option>
+        )}
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.libelle}

@@ -39,6 +39,8 @@ interface BoutonExportPdfProps {
   livret: Livret;
   apprenti: Apprenti;
   maitre: Maitre;
+  /** Second maître / tuteur optionnel (juin 2026). */
+  maitreSecond?: Maitre;
   formateur: Formateur;
   formation: Formation;
   referentiel: Referentiel;
@@ -61,10 +63,7 @@ export function BoutonExportPdf(props: BoutonExportPdfProps) {
     (n, f) => n + f.historiqueDeverrouillages.length,
     0,
   );
-  const pagesEstimees = estimerNombrePages(
-    props.livret.fichesSuivi.length,
-    totalDeverrouillages,
-  );
+  const pagesEstimees = estimerNombrePages(props.livret.fichesSuivi.length, totalDeverrouillages);
   const livretVolumineux = pagesEstimees > SEUIL_PAGES_AVERTISSEMENT;
 
   if (demande) {
@@ -92,8 +91,8 @@ export function BoutonExportPdf(props: BoutonExportPdfProps) {
         <div className="flex items-start gap-2 text-sm text-amber-900">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <p>
-            Le livret contient environ <strong>{pagesEstimees} pages</strong>. La
-            génération peut prendre quelques secondes.
+            Le livret contient environ <strong>{pagesEstimees} pages</strong>. La génération peut
+            prendre quelques secondes.
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">

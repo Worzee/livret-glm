@@ -51,6 +51,8 @@ interface LivretPdfProps {
   livret: Livret;
   apprenti: Apprenti;
   maitre: Maitre;
+  /** Second maître / tuteur optionnel (juin 2026) — affiché en page de garde. */
+  maitreSecond?: Maitre;
   formateur: Formateur;
   formation: Formation;
   referentiel: Referentiel;
@@ -79,6 +81,7 @@ export function LivretPdf({
   livret,
   apprenti,
   maitre,
+  maitreSecond,
   formateur,
   formation,
   referentiel,
@@ -100,6 +103,7 @@ export function LivretPdf({
       <PageDeGarde
         apprenti={apprenti}
         maitre={maitre}
+        maitreSecond={maitreSecond}
         formateur={formateur}
         formation={formation}
         etablissement={etablissement}
@@ -247,6 +251,7 @@ function BlocSignaturesPdf({
 function PageDeGarde({
   apprenti,
   maitre,
+  maitreSecond,
   formateur,
   formation,
   etablissement,
@@ -255,6 +260,7 @@ function PageDeGarde({
 }: {
   apprenti: Apprenti;
   maitre: Maitre;
+  maitreSecond?: Maitre;
   formateur: Formateur;
   formation: Formation;
   etablissement?: Etablissement;
@@ -294,16 +300,20 @@ function PageDeGarde({
               valeur={`du ${formaterDateCourte(apprenti.contratDebut)} au ${formaterDateCourte(apprenti.contratFin)}`}
             />
             <Ligne label="Centre de formation" valeur={libelleLieu} />
-            <Ligne
-              label="Maître / Tuteur"
-              valeur={`${maitre.prenom} ${maitre.nom}`}
-            />
+            <Ligne label="Maître / Tuteur" valeur={`${maitre.prenom} ${maitre.nom}`} />
             <Ligne label="Entreprise" valeur={maitre.entreprise} />
             <Ligne label="Fonction du maître" valeur={maitre.fonction} />
-            <Ligne
-              label="Formateur référent"
-              valeur={`${formateur.prenom} ${formateur.nom}`}
-            />
+            {maitreSecond && (
+              <Ligne
+                label="Second maître / tuteur"
+                valeur={`${maitreSecond.prenom} ${maitreSecond.nom}${
+                  maitreSecond.entreprise !== maitre.entreprise
+                    ? ` (${maitreSecond.entreprise})`
+                    : ''
+                }`}
+              />
+            )}
+            <Ligne label="Formateur référent" valeur={`${formateur.prenom} ${formateur.nom}`} />
           </View>
 
           {livret.cloture && (
@@ -322,8 +332,8 @@ function PageDeGarde({
             MAQUETTE DE DÉMONSTRATION — DONNÉES FICTIVES — AUCUNE VALEUR OFFICIELLE
           </Text>
           <Text style={styles.gardeMentions}>
-            Document généré le {formaterDateLongue(dateExport)} ·{' '}
-            cahier des charges v1.3 · maquette étape 1
+            Document généré le {formaterDateLongue(dateExport)} · cahier des charges v1.3 · maquette
+            étape 1
           </Text>
         </View>
       </View>
@@ -460,11 +470,7 @@ function PageEntretien({
         )}
 
         <Text style={styles.h2}>Maître / Tuteur</Text>
-        {renduQuestions(
-          entretien.questionsMaitreSelectionnees,
-          entretien.reponsesMaitre,
-          'maitre',
-        )}
+        {renduQuestions(entretien.questionsMaitreSelectionnees, entretien.reponsesMaitre, 'maitre')}
 
         <Text style={styles.h3}>Appréciations (maître)</Text>
         <Champ label="Ponctualité" valeur={libelleAppreciation(ap.ponctualite)} />
@@ -551,12 +557,7 @@ function PageFiche({
       <View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <Text style={styles.h1}>Période en Entreprise n° {fiche.numeroPeriode}</Text>
-          <Text
-            style={[
-              styles.badgeEtat,
-              { backgroundColor: couleurEtatFiche(fiche.etat) },
-            ]}
-          >
+          <Text style={[styles.badgeEtat, { backgroundColor: couleurEtatFiche(fiche.etat) }]}>
             {libelleEtatFiche(fiche.etat)}
           </Text>
         </View>
@@ -682,13 +683,12 @@ function PageEvaluationFinale({
               {s.bloc.code} — {s.bloc.libelle}
             </Text>
             <Text style={{ fontSize: 9, marginTop: 2 }}>
-              Entreprise — Maîtrisé : {s.entreprise.maitrise} · En cours :{' '}
-              {s.entreprise.partiel} · Non maîtrisé : {s.entreprise.nonMaitrise} · Non
-              évalué : {s.entreprise.nonEvalue}
+              Entreprise — Maîtrisé : {s.entreprise.maitrise} · En cours : {s.entreprise.partiel} ·
+              Non maîtrisé : {s.entreprise.nonMaitrise} · Non évalué : {s.entreprise.nonEvalue}
             </Text>
             <Text style={{ fontSize: 9, marginTop: 2 }}>
-              Centre — Maîtrisé : {s.centre.maitrise} · En cours : {s.centre.partiel} ·
-              Non maîtrisé : {s.centre.nonMaitrise} · Non évalué : {s.centre.nonEvalue}
+              Centre — Maîtrisé : {s.centre.maitrise} · En cours : {s.centre.partiel} · Non maîtrisé
+              : {s.centre.nonMaitrise} · Non évalué : {s.centre.nonEvalue}
             </Text>
           </View>
         ))}
@@ -786,7 +786,9 @@ function PageEvaluationFinale({
                       { width: '15%' },
                     ]}
                   >
-                    {libelleAppreciation(livret.entretiens[n]?.evaluationsAttitudes[a.id] ?? undefined)}
+                    {libelleAppreciation(
+                      livret.entretiens[n]?.evaluationsAttitudes[a.id] ?? undefined,
+                    )}
                   </Text>
                 ))}
               </View>
@@ -849,8 +851,8 @@ function PageAnnexes({ livret }: { livret: Livret }) {
         )}
 
         <Text style={[styles.italique, { marginTop: 24, fontSize: 8 }]}>
-          Document généré par la maquette du livret d'apprentissage GRETA Lyon Métropole —
-          étape 1, cahier des charges v1.3. Ce document n'a aucune valeur officielle.
+          Document généré par la maquette du livret d'apprentissage GRETA Lyon Métropole — étape 1,
+          cahier des charges v1.3. Ce document n'a aucune valeur officielle.
         </Text>
       </View>
     </Page>

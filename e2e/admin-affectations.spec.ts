@@ -34,13 +34,18 @@ test('le coordo accède à la page et voit les 6 apprenti·e·s', async ({ page 
  * son contrat a démarré ou des fiches existent — fixtures démo).
  * 2 clics : « Déverrouiller » puis « Confirmer ».
  */
-async function deverrouillerLigne(page: import('@playwright/test').Page, nomComplet: string | RegExp) {
+async function deverrouillerLigne(
+  page: import('@playwright/test').Page,
+  nomComplet: string | RegExp,
+) {
   const ligne = page.locator('tbody tr', { hasText: nomComplet });
   await ligne.getByRole('button', { name: /^Déverrouiller temporairement/i }).click();
   await ligne.getByRole('button', { name: /^Confirmer le déverrouillage/i }).click();
 }
 
-test('verrou par défaut : tous les apprenti·e·s des fixtures sont verrouillé·e·s', async ({ page }) => {
+test('verrou par défaut : tous les apprenti·e·s des fixtures sont verrouillé·e·s', async ({
+  page,
+}) => {
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/affectations');
   // Bandeau d'info global.
@@ -48,7 +53,7 @@ test('verrou par défaut : tous les apprenti·e·s des fixtures sont verrouillé
   // Les selects de Léa sont disabled.
   const selectMaitreLea = page
     .locator('tbody tr', { hasText: /Léa MARTIN/ })
-    .getByLabel(/Maître \/ Tuteur de Léa MARTIN/i);
+    .getByLabel(/^Maître \/ Tuteur de Léa MARTIN$/i);
   await expect(selectMaitreLea).toBeDisabled();
 });
 
@@ -61,18 +66,21 @@ test('réaffecter Léa de Karim vers Hélène — synchronisation des compteurs'
 
   // Ligne de Léa : on change son maître pour Hélène
   const ligneLea = page.locator('tbody tr', { hasText: /Léa MARTIN/ });
-  await ligneLea.getByLabel(/Maître \/ Tuteur de Léa MARTIN/i).selectOption({
+  await ligneLea.getByLabel(/^Maître \/ Tuteur de Léa MARTIN$/i).selectOption({
     label: 'Hélène ROCHE',
   });
 
-  // Bascule en rôle maître Karim — il ne doit plus avoir Léa (2 apprenti·e·s).
+  // Bascule en rôle maître Karim — il ne doit plus avoir Léa.
+  // 3 apprenti·e·s restants : Théo, Sofia + Luca (second maître — juin 2026).
   await selectRole(page, 'Maître / Tuteur');
   await page.goto('/');
   await expect(
-    page.getByRole('button', { name: /Karim BENALI/i }).getByText(/2 apprenti·e·s/i),
+    page.getByRole('button', { name: /Karim BENALI/i }).getByText(/3 apprenti·e·s/i),
   ).toBeVisible();
   // Léa n'est plus dans la liste (seulement Théo et Sofia)
-  await expect(page.getByRole('button', { name: /Ouvrir le livret de Léa MARTIN/i })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Ouvrir le livret de Léa MARTIN/i })).toHaveCount(
+    0,
+  );
 
   // Bascule sur Hélène : 4 apprenti·e·s, dont Léa
   await page.getByRole('button', { name: /Hélène ROCHE/i }).click();
@@ -82,7 +90,9 @@ test('réaffecter Léa de Karim vers Hélène — synchronisation des compteurs'
   await expect(page.getByRole('button', { name: /Ouvrir le livret de Léa MARTIN/i })).toBeVisible();
 });
 
-test('cas final : déplacer tous les apprenti·e·s de Karim débloque sa suppression', async ({ page }) => {
+test('cas final : déplacer tous les apprenti·e·s de Karim débloque sa suppression', async ({
+  page,
+}) => {
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/affectations');
 
@@ -91,9 +101,17 @@ test('cas final : déplacer tous les apprenti·e·s de Karim débloque sa suppre
     await deverrouillerLigne(page, new RegExp(nom));
     await page
       .locator('tbody tr', { hasText: nom })
-      .getByLabel(new RegExp(`Maître / Tuteur de ${nom}`, 'i'))
+      .getByLabel(new RegExp(`^Maître / Tuteur de ${nom}$`, 'i'))
       .selectOption({ label: 'Hélène ROCHE' });
   }
+
+  // Karim est aussi SECOND maître de Luca (fixture juin 2026) — il faut
+  // retirer ce rattachement pour libérer complètement Karim.
+  await deverrouillerLigne(page, /Luca BIANCHI/);
+  await page
+    .locator('tbody tr', { hasText: 'Luca BIANCHI' })
+    .getByLabel(/Second maître \/ tuteur de Luca BIANCHI/i)
+    .selectOption({ label: '— Second (optionnel) —' });
 
   // Sur la page Utilisateurs, le bouton supprimer Karim doit maintenant être actif.
   await page.goto('/admin/utilisateurs');
@@ -104,11 +122,43 @@ test('cas final : déplacer tous les apprenti·e·s de Karim débloque sa suppre
 
   // Suppression : 2 clics
   await boutonSupprimer.click();
-  await ligneKarim.getByRole('button', { name: /Confirmer la suppression de Karim BENALI/i }).click();
+  await ligneKarim
+    .getByRole('button', { name: /Confirmer la suppression de Karim BENALI/i })
+    .click();
   await expect(page.locator('tbody tr', { hasText: /Karim BENALI/ })).toHaveCount(0);
 });
 
-test("le changement de formateur référent est persisté", async ({ page }) => {
+test("affecter un second maître ouvre l'accès au livret (double tutorat — juin 2026)", async ({
+  page,
+}) => {
+  await selectRole(page, 'Coordinateur·rice');
+  await page.goto('/admin/affectations');
+
+  // Théo n'a qu'un maître (Karim). On lui affecte Hélène en second.
+  await deverrouillerLigne(page, /Théo DUBOIS/);
+  const ligneTheo = page.locator('tbody tr', { hasText: 'Théo DUBOIS' });
+  await ligneTheo
+    .getByLabel(/Second maître \/ tuteur de Théo DUBOIS/i)
+    .selectOption({ label: 'Hélène ROCHE' });
+
+  // Côté maître : Hélène voit désormais Théo (Minh, Aya, Luca + Théo).
+  await selectRole(page, 'Maître / Tuteur');
+  await page.goto('/');
+  await page.getByRole('button', { name: /Hélène ROCHE/i }).click();
+  await expect(
+    page.getByRole('button', { name: /Hélène ROCHE/i }).getByText(/4 apprenti·e·s/i),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: /Ouvrir le livret de Théo DUBOIS/i }),
+  ).toBeVisible();
+  // Karim (principal) garde évidemment Théo aussi.
+  await page.getByRole('button', { name: /Karim BENALI/i }).click();
+  await expect(
+    page.getByRole('button', { name: /Ouvrir le livret de Théo DUBOIS/i }),
+  ).toBeVisible();
+});
+
+test('le changement de formateur référent est persisté', async ({ page }) => {
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/affectations');
   // Crée d'abord un nouveau formateur via la page Utilisateurs.
@@ -139,7 +189,9 @@ test("le changement de formateur référent est persisté", async ({ page }) => 
 
   // Recharge — le state persiste.
   await page.reload();
-  const select = page.locator('tbody tr', { hasText: /Léa MARTIN/ }).getByLabel(/Formateur référent de Léa MARTIN/i);
+  const select = page
+    .locator('tbody tr', { hasText: /Léa MARTIN/ })
+    .getByLabel(/Formateur référent de Léa MARTIN/i);
   await expect(select).toHaveValue(/u-formateur-/);
   // Vérifie que le label sélectionné est bien Marc HUBERT.
   const valeur = await select.inputValue();

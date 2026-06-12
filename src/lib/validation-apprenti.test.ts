@@ -99,4 +99,22 @@ describe('validerSaisieApprenti', () => {
     expect(r.erreurs.formateurReferentId).toBeDefined();
     expect(r.erreurs.entrepriseId).toBeDefined();
   });
+
+  it('accepte un second maître / tuteur différent du principal (juin 2026)', () => {
+    const r = validerSaisieApprenti({
+      ...VALIDE,
+      maitreApprentissageSecondId: 'u-maitre-helene',
+    });
+    expect(r.ok).toBe(true);
+    expect(r.erreurs.maitreApprentissageSecondId).toBeUndefined();
+  });
+
+  it('refuse un second maître / tuteur identique au principal', () => {
+    const r = validerSaisieApprenti({
+      ...VALIDE,
+      maitreApprentissageSecondId: VALIDE.maitreApprentissageId,
+    });
+    expect(r.ok).toBe(false);
+    expect(r.erreurs.maitreApprentissageSecondId).toMatch(/différent du principal/i);
+  });
 });

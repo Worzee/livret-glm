@@ -1,6 +1,5 @@
 import { Link, Outlet } from 'react-router-dom';
 import { Building2, GraduationCap, HardHat, UserCog } from 'lucide-react';
-import { BandeauDemo } from './BandeauDemo';
 import { RoleSwitcher } from './RoleSwitcher';
 import { Sidebar, MobileMenu } from './Sidebar';
 import { BoutonReinitialiserDemo } from './BoutonReinitialiserDemo';
@@ -49,8 +48,9 @@ export function AppShell() {
 
   return (
     <div className={cn('min-h-screen flex flex-col bg-background', CLASSE_ROLE_ACTIF[roleActif])}>
-      <BandeauDemo />
-
+      {/* Le bandeau « MAQUETTE DE DÉMONSTRATION » (CDC §21.6) a été retiré le
+          12 juin 2026 (retours coordos) — le statut de démo est acquis. La
+          mention reste sur la page de garde du PDF exporté. */}
       <header className="border-b border-border bg-card">
         <div className="container flex flex-wrap items-center gap-3 py-3">
           {/* Bouton hamburger (mobile uniquement) */}

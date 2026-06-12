@@ -18,8 +18,10 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('parcours formateur : navigation complète + signature R10/R22 visibles', async ({ page }) => {
-  // 1. Page d'accueil
-  await expect(page.getByText(/MAQUETTE DE DÉMONSTRATION/i)).toBeVisible();
+  // 1. Page d'accueil chargée (le bandeau démo a été retiré en juin 2026)
+  await expect(
+    page.getByRole('link', { name: /Accueil — Livret d'apprentissage/i }),
+  ).toBeVisible();
 
   // 2. Fiches de suivi (anciennement « Organisation du suivi »)
   await page.getByRole('link', { name: /^Fiches de suivi$/i }).click();

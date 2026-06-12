@@ -29,14 +29,24 @@ test('admin voit 6 cartes apprenti·e·s', async ({ page }) => {
   await expect(liens).toHaveCount(6);
 });
 
-test('maître d\'apprentissage Karim voit ses 3 apprenti·e·s', async ({ page }) => {
+test('maître / tuteur Karim voit ses 4 apprenti·e·s (dont Luca en second — juin 2026)', async ({
+  page,
+}) => {
   await selectRole(page, 'Maître / Tuteur');
   const liens = page.getByRole('button', { name: /Ouvrir le livret de/i });
-  await expect(liens).toHaveCount(3);
-  // Léa, Théo, Sofia sont les 3 apprenti·e·s de Karim (Le Gourmet)
+  await expect(liens).toHaveCount(4);
+  // Léa, Théo, Sofia : Karim est maître principal (Le Gourmet).
   await expect(page.getByRole('button', { name: /Ouvrir le livret de Léa MARTIN/i })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Ouvrir le livret de Théo DUBOIS/i })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: /Ouvrir le livret de Théo DUBOIS/i }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }),
+  ).toBeVisible();
+  // Luca : Karim est SECOND maître (double tutorat — principal Hélène).
+  await expect(
+    page.getByRole('button', { name: /Ouvrir le livret de Luca BIANCHI/i }),
+  ).toBeVisible();
 });
 
 test('apprenti·e ne voit que son propre livret (R3)', async ({ page }) => {
@@ -57,30 +67,32 @@ test('le filtre par nom restreint la liste (insensible aux accents)', async ({ p
 test('les badges de cas démonstratifs sont visibles sur le tableau de bord', async ({ page }) => {
   // Sofia : entretien manquant → "Entretien à planifier"
   await expect(
-    page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i })
+    page
+      .getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i })
       .getByText(/Entretien à planifier/i),
   ).toBeVisible();
 
   // Aya : déverrouillage R10 → "Désaccord en cours"
   await expect(
-    page.getByRole('button', { name: /Ouvrir le livret de Aya KOUAMÉ/i })
+    page
+      .getByRole('button', { name: /Ouvrir le livret de Aya KOUAMÉ/i })
       .getByText(/Désaccord en cours/i),
   ).toBeVisible();
 
   // Minh : aucune fiche → "Démarrage"
   await expect(
-    page.getByRole('button', { name: /Ouvrir le livret de Minh NGUYEN/i })
-      .getByText(/Démarrage/i),
+    page.getByRole('button', { name: /Ouvrir le livret de Minh NGUYEN/i }).getByText(/Démarrage/i),
   ).toBeVisible();
 
   // Théo : 3 fiches verrouillées → "Toutes signées"
   await expect(
-    page.getByRole('button', { name: /Ouvrir le livret de Théo DUBOIS/i })
+    page
+      .getByRole('button', { name: /Ouvrir le livret de Théo DUBOIS/i })
       .getByText(/Toutes signées/i),
   ).toBeVisible();
 });
 
-test('clic sur une carte ouvre le livret de l\'apprenti·e correspondant·e', async ({ page }) => {
+test("clic sur une carte ouvre le livret de l'apprenti·e correspondant·e", async ({ page }) => {
   // Choix Théo (cas bon élève).
   await page.getByRole('button', { name: /Ouvrir le livret de Théo DUBOIS/i }).click();
   await expect(page).toHaveURL(/\/livret\/organisation-suivi/);
@@ -93,7 +105,7 @@ test('clic sur une carte ouvre le livret de l\'apprenti·e correspondant·e', as
   await expect(page.getByText(/Entretien à planifier|en retard/i)).toHaveCount(0);
 });
 
-test("contexte « apprenti·e actif·ve » survit aux changements de page", async ({ page }) => {
+test('contexte « apprenti·e actif·ve » survit aux changements de page', async ({ page }) => {
   // Sélectionner Aya, naviguer vers les fiches → on doit voir la fiche P2 dévérrouillée.
   await page.getByRole('button', { name: /Ouvrir le livret de Aya KOUAMÉ/i }).click();
   await page.getByRole('link', { name: /Période en Entreprise/i }).click();
@@ -114,7 +126,7 @@ test('Minh (cas démarrage) : page Fiches affiche un état vide', async ({ page 
   await expect(page.getByText(/Aucune période planifiée/i)).toBeVisible();
 });
 
-test('Sofia (cas alerte R7) : la page Entretien affiche le bandeau d\'alerte', async ({ page }) => {
+test("Sofia (cas alerte R7) : la page Entretien affiche le bandeau d'alerte", async ({ page }) => {
   await page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }).click();
   // Sofia n'a pas d'événement « Entretien Tripartite 1 » dans son organisation
   // du suivi → pas de lien sidebar (liens conditionnels, chantier #2). On passe
@@ -125,31 +137,48 @@ test('Sofia (cas alerte R7) : la page Entretien affiche le bandeau d\'alerte', a
   await expect(page.getByRole('button', { name: /Initialiser l'entretien/i })).toBeVisible();
 });
 
-test('le sélecteur de maître bascule entre Karim (Le Gourmet) et Hélène (La Brasserie du Rhône)', async ({ page }) => {
+test('le sélecteur de maître bascule entre Karim (Le Gourmet) et Hélène (La Brasserie du Rhône)', async ({
+  page,
+}) => {
   await selectRole(page, 'Maître / Tuteur');
 
-  // Karim est actif par défaut → 3 cartes : Léa, Théo, Sofia.
+  // Karim est actif par défaut → 4 cartes : Léa, Théo, Sofia (+ Luca en second).
   await expect(page.getByRole('button', { name: /Ouvrir le livret de Léa MARTIN/i })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Ouvrir le livret de Théo DUBOIS/i })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Ouvrir le livret de Minh NGUYEN/i })).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: /Ouvrir le livret de Théo DUBOIS/i }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }),
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: /Ouvrir le livret de Minh NGUYEN/i })).toHaveCount(
+    0,
+  );
 
   // Bascule vers Hélène — l'équipe de La Brasserie du Rhône.
   await page.getByRole('button', { name: /Hélène ROCHE/i }).click();
 
-  // Maintenant 3 cartes : Minh, Aya, Luca.
-  await expect(page.getByRole('button', { name: /Ouvrir le livret de Minh NGUYEN/i })).toBeVisible();
+  // 3 cartes : Minh, Aya, Luca (Hélène est maître principale de Luca).
+  await expect(
+    page.getByRole('button', { name: /Ouvrir le livret de Minh NGUYEN/i }),
+  ).toBeVisible();
   await expect(page.getByRole('button', { name: /Ouvrir le livret de Aya KOUAMÉ/i })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Ouvrir le livret de Luca BIANCHI/i })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Ouvrir le livret de Léa MARTIN/i })).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: /Ouvrir le livret de Luca BIANCHI/i }),
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: /Ouvrir le livret de Léa MARTIN/i })).toHaveCount(
+    0,
+  );
 
   // Le header reflète l'utilisateur·rice connecté·e.
   await expect(
-    page.locator('header').getByText(/Connecté en tant que/i).getByText(/Hélène ROCHE/i),
+    page
+      .locator('header')
+      .getByText(/Connecté en tant que/i)
+      .getByText(/Hélène ROCHE/i),
   ).toBeVisible();
 });
 
-test('le sélecteur de maître n\'apparaît PAS pour les autres rôles', async ({ page }) => {
+test("le sélecteur de maître n'apparaît PAS pour les autres rôles", async ({ page }) => {
   // Rôle formateur par défaut → pas de fieldset « Maître / Tuteur actif ».
   await expect(page.getByText(/Maître \/ Tuteur actif/i)).toHaveCount(0);
   // Idem en admin.
@@ -157,7 +186,7 @@ test('le sélecteur de maître n\'apparaît PAS pour les autres rôles', async (
   await expect(page.getByText(/Maître \/ Tuteur actif/i)).toHaveCount(0);
 });
 
-test('le rôle apprenti·e suit l\'apprenti·e actif·ve sélectionné·e', async ({ page }) => {
+test("le rôle apprenti·e suit l'apprenti·e actif·ve sélectionné·e", async ({ page }) => {
   // 1. En formateur : ouvrir le livret de Théo.
   await page.getByRole('button', { name: /Ouvrir le livret de Théo DUBOIS/i }).click();
   await expect(page.getByText(/Apprenti·e :/i).getByText(/Théo DUBOIS/i)).toBeVisible();
@@ -166,7 +195,10 @@ test('le rôle apprenti·e suit l\'apprenti·e actif·ve sélectionné·e', asyn
   await selectRole(page, 'Apprenti·e');
   // Le header indique le nouvel utilisateur connecté.
   await expect(
-    page.locator('header').getByText(/Connecté en tant que/i).getByText(/Théo DUBOIS/i),
+    page
+      .locator('header')
+      .getByText(/Connecté en tant que/i)
+      .getByText(/Théo DUBOIS/i),
   ).toBeVisible();
 
   // 3. Sur le tableau de bord, l'apprenti·e voit toujours UN seul livret (R3),
@@ -174,5 +206,7 @@ test('le rôle apprenti·e suit l\'apprenti·e actif·ve sélectionné·e', asyn
   await page.goto('/');
   const liens = page.getByRole('button', { name: /Ouvrir le livret de/i });
   await expect(liens).toHaveCount(1);
-  await expect(page.getByRole('button', { name: /Ouvrir le livret de Théo DUBOIS/i })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: /Ouvrir le livret de Théo DUBOIS/i }),
+  ).toBeVisible();
 });

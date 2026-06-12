@@ -1,6 +1,6 @@
 # État du projet — Livret d'apprentissage GRETA Lyon Métropole
 
-**Dernière mise à jour** : 2026-06-12 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites, motifs par rôle + séquencement, attitudes professionnelles par entretien + catalogue admin, confirmation avant écrasement d'une évaluation héritée)
+**Dernière mise à jour** : 2026-06-12 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites, motifs par rôle + séquencement, attitudes professionnelles par entretien + catalogue admin, confirmation avant écrasement d'une évaluation héritée, second maître / tuteur par apprenti·e)
 **Version applicative** : 0.1.0
 **Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3) **livrée + 4 vagues post-livraison**
 **Pilote métier** : Guillaume FERRERI
@@ -11,7 +11,7 @@
 
 ### État global
 
-L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 4 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **478 tests unitaires + 149 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
+L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 4 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **488 tests unitaires + 149 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
 
 ### Ce qui est livré
 
@@ -46,7 +46,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | Aperçu général et démarrage | [`README.md`](README.md) |
 | Modules livrés et périmètre fonctionnel | §4 |
 | Règles métier R1 → R24 | §5 |
-| État des tests (478 unit + 149 E2E) | §6 |
+| État des tests (488 unit + 149 E2E) | §6 |
 | Architecture des fichiers | §7 |
 | Reste à faire | §8 |
 | Limites connues | §9 |
@@ -68,7 +68,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
-| **Tests unitaires** | **478 / 478 ✓** (Vitest, 31 fichiers de test) |
+| **Tests unitaires** | **488 / 488 ✓** (Vitest, 32 fichiers de test) |
 | **Tests E2E** | **149 / 149 ✓** (Playwright — 137 desktop + 12 mobile Pixel 5, 20 specs) |
 | **Bundle JS gzippé** | 148 KB (cible CDC §19.1 : < 500 KB → marge × 3,4) |
 | **Bundle CSS gzippé** | 6,5 KB (cible : < 50 KB → marge × 7) |
@@ -87,7 +87,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
   - `livret-donnees` (schema v13) — livrets, fiches, **jusqu'à 4 entretiens tripartites par livret** (avec snapshots questions imposées/obligatoires + **évaluations des attitudes par entretien**), évaluations, sélection des compétences abordées en entreprise
   - `livret-role-actif` — rôle + maître actif
   - `livret-apprenti-actif` — id de l'apprenti·e affiché·e
-  - `livret-utilisateurs` (schema v2) — apprenti·e·s, maîtres (avec `entreprise` + `fonction`), formateurs, coordos, admins
+  - `livret-utilisateurs` (schema v3) — apprenti·e·s (avec **second maître / tuteur optionnel**, juin 2026), maîtres (avec `entreprise` + `fonction`), formateurs, coordos, admins
   - `livret-formations` (schema v4) — formations + **planning des périodes** au niveau formation (`lieuId`, référentiel, dates de promo, `periodes[]`, **`nombreEntretiens` 1-4**)
   - `livret-referentiels` (schema v2) — référentiels de compétences (Bloc → Sous-famille? → Compétence)
   - `livret-banque-questions` (schema v3) — banque centrale des questions de l'entretien tripartite, **affectées E1..E4 + obligatoires par le coordo** (juin 2026)
@@ -241,6 +241,25 @@ Les attitudes professionnelles sortent du référentiel de compétences et de l'
 #### Séparateur visuel dans la grille de compétences (12 juin 2026 — retours coordonnateurs pédagogiques)
 
 - Trait vertical entre les colonnes « Acquis en centre » et « Commentaire » de la grille de compétences (lisibilité de la frontière entreprise/centre vs annotations)
+
+#### Retrait du bandeau de démonstration (12 juin 2026 — retours coordonnateurs pédagogiques)
+
+- Le bandeau « MAQUETTE DE DÉMONSTRATION — Données fictives… » (CDC §21.6) est **retiré de l'interface** : le statut de démonstration est acquis pour toutes les parties prenantes
+- La mention reste sur la **page de garde du PDF exporté** — un document qui circule hors plateforme doit continuer d'annoncer ses données fictives
+- Specs E2E `sprint1-role-switcher` (4 → 3 tests, vérifie désormais l'absence du bandeau) et `sprint5-bout-en-bout` adaptés
+
+#### Second maître / tuteur par apprenti·e (12 juin 2026 — retours coordonnateurs pédagogiques)
+
+Un·e apprenti·e peut désormais avoir **2 maîtres / tuteurs** :
+
+- **Modèle** : `Apprenti.maitreApprentissageSecondId` optionnel — le principal reste obligatoire et porte l'entreprise de référence (en-têtes, trio du header, PDF) ; le second a les **mêmes droits d'accès et d'édition** (lib `maitres-apprenti`, synchronisation des `apprentiIds` des deux maîtres dans le store)
+- **Signature partagée** : le slot « Maître / Tuteur » des entretiens et fiches reste **unique** — n'importe lequel des deux signe au nom de l'entreprise (R9/R15 inchangées, pas de blocage si l'un est absent)
+- **Entreprises libres** : le second peut être d'une autre entreprise (mise à disposition, groupement d'employeurs) — la sienne apparaît entre parenthèses sur la page de garde du PDF
+- **UI** : 2ᵉ sélecteur « Second (optionnel) » dans `/admin/affectations` (même verrou que le principal, options croisées filtrées pour empêcher les doublons) + champ dans la modale apprenti·e ; validation « second ≠ principal »
+- **Verrous existants étendus automatiquement** : suppression d'un maître bloquée s'il est second d'un·e apprenti·e (via `apprentiIds`)
+- Fixture de démo : Luca BIANCHI a Hélène (principale) + Karim (second) — Karim voit donc 4 apprenti·e·s
+- Bump `livret-utilisateurs` v2 → v3 (reset)
+- +10 tests unitaires (lib `maitres-apprenti` 8 + validation 2), +1 scénario E2E (affectation d'un second maître → accès au livret) et 4 specs adaptés
 
 #### Confirmation avant écrasement d'une évaluation héritée (12 juin 2026 — retours coordonnateurs pédagogiques)
 
@@ -413,9 +432,9 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 
 ---
 
-## 6. Tests (478 unitaires + 149 E2E)
+## 6. Tests (488 unitaires + 149 E2E)
 
-### Tests unitaires Vitest (31 fichiers de test)
+### Tests unitaires Vitest (32 fichiers de test)
 
 | Fichier | Tests | Périmètre |
 |---|---|---|
@@ -431,9 +450,10 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 | `lib/import-referentiel.test.ts` | 24 | Parsing CSV (encodage CP1252, 2/3 cols) |
 | `lib/cloture-livret.test.ts` | 14 | R22 |
 | `lib/deverrouillage-fiche.test.ts` | 8 | R10 |
-| `lib/apprentis-accessibles.test.ts` | 18 | Filtre par rôle (R3) + tri + recherche |
+| `lib/apprentis-accessibles.test.ts` | 18 | Filtre par rôle (R3) + tri + recherche (Karim voit Luca en second — juin 2026) |
+| `lib/maitres-apprenti.test.ts` | 8 | Double tutorat : ids des maîtres d'un·e apprenti·e + appartenance (juin 2026) |
 | `lib/etat-livret.test.ts` | 13 | Cas pédagogiques 6 apprenti·e·s |
-| `lib/validation-apprenti.test.ts` | 9 | Saisie apprenti·e |
+| `lib/validation-apprenti.test.ts` | 11 | Saisie apprenti·e + second maître ≠ principal (juin 2026) |
 | `lib/validation-utilisateur-staff.test.ts` | 8 | Validation maître (entreprise + fonction — chantier #4) |
 | `lib/affectation-verrou.test.ts` | 9 | Verrou affectation (fiches travaillées uniquement depuis le 11 juin 2026) |
 | `lib/validation-formation.test.ts` | 9 | Validation formation |
@@ -487,7 +507,7 @@ LIVRET APPRENTISSAGE/
     ├── main.tsx, App.tsx, vite-env.d.ts
     ├── styles/index.css            # variables CSS + utilities couleur-role
     ├── types/index.ts              # modèle (CDC §7 + chantiers mai 2026)
-    ├── lib/                        # 34 modules + 31 fichiers tests
+    ├── lib/                        # 35 modules + 32 fichiers tests
     │   ├── droits.ts               # matrice §6 (47 ressources × 5 rôles)
     │   ├── transitions-fiche.ts    # R15/R16/R17/R21
     │   ├── validation-signature.ts # R18/R20 (zone GRETA texte chantier #3)
@@ -541,7 +561,6 @@ LIVRET APPRENTISSAGE/
     │   │   └── ModaleQuestion.tsx
     │   ├── layout/
     │   │   ├── AppShell.tsx                 # wrapper avec classe role-actif-X
-    │   │   ├── BandeauDemo.tsx
     │   │   ├── RoleSwitcher.tsx             # icônes inactives colorées
     │   │   ├── Sidebar.tsx                  # liens entretien dynamiques + lien actif coloré
     │   │   └── BoutonReinitialiserDemo.tsx

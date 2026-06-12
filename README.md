@@ -15,7 +15,7 @@ Maquette numérique du livret d'apprentissage, **étape 1 / 3** (CDC v1.3 + adde
 | **Accès** | Basic Auth `demo` / mdp partagé hors-canal |
 | **Pilote métier** | Guillaume FERRERI |
 | **État** | Étape 1 livrée + 4 vagues post-livraison (CDC v1.5 + chantiers mai 2026) |
-| **Tests** | **478 unit ✓ · 149 E2E ✓** |
+| **Tests** | **488 unit ✓ · 149 E2E ✓** |
 
 ---
 
@@ -53,7 +53,7 @@ npm run lint              # ESLint
 npm run format            # Prettier (écriture)
 
 # Tests
-npm test                  # 478 tests Vitest unit
+npm test                  # 488 tests Vitest unit
 npm run e2e               # 149 tests E2E Playwright (build + preview + tests)
 npm run e2e:ui            # UI Playwright pour debug
 npm run test:watch        # mode watch (unit)
@@ -86,7 +86,7 @@ LIVRET APPRENTISSAGE/
 ├── e2e/                                                   ← 20 specs Playwright
 └── src/
     ├── types/index.ts              ← modèle (CDC §7 + extensions v1.5)
-    ├── lib/                        ← logique métier pure + 31 fichiers tests TDD
+    ├── lib/                        ← logique métier pure + 32 fichiers tests TDD
     │   ├── droits.ts               ← matrice (47 ressources × 5 rôles)
     │   ├── transitions-fiche.ts    ← R15/R16/R17/R21
     │   ├── validation-signature.ts ← R18/R20
@@ -101,7 +101,7 @@ LIVRET APPRENTISSAGE/
     │   ├── import-utilisateurs.ts + generer-xlsx-modele.ts ← chantier #5 (import XLSX users)
     │   ├── validation-periode-formation.ts ← chantier #1 (planning au niveau formation)
     │   ├── couleurs-role.ts        ← palette équilibrée mai 2026
-    │   └── *.test.ts               ← 478 tests Vitest
+    │   └── *.test.ts               ← 488 tests Vitest
     ├── store/                      ← 9 stores Zustand persistés
     ├── fixtures/                   ← 6 livrets démo + utilisateurs + référentiels
     ├── components/

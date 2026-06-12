@@ -122,7 +122,14 @@ export interface Apprenti extends Utilisateur {
   dateNaissance: string;
   formationId: string;
   entrepriseId: string;
+  /** Maître / tuteur principal — affiché dans les en-têtes et le PDF. */
   maitreApprentissageId: string;
+  /**
+   * Second maître / tuteur optionnel (retours coordos juin 2026) — mêmes
+   * droits d'accès et d'édition que le principal, slot de signature
+   * « Maître / Tuteur » partagé. Peut être d'une autre entreprise.
+   */
+  maitreApprentissageSecondId?: string;
   formateurReferentId: string;
   contratDebut: string;
   contratFin: string;
@@ -643,4 +650,3 @@ export interface EntreeHistorique {
   dateIso: string;
   motif?: string;
 }
-

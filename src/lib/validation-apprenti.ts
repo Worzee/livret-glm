@@ -18,6 +18,7 @@ export interface ErreursApprenti {
   contratFin?: string;
   formationId?: string;
   maitreApprentissageId?: string;
+  maitreApprentissageSecondId?: string;
   formateurReferentId?: string;
   entrepriseId?: string;
 }
@@ -100,6 +101,15 @@ export function validerSaisieApprenti(saisie: SaisieApprenti): ResultatValidatio
   }
   if (!saisie.maitreApprentissageId) {
     erreurs.maitreApprentissageId = 'Le maître / tuteur est obligatoire.';
+  }
+  // Second maître optionnel (juin 2026) — mais s'il est renseigné, il doit
+  // être différent du principal.
+  if (
+    saisie.maitreApprentissageSecondId &&
+    saisie.maitreApprentissageSecondId === saisie.maitreApprentissageId
+  ) {
+    erreurs.maitreApprentissageSecondId =
+      'Le second maître / tuteur doit être différent du principal.';
   }
   if (!saisie.formateurReferentId) {
     erreurs.formateurReferentId = 'Le formateur référent est obligatoire.';

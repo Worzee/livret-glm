@@ -36,14 +36,19 @@ describe('apprentisAccessibles — filtre par rôle', () => {
     expect(r.some((a) => a.id === apprentiTheoDubois.id)).toBe(false);
   });
 
-  it('maître Karim voit ses 3 apprenti·e·s (Léa, Théo, Sofia)', () => {
+  it('maître Karim voit ses 4 apprenti·e·s (Léa, Théo, Sofia + Luca en second — juin 2026)', () => {
     const r = apprentisAccessibles(maitreKarimBenali, apprentisDemo);
     expect(r.map((a) => a.id).sort()).toEqual(
-      [apprentiLeaMartin.id, apprentiTheoDubois.id, apprentiSofiaPereira.id].sort(),
+      [
+        apprentiLeaMartin.id,
+        apprentiTheoDubois.id,
+        apprentiSofiaPereira.id,
+        apprentiLucaBianchi.id,
+      ].sort(),
     );
   });
 
-  it('maître Hélène voit ses 3 apprenti·e·s (Minh, Aya, Luca)', () => {
+  it('maître Hélène voit ses 3 apprenti·e·s (Minh, Aya, Luca en principal)', () => {
     const r = apprentisAccessibles(maitreHeleneRoche, apprentisDemo);
     expect(r.map((a) => a.id).sort()).toEqual(
       [apprentiMinhNguyen.id, apprentiAyaKouame.id, apprentiLucaBianchi.id].sort(),
