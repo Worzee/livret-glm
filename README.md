@@ -15,7 +15,7 @@ Maquette numérique du livret d'apprentissage, **étape 1 / 3** (CDC v1.3 + adde
 | **Accès**         | Basic Auth `demo` / mdp partagé hors-canal                               |
 | **Pilote métier** | Guillaume FERRERI                                                        |
 | **État**          | Étape 1 livrée + 4 vagues post-livraison (CDC v1.5 + chantiers mai 2026) |
-| **Tests**         | **510 unit ✓ · 156 E2E ✓**                                               |
+| **Tests**         | **510 unit ✓ · 158 E2E ✓**                                               |
 
 ---
 
@@ -54,7 +54,7 @@ npm run format            # Prettier (écriture)
 
 # Tests
 npm test                  # 510 tests Vitest unit
-npm run e2e               # 156 tests E2E Playwright (build + preview + tests)
+npm run e2e               # 158 tests E2E Playwright (build + preview + tests)
 npm run e2e:ui            # UI Playwright pour debug
 npm run test:watch        # mode watch (unit)
 
@@ -83,7 +83,7 @@ LIVRET APPRENTISSAGE/
 ├── cahier-des-charges-livret-apprentissage-v1.5-addendum.md ← évolutions post-livraison
 ├── design-system/MASTER.md                                ← design system (CDC §14)
 ├── scripts/                                               ← déploiement VPS
-├── e2e/                                                   ← 21 specs Playwright
+├── e2e/                                                   ← 22 specs Playwright
 └── src/
     ├── types/index.ts              ← modèle (CDC §7 + extensions v1.5)
     ├── lib/                        ← logique métier pure + 33 fichiers tests TDD

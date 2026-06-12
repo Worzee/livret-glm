@@ -48,6 +48,7 @@ const TYPES: Array<{ id: TypeImport; label: string; Icon: typeof HardHat; couleu
 
 export function ImportUtilisateurs() {
   const roleActif = useUserStore((s) => s.roleActif);
+  const utilisateurActif = useUserStore((s) => s.utilisateurActif);
   const navigate = useNavigate();
   const titreId = useId();
 
@@ -80,8 +81,8 @@ export function ImportUtilisateurs() {
       <div className="mx-auto max-w-2xl p-6">
         <h1 className="text-2xl font-semibold">Accès refusé</h1>
         <p className="mt-2 text-muted-foreground">
-          L'import par lot d'utilisateur·rice·s est réservé aux coordinateurs·rice·s
-          et administrateur·rice·s.
+          L'import par lot d'utilisateur·rice·s est réservé aux coordinateurs·rice·s et
+          administrateur·rice·s.
         </p>
       </div>
     );
@@ -125,11 +126,19 @@ export function ImportUtilisateurs() {
   function declencherImport() {
     if (!rapport || !rapport.ok) return;
 
+    // Remise à zéro AVANT de poser le résultat : `reinitialiser()` efface
+    // aussi `resultatImport` — l'appeler après masquait la confirmation
+    // « Import terminé » (bug corrigé en juin 2026).
+    reinitialiser();
+
     if (type === 'apprenti') {
-      // Aucune affectation auto : l'apprenti·e est créé·e orphelin·e
-      // (formation, maître, formateur, entreprise tous vides). L'admin
-      // finalise via /admin/affectations. C'est la demande explicite du
-      // pilote pour ne pas créer de faux rattachements à corriger ensuite.
+      // Aucune affectation PÉDAGOGIQUE auto : l'apprenti·e est créé·e
+      // orphelin·e (formation, maître, formateur, entreprise tous vides) —
+      // demande explicite du pilote pour ne pas créer de faux rattachements.
+      // En revanche (juin 2026), le rattachement ADMINISTRATIF suit
+      // l'importateur : un coordo garde ses apprenti·e·s dans son périmètre
+      // (sinon ils lui seraient invisibles) ; un admin importe sans coordo
+      // et répartit ensuite via /admin/affectations.
       const lignes = rapport.lignes as LigneApprentiValide[];
       for (const ligne of lignes) {
         utilisateursStore.ajouterApprenti(
@@ -140,8 +149,9 @@ export function ImportUtilisateurs() {
             entrepriseId: '',
             maitreApprentissageId: '',
             formateurReferentId: '',
+            coordoId: roleActif === 'coordo' ? utilisateurActif.id : undefined,
           },
-          'u-admin-guillaume',
+          utilisateurActif.id,
         );
       }
       setResultatImport({ nb: lignes.length });
@@ -158,8 +168,6 @@ export function ImportUtilisateurs() {
       }
       setResultatImport({ nb: lignes.length });
     }
-
-    reinitialiser();
   }
 
   const typeCourant = TYPES.find((t) => t.id === type)!;
@@ -171,8 +179,8 @@ export function ImportUtilisateurs() {
           Import par lot d'utilisateur·rice·s
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Importez plusieurs comptes en une seule opération depuis un fichier Excel.
-          Téléchargez d'abord le modèle, remplissez-le, puis déposez-le ci-dessous.
+          Importez plusieurs comptes en une seule opération depuis un fichier Excel. Téléchargez
+          d'abord le modèle, remplissez-le, puis déposez-le ci-dessous.
         </p>
       </header>
 
@@ -191,9 +199,7 @@ export function ImportUtilisateurs() {
                 onClick={() => changerType(t.id)}
                 className={cn(
                   'flex items-center gap-2 rounded-lg border p-3 text-sm font-medium transition-colors',
-                  actif
-                    ? 'actif-couleur-role'
-                    : 'border-border hover:bg-secondary',
+                  actif ? 'actif-couleur-role' : 'border-border hover:bg-secondary',
                 )}
                 data-testid={`type-${t.id}`}
               >
@@ -231,22 +237,17 @@ export function ImportUtilisateurs() {
 
       {/* Info post-import apprenti·e (rappel affectation à faire) ─────── */}
       {type === 'apprenti' && (
-        <div
-          role="note"
-          className="bandeau-info-couleur-role rounded-lg border p-3 text-xs"
-        >
+        <div role="note" className="bandeau-info-couleur-role rounded-lg border p-3 text-xs">
           Les apprenti·e·s importé·e·s seront créé·e·s <strong>sans affectation</strong>
-          (formation, maître / tuteur, formateur référent et entreprise vides).
-          Affectez-les ensuite individuellement depuis <em>Affectations</em>.
+          (formation, maître / tuteur, formateur référent et entreprise vides). Affectez-les ensuite
+          individuellement depuis <em>Affectations</em>.
         </div>
       )}
 
       {/* Dépôt du fichier ──────────────────────────────────────────────── */}
       <section className="rounded-lg border border-border bg-card p-4 space-y-3">
         <h2 className="text-sm font-medium">3. Déposer votre fichier rempli</h2>
-        <label
-          className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-input p-4 hover:bg-secondary"
-        >
+        <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-input p-4 hover:bg-secondary">
           <Upload className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
           <span className="flex-1 text-sm">
             <span className="font-medium">Cliquez pour sélectionner un fichier .xlsx</span>
@@ -318,8 +319,8 @@ export function ImportUtilisateurs() {
                 </h2>
               </header>
               <p className="text-xs text-red-900">
-                La politique d'import est stricte : aucun compte n'est créé tant que toutes
-                les erreurs ne sont pas corrigées. Modifiez votre fichier puis redéposez-le.
+                La politique d'import est stricte : aucun compte n'est créé tant que toutes les
+                erreurs ne sont pas corrigées. Modifiez votre fichier puis redéposez-le.
               </p>
               <ul className="space-y-1.5 text-sm">
                 {rapport.erreurs.map((e, i) => (
