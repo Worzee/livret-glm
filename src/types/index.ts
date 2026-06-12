@@ -222,6 +222,14 @@ export interface Referentiel {
 export interface SignaturePartie {
   signe: boolean;
   dateSignature?: string;
+  /**
+   * Signature manuscrite tactile (doigt / stylet / souris) — PNG en
+   * data-URL, capturé à la confirmation (juin 2026, CDC v1.5 §14.C).
+   * Absent sur les signatures antérieures au chantier (fixtures incluses) :
+   * l'UI affiche alors le « ✓ Signé » historique. Image statique uniquement
+   * (pas de dynamique du tracé — RGPD art. 9).
+   */
+  trace?: string;
 }
 
 export interface SignaturesTripartite {

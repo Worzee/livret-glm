@@ -107,14 +107,24 @@ export function BlocSignaturesEntretien({
             >
               <header className="flex items-center gap-2">
                 <Icon className={cn('h-4 w-4 shrink-0', classeIcone)} aria-hidden="true" />
-                <span className={cn('text-sm font-medium', classeTexte)}>
-                  {libelleRole(role)}
-                </span>
+                <span className={cn('text-sm font-medium', classeTexte)}>{libelleRole(role)}</span>
               </header>
 
               {sig.signe ? (
                 <div className="space-y-1">
-                  <div className={cn('inline-flex items-center gap-1.5 text-sm font-medium', classeTexte)}>
+                  {sig.trace && (
+                    <img
+                      src={sig.trace}
+                      alt={`Signature manuscrite — ${libelleRole(role)}`}
+                      className="h-14 max-w-full rounded border border-border bg-white object-contain"
+                    />
+                  )}
+                  <div
+                    className={cn(
+                      'inline-flex items-center gap-1.5 text-sm font-medium',
+                      classeTexte,
+                    )}
+                  >
                     <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
                     Signé
                   </div>
@@ -137,7 +147,7 @@ export function BlocSignaturesEntretien({
                   libelleEngagement={`${libelleRole(role)} — ${utilisateurActif.prenom} ${utilisateurActif.nom}`}
                   disabled={!validation?.peutSigner}
                   raisonsBlocage={validation?.raisons}
-                  onConfirmer={() => signer(livretId, numero, role)}
+                  onConfirmer={(trace) => signer(livretId, numero, role, trace)}
                 />
               ) : (
                 <p className={cn('text-xs italic opacity-70', classeTexte)}>

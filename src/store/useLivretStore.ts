@@ -114,12 +114,7 @@ interface LivretStore {
   ) => void;
 
   /** Met à jour la zone d'observation d'un rôle pour la fiche. */
-  setObservation: (
-    livretId: string,
-    ficheId: string,
-    role: Role,
-    valeur: string,
-  ) => void;
+  setObservation: (livretId: string, ficheId: string, role: Role, valeur: string) => void;
 
   /**
    * Met à jour l'une des deux zones de texte du suivi GRETA CFA (apprenti·e ou
@@ -141,14 +136,11 @@ interface LivretStore {
   ) => string;
 
   /** Supprime une ligne du suivi entreprise. */
-  supprimerLigneSuiviEntreprise: (
-    livretId: string,
-    ficheId: string,
-    ligneId: string,
-  ) => void;
+  supprimerLigneSuiviEntreprise: (livretId: string, ficheId: string, ligneId: string) => void;
 
   /** Appose ou retire la signature d'un rôle. La validation R18/R20 est faite côté UI. */
-  signer: (livretId: string, ficheId: string, role: Role) => void;
+  /** `trace` : signature manuscrite (PNG data-URL — juin 2026, §14.C). */
+  signer: (livretId: string, ficheId: string, role: Role, trace?: string) => void;
 
   /** Verrouille/déverrouille une fiche (formateur uniquement, validation côté UI). */
   setEtatFiche: (livretId: string, ficheId: string, etat: EtatFiche) => void;
@@ -195,11 +187,7 @@ interface LivretStore {
     patch: Partial<Omit<EvenementOrganisationSuivi, 'id' | 'motif'>>,
   ) => void;
   /** Supprime un événement de la liste. */
-  supprimerEvenementOrganisation: (
-    livretId: string,
-    auteurId: string,
-    evenementId: string,
-  ) => void;
+  supprimerEvenementOrganisation: (livretId: string, auteurId: string, evenementId: string) => void;
 
   // ── Mutations sur les entretiens tripartites (CDC §5.2, refonte mai 2026) ─
   // Refonte chantier #2 mai 2026 : 2 entretiens par livret. Toutes les
@@ -254,10 +242,12 @@ interface LivretStore {
     role: 'apprenti' | 'maitre' | 'formateur',
     valeur: string,
   ) => void;
+  /** `trace` : signature manuscrite (PNG data-URL — juin 2026, §14.C). */
   signerEntretien: (
     livretId: string,
     numero: NumeroEntretien,
     role: 'apprenti' | 'maitre' | 'formateur',
+    trace?: string,
   ) => void;
 
   // ── Sélection des compétences abordées en entreprise (CDC v1.5 addendum) ─
@@ -307,12 +297,7 @@ interface LivretStore {
    * Clôture le livret. Validation R22 (toutes fiches verrouillées) effectuée
    * côté UI avant l'appel. La date de clôture est l'horodatage du clic.
    */
-  cloturerLivret: (
-    livretId: string,
-    auteurId: string,
-    auteurNom: string,
-    auteurRole: Role,
-  ) => void;
+  cloturerLivret: (livretId: string, auteurId: string, auteurNom: string, auteurRole: Role) => void;
 
   /** Réouverture d'un livret clôturé (réservé à l'admin / formateur en cas d'erreur). */
   rouvrirLivret: (livretId: string) => void;
@@ -423,7 +408,8 @@ function muterFiche(
   const livret = store.livrets[livretId];
   if (!livret) return { livrets: store.livrets, derniereModification: store.derniereModification };
   const idx = livret.fichesSuivi.findIndex((f) => f.id === ficheId);
-  if (idx === -1) return { livrets: store.livrets, derniereModification: store.derniereModification };
+  if (idx === -1)
+    return { livrets: store.livrets, derniereModification: store.derniereModification };
 
   const nouvelleFiche = patch(livret.fichesSuivi[idx]);
   // Recalcul de l'état (R15/R16) — sauf si la fiche est verrouillée.
@@ -522,7 +508,7 @@ export const useLivretStore = create<LivretStore>()(
           })),
         ),
 
-      signer: (livretId, ficheId, role) =>
+      signer: (livretId, ficheId, role, trace) =>
         set((s) =>
           muterFiche(s, livretId, ficheId, (f) => {
             // Ni coordo ni admin ne signent en leur nom propre.
@@ -530,24 +516,23 @@ export const useLivretStore = create<LivretStore>()(
             // métier ciblé (apprenti/maitre/formateur), pas 'admin'.
             if (role === 'coordo' || role === 'admin') return f;
             const signatures = { ...f.signatures };
-            signatures[role] = { signe: true, dateSignature: new Date().toISOString() };
+            signatures[role] = {
+              signe: true,
+              dateSignature: new Date().toISOString(),
+              ...(trace ? { trace } : {}),
+            };
             return { ...f, signatures };
           }),
         ),
 
       setEtatFiche: (livretId, ficheId, etat) =>
-        set((s) =>
-          muterFiche(s, livretId, ficheId, (f) => ({ ...f, etat })),
-        ),
+        set((s) => muterFiche(s, livretId, ficheId, (f) => ({ ...f, etat }))),
 
       ajouterFichePeriode: (livretId, input) => {
         const id = `fp-${crypto.randomUUID().slice(0, 8)}`;
         set((s) =>
           muterLivret(s, livretId, (l) => {
-            const numeroMax = l.fichesSuivi.reduce(
-              (m, f) => Math.max(m, f.numeroPeriode),
-              0,
-            );
+            const numeroMax = l.fichesSuivi.reduce((m, f) => Math.max(m, f.numeroPeriode), 0);
             const nouvelle: FicheSuiviPeriode = {
               id,
               numeroPeriode: numeroMax + 1,
@@ -576,10 +561,7 @@ export const useLivretStore = create<LivretStore>()(
           muterFiche(s, livretId, ficheId, (f) => ({
             ...f,
             // Trim+vide → undefined pour garder le champ propre.
-            titre:
-              patch.titre === undefined
-                ? f.titre
-                : patch.titre.trim() || undefined,
+            titre: patch.titre === undefined ? f.titre : patch.titre.trim() || undefined,
             dateDebut: patch.dateDebut ?? f.dateDebut,
             dateFin: patch.dateFin ?? f.dateFin,
           })),
@@ -631,9 +613,7 @@ export const useLivretStore = create<LivretStore>()(
             ...l,
             organisationSuivi: {
               ...l.organisationSuivi,
-              evenements: l.organisationSuivi.evenements.filter(
-                (e) => e.id !== evenementId,
-              ),
+              evenements: l.organisationSuivi.evenements.filter((e) => e.id !== evenementId),
               modifieLe: new Date().toISOString(),
               modifiePar: auteurId,
             },
@@ -758,14 +738,18 @@ export const useLivretStore = create<LivretStore>()(
           }),
         ),
 
-      signerEntretien: (livretId, numero, role) =>
+      signerEntretien: (livretId, numero, role, trace) =>
         set((s) =>
           muterLivret(s, livretId, (l) => {
             const e = lireEntretien(l, numero) ?? entretienVierge(numero);
             const maintenant = new Date();
             const signatures = {
               ...e.signatures,
-              [role]: { signe: true, dateSignature: maintenant.toISOString() },
+              [role]: {
+                signe: true,
+                dateSignature: maintenant.toISOString(),
+                ...(trace ? { trace } : {}),
+              },
             };
             const entretienMaj: EntretienTripartite = { ...e, signatures };
             const livretAvecEntretien = ecrireEntretien(l, numero, entretienMaj);

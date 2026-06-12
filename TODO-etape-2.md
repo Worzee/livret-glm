@@ -20,13 +20,10 @@ Format de chaque entrée :
   Périmètre à arbitrer avec le pilote avant attaque : mise en page, typographie, ajout/retrait de sections, pagination, alignement charte palette mai 2026, marges, identité visuelle de la page de garde.
   Motif : revue UI/UX à mener avant la prochaine démo pilote — point identifié à ne pas oublier au prochain passage sur le projet.
 
-### Signature électronique manuscrite — chantier confirmé pilote
+### Signature électronique manuscrite — ✅ maquette livrée le 12 juin 2026
 
-- **Zone de dessin tactile (au doigt) + souris** sur `<canvas>` HTML5, capture du tracé en SVG vectoriel ou PNG base64 compressé. Bibliothèque candidate : `signature_pad` (~7 KB gzippé, support pointer events unifié tactile/souris/stylet).
-  Cible : remplacer le bouton « Signer en tant que X » + confirmation 2-clics actuel par une zone de signature dessinée à la main, à la fois sur l'entretien tripartite et les fiches de période.
-  Motif : confirmé par le pilote comme chantier à planifier. Le poids juridique réel (Loi 2000-230, art. 1366 Code civil) requiert l'auth réelle + horodatage serveur — à coupler logiquement avec l'étape 2 (cf. CDC v1.5 addendum §14.C et entrée 2026-05-16 ci-dessous). Coût estimé 1,5 à 2 jours.
-  Piège anticipé : stockage des PNG base64 (10-20 KB chacun × N signatures × N fiches × N livrets) → limite `localStorage` 5 Mo de la maquette actuelle ; prévoir compression / SVG vectoriel ou déporter le stockage avec l'arrivée du backend en étape 2.
-  Impact UX : intégration dans le PDF (chantier ci-dessus) pour que la signature dessinée s'affiche dans l'export — à anticiper dans la refonte PDF.
+- **LIVRÉ (volet UI)** : zone de dessin tactile (doigt / stylet / souris) sur `<canvas>` pointer events, implémentée en interne sans dépendance (`ZoneSignature.tsx` + lib `signature-tactile`, seuil anti-clic accidentel 60 px). L'encart de confirmation du bouton « Signer » intègre désormais le tracé obligatoire (entretiens + fiches de période), le PNG est stocké dans `SignaturePartie.trace` et restitué dans l'UI et le PDF d'export. Image statique uniquement (pas de dynamique du tracé — RGPD art. 9).
+- **RESTE pour l'étape 2 (valeur probante)** : le tracé est purement déclaratif tant qu'il n'est pas adossé à une session authentifiée + horodatage serveur + journal d'audit (Loi 2000-230, art. 1366 Code civil ; signature « simple » eIDAS). À coupler avec les chantiers 2.2/2.3 et le SSO. Au passage du backend : déporter le stockage des PNG (limite localStorage 5 Mo de la maquette — ~10-20 KB par signature, acceptable en démo, pas en production multi-promos).
 
 ### Conformité RGPD — liste opérationnelle consolidée
 
@@ -152,4 +149,4 @@ Pas critique pour la démo. À traiter lors du démarrage de l'étape 2.
 
 ---
 
-*Maintenu à jour à chaque vague de livraison. Cf. PROJECT-STATUS.md §8 pour le statut courant.*
+_Maintenu à jour à chaque vague de livraison. Cf. PROJECT-STATUS.md §8 pour le statut courant._

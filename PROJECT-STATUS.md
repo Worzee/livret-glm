@@ -1,6 +1,6 @@
 # État du projet — Livret d'apprentissage GRETA Lyon Métropole
 
-**Dernière mise à jour** : 2026-06-12 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites, motifs par rôle + séquencement, attitudes professionnelles par entretien + catalogue admin, confirmation avant écrasement d'une évaluation héritée, second maître / tuteur par apprenti·e, tri par année de formation sur le tableau de bord)
+**Dernière mise à jour** : 2026-06-12 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites, motifs par rôle + séquencement, attitudes professionnelles par entretien + catalogue admin, confirmation avant écrasement d'une évaluation héritée, second maître / tuteur par apprenti·e, tri par année de formation sur le tableau de bord, **signature manuscrite tactile**)
 **Version applicative** : 0.1.0
 **Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3) **livrée + 4 vagues post-livraison**
 **Pilote métier** : Guillaume FERRERI
@@ -11,25 +11,25 @@
 
 ### État global
 
-L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 4 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **494 tests unitaires + 150 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
+L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 4 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **502 tests unitaires + 154 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
 
 ### Ce qui est livré
 
-| Phase | Périmètre |
-|---|---|
-| **Étape 1 (CDC v1.3)** | 6 sprints : socle Vite/React/TS → fiches de période tri-colonnes → organisation du suivi + entretien tripartite → évaluations finales (compétences + attitudes) → clôture R22 + déverrouillage motivé R10 + export PDF |
-| **Vague avril → mi-mai 2026** | Administration métier complète : rôles Coordo + Admin (5 rôles au total), CRUD utilisateurs / formations / affectations / référentiels (import CSV + XLSX) / établissements / banque de questions |
-| **Vague 17 mai 2026** | Sélection par stagiaire des compétences abordées en entreprise (validation conjointe formateur + maître à la 3ᵉ signature de l'entretien, R10 motivé) — CDC v1.5 §12 |
-| **Vague fin mai 2026** | 5 chantiers structurants : planning des périodes au niveau formation (cascade automatique vers les livrets), 2 entretiens tripartites par livret, import XLSX apprentis/maîtres/formateurs, suivi GRETA CFA en 2 zones texte, maître avec entreprise + fonction |
-| **Polish 26 mai 2026** | Équilibrage de la palette 5 rôles (Coordo orange foncé, Admin or foncé), bugfix PDF aligné UI, ~50 éléments graphiques colorisés par rôle |
+| Phase                         | Périmètre                                                                                                                                                                                                                                                       |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Étape 1 (CDC v1.3)**        | 6 sprints : socle Vite/React/TS → fiches de période tri-colonnes → organisation du suivi + entretien tripartite → évaluations finales (compétences + attitudes) → clôture R22 + déverrouillage motivé R10 + export PDF                                          |
+| **Vague avril → mi-mai 2026** | Administration métier complète : rôles Coordo + Admin (5 rôles au total), CRUD utilisateurs / formations / affectations / référentiels (import CSV + XLSX) / établissements / banque de questions                                                               |
+| **Vague 17 mai 2026**         | Sélection par stagiaire des compétences abordées en entreprise (validation conjointe formateur + maître à la 3ᵉ signature de l'entretien, R10 motivé) — CDC v1.5 §12                                                                                            |
+| **Vague fin mai 2026**        | 5 chantiers structurants : planning des périodes au niveau formation (cascade automatique vers les livrets), 2 entretiens tripartites par livret, import XLSX apprentis/maîtres/formateurs, suivi GRETA CFA en 2 zones texte, maître avec entreprise + fonction |
+| **Polish 26 mai 2026**        | Équilibrage de la palette 5 rôles (Coordo orange foncé, Admin or foncé), bugfix PDF aligné UI, ~50 éléments graphiques colorisés par rôle                                                                                                                       |
 
 ### Chantiers identifiés cette session (2026-05-26)
 
-| Chantier | Référence | État |
-|---|---|---|
-| **Refonte PDF d'export** | §8.D + [`TODO-etape-2.md`](TODO-etape-2.md) | Périmètre à arbitrer avec le pilote |
-| **Signature électronique manuscrite** | §8.E + [`TODO-etape-2.md`](TODO-etape-2.md) + CDC v1.5 §14.C | Confirmé pilote, à coupler étape 2 |
-| **Conformité RGPD** | §8.F + [`conformite-rgpd.md`](conformite-rgpd.md) + [`conformite-rgpd-etapes.docx`](conformite-rgpd-etapes.docx) | 33 obligations strictes + 9 recommandées (apprenti·e·s majeur·e·s ; AIPD non obligatoire) |
+| Chantier                              | Référence                                                                                                        | État                                                                                      |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| **Refonte PDF d'export**              | §8.D + [`TODO-etape-2.md`](TODO-etape-2.md)                                                                      | Périmètre à arbitrer avec le pilote                                                       |
+| **Signature électronique manuscrite** | §8.E + [`TODO-etape-2.md`](TODO-etape-2.md) + CDC v1.5 §14.C                                                     | Confirmé pilote, à coupler étape 2                                                        |
+| **Conformité RGPD**                   | §8.F + [`conformite-rgpd.md`](conformite-rgpd.md) + [`conformite-rgpd-etapes.docx`](conformite-rgpd-etapes.docx) | 33 obligations strictes + 9 recommandées (apprenti·e·s majeur·e·s ; AIPD non obligatoire) |
 
 ### Trajectoire étape 2 — prochaines étapes formalisées par le pilote
 
@@ -41,41 +41,41 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 
 ### Où chercher quoi
 
-| Question | Section / fichier |
-|---|---|
-| Aperçu général et démarrage | [`README.md`](README.md) |
-| Modules livrés et périmètre fonctionnel | §4 |
-| Règles métier R1 → R24 | §5 |
-| État des tests (494 unit + 150 E2E) | §6 |
-| Architecture des fichiers | §7 |
-| Reste à faire | §8 |
-| Limites connues | §9 |
-| Comment relancer le projet | §10 |
-| Décisions architecturales | §11 |
-| Étape 2 détaillée | §12 |
-| Conformité RGPD | [`conformite-rgpd.md`](conformite-rgpd.md) + [`conformite-rgpd-etapes.docx`](conformite-rgpd-etapes.docx) |
-| **Spec création comptes apprenti·e·s + maîtres (chantier 2.2)** | [`chantier-creation-comptes.md`](chantier-creation-comptes.md) |
-| Démo (script minuté + plan B) | [`DEMO.md`](DEMO.md) |
-| Conventions de code | [`CONVENTIONS.md`](CONVENTIONS.md) |
-| Pistes reportées étape 2/3 | [`TODO-etape-2.md`](TODO-etape-2.md) |
+| Question                                                        | Section / fichier                                                                                         |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Aperçu général et démarrage                                     | [`README.md`](README.md)                                                                                  |
+| Modules livrés et périmètre fonctionnel                         | §4                                                                                                        |
+| Règles métier R1 → R24                                          | §5                                                                                                        |
+| État des tests (502 unit + 154 E2E)                             | §6                                                                                                        |
+| Architecture des fichiers                                       | §7                                                                                                        |
+| Reste à faire                                                   | §8                                                                                                        |
+| Limites connues                                                 | §9                                                                                                        |
+| Comment relancer le projet                                      | §10                                                                                                       |
+| Décisions architecturales                                       | §11                                                                                                       |
+| Étape 2 détaillée                                               | §12                                                                                                       |
+| Conformité RGPD                                                 | [`conformite-rgpd.md`](conformite-rgpd.md) + [`conformite-rgpd-etapes.docx`](conformite-rgpd-etapes.docx) |
+| **Spec création comptes apprenti·e·s + maîtres (chantier 2.2)** | [`chantier-creation-comptes.md`](chantier-creation-comptes.md)                                            |
+| Démo (script minuté + plan B)                                   | [`DEMO.md`](DEMO.md)                                                                                      |
+| Conventions de code                                             | [`CONVENTIONS.md`](CONVENTIONS.md)                                                                        |
+| Pistes reportées étape 2/3                                      | [`TODO-etape-2.md`](TODO-etape-2.md)                                                                      |
 
 ---
 
 ## 1. En bref
 
-| | |
-|---|---|
-| **URL publique** | https://livret-glm.duckdns.org |
-| **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
-| **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
-| **Tests unitaires** | **494 / 494 ✓** (Vitest, 32 fichiers de test) |
-| **Tests E2E** | **150 / 150 ✓** (Playwright — 138 desktop + 12 mobile Pixel 5, 20 specs) |
-| **Bundle JS gzippé** | 148 KB (cible CDC §19.1 : < 500 KB → marge × 3,4) |
-| **Bundle CSS gzippé** | 6,5 KB (cible : < 50 KB → marge × 7) |
-| **Chunk PDF lazy** | 493 KB (chargé uniquement au clic « Exporter ») |
-| **Préflight VPS** | 11 / 11 ✓ |
-| **TypeScript** | strict, sans erreur |
-| **ESLint** | sans erreur |
+|                       |                                                                                                  |
+| --------------------- | ------------------------------------------------------------------------------------------------ |
+| **URL publique**      | https://livret-glm.duckdns.org                                                                   |
+| **Accès**             | Basic Auth `demo` / _(mdp partagé hors-canal)_                                                   |
+| **Dépôt source**      | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
+| **Tests unitaires**   | **502 / 502 ✓** (Vitest, 33 fichiers de test)                                                    |
+| **Tests E2E**         | **154 / 154 ✓** (Playwright — 142 desktop + 12 mobile Pixel 5, 21 specs)                         |
+| **Bundle JS gzippé**  | 148 KB (cible CDC §19.1 : < 500 KB → marge × 3,4)                                                |
+| **Bundle CSS gzippé** | 6,5 KB (cible : < 50 KB → marge × 7)                                                             |
+| **Chunk PDF lazy**    | 493 KB (chargé uniquement au clic « Exporter »)                                                  |
+| **Préflight VPS**     | 11 / 11 ✓                                                                                        |
+| **TypeScript**        | strict, sans erreur                                                                              |
+| **ESLint**            | sans erreur                                                                                      |
 
 ---
 
@@ -108,18 +108,18 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 
 ### VPS Hostinger (mutualisé avec d'autres projets GRETA)
 
-| | |
-|---|---|
-| **OS** | Ubuntu 24.04 LTS |
-| **IP** | 69.62.107.157 |
-| **RAM / disque** | 8 Go / 96 Go (10 Go utilisés) |
-| **Reverse proxy** | Traefik (Docker, port 80/443) — partagé avec n8n, pronote-tracker, amklelec, laremisevintage |
-| **TLS** | Let's Encrypt automatique via ACME challenge Traefik |
-| **DNS** | DuckDNS (`livret-glm.duckdns.org`) |
-| **Conteneur livret** | `nginx:1.27-alpine`, 3 Mo RAM, 0 % CPU, sur réseau `n8n_default` |
-| **Web root** | `/var/www/livret/` (bind-mount RO côté conteneur) |
-| **Compose** | `/docker/livret/docker-compose.yml` |
-| **Basic Auth** | middleware Traefik (bcrypt) |
+|                      |                                                                                              |
+| -------------------- | -------------------------------------------------------------------------------------------- |
+| **OS**               | Ubuntu 24.04 LTS                                                                             |
+| **IP**               | 69.62.107.157                                                                                |
+| **RAM / disque**     | 8 Go / 96 Go (10 Go utilisés)                                                                |
+| **Reverse proxy**    | Traefik (Docker, port 80/443) — partagé avec n8n, pronote-tracker, amklelec, laremisevintage |
+| **TLS**              | Let's Encrypt automatique via ACME challenge Traefik                                         |
+| **DNS**              | DuckDNS (`livret-glm.duckdns.org`)                                                           |
+| **Conteneur livret** | `nginx:1.27-alpine`, 3 Mo RAM, 0 % CPU, sur réseau `n8n_default`                             |
+| **Web root**         | `/var/www/livret/` (bind-mount RO côté conteneur)                                            |
+| **Compose**          | `/docker/livret/docker-compose.yml`                                                          |
+| **Basic Auth**       | middleware Traefik (bcrypt)                                                                  |
 
 ### Procédure de déploiement courante
 
@@ -248,6 +248,18 @@ Les attitudes professionnelles sortent du référentiel de compétences et de l'
 - La mention reste sur la **page de garde du PDF exporté** — un document qui circule hors plateforme doit continuer d'annoncer ses données fictives
 - Specs E2E `sprint1-role-switcher` (4 → 3 tests, vérifie désormais l'absence du bandeau) et `sprint5-bout-en-bout` adaptés
 
+#### Signature manuscrite tactile (12 juin 2026 — CDC v1.5 §14.C, volet maquette)
+
+Le bouton « Signer » exige désormais un **tracé manuscrit** (doigt, stylet ou souris) :
+
+- **`ZoneSignature`** (canvas pointer events, `touch-action: none`, rendu net au devicePixelRatio, lissage quadratique) — implémentation interne sans dépendance, intégrée à l'encart de confirmation du `BoutonSigner` (entretiens **et** fiches de période, un seul point d'entrée)
+- **« Confirmer » désactivé tant que le tracé n'est pas significatif** (≥ 60 px cumulés — lib pure `signature-tactile`, écarte le clic accidentel) ; boutons Effacer / Annuler ; auto-annulation portée à 60 s
+- **Stockage** : PNG (data-URL) dans `SignaturePartie.trace` — champ optionnel, les signatures historiques (fixtures) restent valides sans image. **Image statique uniquement** : pas de capture de la dynamique du tracé (vitesse/pression = biométrie, RGPD art. 9)
+- **Restitution** : image dans les cartes de signature (UI) et dans le PDF d'export
+- R19 (horodatage au clic) et R21 (retrait impossible hors R10) inchangées
+- ⚠ **Valeur probante** : déclarative en maquette — deviendra une signature électronique « simple » (eIDAS) à l'étape 2 avec session authentifiée + horodatage serveur (cf. `TODO-etape-2.md`)
+- +8 tests unitaires (lib `signature-tactile`), +4 scénarios E2E (`signature-tactile.spec.ts` : tracé exigé, persistance, annulation, rétrocompatibilité fixtures)
+
 #### Tri / filtre par année de formation sur le tableau de bord (12 juin 2026 — retours coordonnateurs pédagogiques)
 
 Préparation des tableaux de bord multi-promos (maître, formateur, coordo, admin) :
@@ -372,6 +384,7 @@ Cinq chantiers fonctionnels structurants livrés en cascade (ordre risque croiss
 Refonte de la cohérence visuelle pour identifier d'un coup d'œil le rôle actif et ses zones d'action :
 
 **Palette redéfinie** (`tailwind.config.ts`) :
+
 - 🔵 Apprenti : `#1e40af` (blue-800) — inchangé
 - 🟢 Maître : `#059669` (emerald-600) — inchangé
 - 🟣 Formateur : `#7c3aed` (violet-600) — inchangé
@@ -381,11 +394,13 @@ Refonte de la cohérence visuelle pour identifier d'un coup d'œil le rôle acti
 **Bugfix PDF aligné UI** : `src/components/pdf/styles.ts` avait des couleurs incohérentes (apprenti=violet, maître=cyan, formateur=vert dans le PDF, alors que l'UI avait bleu/vert/violet). Maintenant aligné.
 
 **~50 éléments graphiques** désormais colorisés par rôle, via 3 mécaniques :
+
 - **Tokens explicites** dans `src/lib/couleurs-role.ts` : mappings `TEXTE_ROLE`, `BORDURES_ROLE`, `LIBELLES_ROLE`, etc. — pour les éléments où le rôle est connu statiquement
 - **Variable CSS `--ring` dynamique** dans `index.css` : 5 classes `.role-actif-X` appliquées sur le wrapper AppShell qui redéfinissent `--ring` selon `roleActif` → tous les `focus-visible:ring-ring` du sous-arbre suivent automatiquement (boutons, cartes, inputs, selects)
 - **Utilities CSS dérivées** de `--ring` : `.carte-survol-role`, `.actif-couleur-role`, `.texte-couleur-role`, `.bandeau-info-couleur-role`, `.bouton-plein-couleur-role`, `.bouton-leger-couleur-role` — couvrent les hover, sélection, boutons d'action, bandeaux d'info
 
 **Couverture du polish** :
+
 - Cartes signatures (bordures + icônes + texte « ✓ Signé » + bouton « Signer en tant que X »)
 - Sections entretien (icônes en-tête + nom du rôle coloré)
 - Zones d'observation (icônes ajoutées en en-tête)
@@ -413,79 +428,81 @@ Refonte de la cohérence visuelle pour identifier d'un coup d'œil le rôle acti
 
 Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustements depuis l'addendum v1.5 :
 
-| Règle | Sujet | État |
-|---|---|---|
-| R1 | 1 livret par apprenti·e | ✓ implicite (modèle) |
-| R2 | `contratFin > contratDebut` | ✓ type-level + validation modale |
-| R3 | Apprenti·e voit son livret seul | ✓ matrice + `apprentis-accessibles` |
-| R4 | Maître voit ses apprenti·e·s | ✓ matrice |
-| R5 | Formateur voit sa promo | ✓ matrice |
-| **R6** | **Jusqu'à 4 entretiens par livret — nombre défini par la formation (juin 2026)** | ✓ E1..E4, verrou de réduction |
-| **R7** | **Alerte si > 60 j sans E1** (chantier #2 : ne concerne plus E2) | ✓ 5 tests |
-| R8 | Verrouillage progressif entretien | ✓ par entretien |
-| R9 | 3 signatures = entretien figé | ✓ par entretien |
-| **R10** | **Déverrouillage formateur + motif** | ✓ 8 tests TDD + modale UI + traçabilité |
-| R11 | `dateFin > dateDebut` période | ✓ 3 tests |
-| R12 | Pas de chevauchement | ✓ 4 tests |
-| R13 | Création période N (assouplie — CDC v1.5 §14.B) | ✓ chantier #1 : géré au niveau formation par coordo/admin |
-| **R14** | **Avertissement N créée avant N-1 signée** | ✓ 4 tests TDD (CDC v1.5 §14.B) |
-| R15 | 3 signatures fiche = signée | ✓ 3 tests |
-| R16 | brouillon → en-cours auto | ✓ 2 tests |
-| R17 | 15 j sans modif → verrouillée | ✓ 3 tests + bouton manuel |
-| R18 | Signer son propre slot | ✓ matrice |
-| R19 | Horodatage ISO 8601 au clic | ✓ dans `signer()` |
-| **R20** | **Champs requis avant signature** (chantier #3 : zone formateur GRETA CFA non vide ; juin 2026 : questions obligatoires répondues + ≥ 1 attitude évaluée pour le maître en entretien) | ✓ 18 tests fiche + R20 entretien dans `regles-entretien` |
-| **R21** | **Retrait signature impossible** | ✓ 6 tests TDD + bugfix UI |
-| **R22** | **Clôture livret** | ✓ 14 tests TDD + bandeau 4 états |
-| R23 | Synthèse temps réel | ✓ recalcul à chaque render |
-| R24 | Apprenti·e consulte à tout moment | ✓ matrice + bandeau lecture |
+| Règle   | Sujet                                                                                                                                                                                 | État                                                      |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| R1      | 1 livret par apprenti·e                                                                                                                                                               | ✓ implicite (modèle)                                      |
+| R2      | `contratFin > contratDebut`                                                                                                                                                           | ✓ type-level + validation modale                          |
+| R3      | Apprenti·e voit son livret seul                                                                                                                                                       | ✓ matrice + `apprentis-accessibles`                       |
+| R4      | Maître voit ses apprenti·e·s                                                                                                                                                          | ✓ matrice                                                 |
+| R5      | Formateur voit sa promo                                                                                                                                                               | ✓ matrice                                                 |
+| **R6**  | **Jusqu'à 4 entretiens par livret — nombre défini par la formation (juin 2026)**                                                                                                      | ✓ E1..E4, verrou de réduction                             |
+| **R7**  | **Alerte si > 60 j sans E1** (chantier #2 : ne concerne plus E2)                                                                                                                      | ✓ 5 tests                                                 |
+| R8      | Verrouillage progressif entretien                                                                                                                                                     | ✓ par entretien                                           |
+| R9      | 3 signatures = entretien figé                                                                                                                                                         | ✓ par entretien                                           |
+| **R10** | **Déverrouillage formateur + motif**                                                                                                                                                  | ✓ 8 tests TDD + modale UI + traçabilité                   |
+| R11     | `dateFin > dateDebut` période                                                                                                                                                         | ✓ 3 tests                                                 |
+| R12     | Pas de chevauchement                                                                                                                                                                  | ✓ 4 tests                                                 |
+| R13     | Création période N (assouplie — CDC v1.5 §14.B)                                                                                                                                       | ✓ chantier #1 : géré au niveau formation par coordo/admin |
+| **R14** | **Avertissement N créée avant N-1 signée**                                                                                                                                            | ✓ 4 tests TDD (CDC v1.5 §14.B)                            |
+| R15     | 3 signatures fiche = signée                                                                                                                                                           | ✓ 3 tests                                                 |
+| R16     | brouillon → en-cours auto                                                                                                                                                             | ✓ 2 tests                                                 |
+| R17     | 15 j sans modif → verrouillée                                                                                                                                                         | ✓ 3 tests + bouton manuel                                 |
+| R18     | Signer son propre slot                                                                                                                                                                | ✓ matrice                                                 |
+| R19     | Horodatage ISO 8601 au clic                                                                                                                                                           | ✓ dans `signer()`                                         |
+| **R20** | **Champs requis avant signature** (chantier #3 : zone formateur GRETA CFA non vide ; juin 2026 : questions obligatoires répondues + ≥ 1 attitude évaluée pour le maître en entretien) | ✓ 18 tests fiche + R20 entretien dans `regles-entretien`  |
+| **R21** | **Retrait signature impossible**                                                                                                                                                      | ✓ 6 tests TDD + bugfix UI                                 |
+| **R22** | **Clôture livret**                                                                                                                                                                    | ✓ 14 tests TDD + bandeau 4 états                          |
+| R23     | Synthèse temps réel                                                                                                                                                                   | ✓ recalcul à chaque render                                |
+| R24     | Apprenti·e consulte à tout moment                                                                                                                                                     | ✓ matrice + bandeau lecture                               |
 
 ---
 
-## 6. Tests (494 unitaires + 150 E2E)
+## 6. Tests (502 unitaires + 154 E2E)
 
-### Tests unitaires Vitest (32 fichiers de test)
+### Tests unitaires Vitest (33 fichiers de test)
 
-| Fichier | Tests | Périmètre |
-|---|---|---|
-| `lib/droits.test.ts` | 43 | Matrice 47 ressources × 5 rôles (organisation-suivi partagée, `entretien.gestion`, `entretien.attitudes`, `admin.attitudes.gerer`) |
-| `lib/transitions-fiche.test.ts` | 22 | R15/R16/R17/R21 + adaptation suivi GRETA texte |
-| `lib/validation-signature.test.ts` | 18 | R18/R20 — refonte chantier #3 |
-| `lib/regles-periode.test.ts` | 18 | R11/R12/R13/R14 |
-| `lib/regles-entretien.test.ts` | 30 | R6/R7/R8/R9 (E1..E4) + R20 questions obligatoires + ≥ 1 attitude (maître) + séquencement `peutInitialiserEntretien` (juin 2026) |
-| `lib/attitudes.test.ts` | 9 | Catalogue par défaut + `attitudeEstUtilisee` + `auMoinsUneAttitudeEvaluee` (juin 2026) |
-| `lib/nombre-entretiens.test.ts` | 12 | Bornes 1-4 + verrou de réduction + numéros disponibles (juin 2026) |
-| `lib/synthese-evaluation.test.ts` | 18 | Last-write-wins fiches → finales + confirmation avant écrasement d'un héritage (juin 2026) |
-| `lib/stats-bloc.test.ts` | 6 | Compte des niveaux par bloc |
-| `lib/import-referentiel.test.ts` | 24 | Parsing CSV (encodage CP1252, 2/3 cols) |
-| `lib/cloture-livret.test.ts` | 14 | R22 |
-| `lib/deverrouillage-fiche.test.ts` | 8 | R10 |
-| `lib/apprentis-accessibles.test.ts` | 24 | Filtre par rôle (R3) + tri + recherche (Karim voit Luca en second — juin 2026) |
-| `lib/maitres-apprenti.test.ts` | 8 | Double tutorat : ids des maîtres d'un·e apprenti·e + appartenance (juin 2026) |
-| `lib/etat-livret.test.ts` | 13 | Cas pédagogiques 6 apprenti·e·s |
-| `lib/validation-apprenti.test.ts` | 11 | Saisie apprenti·e + second maître ≠ principal (juin 2026) |
-| `lib/validation-utilisateur-staff.test.ts` | 8 | Validation maître (entreprise + fonction — chantier #4) |
-| `lib/affectation-verrou.test.ts` | 9 | Verrou affectation (fiches travaillées uniquement depuis le 11 juin 2026) |
-| `lib/validation-formation.test.ts` | 9 | Validation formation |
-| `lib/formation-verrou.test.ts` | 4 | Verrou suppression formation |
-| `lib/validation-import-referentiel.test.ts` | 11 | Saisie d'import |
-| `lib/referentiel-verrou.test.ts` | 4 | Verrou suppression référentiel |
-| `lib/parser-xlsx.test.ts` | 16 | Parser XLSX (Node env pour fflate) |
-| `lib/selection-competences-entreprise.test.ts` | 24 | Sélection par livret CDC v1.5 §12 |
-| `lib/validation-fiche-periode.test.ts` | 16 | Saisie fiche + verrous |
-| `lib/organisation-suivi.test.ts` | 21 | Catalogue motifs filtré par nombre d'entretiens + motifs proposables par rôle (juin 2026) |
-| `lib/questions-entretien.test.ts` | 30 | Banque 11 questions + affectation E1..E4 + obligatoires + verrou retrait (juin 2026) |
-| `lib/etablissement-verrou.test.ts` | 4 | Verrou suppression établissement |
-| `lib/etablissements-accessibles.test.ts` | 8 | Filtrage par rôle Pronote |
-| **`lib/validation-periode-formation.test.ts`** | **16** | **Chantier #1 : R11/R12 + verrou modif/suppression période formation** |
-| **`lib/generer-xlsx-modele.test.ts`** | **13** | **Chantier #5 : round-trip XLSX + date Excel + serial conversion** |
-| **`lib/import-utilisateurs.test.ts`** | **23** | **Chantier #5 : parsing 3 modèles + validation + politique tout-ou-rien** |
+| Fichier                                        | Tests  | Périmètre                                                                                                                          |
+| ---------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/droits.test.ts`                           | 43     | Matrice 47 ressources × 5 rôles (organisation-suivi partagée, `entretien.gestion`, `entretien.attitudes`, `admin.attitudes.gerer`) |
+| `lib/transitions-fiche.test.ts`                | 22     | R15/R16/R17/R21 + adaptation suivi GRETA texte                                                                                     |
+| `lib/validation-signature.test.ts`             | 18     | R18/R20 — refonte chantier #3                                                                                                      |
+| `lib/regles-periode.test.ts`                   | 18     | R11/R12/R13/R14                                                                                                                    |
+| `lib/regles-entretien.test.ts`                 | 30     | R6/R7/R8/R9 (E1..E4) + R20 questions obligatoires + ≥ 1 attitude (maître) + séquencement `peutInitialiserEntretien` (juin 2026)    |
+| `lib/attitudes.test.ts`                        | 9      | Catalogue par défaut + `attitudeEstUtilisee` + `auMoinsUneAttitudeEvaluee` (juin 2026)                                             |
+| `lib/nombre-entretiens.test.ts`                | 12     | Bornes 1-4 + verrou de réduction + numéros disponibles (juin 2026)                                                                 |
+| `lib/synthese-evaluation.test.ts`              | 18     | Last-write-wins fiches → finales + confirmation avant écrasement d'un héritage (juin 2026)                                         |
+| `lib/stats-bloc.test.ts`                       | 6      | Compte des niveaux par bloc                                                                                                        |
+| `lib/import-referentiel.test.ts`               | 24     | Parsing CSV (encodage CP1252, 2/3 cols)                                                                                            |
+| `lib/cloture-livret.test.ts`                   | 14     | R22                                                                                                                                |
+| `lib/deverrouillage-fiche.test.ts`             | 8      | R10                                                                                                                                |
+| `lib/apprentis-accessibles.test.ts`            | 24     | Filtre par rôle (R3) + tri + recherche (Karim voit Luca en second — juin 2026)                                                     |
+| `lib/maitres-apprenti.test.ts`                 | 8      | Double tutorat : ids des maîtres d'un·e apprenti·e + appartenance (juin 2026)                                                      |
+| `lib/signature-tactile.test.ts`                | 8      | Longueur de tracé + seuil de signature significative (juin 2026)                                                                   |
+| `lib/etat-livret.test.ts`                      | 13     | Cas pédagogiques 6 apprenti·e·s                                                                                                    |
+| `lib/validation-apprenti.test.ts`              | 11     | Saisie apprenti·e + second maître ≠ principal (juin 2026)                                                                          |
+| `lib/validation-utilisateur-staff.test.ts`     | 8      | Validation maître (entreprise + fonction — chantier #4)                                                                            |
+| `lib/affectation-verrou.test.ts`               | 9      | Verrou affectation (fiches travaillées uniquement depuis le 11 juin 2026)                                                          |
+| `lib/validation-formation.test.ts`             | 9      | Validation formation                                                                                                               |
+| `lib/formation-verrou.test.ts`                 | 4      | Verrou suppression formation                                                                                                       |
+| `lib/validation-import-referentiel.test.ts`    | 11     | Saisie d'import                                                                                                                    |
+| `lib/referentiel-verrou.test.ts`               | 4      | Verrou suppression référentiel                                                                                                     |
+| `lib/parser-xlsx.test.ts`                      | 16     | Parser XLSX (Node env pour fflate)                                                                                                 |
+| `lib/selection-competences-entreprise.test.ts` | 24     | Sélection par livret CDC v1.5 §12                                                                                                  |
+| `lib/validation-fiche-periode.test.ts`         | 16     | Saisie fiche + verrous                                                                                                             |
+| `lib/organisation-suivi.test.ts`               | 21     | Catalogue motifs filtré par nombre d'entretiens + motifs proposables par rôle (juin 2026)                                          |
+| `lib/questions-entretien.test.ts`              | 30     | Banque 11 questions + affectation E1..E4 + obligatoires + verrou retrait (juin 2026)                                               |
+| `lib/etablissement-verrou.test.ts`             | 4      | Verrou suppression établissement                                                                                                   |
+| `lib/etablissements-accessibles.test.ts`       | 8      | Filtrage par rôle Pronote                                                                                                          |
+| **`lib/validation-periode-formation.test.ts`** | **16** | **Chantier #1 : R11/R12 + verrou modif/suppression période formation**                                                             |
+| **`lib/generer-xlsx-modele.test.ts`**          | **13** | **Chantier #5 : round-trip XLSX + date Excel + serial conversion**                                                                 |
+| **`lib/import-utilisateurs.test.ts`**          | **23** | **Chantier #5 : parsing 3 modèles + validation + politique tout-ou-rien**                                                          |
 
-*Les modules `creation-livret.ts`, `couleurs-role.ts` et `utils.ts` sont couverts indirectement via les tests E2E.*
+_Les modules `creation-livret.ts`, `couleurs-role.ts` et `utils.ts` sont couverts indirectement via les tests E2E._
 
-### Tests E2E Playwright (20 specs)
+### Tests E2E Playwright (21 specs)
 
-150 tests (138 desktop + 12 mobile). Ajouts de juin 2026 : 3 scénarios « affectation des questions par le coordo », 5 scénarios « jusqu'à 4 entretiens », 3 scénarios « événements gérés par coordo/admin + liseré par rôle », 2 scénarios « motifs par rôle + séquencement », 4 scénarios « attitudes professionnelles » (`attitudes.spec.ts`), 1 scénario « confirmation avant écrasement d'un héritage ». Quelques specs ont été adaptés aux refontes :
+154 tests (142 desktop + 12 mobile). Ajouts de juin 2026 : 3 scénarios « affectation des questions par le coordo », 5 scénarios « jusqu'à 4 entretiens », 3 scénarios « événements gérés par coordo/admin + liseré par rôle », 2 scénarios « motifs par rôle + séquencement », 4 scénarios « attitudes professionnelles » (`attitudes.spec.ts`), 1 scénario « confirmation avant écrasement d'un héritage ». Quelques specs ont été adaptés aux refontes :
+
 - `fiches-periodes.spec.ts` : 8 tests réécrits pour le nouveau flow planning au niveau formation
 - `sprint3-droits-entretien.spec.ts` : route `/livret/entretien/1`
 - `entretien-selection-competences.spec.ts` : route `/livret/entretien/1` + auto-marquage E1 uniquement
@@ -510,14 +527,14 @@ LIVRET APPRENTISSAGE/
 ├── cahier-des-charges-livret-apprentissage-v1.5-addendum.md
 ├── design-system/MASTER.md         # palette équilibrée mai 2026
 ├── scripts/                        # déploiement VPS
-├── e2e/                            # tests Playwright (20 specs)
+├── e2e/                            # tests Playwright (21 specs)
 ├── playwright.config.ts            # 2 projets (desktop + mobile)
 ├── package.json
 └── src/
     ├── main.tsx, App.tsx, vite-env.d.ts
     ├── styles/index.css            # variables CSS + utilities couleur-role
     ├── types/index.ts              # modèle (CDC §7 + chantiers mai 2026)
-    ├── lib/                        # 35 modules + 32 fichiers tests
+    ├── lib/                        # 36 modules + 33 fichiers tests
     │   ├── droits.ts               # matrice §6 (47 ressources × 5 rôles)
     │   ├── transitions-fiche.ts    # R15/R16/R17/R21
     │   ├── validation-signature.ts # R18/R20 (zone GRETA texte chantier #3)
@@ -630,7 +647,7 @@ LIVRET APPRENTISSAGE/
 - [ ] Vérifier que le mot de passe Basic Auth est partagé via canal sécurisé
 - [ ] Avant chaque démo importante : `bash scripts/verifier-vps.sh` doit retourner 11/11 OK
 
-Procédure complète dans `scripts/README.md` § *Sécurité*.
+Procédure complète dans `scripts/README.md` § _Sécurité_.
 
 ### B. Dette technique — code orphelin
 
@@ -722,11 +739,18 @@ bash scripts/verifier-vps.sh       # 11 contrôles préflight
 Depuis l'app : footer → bouton **« Réinitialiser la démo »** (2 clics).
 
 Ou en console DevTools :
+
 ```js
-['livret-donnees','livret-role-actif','livret-apprenti-actif',
- 'livret-utilisateurs','livret-formations','livret-referentiels',
- 'livret-banque-questions','livret-etablissements']
-  .forEach(k => localStorage.removeItem(k));
+[
+  'livret-donnees',
+  'livret-role-actif',
+  'livret-apprenti-actif',
+  'livret-utilisateurs',
+  'livret-formations',
+  'livret-referentiels',
+  'livret-banque-questions',
+  'livret-etablissements',
+].forEach((k) => localStorage.removeItem(k));
 location.reload();
 ```
 
@@ -799,4 +823,4 @@ Le document [`cahier-des-charges-livret-apprentissage-v1.6-cadrage.md`](cahier-d
 
 ---
 
-*Étape 1 livrée + 4 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026) : administration métier complète, organisation du suivi modulaire, **2 entretiens tripartites par livret**, **planning des périodes au niveau formation**, **import XLSX utilisateurs avec cellules date**, **suivi GRETA CFA en 2 zones texte**, **modale maître Entreprise + Fonction**, **équilibrage graphique 5 rôles**. Prochaine étape : SSO Entra + gestion comptes/mots de passe.*
+_Étape 1 livrée + 4 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026) : administration métier complète, organisation du suivi modulaire, **2 entretiens tripartites par livret**, **planning des périodes au niveau formation**, **import XLSX utilisateurs avec cellules date**, **suivi GRETA CFA en 2 zones texte**, **modale maître Entreprise + Fonction**, **équilibrage graphique 5 rôles**. Prochaine étape : SSO Entra + gestion comptes/mots de passe._

@@ -1,4 +1,4 @@
-import { Document, Page, Text, View } from '@react-pdf/renderer';
+import { Document, Image, Page, Text, View } from '@react-pdf/renderer';
 import type {
   Apprenti,
   AttitudeProfessionnelle,
@@ -202,9 +202,19 @@ function CarteSignature({
       <Text style={styles.signatureLabel}>{libelleRole(role)}</Text>
       <Text style={{ fontSize: 9, marginBottom: 4 }}>{nom}</Text>
       {signature.signe ? (
-        <Text style={styles.signatureValeur}>
-          Signé le {formaterDateHeure(signature.dateSignature)}
-        </Text>
+        <>
+          {/* Signature manuscrite tactile (juin 2026) — absente sur les
+              signatures antérieures au chantier. */}
+          {signature.trace && (
+            <Image
+              src={signature.trace}
+              style={{ height: 32, objectFit: 'contain', objectPosition: 'left', marginBottom: 2 }}
+            />
+          )}
+          <Text style={styles.signatureValeur}>
+            Signé le {formaterDateHeure(signature.dateSignature)}
+          </Text>
+        </>
       ) : (
         <Text style={styles.signatureManquante}>Signature manquante</Text>
       )}
