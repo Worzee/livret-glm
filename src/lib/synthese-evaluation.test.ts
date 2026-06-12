@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { FicheSuiviPeriode, Referentiel } from '@/types';
-import { synthetiserCompetences, valeurEffective } from './synthese-evaluation';
+import {
+  confirmationRequisePourEcraserHeritage,
+  synthetiserCompetences,
+  valeurEffective,
+} from './synthese-evaluation';
 
 const referentiel: Referentiel = {
   id: 'r',
@@ -49,17 +53,21 @@ const fiche = (
 });
 
 describe('synthetiserCompetences', () => {
-  it("initialise toutes les compétences du référentiel à null", () => {
+  it('initialise toutes les compétences du référentiel à null', () => {
     const s = synthetiserCompetences([], referentiel);
     expect(s.size).toBe(2);
     expect(s.get('c1')).toEqual({ acquisEntreprise: null, acquisCentre: null });
     expect(s.get('c2')).toEqual({ acquisEntreprise: null, acquisCentre: null });
   });
 
-  it("retient la dernière évaluation chronologique (last-write-wins)", () => {
+  it('retient la dernière évaluation chronologique (last-write-wins)', () => {
     const fiches: FicheSuiviPeriode[] = [
-      fiche(1, [{ competenceId: 'c1', evaluationGreta: 'partiel', evaluationEntreprise: 'partiel' }]),
-      fiche(2, [{ competenceId: 'c1', evaluationGreta: 'maitrise', evaluationEntreprise: 'maitrise' }]),
+      fiche(1, [
+        { competenceId: 'c1', evaluationGreta: 'partiel', evaluationEntreprise: 'partiel' },
+      ]),
+      fiche(2, [
+        { competenceId: 'c1', evaluationGreta: 'maitrise', evaluationEntreprise: 'maitrise' },
+      ]),
     ];
     const s = synthetiserCompetences(fiches, referentiel);
     expect(s.get('c1')?.acquisEntreprise).toBe('maitrise');
@@ -68,7 +76,9 @@ describe('synthetiserCompetences', () => {
 
   it("retourne le numéro de la dernière période d'origine pour chaque côté", () => {
     const fiches: FicheSuiviPeriode[] = [
-      fiche(1, [{ competenceId: 'c1', evaluationGreta: 'partiel', evaluationEntreprise: 'partiel' }]),
+      fiche(1, [
+        { competenceId: 'c1', evaluationGreta: 'partiel', evaluationEntreprise: 'partiel' },
+      ]),
       fiche(2, [{ competenceId: 'c1', evaluationGreta: 'maitrise' }]),
       fiche(3, [{ competenceId: 'c1', evaluationEntreprise: 'maitrise' }]),
     ];
@@ -83,9 +93,11 @@ describe('synthetiserCompetences', () => {
     expect(s.get('c1')?.periodeEntreprise).toBeUndefined();
   });
 
-  it("ignore les lignes ad-hoc (competenceId null)", () => {
+  it('ignore les lignes ad-hoc (competenceId null)', () => {
     const fiches: FicheSuiviPeriode[] = [
-      fiche(1, [{ competenceId: null, evaluationGreta: 'maitrise', evaluationEntreprise: 'maitrise' }]),
+      fiche(1, [
+        { competenceId: null, evaluationGreta: 'maitrise', evaluationEntreprise: 'maitrise' },
+      ]),
     ];
     const s = synthetiserCompetences(fiches, referentiel);
     expect(s.get('c1')).toEqual({ acquisEntreprise: null, acquisCentre: null });
@@ -113,7 +125,7 @@ describe('synthetiserCompetences', () => {
     expect(s.get('c1')?.periodeCentre).toBe(1);
   });
 
-  it("traite indépendamment les colonnes greta et entreprise", () => {
+  it('traite indépendamment les colonnes greta et entreprise', () => {
     const fiches: FicheSuiviPeriode[] = [
       fiche(1, [{ competenceId: 'c1', evaluationGreta: 'maitrise', evaluationEntreprise: null }]),
       fiche(2, [{ competenceId: 'c1', evaluationGreta: null, evaluationEntreprise: 'partiel' }]),
@@ -125,7 +137,7 @@ describe('synthetiserCompetences', () => {
     expect(s.get('c1')?.periodeEntreprise).toBe(2);
   });
 
-  it("trie les fiches par numéro de période avant agrégation", () => {
+  it('trie les fiches par numéro de période avant agrégation', () => {
     // Fiches données dans le désordre — la 2 doit gagner
     const fiches: FicheSuiviPeriode[] = [
       fiche(2, [{ competenceId: 'c1', evaluationGreta: 'maitrise' }]),
@@ -137,7 +149,7 @@ describe('synthetiserCompetences', () => {
 });
 
 describe('valeurEffective', () => {
-  it("retourne la valeur manuelle si elle existe", () => {
+  it('retourne la valeur manuelle si elle existe', () => {
     const synth = new Map([
       ['c1', { acquisEntreprise: 'partiel' as const, acquisCentre: 'partiel' as const }],
     ]);
@@ -149,7 +161,7 @@ describe('valeurEffective', () => {
     expect(r).toEqual({ valeur: 'maitrise', source: 'manuelle' });
   });
 
-  it("retourne la valeur héritée + le numéro de période si la saisie manuelle est null", () => {
+  it('retourne la valeur héritée + le numéro de période si la saisie manuelle est null', () => {
     const synth = new Map([
       [
         'c1',
@@ -171,15 +183,100 @@ describe('valeurEffective', () => {
     expect(r.numeroPeriode).toBe(2);
   });
 
-  it("retourne aucune si manuel ET synthèse sont null", () => {
-    const synth = new Map([
-      ['c1', { acquisEntreprise: null, acquisCentre: null }],
-    ]);
+  it('retourne aucune si manuel ET synthèse sont null', () => {
+    const synth = new Map([['c1', { acquisEntreprise: null, acquisCentre: null }]]);
     const r = valeurEffective(
       { competenceId: 'c1', acquisEntreprise: null, acquisCentre: null },
       synth,
       'acquisEntreprise',
     );
     expect(r).toEqual({ valeur: null, source: 'aucune' });
+  });
+});
+
+describe('confirmationRequisePourEcraserHeritage (retours coordos juin 2026)', () => {
+  const ligneVierge = { competenceId: 'c1', acquisEntreprise: null, acquisCentre: null };
+  const syntheseHeritee = new Map([
+    [
+      'c1',
+      {
+        acquisEntreprise: 'maitrise' as const,
+        acquisCentre: 'maitrise' as const,
+        periodeEntreprise: 1,
+        periodeCentre: 1,
+      },
+    ],
+  ]);
+  const syntheseVide = new Map([['c1', { acquisEntreprise: null, acquisCentre: null }]]);
+
+  it('exige une confirmation pour remplacer une valeur héritée par une autre', () => {
+    expect(
+      confirmationRequisePourEcraserHeritage(
+        ligneVierge,
+        syntheseHeritee,
+        'acquisEntreprise',
+        'partiel',
+      ),
+    ).toBe(true);
+  });
+
+  it("exige une confirmation même pour figer la valeur héritée à l'identique (la provenance change)", () => {
+    expect(
+      confirmationRequisePourEcraserHeritage(
+        ligneVierge,
+        syntheseHeritee,
+        'acquisEntreprise',
+        'maitrise',
+      ),
+    ).toBe(true);
+  });
+
+  it("n'exige rien pour un effacement (null) — no-op sur héritage, retour à l'héritage sur saisie manuelle", () => {
+    expect(
+      confirmationRequisePourEcraserHeritage(
+        ligneVierge,
+        syntheseHeritee,
+        'acquisEntreprise',
+        null,
+      ),
+    ).toBe(false);
+  });
+
+  it("n'exige rien quand la cellule porte déjà une saisie manuelle", () => {
+    const ligneManuelle = {
+      competenceId: 'c1',
+      acquisEntreprise: 'partiel' as const,
+      acquisCentre: null,
+    };
+    expect(
+      confirmationRequisePourEcraserHeritage(
+        ligneManuelle,
+        syntheseHeritee,
+        'acquisEntreprise',
+        'maitrise',
+      ),
+    ).toBe(false);
+  });
+
+  it("n'exige rien quand il n'y a aucun héritage (première saisie libre)", () => {
+    expect(
+      confirmationRequisePourEcraserHeritage(
+        ligneVierge,
+        syntheseVide,
+        'acquisEntreprise',
+        'maitrise',
+      ),
+    ).toBe(false);
+  });
+
+  it('fonctionne aussi pour la colonne centre (helper générique)', () => {
+    expect(
+      confirmationRequisePourEcraserHeritage(
+        ligneVierge,
+        syntheseHeritee,
+        'acquisCentre',
+        'partiel',
+      ),
+    ).toBe(true);
   });
 });

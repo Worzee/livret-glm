@@ -1,6 +1,6 @@
 # État du projet — Livret d'apprentissage GRETA Lyon Métropole
 
-**Dernière mise à jour** : 2026-06-12 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites, motifs par rôle + séquencement, attitudes professionnelles par entretien + catalogue admin)
+**Dernière mise à jour** : 2026-06-12 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites, motifs par rôle + séquencement, attitudes professionnelles par entretien + catalogue admin, confirmation avant écrasement d'une évaluation héritée)
 **Version applicative** : 0.1.0
 **Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3) **livrée + 4 vagues post-livraison**
 **Pilote métier** : Guillaume FERRERI
@@ -11,7 +11,7 @@
 
 ### État global
 
-L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 4 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **472 tests unitaires + 148 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
+L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 4 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **478 tests unitaires + 149 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
 
 ### Ce qui est livré
 
@@ -46,7 +46,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | Aperçu général et démarrage | [`README.md`](README.md) |
 | Modules livrés et périmètre fonctionnel | §4 |
 | Règles métier R1 → R24 | §5 |
-| État des tests (472 unit + 148 E2E) | §6 |
+| État des tests (478 unit + 149 E2E) | §6 |
 | Architecture des fichiers | §7 |
 | Reste à faire | §8 |
 | Limites connues | §9 |
@@ -68,8 +68,8 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
-| **Tests unitaires** | **472 / 472 ✓** (Vitest, 31 fichiers de test) |
-| **Tests E2E** | **148 / 148 ✓** (Playwright — 136 desktop + 12 mobile Pixel 5, 20 specs) |
+| **Tests unitaires** | **478 / 478 ✓** (Vitest, 31 fichiers de test) |
+| **Tests E2E** | **149 / 149 ✓** (Playwright — 137 desktop + 12 mobile Pixel 5, 20 specs) |
 | **Bundle JS gzippé** | 148 KB (cible CDC §19.1 : < 500 KB → marge × 3,4) |
 | **Bundle CSS gzippé** | 6,5 KB (cible : < 50 KB → marge × 7) |
 | **Chunk PDF lazy** | 493 KB (chargé uniquement au clic « Exporter ») |
@@ -242,6 +242,15 @@ Les attitudes professionnelles sortent du référentiel de compétences et de l'
 
 - Trait vertical entre les colonnes « Acquis en centre » et « Commentaire » de la grille de compétences (lisibilité de la frontière entreprise/centre vs annotations)
 
+#### Confirmation avant écrasement d'une évaluation héritée (12 juin 2026 — retours coordonnateurs pédagogiques)
+
+Dans l'évaluation finale, la colonne « Acquis en entreprise » reporte automatiquement les fiches de période (badge « Vue en Période N ») — ces valeurs ne doivent pas être modifiables d'un simple clic :
+
+- **Garde-fou `confirmationRequisePourEcraserHeritage`** (`lib/synthese-evaluation`) : remplacer une valeur héritée par une saisie non-nulle exige une confirmation explicite ; l'effacement (« Non renseigné ») et la modification d'une saisie déjà manuelle restent libres
+- **Modale de confirmation** côté maître / tuteur : rappelle la valeur héritée, sa période d'origine et la nouvelle valeur ; tant qu'elle n'est pas confirmée, la cellule conserve le report automatique. Le retour à l'héritage via « Non renseigné » y est documenté
+- La colonne « Acquis en centre » (formateur) reste à comportement inchangé — le helper est générique si la symétrie est demandée plus tard
+- +6 tests unitaires (`synthese-evaluation` 12 → 18), +1 scénario E2E (modale annulée puis confirmée, badge d'héritage)
+
 #### Corrections de fond découvertes au passage (11 juin 2026)
 
 - **Script `npm run e2e` corrigé** : il ne rebuildait pas (`playwright test` seul) et testait donc un `dist/` obsolète — la doc affirmait le contraire. Désormais `npm run build && playwright test`.
@@ -404,7 +413,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 
 ---
 
-## 6. Tests (472 unitaires + 148 E2E)
+## 6. Tests (478 unitaires + 149 E2E)
 
 ### Tests unitaires Vitest (31 fichiers de test)
 
@@ -417,7 +426,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 | `lib/regles-entretien.test.ts` | 30 | R6/R7/R8/R9 (E1..E4) + R20 questions obligatoires + ≥ 1 attitude (maître) + séquencement `peutInitialiserEntretien` (juin 2026) |
 | `lib/attitudes.test.ts` | 9 | Catalogue par défaut + `attitudeEstUtilisee` + `auMoinsUneAttitudeEvaluee` (juin 2026) |
 | `lib/nombre-entretiens.test.ts` | 12 | Bornes 1-4 + verrou de réduction + numéros disponibles (juin 2026) |
-| `lib/synthese-evaluation.test.ts` | 12 | Last-write-wins fiches → finales |
+| `lib/synthese-evaluation.test.ts` | 18 | Last-write-wins fiches → finales + confirmation avant écrasement d'un héritage (juin 2026) |
 | `lib/stats-bloc.test.ts` | 6 | Compte des niveaux par bloc |
 | `lib/import-referentiel.test.ts` | 24 | Parsing CSV (encodage CP1252, 2/3 cols) |
 | `lib/cloture-livret.test.ts` | 14 | R22 |
@@ -446,7 +455,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 
 ### Tests E2E Playwright (20 specs)
 
-148 tests (136 desktop + 12 mobile). Ajouts de juin 2026 : 3 scénarios « affectation des questions par le coordo », 5 scénarios « jusqu'à 4 entretiens », 3 scénarios « événements gérés par coordo/admin + liseré par rôle », 2 scénarios « motifs par rôle + séquencement », 4 scénarios « attitudes professionnelles » (`attitudes.spec.ts`). Quelques specs ont été adaptés aux refontes :
+149 tests (137 desktop + 12 mobile). Ajouts de juin 2026 : 3 scénarios « affectation des questions par le coordo », 5 scénarios « jusqu'à 4 entretiens », 3 scénarios « événements gérés par coordo/admin + liseré par rôle », 2 scénarios « motifs par rôle + séquencement », 4 scénarios « attitudes professionnelles » (`attitudes.spec.ts`), 1 scénario « confirmation avant écrasement d'un héritage ». Quelques specs ont été adaptés aux refontes :
 - `fiches-periodes.spec.ts` : 8 tests réécrits pour le nouveau flow planning au niveau formation
 - `sprint3-droits-entretien.spec.ts` : route `/livret/entretien/1`
 - `entretien-selection-competences.spec.ts` : route `/livret/entretien/1` + auto-marquage E1 uniquement

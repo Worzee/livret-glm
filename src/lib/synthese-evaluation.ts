@@ -97,3 +97,27 @@ export function valeurEffective(
   }
   return { valeur: null, source: 'aucune' };
 }
+
+/**
+ * Garde-fou de la grille finale (retours coordos juin 2026) : une valeur
+ * héritée des fiches de période ne doit pas être écrasée d'un simple clic.
+ * Retourne `true` si la saisie `nouvelleValeur` remplacerait un héritage —
+ * l'UI doit alors demander une confirmation explicite.
+ *
+ * - Effacement (`null`) : jamais de confirmation. Sur une cellule héritée
+ *   c'est un no-op (la ligne est déjà à `null`) ; sur une saisie manuelle
+ *   cela réactive l'héritage (comportement documenté de « Non renseigné »).
+ * - Saisie manuelle existante : modifiable librement (l'héritage a déjà été
+ *   écrasé en connaissance de cause).
+ * - Toute valeur non-nulle sur une cellule héritée — même identique —
+ *   demande confirmation : la cellule cesserait de suivre les fiches.
+ */
+export function confirmationRequisePourEcraserHeritage(
+  ligne: LigneEvaluationFinaleCompetence,
+  synthese: Map<string, SyntheseCompetenceEntree>,
+  colonne: 'acquisEntreprise' | 'acquisCentre',
+  nouvelleValeur: NiveauMaitrise | null,
+): boolean {
+  if (nouvelleValeur === null) return false;
+  return valeurEffective(ligne, synthese, colonne).source === 'synthese';
+}

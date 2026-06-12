@@ -1,4 +1,5 @@
-import { Info, Sparkles } from 'lucide-react';
+import { useId, useState } from 'react';
+import { AlertTriangle, Info, Sparkles, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type {
   BlocCompetences,
@@ -17,7 +18,11 @@ import {
   estSelectionnee,
   estValidee,
 } from '@/lib/selection-competences-entreprise';
-import { synthetiserCompetences, valeurEffective } from '@/lib/synthese-evaluation';
+import {
+  confirmationRequisePourEcraserHeritage,
+  synthetiserCompetences,
+  valeurEffective,
+} from '@/lib/synthese-evaluation';
 import { calculerStatsParBloc } from '@/lib/stats-bloc';
 import { SelecteurNiveau } from '@/components/common/SelecteurNiveau';
 import { SyntheseBloc } from './SyntheseBloc';
@@ -39,10 +44,24 @@ interface GrilleCompetencesProps {
   referentiel: Referentiel;
 }
 
+/**
+ * Écrasement d'héritage en attente de confirmation (retours coordos juin
+ * 2026) : la colonne « Acquis en entreprise » reporte les fiches de période —
+ * le maître / tuteur doit confirmer explicitement avant de remplacer.
+ */
+interface EcrasementEnAttente {
+  competenceId: string;
+  codeCompetence: string;
+  nouvelleValeur: NiveauMaitrise;
+  valeurHeritee: NiveauMaitrise;
+  numeroPeriode?: number;
+}
+
 export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
   const ctx = useApprentiActif();
   const setLigne = useLivretStore((s) => s.setLigneCompetenceFinale);
   const roleActif = useUserStore((s) => s.roleActif);
+  const [ecrasement, setEcrasement] = useState<EcrasementEnAttente | null>(null);
 
   if (!ctx) return null;
   const { livret } = ctx;
@@ -81,7 +100,9 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
             La grille d'évaluation finale s'affichera dès que le formateur référent et le maître
             d'apprentissage auront validé conjointement la liste des compétences travaillées en
             entreprise pour cet·te apprenti·e. Cette décision se prend à l'
-            <Link className="underline hover:no-underline" to="/livret/entretien">entretien tripartite</Link>{' '}
+            <Link className="underline hover:no-underline" to="/livret/entretien">
+              entretien tripartite
+            </Link>{' '}
             (figée à la 3<sup>ᵉ</sup> signature).
           </p>
         </div>
@@ -105,8 +126,7 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
       {referentiel.blocs.map((bloc) => {
         const groupes = grouperParSousFamille(bloc);
         const aDesSousFamilles =
-          referentiel.niveauxColonnes === 3 &&
-          groupes.some((g) => g.sousFamille !== undefined);
+          referentiel.niveauxColonnes === 3 && groupes.some((g) => g.sousFamille !== undefined);
         return (
           <section key={bloc.id} className="space-y-3">
             <h2 className="text-lg font-medium">
@@ -160,9 +180,33 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
                                 synthese={synthese}
                                 colonne="acquisEntreprise"
                                 editable={peutEditerEntreprise}
-                                onChange={(v) =>
-                                  setLigne(livret.id, c.id, { acquisEntreprise: v })
-                                }
+                                onChange={(v) => {
+                                  // Garde-fou : remplacer une valeur héritée
+                                  // des périodes exige une confirmation.
+                                  if (
+                                    confirmationRequisePourEcraserHeritage(
+                                      ligne,
+                                      synthese,
+                                      'acquisEntreprise',
+                                      v,
+                                    )
+                                  ) {
+                                    const heritage = valeurEffective(
+                                      ligne,
+                                      synthese,
+                                      'acquisEntreprise',
+                                    );
+                                    setEcrasement({
+                                      competenceId: c.id,
+                                      codeCompetence: c.code,
+                                      nouvelleValeur: v as NiveauMaitrise,
+                                      valeurHeritee: heritage.valeur as NiveauMaitrise,
+                                      numeroPeriode: heritage.numeroPeriode,
+                                    });
+                                  } else {
+                                    setLigne(livret.id, c.id, { acquisEntreprise: v });
+                                  }
+                                }}
                                 ariaLabel={`Acquis en entreprise pour ${c.code}`}
                               />
                             ) : (
@@ -178,9 +222,7 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
                               synthese={synthese}
                               colonne="acquisCentre"
                               editable={peutEditerCentre}
-                              onChange={(v) =>
-                                setLigne(livret.id, c.id, { acquisCentre: v })
-                              }
+                              onChange={(v) => setLigne(livret.id, c.id, { acquisCentre: v })}
                               ariaLabel={`Acquis en centre pour ${c.code}`}
                             />
                           </td>
@@ -203,6 +245,116 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
           </section>
         );
       })}
+
+      {ecrasement && (
+        <ModaleConfirmationHeritage
+          ecrasement={ecrasement}
+          onAnnuler={() => setEcrasement(null)}
+          onConfirmer={() => {
+            setLigne(livret.id, ecrasement.competenceId, {
+              acquisEntreprise: ecrasement.nouvelleValeur,
+            });
+            setEcrasement(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+const LIBELLE_NIVEAU: Record<NiveauMaitrise, string> = {
+  maitrise: 'Maîtrisé',
+  partiel: 'Partiel',
+  'non-maitrise': 'Non maîtrisé',
+};
+
+/**
+ * Modale de confirmation avant écrasement d'une évaluation héritée des
+ * fiches de période (retours coordos juin 2026). Tant qu'elle n'est pas
+ * confirmée, la cellule conserve son report automatique.
+ */
+function ModaleConfirmationHeritage({
+  ecrasement,
+  onAnnuler,
+  onConfirmer,
+}: {
+  ecrasement: EcrasementEnAttente;
+  onAnnuler: () => void;
+  onConfirmer: () => void;
+}) {
+  const titreId = useId();
+  const provenance =
+    ecrasement.numeroPeriode !== undefined
+      ? `de la fiche de la Période ${ecrasement.numeroPeriode}`
+      : 'des fiches de période';
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titreId}
+      data-testid="confirmation-heritage"
+    >
+      {/* Arrière-plan */}
+      <button
+        type="button"
+        aria-label="Fermer la modale"
+        onClick={onAnnuler}
+        className="absolute inset-0 bg-black/40 backdrop-blur-[1px]"
+      />
+
+      {/* Contenu */}
+      <div className="relative w-full max-w-lg rounded-lg border border-border bg-card shadow-lg">
+        <div className="flex items-start justify-between gap-3 border-b border-border p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />
+            <h2 id={titreId} className="text-lg font-semibold">
+              Remplacer une évaluation héritée ?
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onAnnuler}
+            aria-label="Fermer"
+            className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="space-y-3 p-4 text-sm">
+          <p>
+            L'évaluation « <strong>{LIBELLE_NIVEAU[ecrasement.valeurHeritee]}</strong> » de{' '}
+            <strong>{ecrasement.codeCompetence}</strong> provient {provenance} (report automatique).
+          </p>
+          <p>
+            Confirmez-vous son remplacement par «{' '}
+            <strong>{LIBELLE_NIVEAU[ecrasement.nouvelleValeur]}</strong> » dans l'évaluation finale
+            ? La cellule ne suivra plus les fiches de période. Le bouton « Non renseigné » permettra
+            de revenir au report automatique.
+          </p>
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-border p-4">
+          <button
+            type="button"
+            onClick={onAnnuler}
+            data-testid="confirmation-heritage-annuler"
+            className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            onClick={onConfirmer}
+            data-testid="confirmation-heritage-confirmer"
+            className="rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Remplacer l'évaluation
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
