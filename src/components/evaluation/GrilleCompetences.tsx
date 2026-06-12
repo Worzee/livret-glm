@@ -184,7 +184,9 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
                               ariaLabel={`Acquis en centre pour ${c.code}`}
                             />
                           </td>
-                          <td className="px-3 py-3 min-w-[200px]">
+                          {/* Séparateur neutre : le commentaire est partagé
+                              maître + formateur, pas de teinte de rôle. */}
+                          <td className="px-3 py-3 min-w-[200px] border-l-2 border-l-border">
                             <CelluleCommentaire
                               valeur={ligne.commentaire ?? ''}
                               editable={peutEditerEntreprise || peutEditerCentre}
