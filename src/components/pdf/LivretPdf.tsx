@@ -20,6 +20,7 @@ import { libelleRole } from '@/lib/droits';
 import { synthetiserCompetences, valeurEffective } from '@/lib/synthese-evaluation';
 import { calculerStatsParBloc } from '@/lib/stats-bloc';
 import { libelleEvenement } from '@/lib/organisation-suivi';
+import { attitudesRetenues } from '@/lib/selection-attitudes';
 import { COULEURS, styles } from './styles';
 import {
   couleurEtatFiche,
@@ -93,6 +94,9 @@ export function LivretPdf({
 }: LivretPdfProps) {
   const date = dateExport ?? new Date().toISOString();
   const nomComplet = `${apprenti.prenom} ${apprenti.nom}`;
+  // 13 juin 2026 : le PDF ne présente que les attitudes RETENUES pour ce
+  // livret (choix fait à l'E1) — filtre unique en amont des pages.
+  const attitudesDuLivret = attitudesRetenues(attitudes, livret.attitudesSelectionnees ?? []);
 
   return (
     <Document
@@ -124,7 +128,7 @@ export function LivretPdf({
             maitre={maitre}
             formateur={formateur}
             banqueQuestions={banqueQuestions}
-            attitudes={attitudes}
+            attitudes={attitudesDuLivret}
           />
         );
       })}
@@ -138,7 +142,11 @@ export function LivretPdf({
           formateur={formateur}
         />
       ))}
-      <PageEvaluationFinale livret={livret} referentiel={referentiel} attitudes={attitudes} />
+      <PageEvaluationFinale
+        livret={livret}
+        referentiel={referentiel}
+        attitudes={attitudesDuLivret}
+      />
       <PageAnnexes livret={livret} />
     </Document>
   );

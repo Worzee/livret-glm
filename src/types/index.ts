@@ -551,6 +551,15 @@ export interface EvaluationFinaleCompetences {
 export type EvaluationsAttitudes = Record<string, NiveauAppreciation | null>;
 
 /**
+ * Ids des attitudes professionnelles retenues pour un livret (13 juin 2026).
+ * Le choix se fait **lors de l'entretien tripartite 1** (maître / tuteur +
+ * formateur référent), se fige à la 3ᵉ signature de l'E1 (pattern sélection
+ * des compétences), puis ces attitudes sont évaluées **à chaque entretien**.
+ * Vide tant que le choix n'a pas été fait.
+ */
+export type AttitudesSelectionnees = string[];
+
+/**
  * Clôture du livret (R22).
  * Quand le formateur référent clique « Clôturer le livret » alors que toutes les
  * fiches de période sont verrouillées, ce bloc est rempli et l'ensemble du
@@ -640,6 +649,12 @@ export interface Livret {
   evaluationFinaleCompetences: EvaluationFinaleCompetences;
   /** Sélection des compétences abordées en entreprise (cf. SelectionCompetencesEntreprise). */
   selectionCompetencesEntreprise: SelectionCompetencesEntreprise;
+  /**
+   * Attitudes professionnelles retenues pour ce livret (13 juin 2026) —
+   * choisies à l'E1 (maître + formateur), figées à sa 3ᵉ signature,
+   * évaluées à chaque entretien. Cf. `AttitudesSelectionnees`.
+   */
+  attitudesSelectionnees: AttitudesSelectionnees;
   /** R22 — null tant que le livret n'a pas été clôturé. */
   cloture: ClotureLivret | null;
   creeLe: string;

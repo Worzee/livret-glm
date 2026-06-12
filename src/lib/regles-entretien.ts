@@ -91,10 +91,7 @@ export function calculerAlerteR7(
  * (matrice statique des droits métier). Cette fonction ajoute la couche
  * dynamique de l'état des signatures.
  */
-export function peutEncoreEditer(
-  role: Role,
-  entretien: EntretienTripartite,
-): boolean {
+export function peutEncoreEditer(role: Role, entretien: EntretienTripartite): boolean {
   // R9 : 3 signatures → tout figé pour tous
   const sig = entretien.signatures;
   const toutesSignees = sig.apprenti.signe && sig.maitre.signe && sig.formateur.signe;
@@ -181,6 +178,13 @@ export function validerSignatureEntretien(
   entretien: EntretienTripartite,
   role: Role,
   banque: Record<string, QuestionBanque>,
+  /**
+   * Ids des attitudes retenues pour le livret (13 juin 2026 — choisies à
+   * l'E1). Quand fourni et vide, la raison côté maître oriente vers le
+   * CHOIX plutôt que vers l'évaluation (rien à évaluer tant que rien n'est
+   * retenu). Optionnel pour la rétrocompatibilité des appels existants.
+   */
+  attitudesSelectionnees?: ReadonlyArray<string>,
 ): { peutSigner: boolean; raisons: string[] } {
   const raisons: string[] = [];
 
@@ -214,14 +218,24 @@ export function validerSignatureEntretien(
       // d'appréciation. La saisie des questions sélectionnées reste libre
       // (le formateur peut en avoir choisi 0 pour un cas simplifié).
       const ap = entretien.appreciationMaitre;
-      const auMoinsUnCritere =
-        !!(ap.ponctualite || ap.comprehensionConsignes || ap.qualiteTravail || ap.integration);
+      const auMoinsUnCritere = !!(
+        ap.ponctualite ||
+        ap.comprehensionConsignes ||
+        ap.qualiteTravail ||
+        ap.integration
+      );
       if (!auMoinsUnCritere) {
         raisons.push("Évaluez au moins un critère d'appréciation (++, +, -, --).");
       }
       // Retours coordos juin 2026 : les attitudes professionnelles sont
       // évaluées à chaque entretien — au moins une est exigée pour signer.
-      if (!auMoinsUneAttitudeEvaluee(entretien)) {
+      // 13 juin 2026 : les attitudes se CHOISISSENT à l'E1 — tant que la
+      // sélection est vide, la raison oriente vers le choix.
+      if (attitudesSelectionnees !== undefined && attitudesSelectionnees.length === 0) {
+        raisons.push(
+          "Choisissez les attitudes professionnelles à évaluer (section « Choix des attitudes » de l'entretien 1).",
+        );
+      } else if (!auMoinsUneAttitudeEvaluee(entretien)) {
         raisons.push('Évaluez au moins une attitude professionnelle.');
       }
       for (const q of questionsObligatoiresSansReponse(entretien, 'maitre', banque)) {

@@ -12,6 +12,7 @@ import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
 import { useAttitudesStore } from '@/store/useAttitudesStore';
 import { peutEditer } from '@/lib/droits';
 import { peutEncoreEditer } from '@/lib/regles-entretien';
+import { attitudesRetenues } from '@/lib/selection-attitudes';
 import { CaseOuiNon } from './CaseOuiNon';
 import { SelecteurAppreciation } from '@/components/common/SelecteurAppreciation';
 import { SelecteurQuestions } from './SelecteurQuestions';
@@ -50,20 +51,18 @@ export function SectionMaitre({ livretId, numero, entretien }: SectionMaitreProp
   const setAppreciation = useLivretStore((s) => s.setAppreciationMaitre);
   const setCommentaire = useLivretStore((s) => s.setCommentaireEntretien);
   const setEvaluationAttitude = useLivretStore((s) => s.setEvaluationAttitude);
+  const livret = useLivretStore((s) => s.livrets[livretId]);
   const banque = useBanqueQuestionsStore((s) => s.questions);
   const attitudesMap = useAttitudesStore((s) => s.attitudes);
 
   const [selecteurOuvert, setSelecteurOuvert] = useState(false);
 
   const editableQuestions =
-    peutEditer(roleActif, 'entretien.questions-maitre') &&
-    peutEncoreEditer('maitre', entretien);
+    peutEditer(roleActif, 'entretien.questions-maitre') && peutEncoreEditer('maitre', entretien);
   const editableAppreciation =
-    peutEditer(roleActif, 'entretien.appreciation-maitre') &&
-    peutEncoreEditer('maitre', entretien);
+    peutEditer(roleActif, 'entretien.appreciation-maitre') && peutEncoreEditer('maitre', entretien);
   const editableCommentaire =
-    peutEditer(roleActif, 'entretien.commentaires-maitre') &&
-    peutEncoreEditer('maitre', entretien);
+    peutEditer(roleActif, 'entretien.commentaires-maitre') && peutEncoreEditer('maitre', entretien);
   // Attitudes professionnelles (juin 2026) : réservées au maître, figées
   // par sa signature comme le reste de sa section.
   const editableAttitudes =
@@ -73,28 +72,25 @@ export function SectionMaitre({ livretId, numero, entretien }: SectionMaitreProp
   const questions: QuestionBanque[] = entretien.questionsMaitreSelectionnees
     .map((id) => banque[id])
     .filter((q): q is QuestionBanque => !!q && q.cible === 'maitre');
-  const attitudes = Object.values(attitudesMap);
+  // 13 juin 2026 : seules les attitudes RETENUES pour le livret (choix fait
+  // à l'E1 par maître + formateur) sont évaluées — à chaque entretien.
+  const attitudes = attitudesRetenues(
+    Object.values(attitudesMap),
+    livret?.attitudesSelectionnees ?? [],
+  );
 
   // Retours coordos juin 2026 : les questions affectées par le coordo
   // (snapshot) ne sont pas retirables ; les obligatoires portent un badge.
-  const idsNonRetirables = [
-    ...entretien.questionsImposees,
-    ...entretien.questionsObligatoires,
-  ];
+  const idsNonRetirables = [...entretien.questionsImposees, ...entretien.questionsObligatoires];
   const idsObligatoires = new Set(entretien.questionsObligatoires);
 
   return (
     <section className="rounded-lg border border-border border-l-4 border-l-role-maitre bg-card p-4 space-y-5">
       <header className="flex flex-wrap items-start justify-between gap-2">
         <div className="flex items-start gap-2">
-          <HardHat
-            className="mt-1 h-5 w-5 shrink-0 text-role-maitre"
-            aria-hidden="true"
-          />
+          <HardHat className="mt-1 h-5 w-5 shrink-0 text-role-maitre" aria-hidden="true" />
           <div>
-            <h2 className="text-lg font-medium text-role-maitre">
-              Maître / Tuteur
-            </h2>
+            <h2 className="text-lg font-medium text-role-maitre">Maître / Tuteur</h2>
             <p className="text-xs text-muted-foreground">
               Réservé au maître / tuteur. Verrouillé après votre signature.
             </p>
@@ -119,7 +115,7 @@ export function SectionMaitre({ livretId, numero, entretien }: SectionMaitreProp
         {questions.length === 0 ? (
           <p className="text-sm italic text-muted-foreground">
             {peutChoisirQuestions
-              ? "Aucune question sélectionnée. Cliquez sur « Choisir les questions » pour démarrer."
+              ? 'Aucune question sélectionnée. Cliquez sur « Choisir les questions » pour démarrer.'
               : "Le formateur référent n'a pas encore sélectionné de questions."}
           </p>
         ) : (
@@ -176,13 +172,15 @@ export function SectionMaitre({ livretId, numero, entretien }: SectionMaitreProp
         <h3 className="text-sm font-medium">
           Attitudes professionnelles{' '}
           <span className="text-xs text-muted-foreground font-normal">
-            (évaluées à chaque entretien — au moins une requise pour signer)
+            (choisies à l'entretien 1, évaluées à chaque entretien — au moins une requise pour
+            signer)
           </span>
         </h3>
         {attitudes.length === 0 ? (
           <p className="text-sm italic text-muted-foreground">
-            Aucune attitude dans le catalogue — un administrateur·rice peut en créer
-            depuis Administration → Attitudes.
+            Aucune attitude retenue pour ce livret — le choix se fait dans la section « Choix des
+            attitudes professionnelles » de l'entretien tripartite 1 (maître / tuteur et formateur
+            référent).
           </p>
         ) : (
           <div className="space-y-2">
@@ -304,7 +302,12 @@ function ChampQuestion({ question, valeur, editable, obligatoire, onChange }: Ch
           />
         )
       ) : (
-        <p className={cn('text-sm whitespace-pre-wrap', !valeurTexte && 'text-muted-foreground italic')}>
+        <p
+          className={cn(
+            'text-sm whitespace-pre-wrap',
+            !valeurTexte && 'text-muted-foreground italic',
+          )}
+        >
           {valeurTexte || 'Non renseigné'}
         </p>
       )}

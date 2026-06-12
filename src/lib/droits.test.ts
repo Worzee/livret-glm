@@ -30,21 +30,21 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
     });
   });
 
-  describe("Entretien tripartite (CDC §5.2)", () => {
-    it("apprenti·e édite ses propres questions et zones", () => {
+  describe('Entretien tripartite (CDC §5.2)', () => {
+    it('apprenti·e édite ses propres questions et zones', () => {
       expect(peutEditer('apprenti', 'entretien.questions-apprenti')).toBe(true);
       expect(peutEditer('apprenti', 'entretien.commentaires-apprenti')).toBe(true);
       expect(peutEditer('apprenti', 'entretien.signature-apprenti')).toBe(true);
     });
 
-    it("maître édite ses questions, son appréciation, son commentaire et sa signature", () => {
+    it('maître édite ses questions, son appréciation, son commentaire et sa signature', () => {
       expect(peutEditer('maitre', 'entretien.questions-maitre')).toBe(true);
       expect(peutEditer('maitre', 'entretien.appreciation-maitre')).toBe(true);
       expect(peutEditer('maitre', 'entretien.commentaires-maitre')).toBe(true);
       expect(peutEditer('maitre', 'entretien.signature-maitre')).toBe(true);
     });
 
-    it("formateur édite démarches, conditions, aides, son commentaire et sa signature", () => {
+    it('formateur édite démarches, conditions, aides, son commentaire et sa signature', () => {
       expect(peutEditer('formateur', 'entretien.demarches-administratives')).toBe(true);
       expect(peutEditer('formateur', 'entretien.conditions-pratiques')).toBe(true);
       expect(peutEditer('formateur', 'entretien.aides-demandees')).toBe(true);
@@ -66,7 +66,7 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('formateur', 'entretien.signature-apprenti')).toBe(false);
     });
 
-    it("formateur et maître co-éditent la sélection des compétences abordées en entreprise", () => {
+    it('formateur et maître co-éditent la sélection des compétences abordées en entreprise', () => {
       expect(peutEditer('formateur', 'entretien.selection-competences-entreprise')).toBe(true);
       expect(peutEditer('maitre', 'entretien.selection-competences-entreprise')).toBe(true);
       expect(peutEditer('apprenti', 'entretien.selection-competences-entreprise')).toBe(false);
@@ -81,20 +81,20 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('formateur', 'fiche.evaluation-greta')).toBe(true);
     });
 
-    it("apprenti·e édite sa zone du suivi GRETA CFA (refonte mai 2026)", () => {
+    it('apprenti·e édite sa zone du suivi GRETA CFA (refonte mai 2026)', () => {
       expect(peutEditer('apprenti', 'fiche.suivi-greta-cfa-apprenti')).toBe(true);
       expect(peutEditer('formateur', 'fiche.suivi-greta-cfa-apprenti')).toBe(false);
       expect(peutEditer('maitre', 'fiche.suivi-greta-cfa-apprenti')).toBe(false);
       expect(peutEditer('apprenti', 'fiche.suivi-greta-cfa-formateur')).toBe(false);
     });
 
-    it("maître édite la colonne évaluation entreprise", () => {
+    it('maître édite la colonne évaluation entreprise', () => {
       expect(peutEditer('maitre', 'fiche.evaluation-entreprise')).toBe(true);
       expect(peutEditer('apprenti', 'fiche.evaluation-entreprise')).toBe(false);
       expect(peutEditer('formateur', 'fiche.evaluation-entreprise')).toBe(false);
     });
 
-    it("apprenti·e édite la colonne retour apprenti·e", () => {
+    it('apprenti·e édite la colonne retour apprenti·e', () => {
       expect(peutEditer('apprenti', 'fiche.retour-apprenti')).toBe(true);
       expect(peutEditer('maitre', 'fiche.retour-apprenti')).toBe(false);
       expect(peutEditer('formateur', 'fiche.retour-apprenti')).toBe(false);
@@ -114,7 +114,7 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('maitre', 'fiche.observation-formateur')).toBe(false);
     });
 
-    it("la gestion calendaire passe désormais par le planning de formation", () => {
+    it('la gestion calendaire passe désormais par le planning de formation', () => {
       // Refonte mai 2026 (chantier #1) : les ressources `fiche.creer-periode`,
       // `fiche.modifier-periode`, `fiche.supprimer-periode` ont été retirées
       // de la matrice. Le coordo/admin gère le planning via
@@ -126,7 +126,7 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('formateur', 'admin.formations.modifier')).toBe(false);
     });
 
-    it("seul le formateur peut déverrouiller une fiche signée (R10)", () => {
+    it('seul le formateur peut déverrouiller une fiche signée (R10)', () => {
       expect(peutEditer('formateur', 'fiche.deverrouiller')).toBe(true);
       expect(peutEditer('apprenti', 'fiche.deverrouiller')).toBe(false);
       expect(peutEditer('maitre', 'fiche.deverrouiller')).toBe(false);
@@ -135,13 +135,13 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
   });
 
   describe("Grilles d'évaluation finales (CDC §5.4-5.5)", () => {
-    it("seul le maître édite la grille compétences entreprise", () => {
+    it('seul le maître édite la grille compétences entreprise', () => {
       expect(peutEditer('maitre', 'grille-competences.entreprise')).toBe(true);
       expect(peutEditer('formateur', 'grille-competences.entreprise')).toBe(false);
       expect(peutEditer('apprenti', 'grille-competences.entreprise')).toBe(false);
     });
 
-    it("seul le formateur édite la grille compétences centre", () => {
+    it('seul le formateur édite la grille compétences centre', () => {
       expect(peutEditer('formateur', 'grille-competences.centre')).toBe(true);
       expect(peutEditer('maitre', 'grille-competences.centre')).toBe(false);
       expect(peutEditer('apprenti', 'grille-competences.centre')).toBe(false);
@@ -158,7 +158,15 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('formateur', 'entretien.attitudes')).toBe(false);
     });
 
-    it('seul l\'admin gère le catalogue des attitudes (juin 2026)', () => {
+    it("le choix des attitudes à l'E1 est partagé maître + formateur (13 juin 2026)", () => {
+      expect(peutEditer('maitre', 'entretien.attitudes-selection')).toBe(true);
+      expect(peutEditer('formateur', 'entretien.attitudes-selection')).toBe(true);
+      expect(peutEditer('apprenti', 'entretien.attitudes-selection')).toBe(false);
+      expect(peutEditer('coordo', 'entretien.attitudes-selection')).toBe(false);
+      expect(peutEditer('admin', 'entretien.attitudes-selection')).toBe(false);
+    });
+
+    it("seul l'admin gère le catalogue des attitudes (juin 2026)", () => {
       expect(peutEditer('admin', 'admin.attitudes.gerer')).toBe(true);
       expect(peutEditer('coordo', 'admin.attitudes.gerer')).toBe(false);
       expect(peutEditer('formateur', 'admin.attitudes.gerer')).toBe(false);
@@ -172,7 +180,7 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('maitre', 'export-pdf')).toBe(false);
     });
 
-    it("seul le formateur peut clôturer le livret (R22)", () => {
+    it('seul le formateur peut clôturer le livret (R22)', () => {
       expect(peutEditer('formateur', 'cloturer-livret')).toBe(true);
       expect(peutEditer('apprenti', 'cloturer-livret')).toBe(false);
       expect(peutEditer('maitre', 'cloturer-livret')).toBe(false);
@@ -180,7 +188,7 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
   });
 
   describe('Cohérence transverse', () => {
-    it("chaque ressource du livret est éditable par exactement 1 rôle métier (hors admin)", () => {
+    it('chaque ressource du livret est éditable par exactement 1 rôle métier (hors admin)', () => {
       // `organisation-suivi` sortie de la liste depuis juin 2026 (gestion
       // partagée formateur + coordo) — remplacée ici par `entretien.gestion`.
       const RESSOURCES_LIVRET: Ressource[] = [
@@ -230,6 +238,7 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
         'grille-competences.entreprise',
         'grille-competences.centre',
         'entretien.attitudes',
+        'entretien.attitudes-selection',
         'export-pdf',
         'cloturer-livret',
       ];
@@ -242,7 +251,7 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
 });
 
 describe('Administration — droits du rôle coordo', () => {
-  it("coordo, admin et formateur peuvent créer un·e apprenti·e", () => {
+  it('coordo, admin et formateur peuvent créer un·e apprenti·e', () => {
     expect(peutEditer('coordo', 'admin.utilisateurs.creer-apprenti')).toBe(true);
     expect(peutEditer('admin', 'admin.utilisateurs.creer-apprenti')).toBe(true);
     // Le formateur référent peut enregistrer un nouveau contrat sans
@@ -300,7 +309,7 @@ describe('Administration — droits du rôle coordo', () => {
     expect(peutEditer('maitre', 'admin.formations.supprimer')).toBe(false);
   });
 
-  it("seul le coordo gère les affectations apprenti·e ↔ formation/maître/formateur", () => {
+  it('seul le coordo gère les affectations apprenti·e ↔ formation/maître/formateur', () => {
     expect(peutEditer('coordo', 'admin.affectations.gerer')).toBe(true);
     expect(peutEditer('apprenti', 'admin.affectations.gerer')).toBe(false);
     expect(peutEditer('maitre', 'admin.affectations.gerer')).toBe(false);
@@ -327,7 +336,7 @@ describe('libelleRole', () => {
 });
 
 describe('Admin — droits administratifs uniquement (pas de pédagogie)', () => {
-  it("admin partage avec coordo la création des comptes apprenti·e / maître / formateur", () => {
+  it('admin partage avec coordo la création des comptes apprenti·e / maître / formateur', () => {
     expect(peutEditer('admin', 'admin.utilisateurs.creer-apprenti')).toBe(true);
     expect(peutEditer('admin', 'admin.utilisateurs.creer-maitre')).toBe(true);
     expect(peutEditer('admin', 'admin.utilisateurs.creer-formateur')).toBe(true);
@@ -351,14 +360,14 @@ describe('Admin — droits administratifs uniquement (pas de pédagogie)', () =>
     expect(peutEditer('coordo', 'admin.utilisateurs.supprimer')).toBe(true);
   });
 
-  it("admin et coordo partagent la gestion des formations", () => {
+  it('admin et coordo partagent la gestion des formations', () => {
     expect(peutEditer('admin', 'admin.formations.creer')).toBe(true);
     expect(peutEditer('admin', 'admin.formations.modifier')).toBe(true);
     expect(peutEditer('admin', 'admin.formations.supprimer')).toBe(true);
     expect(peutEditer('coordo', 'admin.formations.creer')).toBe(true);
   });
 
-  it("admin et coordo partagent la gestion des affectations", () => {
+  it('admin et coordo partagent la gestion des affectations', () => {
     expect(peutEditer('admin', 'admin.affectations.gerer')).toBe(true);
     expect(peutEditer('coordo', 'admin.affectations.gerer')).toBe(true);
   });
@@ -383,7 +392,7 @@ describe('Admin — droits administratifs uniquement (pas de pédagogie)', () =>
     expect(peutEditer('admin', 'entretien.attitudes')).toBe(false);
   });
 
-  it("rolesAutorises liste correctement les rôles admin par ressource", () => {
+  it('rolesAutorises liste correctement les rôles admin par ressource', () => {
     // Création apprenti·e + maître ouverte au formateur (besoin terrain).
     expect(rolesAutorises('admin.utilisateurs.creer-apprenti')).toEqual([
       'coordo',
@@ -402,7 +411,7 @@ describe('Admin — droits administratifs uniquement (pas de pédagogie)', () =>
     expect(rolesAutorises('admin.formations.creer')).toEqual(['coordo', 'admin']);
   });
 
-  it("rolesAutorises ne mentionne PAS admin sur les ressources pédagogiques", () => {
+  it('rolesAutorises ne mentionne PAS admin sur les ressources pédagogiques', () => {
     expect(rolesAutorises('fiche.evaluation-entreprise')).toEqual(['maitre']);
     expect(rolesAutorises('fiche.retour-apprenti')).toEqual(['apprenti']);
     expect(rolesAutorises('export-pdf')).toEqual(['formateur']);

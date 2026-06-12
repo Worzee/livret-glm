@@ -69,6 +69,9 @@ export function BlocSignaturesEntretien({
   const roleActif = useUserStore((s) => s.roleActif);
   const utilisateurActif = useUserStore((s) => s.utilisateurActif);
   const signer = useLivretStore((s) => s.signerEntretien);
+  // 13 juin 2026 : la validation maître oriente vers le CHOIX des attitudes
+  // (fait à l'E1) tant que la sélection du livret est vide.
+  const attitudesSelectionnees = useLivretStore((s) => s.livrets[livretId]?.attitudesSelectionnees);
   // Banque indexée — nécessaire à la validation R20 des questions obligatoires.
   const banque = useBanqueQuestionsStore((s) => s.questions);
 
@@ -94,7 +97,7 @@ export function BlocSignaturesEntretien({
           const estSonRole = roleActif === role;
           const validation =
             estSonRole && !ficheVerrouillee
-              ? validerSignatureEntretien(entretien, role, banque)
+              ? validerSignatureEntretien(entretien, role, banque, attitudesSelectionnees)
               : null;
 
           return (

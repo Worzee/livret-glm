@@ -3,6 +3,7 @@ import { NUMEROS_ENTRETIEN } from '@/types';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { useAttitudesStore } from '@/store/useAttitudesStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
+import { attitudesRetenues } from '@/lib/selection-attitudes';
 import { cn } from '@/lib/utils';
 
 /**
@@ -37,7 +38,12 @@ export function SyntheseAttitudes() {
   if (!ctx) return null;
   const { apprenti, livret } = ctx;
 
-  const attitudes = Object.values(attitudesMap);
+  // 13 juin 2026 : la synthèse ne porte que sur les attitudes RETENUES pour
+  // ce livret (choix fait à l'E1 par maître + formateur).
+  const attitudes = attitudesRetenues(
+    Object.values(attitudesMap),
+    livret.attitudesSelectionnees ?? [],
+  );
   const nombreEntretiens = formations[apprenti.formationId]?.nombreEntretiens ?? 2;
   const numeros = NUMEROS_ENTRETIEN.filter((n) => n <= nombreEntretiens);
 
@@ -54,8 +60,9 @@ export function SyntheseAttitudes() {
 
       {attitudes.length === 0 ? (
         <p className="rounded-md border border-dashed border-border bg-secondary/30 p-3 text-sm text-muted-foreground">
-          Aucune attitude dans le catalogue. Un administrateur·rice peut en créer depuis{' '}
-          <em>Administration → Attitudes</em>.
+          Aucune attitude retenue pour ce livret — le choix se fait à l'entretien tripartite 1
+          (maître / tuteur + formateur référent), puis les attitudes retenues sont évaluées à chaque
+          entretien.
         </p>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-border">

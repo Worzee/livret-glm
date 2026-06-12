@@ -18,6 +18,7 @@ import { SectionApprenti } from '@/components/entretien/SectionApprenti';
 import { SectionMaitre } from '@/components/entretien/SectionMaitre';
 import { SectionFormateur } from '@/components/entretien/SectionFormateur';
 import { SectionSelectionCompetences } from '@/components/entretien/SectionSelectionCompetences';
+import { SectionSelectionAttitudes } from '@/components/entretien/SectionSelectionAttitudes';
 import { BlocSignaturesEntretien } from '@/components/entretien/BlocSignaturesEntretien';
 import { creerSelectionVierge } from '@/lib/selection-competences-entreprise';
 
@@ -75,14 +76,11 @@ export function EntretienTripartite() {
           <p className="text-muted-foreground">
             {isE1
               ? "L'entretien doit avoir lieu dans les 60 jours suivant la signature du contrat (R7)."
-              : 'Bilan de suivi — à programmer selon l\'organisation du suivi.'}
+              : "Bilan de suivi — à programmer selon l'organisation du suivi."}
           </p>
         </header>
         <div className="rounded-lg border border-border bg-card p-6 text-center space-y-3">
-          <ClipboardList
-            className="h-10 w-10 mx-auto text-muted-foreground"
-            aria-hidden="true"
-          />
+          <ClipboardList className="h-10 w-10 mx-auto text-muted-foreground" aria-hidden="true" />
           <p className="text-sm">
             Cet entretien n'a pas encore été initialisé. Pensez à créer l'événement
             <strong> « Entretien Tripartite {numero} » </strong>
@@ -166,6 +164,11 @@ export function EntretienTripartite() {
           entretienVerrouille={ficheVerrouillee}
         />
       )}
+
+      {/* Choix des attitudes professionnelles (13 juin 2026) — réservé à
+          l'E1 : maître + formateur retiennent les attitudes qui seront
+          évaluées à chaque entretien ; figé à la 3ᵉ signature de E1. */}
+      {isE1 && <SectionSelectionAttitudes livret={livret} />}
 
       <SectionApprenti livretId={livret.id} numero={numero} entretien={entretien} />
       <SectionMaitre livretId={livret.id} numero={numero} entretien={entretien} />

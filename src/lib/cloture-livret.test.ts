@@ -6,12 +6,7 @@ import type {
   Livret,
   SignaturesTripartite,
 } from '@/types';
-import {
-  creerCloture,
-  estCloture,
-  motifBlocageCloture,
-  peutCloturer,
-} from './cloture-livret';
+import { creerCloture, estCloture, motifBlocageCloture, peutCloturer } from './cloture-livret';
 
 const aucuneSignature: SignaturesTripartite = {
   apprenti: { signe: false },
@@ -44,6 +39,7 @@ const livretBase = (fiches: FicheSuiviPeriode[], cloture: ClotureLivret | null =
   entretiens: { 1: null, 2: null, 3: null, 4: null },
   fichesSuivi: fiches,
   evaluationFinaleCompetences: { lignes: [], modifieLe: '2025-09-01T08:00:00.000Z' },
+  attitudesSelectionnees: [],
   selectionCompetencesEntreprise: {
     ids: [],
     modifieLe: '2025-09-01T08:00:00.000Z',
@@ -81,40 +77,38 @@ describe('peutCloturer', () => {
     expect(peutCloturer(livretBase([fiche('p1', 'verrouillee')], cloture))).toBe(false);
   });
 
-  it('refuse si aucune fiche de période n\'existe', () => {
+  it("refuse si aucune fiche de période n'existe", () => {
     expect(peutCloturer(livretBase([]))).toBe(false);
   });
 
   it('refuse si une fiche est en brouillon', () => {
-    expect(
-      peutCloturer(livretBase([fiche('p1', 'verrouillee'), fiche('p2', 'brouillon')])),
-    ).toBe(false);
+    expect(peutCloturer(livretBase([fiche('p1', 'verrouillee'), fiche('p2', 'brouillon')]))).toBe(
+      false,
+    );
   });
 
   it('refuse si une fiche est en cours', () => {
-    expect(
-      peutCloturer(livretBase([fiche('p1', 'verrouillee'), fiche('p2', 'en-cours')])),
-    ).toBe(false);
+    expect(peutCloturer(livretBase([fiche('p1', 'verrouillee'), fiche('p2', 'en-cours')]))).toBe(
+      false,
+    );
   });
 
   it('refuse si une fiche est seulement signée (pas verrouillée)', () => {
-    expect(
-      peutCloturer(livretBase([fiche('p1', 'verrouillee'), fiche('p2', 'signee')])),
-    ).toBe(false);
+    expect(peutCloturer(livretBase([fiche('p1', 'verrouillee'), fiche('p2', 'signee')]))).toBe(
+      false,
+    );
   });
 
   it('autorise si toutes les fiches sont verrouillées', () => {
-    expect(
-      peutCloturer(livretBase([fiche('p1', 'verrouillee'), fiche('p2', 'verrouillee')])),
-    ).toBe(true);
+    expect(peutCloturer(livretBase([fiche('p1', 'verrouillee'), fiche('p2', 'verrouillee')]))).toBe(
+      true,
+    );
   });
 });
 
 describe('motifBlocageCloture', () => {
   it('retourne null quand la clôture est possible', () => {
-    expect(
-      motifBlocageCloture(livretBase([fiche('p1', 'verrouillee')])),
-    ).toBeNull();
+    expect(motifBlocageCloture(livretBase([fiche('p1', 'verrouillee')]))).toBeNull();
   });
 
   it('retourne un message si déjà clôturé', () => {
@@ -133,13 +127,9 @@ describe('motifBlocageCloture', () => {
     expect(message).toMatch(/aucune fiche/i);
   });
 
-  it("liste les fiches non verrouillées si certaines sont incomplètes", () => {
+  it('liste les fiches non verrouillées si certaines sont incomplètes', () => {
     const message = motifBlocageCloture(
-      livretBase([
-        fiche('p1', 'verrouillee'),
-        fiche('p2', 'en-cours'),
-        fiche('p3', 'brouillon'),
-      ]),
+      livretBase([fiche('p1', 'verrouillee'), fiche('p2', 'en-cours'), fiche('p3', 'brouillon')]),
     );
     expect(message).toMatch(/2/);
     expect(message).toMatch(/verrouillée/i);

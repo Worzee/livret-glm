@@ -5,7 +5,7 @@ import { useUserStore } from '@/store/useUserStore';
 import { useAttitudesStore } from '@/store/useAttitudesStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
-import { attitudeEstUtilisee } from '@/lib/attitudes';
+import { attitudeEstSelectionnee, attitudeEstUtilisee } from '@/lib/attitudes';
 import { cn } from '@/lib/utils';
 
 /**
@@ -43,6 +43,9 @@ export function GestionAttitudes() {
 
   const attitudes = Object.values(attitudesMap);
   const entretiens = Object.values(livrets).flatMap((l) => Object.values(l.entretiens));
+  // 13 juin 2026 : une attitude RETENUE dans un livret (choix fait à l'E1)
+  // est également protégée, même si elle n'est pas encore évaluée.
+  const selections = Object.values(livrets).map((l) => l.attitudesSelectionnees ?? []);
 
   function declencherSuppression(a: AttitudeProfessionnelle) {
     if (confirmationSuppression !== a.id) {
@@ -99,7 +102,9 @@ export function GestionAttitudes() {
             <tbody className="divide-y divide-border">
               {attitudes.map((a) => {
                 const enConfirmation = confirmationSuppression === a.id;
-                const utilisee = attitudeEstUtilisee(a.id, entretiens);
+                const utilisee =
+                  attitudeEstUtilisee(a.id, entretiens) ||
+                  attitudeEstSelectionnee(a.id, selections);
                 return (
                   <tr
                     key={a.id}
@@ -136,7 +141,7 @@ export function GestionAttitudes() {
                           }
                           title={
                             utilisee
-                              ? 'Attitude évaluée dans au moins un entretien — suppression impossible.'
+                              ? 'Attitude évaluée ou retenue dans au moins un livret — suppression impossible.'
                               : undefined
                           }
                           className={cn(
@@ -153,7 +158,7 @@ export function GestionAttitudes() {
                       </div>
                       {utilisee && (
                         <p className="mt-0.5 text-[10px] text-amber-700 italic">
-                          Évaluée dans au moins un entretien.
+                          Évaluée ou retenue dans au moins un livret.
                         </p>
                       )}
                     </td>

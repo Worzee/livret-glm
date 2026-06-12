@@ -129,3 +129,16 @@ export function attitudeEstUtilisee(
 export function auMoinsUneAttitudeEvaluee(entretien: EntretienTripartite): boolean {
   return Object.values(entretien.evaluationsAttitudes).some((v) => v !== null && v !== undefined);
 }
+
+/**
+ * Indique si une attitude est retenue dans la sélection d'au moins un livret
+ * (13 juin 2026 — le choix se fait à l'E1). Avec `attitudeEstUtilisee`,
+ * bloque la suppression depuis le catalogue admin : on ne retire pas du
+ * catalogue une attitude qu'un livret référence.
+ */
+export function attitudeEstSelectionnee(
+  attitudeId: string,
+  selections: ReadonlyArray<ReadonlyArray<string>>,
+): boolean {
+  return selections.some((ids) => ids.includes(attitudeId));
+}

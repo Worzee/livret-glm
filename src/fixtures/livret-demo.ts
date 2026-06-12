@@ -181,6 +181,8 @@ function livretVierge(apprenti: Apprenti, livretId: string): Livret {
     // Démarre vierge par défaut ; les livrets démo dont l'entretien est signé
     // override ce champ avec `selectionValideeDemo(...)` plus bas.
     selectionCompetencesEntreprise: selectionVierge('2025-09-02T08:00:00.000Z'),
+    // Choix des attitudes : se fera à l'E1 (13 juin 2026).
+    attitudesSelectionnees: [],
     cloture: null,
     creeLe: '2025-09-02T08:00:00.000Z',
     modifieLe: '2025-09-02T08:00:00.000Z',
@@ -484,6 +486,8 @@ const livretLea: Livret = {
   // « à initialiser » (E3/E4 hors périmètre : la formation est à 2 entretiens).
   entretiens: { 1: entretienLea, 2: null, 3: null, 4: null },
   fichesSuivi: [leaPeriode1, leaPeriode2, leaPeriode3],
+  // Attitudes retenues à l'E1 (13 juin 2026) — a9 pas encore évaluée.
+  attitudesSelectionnees: ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a9'],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiLeaMartin,
     ['c1-1', 'c1-2', 'c1-3', 'c2-1', 'c2-2', 'c2-3', 'c3-1', 'c3-2'],
@@ -657,6 +661,8 @@ const livretTheo: Livret = {
     theoFiche(2, '2026-01-06', '2026-02-14', '2026-02-16T10:30:00.000Z'),
     theoFiche(3, '2026-03-02', '2026-04-11', '2026-04-13T09:00:00.000Z'),
   ],
+  // Attitudes retenues à l'E1 (13 juin 2026) — a9 pas encore évaluée.
+  attitudesSelectionnees: ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a9'],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiTheoDubois,
     ['c1-1', 'c1-2', 'c1-3', 'c2-1', 'c2-2', 'c2-3', 'c3-1', 'c3-2', 'c3-3'],
@@ -858,6 +864,8 @@ const livretMinh: Livret = {
   },
   entretiens: { 1: entretienMinh, 2: null, 3: null, 4: null },
   fichesSuivi: [],
+  // Attitudes retenues à l'E1 (13 juin 2026) — a9 pas encore évaluée.
+  attitudesSelectionnees: ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a9'],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiMinhNguyen,
     ['c1-1', 'c1-2', 'c1-3', 'c2-1', 'c2-2', 'c2-3', 'c3-2'],
@@ -994,6 +1002,8 @@ const livretAya: Livret = {
     4: null,
   },
   fichesSuivi: [ayaPeriode1, ayaPeriode2],
+  // Attitudes retenues à l'E1 (13 juin 2026) — a9 pas encore évaluée.
+  attitudesSelectionnees: ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a9'],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiAyaKouame,
     ['c1-1', 'c1-2', 'c1-3', 'c2-1', 'c2-2', 'c2-3', 'c3-1', 'c3-2'],
@@ -1186,6 +1196,8 @@ const livretLuca: Livret = {
   ...livretVierge(apprentiLucaBianchi, 'livret-luca'),
   entretiens: { 1: entretienLuca, 2: null, 3: null, 4: null },
   fichesSuivi: [lucaPeriode1, lucaPeriode2, lucaPeriode3],
+  // Attitudes retenues à l'E1 (13 juin 2026) — a9 pas encore évaluée.
+  attitudesSelectionnees: ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a9'],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiLucaBianchi,
     ['c1-1', 'c1-2', 'c1-3', 'c2-1', 'c2-2', 'c2-3', 'c3-1', 'c3-2', 'c3-3'],

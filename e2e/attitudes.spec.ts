@@ -57,7 +57,12 @@ test('suppression : libre pour une attitude non utilisée, bloquée sinon', asyn
   // a1 est évaluée dans les entretiens des fixtures → suppression bloquée.
   const ligneA1 = page.locator('[data-testid="attitude-row-a1"]');
   await expect(ligneA1.getByRole('button', { name: /Supprimer l'attitude/i })).toBeDisabled();
-  await expect(ligneA1.getByText(/Évaluée dans au moins un entretien/i)).toBeVisible();
+  await expect(ligneA1.getByText(/Évaluée ou retenue dans au moins un livret/i)).toBeVisible();
+
+  // a9 est RETENUE (choix E1 des fixtures) sans être évaluée → bloquée aussi
+  // (13 juin 2026 : une attitude référencée par un livret est protégée).
+  const ligneA9 = page.locator('[data-testid="attitude-row-a9"]');
+  await expect(ligneA9.getByRole('button', { name: /Supprimer l'attitude/i })).toBeDisabled();
 
   // Une attitude fraîchement créée se supprime librement (2 clics).
   await page.getByTestId('attitude-nouvelle').click();
@@ -68,6 +73,41 @@ test('suppression : libre pour une attitude non utilisée, bloquée sinon', asyn
   await supprimer.click();
   await ligne.getByRole('button', { name: /Confirmer la suppression/i }).click();
   await expect(page.getByText('Attitude éphémère de test')).toHaveCount(0);
+});
+
+test("le choix des attitudes se fait à l'E1 et filtre la grille du maître (13 juin 2026)", async ({
+  page,
+}) => {
+  // Sofia : E1 pas encore initialisé — le formateur l'initialise.
+  await page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }).click();
+  await page.goto('/livret/entretien/1');
+  await page.getByTestId('init-entretien-1').click();
+
+  // La section de choix apparaît, vide au départ.
+  const section = page.getByTestId('selection-attitudes');
+  await expect(section).toBeVisible();
+  await expect(section.getByText(/0 attitude retenue sur 16/i)).toBeVisible();
+
+  // Le formateur retient 2 attitudes (choix partagé maître + formateur).
+  await page.getByTestId('selection-attitude-a1').check();
+  await page.getByTestId('selection-attitude-a9').check();
+  await expect(section.getByText(/2 attitudes retenues sur 16/i)).toBeVisible();
+
+  // Côté maître : la grille d'évaluation ne montre QUE les 2 retenues.
+  await selectRole(page, 'Maître / Tuteur');
+  const grille = page.getByTestId('attitudes-entretien');
+  await expect(grille.getByRole('radiogroup')).toHaveCount(2);
+  await expect(
+    grille.getByRole('radiogroup', { name: 'Attitude — Ponctualité et assiduité' }),
+  ).toBeVisible();
+});
+
+test("le choix est figé dès que l'E1 est signé par les 3 parties", async ({ page }) => {
+  // Léa (par défaut) : E1 signé 3/3 dans les fixtures.
+  await page.goto('/livret/entretien/1');
+  const section = page.getByTestId('selection-attitudes');
+  await expect(section.getByText(/Choix figé/i)).toBeVisible();
+  await expect(page.getByTestId('selection-attitude-a1')).toBeDisabled();
 });
 
 test("le maître évalue les attitudes dans l'entretien — R20 bloque la signature sans évaluation", async ({

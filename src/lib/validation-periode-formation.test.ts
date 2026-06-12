@@ -17,10 +17,7 @@ const periode = (
 
 describe('validerSaisiePeriode', () => {
   it('valide une saisie correcte', () => {
-    const r = validerSaisiePeriode(
-      { dateDebut: '2025-09-02', dateFin: '2025-12-20' },
-      [],
-    );
+    const r = validerSaisiePeriode({ dateDebut: '2025-09-02', dateFin: '2025-12-20' }, []);
     expect(r.ok).toBe(true);
     expect(r.erreurs).toEqual({});
   });
@@ -32,32 +29,23 @@ describe('validerSaisiePeriode', () => {
   });
 
   it('refuse une date de fin antérieure ou égale au début (R11)', () => {
-    const r = validerSaisiePeriode(
-      { dateDebut: '2025-09-02', dateFin: '2025-09-02' },
-      [],
-    );
+    const r = validerSaisiePeriode({ dateDebut: '2025-09-02', dateFin: '2025-09-02' }, []);
     expect(r.ok).toBe(false);
     expect(r.erreurs.dateFin).toMatch(/R11/);
   });
 
   it('refuse un chevauchement avec une période existante (R12)', () => {
     const existantes = [periode('p1', 1, '2025-09-02', '2025-12-20')];
-    const r = validerSaisiePeriode(
-      { dateDebut: '2025-11-01', dateFin: '2026-01-15' },
-      existantes,
-    );
+    const r = validerSaisiePeriode({ dateDebut: '2025-11-01', dateFin: '2026-01-15' }, existantes);
     expect(r.ok).toBe(false);
     expect(r.erreurs.dateDebut).toMatch(/chevauchent/);
   });
 
-  it("autorise une période strictement contiguë (fin = début de la suivante)", () => {
+  it('autorise une période strictement contiguë (fin = début de la suivante)', () => {
     // Convention : fin exclusive — une période finit le 20/12, la suivante
     // peut commencer le 20/12. Évite les faux positifs en saisie quotidienne.
     const existantes = [periode('p1', 1, '2025-09-02', '2025-12-20')];
-    const r = validerSaisiePeriode(
-      { dateDebut: '2025-12-20', dateFin: '2026-02-14' },
-      existantes,
-    );
+    const r = validerSaisiePeriode({ dateDebut: '2025-12-20', dateFin: '2026-02-14' }, existantes);
     expect(r.ok).toBe(true);
   });
 
@@ -73,10 +61,7 @@ describe('validerSaisiePeriode', () => {
 
   it('mentionne le titre de la période en conflit dans le message', () => {
     const existantes = [periode('p1', 1, '2025-09-02', '2025-12-20', "Période d'automne")];
-    const r = validerSaisiePeriode(
-      { dateDebut: '2025-11-01', dateFin: '2026-01-15' },
-      existantes,
-    );
+    const r = validerSaisiePeriode({ dateDebut: '2025-11-01', dateFin: '2026-01-15' }, existantes);
     expect(r.erreurs.dateDebut).toMatch(/Période d'automne/);
   });
 });
@@ -112,6 +97,7 @@ function livretAvec(...fiches: FicheSuiviPeriode[]): Livret {
     entretiens: { 1: null, 2: null, 3: null, 4: null },
     fichesSuivi: fiches,
     evaluationFinaleCompetences: { lignes: [], modifieLe: '' },
+    attitudesSelectionnees: [],
     selectionCompetencesEntreprise: {
       ids: [],
       modifieLe: '',

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AttitudeProfessionnelle } from '@/types';
-import { ATTITUDES_INITIALES, attitudeEstUtilisee } from '@/lib/attitudes';
+import { ATTITUDES_INITIALES, attitudeEstSelectionnee, attitudeEstUtilisee } from '@/lib/attitudes';
 import { useLivretStore } from './useLivretStore';
 
 /**
@@ -79,6 +79,15 @@ export const useAttitudesStore = create<AttitudesStore>()(
         const livrets = Object.values(useLivretStore.getState().livrets);
         const entretiens = livrets.flatMap((l) => Object.values(l.entretiens));
         if (attitudeEstUtilisee(id, entretiens)) return false;
+        // 13 juin 2026 : une attitude retenue dans un livret (choix E1) est
+        // également protégée, même non encore évaluée.
+        if (
+          attitudeEstSelectionnee(
+            id,
+            livrets.map((l) => l.attitudesSelectionnees ?? []),
+          )
+        )
+          return false;
         const { [id]: _retire, ...sansElle } = get().attitudes;
         void _retire;
         set({ attitudes: sansElle });

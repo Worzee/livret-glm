@@ -33,6 +33,12 @@ export type Ressource =
    * coordos juin 2026) — réservée au maître / tuteur, comme l'appréciation.
    */
   | 'entretien.attitudes'
+  /**
+   * Choix des attitudes retenues pour le livret, fait lors de l'E1
+   * (13 juin 2026) — décision collective actée par le maître / tuteur ET le
+   * formateur référent ; figée à la 3ᵉ signature de l'E1.
+   */
+  | 'entretien.attitudes-selection'
   | 'entretien.questions-apprenti'
   | 'entretien.questions-maitre'
   | 'entretien.appreciation-maitre'
@@ -130,6 +136,7 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   // Initialisation + date de l'entretien : formateur uniquement
   'entretien.gestion': ['formateur'],
   'entretien.attitudes': ['maitre'],
+  'entretien.attitudes-selection': ['maitre', 'formateur'],
   'entretien.questions-apprenti': ['apprenti'],
   'entretien.questions-maitre': ['maitre'],
   'entretien.appreciation-maitre': ['maitre'],

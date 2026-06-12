@@ -26,6 +26,7 @@ import { deduireEtat } from '@/lib/transitions-fiche';
 import { peutInitialiserEntretien } from '@/lib/regles-entretien';
 import { creerCloture } from '@/lib/cloture-livret';
 import { creerEvenementVierge, peutSupprimerEvenement } from '@/lib/organisation-suivi';
+import { selectionAttitudesFigee, toggleIdSelection } from '@/lib/selection-attitudes';
 import {
   idsQuestionsAffectees,
   idsQuestionsObligatoiresAffectees,
@@ -90,7 +91,10 @@ import { useUtilisateursStore } from './useUtilisateursStore';
 //        (`EntretienTripartite.evaluationsAttitudes`, catalogue global
 //        `useAttitudesStore`). `Livret.evaluationFinaleAttitudes` retiré —
 //        l'onglet de l'évaluation finale devient une synthèse lecture seule.
-const VERSION_SCHEMA = 13;
+//   v14 — 13 juin 2026 : les attitudes à évaluer se CHOISISSENT à l'E1
+//        (`Livret.attitudesSelectionnees`, maître + formateur, figées à la
+//        3ᵉ signature de l'E1) puis sont évaluées à chaque entretien.
+const VERSION_SCHEMA = 14;
 
 interface LivretStore {
   livrets: Record<string, Livret>;
@@ -291,6 +295,13 @@ interface LivretStore {
     attitudeId: string,
     niveau: NiveauAppreciation | null,
   ) => void;
+
+  /**
+   * Coche/décoche une attitude retenue pour le livret (13 juin 2026 — choix
+   * fait à l'E1 par maître + formateur). No-op si la sélection est figée
+   * (E1 signé 3/3, cf. `selectionAttitudesFigee`).
+   */
+  toggleAttitudeSelectionnee: (livretId: string, attitudeId: string) => void;
 
   // ── Clôture livret (R22) ─────────────────────────────────────────────────
   /**
@@ -866,10 +877,25 @@ export const useLivretStore = create<LivretStore>()(
           muterLivret(s, livretId, (l) => {
             const e = lireEntretien(l, numero);
             if (!e) return l;
+            // 13 juin 2026 : seules les attitudes RETENUES pour le livret
+            // (choix fait à l'E1) sont évaluables — garde no-op.
+            if (!l.attitudesSelectionnees.includes(attitudeId)) return l;
             return ecrireEntretien(l, numero, {
               ...e,
               evaluationsAttitudes: { ...e.evaluationsAttitudes, [attitudeId]: niveau },
             });
+          }),
+        ),
+
+      toggleAttitudeSelectionnee: (livretId, attitudeId) =>
+        set((s) =>
+          muterLivret(s, livretId, (l) => {
+            // Figée dès que l'E1 est signé par les 3 parties.
+            if (selectionAttitudesFigee(l)) return l;
+            return {
+              ...l,
+              attitudesSelectionnees: toggleIdSelection(l.attitudesSelectionnees, attitudeId),
+            };
           }),
         ),
 

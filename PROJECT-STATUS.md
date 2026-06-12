@@ -1,6 +1,6 @@
 # État du projet — Livret d'apprentissage GRETA Lyon Métropole
 
-**Dernière mise à jour** : 2026-06-12 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites, motifs par rôle + séquencement, attitudes professionnelles par entretien + catalogue admin, confirmation avant écrasement d'une évaluation héritée, second maître / tuteur par apprenti·e, tri par année de formation sur le tableau de bord, **signature manuscrite tactile**, **répartition des apprenti·e·s entre coordos**)
+**Dernière mise à jour** : 2026-06-13 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites, motifs par rôle + séquencement, attitudes professionnelles par entretien + catalogue admin, confirmation avant écrasement d'une évaluation héritée, second maître / tuteur par apprenti·e, tri par année de formation sur le tableau de bord, **signature manuscrite tactile**, **répartition des apprenti·e·s entre coordos**)
 **Version applicative** : 0.1.0
 **Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3) **livrée + 4 vagues post-livraison**
 **Pilote métier** : Guillaume FERRERI
@@ -11,7 +11,7 @@
 
 ### État global
 
-L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 4 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **511 tests unitaires + 158 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
+L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 4 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **521 tests unitaires + 160 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
 
 ### Ce qui est livré
 
@@ -46,7 +46,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | Aperçu général et démarrage                                     | [`README.md`](README.md)                                                                                  |
 | Modules livrés et périmètre fonctionnel                         | §4                                                                                                        |
 | Règles métier R1 → R24                                          | §5                                                                                                        |
-| État des tests (511 unit + 158 E2E)                             | §6                                                                                                        |
+| État des tests (521 unit + 160 E2E)                             | §6                                                                                                        |
 | Architecture des fichiers                                       | §7                                                                                                        |
 | Reste à faire                                                   | §8                                                                                                        |
 | Limites connues                                                 | §9                                                                                                        |
@@ -68,8 +68,8 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | **URL publique**      | https://livret-glm.duckdns.org                                                                   |
 | **Accès**             | Basic Auth `demo` / _(mdp partagé hors-canal)_                                                   |
 | **Dépôt source**      | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
-| **Tests unitaires**   | **511 / 511 ✓** (Vitest, 33 fichiers de test)                                                    |
-| **Tests E2E**         | **158 / 158 ✓** (Playwright — 146 desktop + 12 mobile Pixel 5, 22 specs)                         |
+| **Tests unitaires**   | **521 / 521 ✓** (Vitest, 34 fichiers de test)                                                    |
+| **Tests E2E**         | **160 / 160 ✓** (Playwright — 148 desktop + 12 mobile Pixel 5, 22 specs)                         |
 | **Bundle JS gzippé**  | 148 KB (cible CDC §19.1 : < 500 KB → marge × 3,4)                                                |
 | **Bundle CSS gzippé** | 6,5 KB (cible : < 50 KB → marge × 7)                                                             |
 | **Chunk PDF lazy**    | 493 KB (chargé uniquement au clic « Exporter »)                                                  |
@@ -84,7 +84,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 - **Frontend** : Vite 6 + React 18 + TypeScript 5.7 (strict)
 - **Style** : Tailwind CSS 3 + shadcn/ui (tokens CSS variables, palette 5 rôles équilibrée mai 2026)
 - **State** : Zustand 5 + middleware `persist` — **9 stores** persistés en localStorage :
-  - `livret-donnees` (schema v13) — livrets, fiches, **jusqu'à 4 entretiens tripartites par livret** (avec snapshots questions imposées/obligatoires + **évaluations des attitudes par entretien**), évaluations, sélection des compétences abordées en entreprise
+  - `livret-donnees` (schema v14) — livrets, fiches, **jusqu'à 4 entretiens tripartites par livret** (avec snapshots questions imposées/obligatoires + **évaluations des attitudes par entretien**), évaluations, sélection des compétences abordées en entreprise
   - `livret-role-actif` — rôle + maître actif
   - `livret-apprenti-actif` — id de l'apprenti·e affiché·e
   - `livret-utilisateurs` (schema v4) — apprenti·e·s (avec **second maître / tuteur optionnel** et **coordo de rattachement**, juin 2026), maîtres (avec `entreprise` + `fonction`), formateurs, coordos, admins
@@ -247,6 +247,18 @@ Les attitudes professionnelles sortent du référentiel de compétences et de l'
 - Le bandeau « MAQUETTE DE DÉMONSTRATION — Données fictives… » (CDC §21.6) est **retiré de l'interface** : le statut de démonstration est acquis pour toutes les parties prenantes
 - La mention reste sur la **page de garde du PDF exporté** — un document qui circule hors plateforme doit continuer d'annoncer ses données fictives
 - Specs E2E `sprint1-role-switcher` (4 → 3 tests, vérifie désormais l'absence du bandeau) et `sprint5-bout-en-bout` adaptés
+
+#### Choix des attitudes à l'entretien tripartite 1 (13 juin 2026 — retours coordonnateurs pédagogiques)
+
+Le catalogue n'est plus évalué en entier : **les attitudes à évaluer se choisissent lors de l'E1, puis sont évaluées à chaque entretien** :
+
+- **Modèle** : `Livret.attitudesSelectionnees` (ids du catalogue) — nouvelle section « Choix des attitudes professionnelles » dans l'E1, cases à cocher co-éditées par le **maître / tuteur et le formateur référent** (nouvelle ressource `entretien.attitudes-selection`, matrice 47 → 48)
+- **Figé à la 3ᵉ signature de l'E1** (pattern sélection des compétences) — bandeau « Choix figé », cases désactivées, garde no-op dans le store
+- **Évaluées dès l'E1** : la grille du maître (chaque entretien), la synthèse de l'évaluation finale et le PDF ne présentent que les attitudes retenues ; R20 inchangée (≥ 1 évaluée pour signer), avec une raison dédiée orientant vers le choix tant que la sélection est vide
+- **Verrou admin étendu** : une attitude retenue dans un livret (même non évaluée) ne peut plus être supprimée du catalogue
+- Fixtures : les livrets dont l'E1 est signé retiennent a1..a6 + a9 (non évaluée — illustre le « — » de la synthèse)
+- Bump `livret-donnees` v13 → v14 (reset)
+- +10 tests unitaires (lib `selection-attitudes` 9 + droits), +2 scénarios E2E (choix à l'E1 filtre la grille du maître ; choix figé après 3 signatures)
 
 #### Catalogue des attitudes professionnelles enrichi (13 juin 2026)
 
@@ -494,13 +506,14 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 
 ---
 
-## 6. Tests (511 unitaires + 158 E2E)
+## 6. Tests (521 unitaires + 160 E2E)
 
-### Tests unitaires Vitest (33 fichiers de test)
+### Tests unitaires Vitest (34 fichiers de test)
 
 | Fichier                                        | Tests  | Périmètre                                                                                                                          |
 | ---------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `lib/droits.test.ts`                           | 43     | Matrice 47 ressources × 5 rôles (organisation-suivi partagée, `entretien.gestion`, `entretien.attitudes`, `admin.attitudes.gerer`) |
+| `lib/droits.test.ts`                           | 44     | Matrice 48 ressources × 5 rôles (organisation-suivi partagée, `entretien.gestion`, `entretien.attitudes`, `entretien.attitudes-selection`, `admin.attitudes.gerer`) |
+| `lib/selection-attitudes.test.ts`              | 9      | Choix des attitudes à l'E1 : verrou 3ᵉ signature + toggle + filtre catalogue (13 juin 2026)                                        |
 | `lib/transitions-fiche.test.ts`                | 22     | R15/R16/R17/R21 + adaptation suivi GRETA texte                                                                                     |
 | `lib/validation-signature.test.ts`             | 18     | R18/R20 — refonte chantier #3                                                                                                      |
 | `lib/regles-periode.test.ts`                   | 18     | R11/R12/R13/R14                                                                                                                    |
@@ -538,7 +551,7 @@ _Les modules `creation-livret.ts`, `couleurs-role.ts` et `utils.ts` sont couvert
 
 ### Tests E2E Playwright (22 specs)
 
-158 tests (146 desktop + 12 mobile). Ajouts de juin 2026 : 3 scénarios « affectation des questions par le coordo », 5 scénarios « jusqu'à 4 entretiens », 3 scénarios « événements gérés par coordo/admin + liseré par rôle », 2 scénarios « motifs par rôle + séquencement », 4 scénarios « attitudes professionnelles » (`attitudes.spec.ts`), 1 scénario « confirmation avant écrasement d'un héritage ». Quelques specs ont été adaptés aux refontes :
+160 tests (148 desktop + 12 mobile). Ajouts de juin 2026 : 3 scénarios « affectation des questions par le coordo », 5 scénarios « jusqu'à 4 entretiens », 3 scénarios « événements gérés par coordo/admin + liseré par rôle », 2 scénarios « motifs par rôle + séquencement », 4 scénarios « attitudes professionnelles » (`attitudes.spec.ts`), 1 scénario « confirmation avant écrasement d'un héritage ». Quelques specs ont été adaptés aux refontes :
 
 - `fiches-periodes.spec.ts` : 8 tests réécrits pour le nouveau flow planning au niveau formation
 - `sprint3-droits-entretien.spec.ts` : route `/livret/entretien/1`
@@ -571,8 +584,8 @@ LIVRET APPRENTISSAGE/
     ├── main.tsx, App.tsx, vite-env.d.ts
     ├── styles/index.css            # variables CSS + utilities couleur-role
     ├── types/index.ts              # modèle (CDC §7 + chantiers mai 2026)
-    ├── lib/                        # 36 modules + 33 fichiers tests
-    │   ├── droits.ts               # matrice §6 (47 ressources × 5 rôles)
+    ├── lib/                        # 37 modules + 34 fichiers tests
+    │   ├── droits.ts               # matrice §6 (48 ressources × 5 rôles)
     │   ├── transitions-fiche.ts    # R15/R16/R17/R21
     │   ├── validation-signature.ts # R18/R20 (zone GRETA texte chantier #3)
     │   ├── regles-periode.ts       # R11/R12/R13/R14

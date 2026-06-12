@@ -56,24 +56,26 @@ export function creerLivretVierge(
     // événement dans l'organisation du suivi (motifs
     // `entretien-tripartite-{1..N}`, N = Formation.nombreEntretiens).
     entretiens: { 1: null, 2: null, 3: null, 4: null },
-    fichesSuivi: planning.map((p): FicheSuiviPeriode => ({
-      id: `fp-${livretId}-${p.id}`,
-      numeroPeriode: p.numero,
-      titre: p.titre,
-      periodeFormationId: p.id,
-      dateDebut: p.dateDebut,
-      dateFin: p.dateFin,
-      suiviGretaCfa: {},
-      suiviEntreprise: [],
-      observations: {},
-      signatures: {
-        apprenti: { signe: false },
-        maitre: { signe: false },
-        formateur: { signe: false },
-      },
-      etat: 'brouillon',
-      historiqueDeverrouillages: [],
-    })),
+    fichesSuivi: planning.map(
+      (p): FicheSuiviPeriode => ({
+        id: `fp-${livretId}-${p.id}`,
+        numeroPeriode: p.numero,
+        titre: p.titre,
+        periodeFormationId: p.id,
+        dateDebut: p.dateDebut,
+        dateFin: p.dateFin,
+        suiviGretaCfa: {},
+        suiviEntreprise: [],
+        observations: {},
+        signatures: {
+          apprenti: { signe: false },
+          maitre: { signe: false },
+          formateur: { signe: false },
+        },
+        etat: 'brouillon',
+        historiqueDeverrouillages: [],
+      }),
+    ),
     evaluationFinaleCompetences: {
       lignes: lignesCompetences,
       modifieLe: iso,
@@ -83,6 +85,9 @@ export function creerLivretVierge(
     // référent et le maître d'apprentissage, puis validée à la 3ᵉ signature
     // de l'entretien tripartite.
     selectionCompetencesEntreprise: creerSelectionVierge(maintenant),
+    // 13 juin 2026 : les attitudes à évaluer se choisissent à l'E1 (maître +
+    // formateur) — vierge à la création, figée à la 3ᵉ signature de l'E1.
+    attitudesSelectionnees: [],
     cloture: null,
     creeLe: iso,
     modifieLe: iso,
