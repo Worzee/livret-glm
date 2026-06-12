@@ -11,7 +11,7 @@
 
 ### État global
 
-L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 4 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **510 tests unitaires + 158 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
+L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 4 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **511 tests unitaires + 158 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
 
 ### Ce qui est livré
 
@@ -46,7 +46,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | Aperçu général et démarrage                                     | [`README.md`](README.md)                                                                                  |
 | Modules livrés et périmètre fonctionnel                         | §4                                                                                                        |
 | Règles métier R1 → R24                                          | §5                                                                                                        |
-| État des tests (510 unit + 158 E2E)                             | §6                                                                                                        |
+| État des tests (511 unit + 158 E2E)                             | §6                                                                                                        |
 | Architecture des fichiers                                       | §7                                                                                                        |
 | Reste à faire                                                   | §8                                                                                                        |
 | Limites connues                                                 | §9                                                                                                        |
@@ -68,7 +68,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | **URL publique**      | https://livret-glm.duckdns.org                                                                   |
 | **Accès**             | Basic Auth `demo` / _(mdp partagé hors-canal)_                                                   |
 | **Dépôt source**      | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
-| **Tests unitaires**   | **510 / 510 ✓** (Vitest, 33 fichiers de test)                                                    |
+| **Tests unitaires**   | **511 / 511 ✓** (Vitest, 33 fichiers de test)                                                    |
 | **Tests E2E**         | **158 / 158 ✓** (Playwright — 146 desktop + 12 mobile Pixel 5, 22 specs)                         |
 | **Bundle JS gzippé**  | 148 KB (cible CDC §19.1 : < 500 KB → marge × 3,4)                                                |
 | **Bundle CSS gzippé** | 6,5 KB (cible : < 50 KB → marge × 7)                                                             |
@@ -247,6 +247,12 @@ Les attitudes professionnelles sortent du référentiel de compétences et de l'
 - Le bandeau « MAQUETTE DE DÉMONSTRATION — Données fictives… » (CDC §21.6) est **retiré de l'interface** : le statut de démonstration est acquis pour toutes les parties prenantes
 - La mention reste sur la **page de garde du PDF exporté** — un document qui circule hors plateforme doit continuer d'annoncer ses données fictives
 - Specs E2E `sprint1-role-switcher` (4 → 3 tests, vérifie désormais l'absence du bandeau) et `sprint5-bout-en-bout` adaptés
+
+#### Catalogue des attitudes professionnelles enrichi (13 juin 2026)
+
+- Le catalogue par défaut passe de **6 à 16 attitudes**, chacune avec une **description concrète** (aide à l'évaluation) : aux 6 historiques (ponctualité, consignes, qualité, intégration, initiative, communication — ids `a1..a6` stables) s'ajoutent hygiène/sécurité, tenue professionnelle, motivation, organisation, adaptation, prise en compte des remarques, curiosité, soin du matériel, maîtrise de soi, discrétion/confidentialité
+- Formulations transversales (valables tous secteurs) — l'admin élague ou complète librement depuis `/admin/attitudes`
+- Bump `livret-attitudes` v1 → v2 (reset du catalogue)
 
 #### Import XLSX : rattachement au coordo importateur (12 juin 2026 — retours coordonnateurs pédagogiques)
 
@@ -488,7 +494,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 
 ---
 
-## 6. Tests (510 unitaires + 158 E2E)
+## 6. Tests (511 unitaires + 158 E2E)
 
 ### Tests unitaires Vitest (33 fichiers de test)
 
@@ -499,7 +505,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 | `lib/validation-signature.test.ts`             | 18     | R18/R20 — refonte chantier #3                                                                                                      |
 | `lib/regles-periode.test.ts`                   | 18     | R11/R12/R13/R14                                                                                                                    |
 | `lib/regles-entretien.test.ts`                 | 30     | R6/R7/R8/R9 (E1..E4) + R20 questions obligatoires + ≥ 1 attitude (maître) + séquencement `peutInitialiserEntretien` (juin 2026)    |
-| `lib/attitudes.test.ts`                        | 9      | Catalogue par défaut + `attitudeEstUtilisee` + `auMoinsUneAttitudeEvaluee` (juin 2026)                                             |
+| `lib/attitudes.test.ts`                        | 10     | Catalogue par défaut (16 attitudes + descriptions) + `attitudeEstUtilisee` + `auMoinsUneAttitudeEvaluee` (juin 2026)               |
 | `lib/nombre-entretiens.test.ts`                | 12     | Bornes 1-4 + verrou de réduction + numéros disponibles (juin 2026)                                                                 |
 | `lib/synthese-evaluation.test.ts`              | 18     | Last-write-wins fiches → finales + confirmation avant écrasement d'un héritage (juin 2026)                                         |
 | `lib/stats-bloc.test.ts`                       | 6      | Compte des niveaux par bloc                                                                                                        |

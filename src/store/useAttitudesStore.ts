@@ -42,7 +42,9 @@ interface AttitudesStore {
 
 // v1 — création du store (juin 2026) : les attitudes sortent du référentiel
 //      de compétences pour devenir un catalogue global géré par l'admin.
-const VERSION_SCHEMA = 1;
+// v2 — catalogue par défaut enrichi de 6 à 16 attitudes (+ descriptions) à
+//      la demande du pilote (13 juin 2026) — reset pour recharger.
+const VERSION_SCHEMA = 2;
 
 function etatInitial(): Pick<AttitudesStore, 'attitudes'> {
   return {

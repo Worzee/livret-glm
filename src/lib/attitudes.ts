@@ -15,16 +15,94 @@ import type { AttitudeProfessionnelle, EntretienTripartite } from '@/types';
  */
 
 /**
- * Catalogue par défaut — reprend les 6 attitudes historiques du référentiel
- * CAP Cuisine (formulations génériques, valables pour toute spécialité).
+ * Catalogue par défaut — savoir-être transversaux de l'apprentissage,
+ * formulations génériques valables pour toute spécialité (enrichi à la
+ * demande du pilote, juin 2026). a1..a6 = les 6 attitudes historiques du
+ * référentiel (ids stables — référencées par les fixtures de démo) ;
+ * a7..a16 = extension. L'admin élague ou complète librement depuis
+ * `/admin/attitudes`.
  */
 export const ATTITUDES_INITIALES: ReadonlyArray<AttitudeProfessionnelle> = [
-  { id: 'a1', libelle: 'Ponctualité et assiduité' },
-  { id: 'a2', libelle: 'Respect des consignes et de la hiérarchie' },
-  { id: 'a3', libelle: 'Qualité du travail fourni' },
-  { id: 'a4', libelle: "Intégration dans l'équipe" },
-  { id: 'a5', libelle: "Prise d'initiative et autonomie" },
-  { id: 'a6', libelle: 'Communication professionnelle' },
+  {
+    id: 'a1',
+    libelle: 'Ponctualité et assiduité',
+    description: "Arrive à l'heure, prévient en cas d'absence ou de retard.",
+  },
+  {
+    id: 'a2',
+    libelle: 'Respect des consignes et de la hiérarchie',
+    description: 'Applique les consignes données et respecte les rôles de chacun.',
+  },
+  {
+    id: 'a3',
+    libelle: 'Qualité du travail fourni',
+    description: 'Produit un travail soigné, conforme à ce qui est demandé.',
+  },
+  {
+    id: 'a4',
+    libelle: "Intégration dans l'équipe",
+    description: 'Trouve sa place dans le collectif et coopère avec ses collègues.',
+  },
+  {
+    id: 'a5',
+    libelle: "Prise d'initiative et autonomie",
+    description: 'Sait agir seul·e à bon escient, sans attendre systématiquement une consigne.',
+  },
+  {
+    id: 'a6',
+    libelle: 'Communication professionnelle',
+    description: "S'exprime correctement et adapte son langage à ses interlocuteurs.",
+  },
+  {
+    id: 'a7',
+    libelle: "Respect des règles d'hygiène et de sécurité",
+    description: 'Applique les protocoles et porte les équipements de protection requis.',
+  },
+  {
+    id: 'a8',
+    libelle: 'Présentation et tenue professionnelle',
+    description: 'Adopte une tenue et une présentation adaptées au poste et au contact client.',
+  },
+  {
+    id: 'a9',
+    libelle: 'Motivation et implication',
+    description: "S'investit dans les tâches confiées et montre de l'intérêt pour le métier.",
+  },
+  {
+    id: 'a10',
+    libelle: 'Organisation et gestion du temps',
+    description: 'Prépare son poste de travail, priorise et respecte les délais.',
+  },
+  {
+    id: 'a11',
+    libelle: "Capacité d'adaptation",
+    description: 'Fait face aux imprévus et accepte les changements de poste ou de planning.',
+  },
+  {
+    id: 'a12',
+    libelle: 'Prise en compte des remarques',
+    description: 'Écoute les retours, accepte la critique constructive et progresse.',
+  },
+  {
+    id: 'a13',
+    libelle: "Curiosité et volonté d'apprendre",
+    description: "Pose des questions et s'intéresse au métier au-delà des tâches confiées.",
+  },
+  {
+    id: 'a14',
+    libelle: 'Soin du matériel et des locaux',
+    description: "Utilise, entretient et range correctement l'équipement mis à disposition.",
+  },
+  {
+    id: 'a15',
+    libelle: 'Maîtrise de soi et gestion du stress',
+    description: 'Garde son calme et un comportement adapté en situation de pression.',
+  },
+  {
+    id: 'a16',
+    libelle: 'Discrétion et confidentialité',
+    description: "Respecte la confidentialité des informations de l'entreprise et des clients.",
+  },
 ];
 
 /**

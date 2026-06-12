@@ -33,23 +33,35 @@ function entretien(
 }
 
 describe('ATTITUDES_INITIALES', () => {
-  it('contient les 6 attitudes historiques avec ids et libellés stables', () => {
-    expect(ATTITUDES_INITIALES).toHaveLength(6);
+  it('contient 16 attitudes avec ids uniques, libellés et descriptions (catalogue enrichi juin 2026)', () => {
+    expect(ATTITUDES_INITIALES).toHaveLength(16);
     const ids = new Set<string>();
     for (const a of ATTITUDES_INITIALES) {
       expect(a.id).toMatch(/^a\d+$/);
       expect(ids.has(a.id)).toBe(false);
       ids.add(a.id);
       expect(a.libelle.length).toBeGreaterThan(5);
+      // Chaque attitude porte une description concrète (aide à l'évaluation).
+      expect(a.description ?? '').not.toBe('');
     }
+  });
+
+  it('les 6 attitudes historiques (a1..a6) gardent leurs ids et libellés — référencées par les fixtures', () => {
+    const parId = new Map(ATTITUDES_INITIALES.map((a) => [a.id, a.libelle]));
+    expect(parId.get('a1')).toBe('Ponctualité et assiduité');
+    expect(parId.get('a2')).toBe('Respect des consignes et de la hiérarchie');
+    expect(parId.get('a3')).toBe('Qualité du travail fourni');
+    expect(parId.get('a4')).toBe("Intégration dans l'équipe");
+    expect(parId.get('a5')).toBe("Prise d'initiative et autonomie");
+    expect(parId.get('a6')).toBe('Communication professionnelle');
   });
 
   it('les libellés sont neutres : pas de référence à un domaine particulier', () => {
     const motsInterdits = ['brigade', 'cuisine', 'cfa'];
     for (const a of ATTITUDES_INITIALES) {
-      const libelle = a.libelle.toLowerCase();
+      const texte = `${a.libelle} ${a.description ?? ''}`.toLowerCase();
       for (const mot of motsInterdits) {
-        expect(libelle.includes(mot)).toBe(false);
+        expect(texte.includes(mot)).toBe(false);
       }
     }
   });

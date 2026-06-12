@@ -24,11 +24,11 @@ test("seul l'admin accède au catalogue des attitudes", async ({ page }) => {
     page.getByRole('heading', { name: /Accès réservé à l'administration/i }),
   ).toBeVisible();
 
-  // L'admin voit le catalogue pré-rempli (6 attitudes).
+  // L'admin voit le catalogue pré-rempli (16 attitudes — enrichi juin 2026).
   await selectRole(page, 'Admin');
   await page.goto('/admin/attitudes');
   await expect(page.getByRole('heading', { name: /Attitudes professionnelles/i })).toBeVisible();
-  await expect(page.locator('tr[data-testid^="attitude-row-"]')).toHaveCount(6);
+  await expect(page.locator('tr[data-testid^="attitude-row-"]')).toHaveCount(16);
 });
 
 test("l'admin peut créer puis modifier une attitude", async ({ page }) => {
@@ -40,7 +40,7 @@ test("l'admin peut créer puis modifier une attitude", async ({ page }) => {
   await page.getByTestId('attitude-libelle').fill('Respect des règles de sécurité');
   await page.getByTestId('attitude-valider').click();
   await expect(page.getByText('Respect des règles de sécurité')).toBeVisible();
-  await expect(page.locator('tr[data-testid^="attitude-row-"]')).toHaveCount(7);
+  await expect(page.locator('tr[data-testid^="attitude-row-"]')).toHaveCount(17);
 
   // Modification.
   const ligne = page.locator('tr', { hasText: 'Respect des règles de sécurité' });
