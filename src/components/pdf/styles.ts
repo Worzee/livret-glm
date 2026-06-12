@@ -79,16 +79,12 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
+  // Logo officiel du réseau GRETA CFA (PNG horizontal ~3,3:1 — juin 2026,
+  // remplace le carré « GLM » de la maquette).
   gardeLogo: {
-    width: 56,
-    height: 56,
-    backgroundColor: COULEURS.primaire,
-    color: '#ffffff',
-    fontSize: 18,
-    fontFamily: 'Helvetica-Bold',
-    textAlign: 'center',
-    paddingTop: 18,
-    borderRadius: 6,
+    width: 160,
+    height: 48,
+    objectFit: 'contain',
   },
   gardeTitre: {
     fontSize: 28,

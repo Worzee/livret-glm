@@ -128,8 +128,8 @@
  * `bg-primary text-primary-foreground` pour tous les boutons d'action
  * (créer, enregistrer, soumettre, télécharger, etc.).
  *
- * Le logo institutionnel « GLM » dans le header conserve `bg-primary`
- * — c'est la seule identité visuelle qui doit rester stable.
+ * Le header porte désormais le logo officiel du réseau GRETA CFA (image,
+ * juin 2026) — l'identité visuelle institutionnelle reste hors palette rôle.
  */
 .bouton-plein-couleur-role {
   background-color: hsl(var(--ring));

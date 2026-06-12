@@ -43,3 +43,6 @@ test-results/
 
 # ─── Document source (volumineux) ────────────────────────────────────────────
 *.docx
+
+# ─── Logo source (SVG wrapper ~645 Ko) — le PNG extrait vit dans src/assets ──
+/logo.svg

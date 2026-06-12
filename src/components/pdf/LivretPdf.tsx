@@ -1,4 +1,5 @@
 import { Document, Image, Page, Text, View } from '@react-pdf/renderer';
+import logoGreta from '@/assets/logo-greta.png';
 import type {
   Apprenti,
   AttitudeProfessionnelle,
@@ -287,7 +288,7 @@ function PageDeGarde({
       <View style={styles.garde}>
         <View>
           <View style={styles.gardeMarque}>
-            <Text style={styles.gardeLogo}>GLM</Text>
+            <Image src={logoGreta} style={styles.gardeLogo} />
             <View>
               <Text style={styles.gardeTitre}>Livret d'apprentissage</Text>
               <Text style={styles.gardeSousTitre}>GRETA Lyon Métropole</Text>

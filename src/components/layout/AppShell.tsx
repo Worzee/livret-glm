@@ -1,5 +1,6 @@
 import { Link, Outlet } from 'react-router-dom';
 import { Building2, GraduationCap, HardHat, UserCog } from 'lucide-react';
+import logoGreta from '@/assets/logo-greta.png';
 import { RoleSwitcher } from './RoleSwitcher';
 import { Sidebar, MobileMenu } from './Sidebar';
 import { BoutonReinitialiserDemo } from './BoutonReinitialiserDemo';
@@ -61,12 +62,14 @@ export function AppShell() {
             className="flex items-center gap-3 text-foreground hover:text-primary transition-colors"
             aria-label="Accueil — Livret d'apprentissage GRETA Lyon Métropole"
           >
-            <span
+            {/* Logo officiel du réseau GRETA CFA — Académie de Lyon (remplace
+                le carré « GLM » de la maquette, juin 2026). */}
+            <img
+              src={logoGreta}
+              alt=""
               aria-hidden="true"
-              className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-sm"
-            >
-              GLM
-            </span>
+              className="h-8 md:h-10 w-auto shrink-0"
+            />
             <span className="hidden sm:flex flex-col leading-tight">
               <span className="font-semibold">Livret d'apprentissage</span>
               <span className="text-xs text-muted-foreground">GRETA Lyon Métropole — Démo</span>
