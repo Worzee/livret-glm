@@ -22,11 +22,23 @@ test('le formateur voit la page Affectations en accès refusé', async ({ page }
   await expect(page.getByRole('heading', { name: /Accès réservé/i })).toBeVisible();
 });
 
-test('le coordo accède à la page et voit les 6 apprenti·e·s', async ({ page }) => {
+test('le coordo accède à la page, restreinte à son périmètre (juin 2026)', async ({ page }) => {
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/affectations');
   await expect(page.getByRole('heading', { name: /Gestion des affectations/i })).toBeVisible();
+  // Martine ne voit que Léa, Théo, Sofia.
+  await expect(page.locator('tbody tr')).toHaveCount(3);
+  // La colonne Coordinateur·rice est en lecture seule pour le coordo.
+  await expect(page.getByLabel(/Coordinateur·rice de Léa MARTIN/i)).toHaveCount(0);
+  await expect(
+    page.locator('tbody tr', { hasText: 'Léa MARTIN' }).getByText('Martine LEFÈVRE'),
+  ).toBeVisible();
+
+  // L'admin voit les 6 apprenti·e·s et peut éditer la colonne.
+  await selectRole(page, 'Admin');
+  await page.goto('/admin/affectations');
   await expect(page.locator('tbody tr')).toHaveCount(6);
+  await expect(page.getByLabel(/Coordinateur·rice de Léa MARTIN/i)).toBeVisible();
 });
 
 /**
@@ -49,7 +61,8 @@ test('verrou par défaut : tous les apprenti·e·s des fixtures sont verrouillé
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/affectations');
   // Bandeau d'info global.
-  await expect(page.getByText(/6 apprenti·es verrouillé·es par défaut/i)).toBeVisible();
+  // Le bandeau compte le périmètre du coordo (Martine : 3 apprenti·e·s).
+  await expect(page.getByText(/3 apprenti·es verrouillé·es par défaut/i)).toBeVisible();
   // Les selects de Léa sont disabled.
   const selectMaitreLea = page
     .locator('tbody tr', { hasText: /Léa MARTIN/ })
@@ -93,7 +106,8 @@ test('réaffecter Léa de Karim vers Hélène — synchronisation des compteurs'
 test('cas final : déplacer tous les apprenti·e·s de Karim débloque sa suppression', async ({
   page,
 }) => {
-  await selectRole(page, 'Coordinateur·rice');
+  // En admin : Luca (second maître Karim) est hors du périmètre de Martine.
+  await selectRole(page, 'Admin');
   await page.goto('/admin/affectations');
 
   // Réaffecte les 3 apprenti·e·s de Karim vers Hélène (verrou levé pour chacun·e)
@@ -126,6 +140,36 @@ test('cas final : déplacer tous les apprenti·e·s de Karim débloque sa suppre
     .getByRole('button', { name: /Confirmer la suppression de Karim BENALI/i })
     .click();
   await expect(page.locator('tbody tr', { hasText: /Karim BENALI/ })).toHaveCount(0);
+});
+
+test("l'admin répartit les apprenti·e·s entre coordos — chaque coordo voit son périmètre (juin 2026)", async ({
+  page,
+}) => {
+  // 1. L'admin réaffecte Léa (Martine → Bernard). Hors verrou : la
+  //    répartition entre coordos est purement administrative.
+  await selectRole(page, 'Admin');
+  await page.goto('/admin/affectations');
+  await page
+    .locator('tbody tr', { hasText: 'Léa MARTIN' })
+    .getByLabel(/Coordinateur·rice de Léa MARTIN/i)
+    .selectOption({ label: 'Bernard PETIT' });
+
+  // 2. Côté coordo : Martine (par défaut) ne voit plus que Théo et Sofia.
+  await selectRole(page, 'Coordinateur·rice');
+  await page.goto('/');
+  await expect(
+    page.getByRole('button', { name: /Martine LEFÈVRE/i }).getByText(/2 apprenti·e·s/i),
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: /Ouvrir le livret de Léa MARTIN/i })).toHaveCount(
+    0,
+  );
+
+  // 3. Bascule sur Bernard : 4 apprenti·e·s, dont Léa.
+  await page.getByRole('button', { name: /Bernard PETIT/i }).click();
+  await expect(page.getByRole('button', { name: /Ouvrir le livret de Léa MARTIN/i })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: /Ouvrir le livret de Minh NGUYEN/i }),
+  ).toBeVisible();
 });
 
 test("affecter un second maître ouvre l'accès au livret (double tutorat — juin 2026)", async ({

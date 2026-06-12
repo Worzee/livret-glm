@@ -31,6 +31,7 @@ export const apprentiLeaMartin: Apprenti = {
   entrepriseId: 'e-le-gourmet',
   maitreApprentissageId: 'u-maitre-karim',
   formateurReferentId: 'u-formateur-sophie',
+  coordoId: 'u-coordo-martine',
   contratDebut: '2025-09-02',
   contratFin: '2027-09-01',
 };
@@ -47,6 +48,7 @@ export const apprentiTheoDubois: Apprenti = {
   entrepriseId: 'e-le-gourmet',
   maitreApprentissageId: 'u-maitre-karim',
   formateurReferentId: 'u-formateur-sophie',
+  coordoId: 'u-coordo-martine',
   contratDebut: '2025-09-02',
   contratFin: '2027-09-01',
 };
@@ -63,6 +65,7 @@ export const apprentiSofiaPereira: Apprenti = {
   entrepriseId: 'e-le-gourmet',
   maitreApprentissageId: 'u-maitre-karim',
   formateurReferentId: 'u-formateur-sophie',
+  coordoId: 'u-coordo-martine',
   contratDebut: '2025-09-02',
   contratFin: '2027-09-01',
 };
@@ -79,6 +82,7 @@ export const apprentiMinhNguyen: Apprenti = {
   entrepriseId: 'e-brasserie-rhone',
   maitreApprentissageId: 'u-maitre-helene',
   formateurReferentId: 'u-formateur-sophie',
+  coordoId: 'u-coordo-bernard',
   contratDebut: '2025-09-02',
   contratFin: '2027-09-01',
 };
@@ -95,6 +99,7 @@ export const apprentiAyaKouame: Apprenti = {
   entrepriseId: 'e-brasserie-rhone',
   maitreApprentissageId: 'u-maitre-helene',
   formateurReferentId: 'u-formateur-sophie',
+  coordoId: 'u-coordo-bernard',
   contratDebut: '2025-09-02',
   contratFin: '2027-09-01',
 };
@@ -113,6 +118,7 @@ export const apprentiLucaBianchi: Apprenti = {
   // Double tutorat (juin 2026) : Karim suit aussi Luca (second maître).
   maitreApprentissageSecondId: 'u-maitre-karim',
   formateurReferentId: 'u-formateur-sophie',
+  coordoId: 'u-coordo-bernard',
   contratDebut: '2025-09-02',
   contratFin: '2027-09-01',
 };
@@ -193,6 +199,24 @@ export const coordoMartineLefevre: Coordo = {
   telephone: '01 99 99 99 04',
   formationIds: ['f-cap-cuisine-2025'],
 };
+
+/**
+ * Second coordo (juin 2026) — démontre la répartition des apprenti·e·s par
+ * l'admin : Martine suit l'équipe du Gourmet (Léa, Théo, Sofia), Bernard
+ * celle de la Brasserie du Rhône (Minh, Aya, Luca). Chaque coordo ne voit
+ * que son périmètre (`Apprenti.coordoId`).
+ */
+export const coordoBernardPetit: Coordo = {
+  id: 'u-coordo-bernard',
+  role: 'coordo',
+  nom: 'PETIT',
+  prenom: 'Bernard',
+  email: 'bernard.petit@greta-demo.fr',
+  telephone: '01 99 99 99 05',
+  formationIds: ['f-cap-cuisine-2025'],
+};
+
+export const coordosDemo: Coordo[] = [coordoMartineLefevre, coordoBernardPetit];
 
 export const adminGuillaumeFerreri: Admin = {
   id: 'u-admin-guillaume',

@@ -1,4 +1,4 @@
-import type { Apprenti, Coordo, Formateur, Maitre, Utilisateur } from '@/types';
+import type { Apprenti, Formateur, Maitre, Utilisateur } from '@/types';
 
 /**
  * Détermine la liste des apprenti·e·s qu'un·e utilisateur·rice peut consulter,
@@ -10,8 +10,9 @@ import type { Apprenti, Coordo, Formateur, Maitre, Utilisateur } from '@/types';
  *   - maitre    → ses apprenti·e·s (champ `apprentiIds`)
  *   - formateur → la promo dont il/elle est référent·e (champ `promoIds`,
  *                 résolu via `formationId` de l'apprenti·e)
- *   - coordo    → tous les apprenti·e·s des formations qu'il/elle gère
- *                 (champ `formationIds`)
+ *   - coordo    → les apprenti·e·s qui lui sont affecté·e·s par l'admin
+ *                 (champ `Apprenti.coordoId` — juin 2026 ; un·e apprenti·e
+ *                 sans coordo n'est visible que de l'admin)
  *   - admin     → tous les apprenti·e·s du dispositif
  */
 export function apprentisAccessibles(utilisateur: Utilisateur, apprentis: Apprenti[]): Apprenti[] {
@@ -26,10 +27,8 @@ export function apprentisAccessibles(utilisateur: Utilisateur, apprentis: Appren
       const promos = new Set((utilisateur as Formateur).promoIds);
       return apprentis.filter((a) => promos.has(a.formationId));
     }
-    case 'coordo': {
-      const formations = new Set((utilisateur as Coordo).formationIds);
-      return apprentis.filter((a) => formations.has(a.formationId));
-    }
+    case 'coordo':
+      return apprentis.filter((a) => a.coordoId === utilisateur.id);
     case 'admin':
       return [...apprentis];
   }

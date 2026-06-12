@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   Building2,
+  ClipboardList,
   GraduationCap,
   HardHat,
   Link2,
@@ -16,7 +17,11 @@ import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
-import { filtrerApprentis, trierApprentis } from '@/lib/apprentis-accessibles';
+import {
+  apprentisAccessibles,
+  filtrerApprentis,
+  trierApprentis,
+} from '@/lib/apprentis-accessibles';
 import { evaluerVerrouAffectation } from '@/lib/affectation-verrou';
 import { cn } from '@/lib/utils';
 
@@ -37,9 +42,11 @@ import { cn } from '@/lib/utils';
  */
 export function GestionAffectations() {
   const roleActif = useUserStore((s) => s.roleActif);
+  const utilisateurActif = useUserStore((s) => s.utilisateurActif);
   const apprentis = useUtilisateursStore((s) => s.apprentis);
   const maitres = useUtilisateursStore((s) => s.maitres);
   const formateurs = useUtilisateursStore((s) => s.formateurs);
+  const coordos = useUtilisateursStore((s) => s.coordos);
   const modifierApprenti = useUtilisateursStore((s) => s.modifierApprenti);
   const formations = useFormationsStore((s) => s.formations);
   const livrets = useLivretStore((s) => s.livrets);
@@ -52,17 +59,20 @@ export function GestionAffectations() {
   const [deverrouillesTemp, setDeverrouillesTemp] = useState<Set<string>>(new Set());
 
   const liste = useMemo(() => {
-    let r = Object.values(apprentis);
+    // Périmètre par rôle (juin 2026) : un coordo ne voit que les apprenti·e·s
+    // que l'admin lui a affecté·e·s ; l'admin voit tout.
+    let r = apprentisAccessibles(utilisateurActif, Object.values(apprentis));
     if (filtreFormationId !== 'toutes') {
       r = r.filter((a) => a.formationId === filtreFormationId);
     }
     if (requete.trim()) r = filtrerApprentis(r, requete);
     return trierApprentis(r);
-  }, [apprentis, requete, filtreFormationId]);
+  }, [utilisateurActif, apprentis, requete, filtreFormationId]);
 
   const formationsList = useMemo(() => Object.values(formations), [formations]);
   const maitresList = useMemo(() => Object.values(maitres), [maitres]);
   const formateursList = useMemo(() => Object.values(formateurs), [formateurs]);
+  const coordosList = useMemo(() => Object.values(coordos), [coordos]);
 
   function basculerDeverrouTemp(apprentiId: string) {
     setDeverrouillesTemp((s) => {
@@ -183,6 +193,12 @@ export function GestionAffectations() {
                   </th>
                   <th className="px-4 py-2 text-left">
                     <span className="inline-flex items-center gap-1.5">
+                      <ClipboardList className="h-3.5 w-3.5 text-role-coordo" aria-hidden="true" />
+                      Coordinateur·rice
+                    </span>
+                  </th>
+                  <th className="px-4 py-2 text-left">
+                    <span className="inline-flex items-center gap-1.5">
                       <Building2 className="h-3.5 w-3.5" aria-hidden="true" />
                       Entreprise
                     </span>
@@ -201,6 +217,8 @@ export function GestionAffectations() {
                       formations={formationsList}
                       maitres={maitresList}
                       formateurs={formateursList}
+                      coordos={coordosList}
+                      coordoEditable={roleActif === 'admin'}
                       deverrouilleTemp={deverrouillesTemp.has(a.id)}
                       onBasculerVerrou={() => basculerDeverrouTemp(a.id)}
                       onChange={(patch) => modifierApprenti(a.id, patch)}
@@ -226,6 +244,12 @@ interface LigneAffectationProps {
   formations: Array<{ id: string; intitule: string; annee: string }>;
   maitres: Array<{ id: string; prenom: string; nom: string; entreprise: string }>;
   formateurs: Array<{ id: string; prenom: string; nom: string }>;
+  coordos: Array<{ id: string; prenom: string; nom: string }>;
+  /**
+   * L'affectation apprenti ↔ coordo est réservée à l'admin (juin 2026) :
+   * le coordo voit la colonne en lecture seule.
+   */
+  coordoEditable: boolean;
   deverrouilleTemp: boolean;
   onBasculerVerrou: () => void;
   onChange: (patch: Partial<Apprenti>) => void;
@@ -237,6 +261,8 @@ function LigneAffectation({
   formations,
   maitres,
   formateurs,
+  coordos,
+  coordoEditable,
   deverrouilleTemp,
   onBasculerVerrou,
   onChange,
@@ -359,6 +385,33 @@ function LigneAffectation({
             </option>
           ))}
         </SelectAutoSave>
+      </td>
+      <td className="px-2 py-2">
+        {coordoEditable ? (
+          // Hors verrou volontairement : la répartition entre coordos est une
+          // réorganisation administrative qui ne touche aucune donnée
+          // pédagogique — l'admin doit pouvoir répartir sans déverrouiller.
+          <SelectAutoSave
+            valeur={apprenti.coordoId ?? ''}
+            onChange={(v) => patcher({ coordoId: v || undefined }, 'coordo')}
+            aDestinationDuFlash={champFlash === 'coordo'}
+            ariaLabel={`Coordinateur·rice de ${apprenti.prenom} ${apprenti.nom}`}
+          >
+            <option value="">— Aucun·e —</option>
+            {coordos.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.prenom} {c.nom}
+              </option>
+            ))}
+          </SelectAutoSave>
+        ) : (
+          <span className="text-xs text-muted-foreground">
+            {(() => {
+              const c = coordos.find((cc) => cc.id === apprenti.coordoId);
+              return c ? `${c.prenom} ${c.nom}` : '—';
+            })()}
+          </span>
+        )}
       </td>
       <td className="px-4 py-2 text-muted-foreground text-xs">{apprenti.entrepriseId}</td>
       <td className="px-2 py-2 text-right">

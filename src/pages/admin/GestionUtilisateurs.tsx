@@ -11,25 +11,15 @@ import {
   Trash2,
   UserCog,
 } from 'lucide-react';
-import type {
-  Apprenti,
-  Coordo,
-  Formateur,
-  Maitre,
-  Role,
-  Utilisateur,
-} from '@/types';
+import type { Apprenti, Coordo, Formateur, Maitre, Role, Utilisateur } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
-import { filtrerApprentis } from '@/lib/apprentis-accessibles';
+import { apprentisAccessibles, filtrerApprentis } from '@/lib/apprentis-accessibles';
 import { evaluerVerrouAffectation } from '@/lib/affectation-verrou';
 import { ModaleApprenti } from '@/components/admin/ModaleApprenti';
-import {
-  ModaleUtilisateurStaff,
-  type RoleStaff,
-} from '@/components/admin/ModaleUtilisateurStaff';
+import { ModaleUtilisateurStaff, type RoleStaff } from '@/components/admin/ModaleUtilisateurStaff';
 import { cn } from '@/lib/utils';
 
 /**
@@ -50,6 +40,7 @@ type FiltreRole = 'tous' | Role;
 
 export function GestionUtilisateurs() {
   const roleActif = useUserStore((s) => s.roleActif);
+  const utilisateurActif = useUserStore((s) => s.utilisateurActif);
   const apprentis = useUtilisateursStore((s) => s.apprentis);
   const maitres = useUtilisateursStore((s) => s.maitres);
   const formateurs = useUtilisateursStore((s) => s.formateurs);
@@ -80,16 +71,18 @@ export function GestionUtilisateurs() {
     return () => clearTimeout(t);
   }, [confirmationSuppression]);
 
-  // Liste plate de tous les utilisateurs pour la table.
+  // Liste plate de tous les utilisateurs pour la table. Périmètre coordo
+  // (juin 2026) : un coordo ne liste que les apprenti·e·s que l'admin lui a
+  // affecté·e·s — les autres types d'utilisateurs restent visibles en entier.
   const tousUtilisateurs: Utilisateur[] = useMemo(
     () => [
-      ...Object.values(apprentis),
+      ...apprentisAccessibles(utilisateurActif, Object.values(apprentis)),
       ...Object.values(maitres),
       ...Object.values(formateurs),
       ...Object.values(coordos),
       ...Object.values(admins),
     ],
-    [apprentis, maitres, formateurs, coordos, admins],
+    [utilisateurActif, apprentis, maitres, formateurs, coordos, admins],
   );
 
   const filtres = useMemo(() => {
@@ -342,14 +335,13 @@ export function GestionUtilisateurs() {
                 const classeBordureRole = BORDURES_ROLE[u.role];
                 const classeLibelleRole = cn(LIBELLES_ROLE[u.role], 'font-medium');
                 return (
-                  <tr
-                    key={u.id}
-                    className={cn(classeBordureRole, enConfirmation && 'bg-red-50')}
-                  >
+                  <tr key={u.id} className={cn(classeBordureRole, enConfirmation && 'bg-red-50')}>
                     <td className="px-2 md:px-4 py-2 font-medium align-top">
                       <span className="inline-flex items-center gap-2">
                         <IconeRole role={u.role} />
-                        <span>{u.prenom} {u.nom}</span>
+                        <span>
+                          {u.prenom} {u.nom}
+                        </span>
                       </span>
                       {/* Email replié sous le nom sur mobile. */}
                       <p className="md:hidden text-xs font-normal text-muted-foreground mt-0.5 break-all">
@@ -401,9 +393,7 @@ export function GestionUtilisateurs() {
                         )}
                       </div>
                       {blocage.bloque && (
-                        <p className="mt-0.5 text-[10px] text-amber-700 italic">
-                          {blocage.raison}
-                        </p>
+                        <p className="mt-0.5 text-[10px] text-amber-700 italic">{blocage.raison}</p>
                       )}
                     </td>
                   </tr>
@@ -417,7 +407,7 @@ export function GestionUtilisateurs() {
       <ModaleApprenti
         // `key` distincte → force un remount frais à chaque ouverture
         // (évite la race où setSaisie pouvait écraser un fill en cours).
-        key={modaleApprentiOuverte ? apprentiEnEdition?.id ?? 'creation' : 'fermee-apprenti'}
+        key={modaleApprentiOuverte ? (apprentiEnEdition?.id ?? 'creation') : 'fermee-apprenti'}
         ouvert={modaleApprentiOuverte}
         apprenti={apprentiEnEdition}
         onAnnuler={() => {
@@ -533,15 +523,12 @@ function AccesRefuse({ roleActif }: { roleActif: Role }) {
       <div className="flex items-start gap-3">
         <Lock className="h-5 w-5 shrink-0 text-amber-700 mt-0.5" aria-hidden="true" />
         <div>
-          <h1 className="text-lg font-medium text-amber-900">
-            Accès réservé à l'administration
-          </h1>
+          <h1 className="text-lg font-medium text-amber-900">Accès réservé à l'administration</h1>
           <p className="mt-2 text-sm text-amber-900/80">
-            Vous êtes actuellement connecté·e en tant que{' '}
-            <strong>{libelleRole(roleActif)}</strong>. La gestion des utilisateurs
-            est réservée aux rôles <strong>Coordinateur·rice</strong> et{' '}
-            <strong>Administrateur·rice</strong>. Utilisez le sélecteur de rôle en
-            haut à droite pour basculer.
+            Vous êtes actuellement connecté·e en tant que <strong>{libelleRole(roleActif)}</strong>.
+            La gestion des utilisateurs est réservée aux rôles <strong>Coordinateur·rice</strong> et{' '}
+            <strong>Administrateur·rice</strong>. Utilisez le sélecteur de rôle en haut à droite
+            pour basculer.
           </p>
         </div>
       </div>

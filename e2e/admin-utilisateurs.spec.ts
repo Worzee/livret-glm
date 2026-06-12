@@ -23,15 +23,24 @@ test('le rôle apprenti voit la page admin en accès refusé', async ({ page }) 
   await expect(page.getByRole('heading', { name: /Accès réservé/i })).toBeVisible();
 });
 
-test('le coordo voit la table avec les 10 utilisateurs des fixtures', async ({ page }) => {
+test('le coordo voit la table restreinte à son périmètre (juin 2026)', async ({ page }) => {
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/utilisateurs');
-  // 6 apprenti·e·s + 2 maîtres + 1 formatrice + 1 coordo + 1 admin = 11
+  // Martine ne liste que SES 3 apprenti·e·s (Léa, Théo, Sofia) + le staff
+  // complet : 2 maîtres + 1 formatrice + 2 coordos + 1 admin = 9 lignes.
   const lignes = page.locator('tbody tr');
-  await expect(lignes).toHaveCount(11);
+  await expect(lignes).toHaveCount(9);
+  await expect(page.locator('tbody tr', { hasText: /Minh NGUYEN/ })).toHaveCount(0);
+
+  // L'admin voit tout : 6 apprenti·e·s + 6 staff = 12 lignes.
+  await selectRole(page, 'Admin');
+  await page.goto('/admin/utilisateurs');
+  await expect(page.locator('tbody tr')).toHaveCount(12);
 });
 
-test('le coordo crée un·e nouvel·le apprenti·e — la carte apparaît au tableau de bord', async ({ page }) => {
+test('le coordo crée un·e nouvel·le apprenti·e — la carte apparaît au tableau de bord', async ({
+  page,
+}) => {
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/utilisateurs');
 
@@ -56,20 +65,16 @@ test('le coordo crée un·e nouvel·le apprenti·e — la carte apparaît au tab
 
   // La modale se ferme
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  // 12 lignes maintenant
-  await expect(page.locator('tbody tr')).toHaveCount(12);
+  // 10 lignes maintenant (périmètre Martine : 3 + Sarah auto-affectée + 6 staff)
+  await expect(page.locator('tbody tr')).toHaveCount(10);
 
   // Sur le tableau de bord (toujours en coordo), la carte apparaît
   await page.goto('/');
-  await expect(
-    page.getByRole('button', { name: /Ouvrir le livret de Sarah TURC/i }),
-  ).toBeVisible();
+  await expect(page.getByRole('button', { name: /Ouvrir le livret de Sarah TURC/i })).toBeVisible();
 
   // Et bascule en formateur — Sarah est dans sa promo aussi.
   await selectRole(page, 'Formateur référent');
-  await expect(
-    page.getByRole('button', { name: /Ouvrir le livret de Sarah TURC/i }),
-  ).toBeVisible();
+  await expect(page.getByRole('button', { name: /Ouvrir le livret de Sarah TURC/i })).toBeVisible();
 });
 
 test('validation : prénom obligatoire bloque la soumission', async ({ page }) => {
@@ -84,7 +89,9 @@ test('validation : prénom obligatoire bloque la soumission', async ({ page }) =
   await expect(page.getByRole('dialog')).toBeVisible();
 });
 
-test('édition : modifier un·e apprenti·e existant·e met à jour le tableau de bord', async ({ page }) => {
+test('édition : modifier un·e apprenti·e existant·e met à jour le tableau de bord', async ({
+  page,
+}) => {
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/utilisateurs');
 
@@ -101,18 +108,19 @@ test('édition : modifier un·e apprenti·e existant·e met à jour le tableau d
   ).toBeVisible();
 });
 
-test('suppression d\'un·e apprenti·e bloquée tant que le contrat est démarré', async ({ page }) => {
-  // Luca a un contrat démarré dans la fixture (2025-09 → 2027-09) — le verrou
-  // empêche sa suppression accidentelle.
+test("suppression d'un·e apprenti·e bloquée tant que le contrat est démarré", async ({ page }) => {
+  // Léa a un contrat démarré dans la fixture (2025-09 → 2027-09) — le verrou
+  // empêche sa suppression accidentelle. (Léa appartient au périmètre de
+  // Martine — juin 2026 ; Luca, lui, est désormais chez Bernard.)
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/utilisateurs');
-  const ligneLuca = page.locator('tbody tr', { hasText: /Luca BIANCHI/ });
-  const boutonSupprimer = ligneLuca.getByRole('button', { name: /^Supprimer Luca BIANCHI/i });
+  const ligneLea = page.locator('tbody tr', { hasText: /Léa MARTIN/ });
+  const boutonSupprimer = ligneLea.getByRole('button', { name: /^Supprimer Léa MARTIN/i });
   await expect(boutonSupprimer).toBeDisabled();
-  await expect(ligneLuca.getByText(/Contrat démarré le|fiche|Entretien/i)).toBeVisible();
+  await expect(ligneLea.getByText(/Contrat démarré le|fiche|Entretien/i)).toBeVisible();
 });
 
-test('suppression libre d\'un·e apprenti·e dont le contrat n\'a pas démarré', async ({ page }) => {
+test("suppression libre d'un·e apprenti·e dont le contrat n'a pas démarré", async ({ page }) => {
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/utilisateurs');
 

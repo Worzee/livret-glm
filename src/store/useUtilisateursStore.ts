@@ -4,7 +4,7 @@ import type { Admin, Apprenti, Coordo, Formateur, Maitre } from '@/types';
 import {
   adminGuillaumeFerreri,
   apprentisDemo,
-  coordoMartineLefevre,
+  coordosDemo,
   formatriceSophieDubois,
   maitresDemo,
 } from '@/fixtures/utilisateurs';
@@ -93,9 +93,9 @@ interface UtilisateursStore {
   reinitialiser: () => void;
 }
 
-// v3 — second maître / tuteur optionnel (juin 2026) : fixtures rechargées
-//      pour inclure le double tutorat de Luca (Hélène + Karim).
-const VERSION_SCHEMA = 3;
+// v4 — répartition des apprenti·e·s par coordo (juin 2026) : fixtures
+//      rechargées avec `Apprenti.coordoId` + 2ᵉ coordo (Bernard PETIT).
+const VERSION_SCHEMA = 4;
 
 /** État initial calculé depuis les fixtures. */
 function etatInitial(): Pick<
@@ -106,7 +106,7 @@ function etatInitial(): Pick<
     apprentis: Object.fromEntries(apprentisDemo.map((a) => [a.id, a])),
     maitres: Object.fromEntries(maitresDemo.map((m) => [m.id, m])),
     formateurs: { [formatriceSophieDubois.id]: formatriceSophieDubois },
-    coordos: { [coordoMartineLefevre.id]: coordoMartineLefevre },
+    coordos: Object.fromEntries(coordosDemo.map((c) => [c.id, c])),
     admins: { [adminGuillaumeFerreri.id]: adminGuillaumeFerreri },
   };
 }
@@ -338,4 +338,9 @@ export function getApprentiByIdFromStore(id: string): Apprenti | undefined {
 /** Lookup non-réactif d'un maître par id. */
 export function getMaitreByIdFromStore(id: string): Maitre | undefined {
   return useUtilisateursStore.getState().maitres[id];
+}
+
+/** Lookup non-réactif d'un·e coordo par id. */
+export function getCoordoByIdFromStore(id: string): Coordo | undefined {
+  return useUtilisateursStore.getState().coordos[id];
 }

@@ -131,6 +131,13 @@ export interface Apprenti extends Utilisateur {
    */
   maitreApprentissageSecondId?: string;
   formateurReferentId: string;
+  /**
+   * Coordinateur·rice pédagogique en charge de l'apprenti·e (juin 2026).
+   * Affecté·e par l'admin (gestion des affectations) — chaque coordo ne voit
+   * que les apprenti·e·s de son périmètre, l'admin voit tout. `undefined` :
+   * apprenti·e non réparti·e, visible de l'admin seul (côté coordo).
+   */
+  coordoId?: string;
   contratDebut: string;
   contratFin: string;
 }

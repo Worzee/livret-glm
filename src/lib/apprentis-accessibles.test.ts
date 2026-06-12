@@ -8,6 +8,7 @@ import {
   apprentiTheoDubois,
   apprentisDemo,
   adminGuillaumeFerreri,
+  coordoBernardPetit,
   coordoMartineLefevre,
   formatriceSophieDubois,
   maitreHeleneRoche,
@@ -63,9 +64,24 @@ describe('apprentisAccessibles — filtre par rôle', () => {
     expect(r).toHaveLength(6);
   });
 
-  it("coordo voit tous les apprenti·e·s des formations qu'il/elle gère", () => {
+  it('coordo Martine ne voit que les apprenti·e·s de son périmètre (Léa, Théo, Sofia — juin 2026)', () => {
     const r = apprentisAccessibles(coordoMartineLefevre, apprentisDemo);
-    expect(r).toHaveLength(6);
+    expect(r.map((a) => a.id).sort()).toEqual(
+      [apprentiLeaMartin.id, apprentiTheoDubois.id, apprentiSofiaPereira.id].sort(),
+    );
+  });
+
+  it('coordo Bernard voit son périmètre (Minh, Aya, Luca — juin 2026)', () => {
+    const r = apprentisAccessibles(coordoBernardPetit, apprentisDemo);
+    expect(r.map((a) => a.id).sort()).toEqual(
+      [apprentiMinhNguyen.id, apprentiAyaKouame.id, apprentiLucaBianchi.id].sort(),
+    );
+  });
+
+  it("un·e apprenti·e sans coordo n'est visible d'aucun coordo (admin seul)", () => {
+    const sansCoordo = { ...apprentiLeaMartin, id: 'a-orphelin', coordoId: undefined };
+    expect(apprentisAccessibles(coordoMartineLefevre, [sansCoordo])).toEqual([]);
+    expect(apprentisAccessibles(adminGuillaumeFerreri, [sansCoordo])).toHaveLength(1);
   });
 
   it('admin voit tous les apprenti·e·s', () => {

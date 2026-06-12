@@ -49,7 +49,9 @@ export function ModaleApprenti({ ouvert, apprenti, onAnnuler, onValide }: Modale
   const modifier = useUtilisateursStore((s) => s.modifierApprenti);
   const maitres = useUtilisateursStore((s) => s.maitres);
   const formateurs = useUtilisateursStore((s) => s.formateurs);
+  const coordos = useUtilisateursStore((s) => s.coordos);
   const formations = useFormationsStore((s) => s.formations);
+  const roleActif = useUserStore((s) => s.roleActif);
   const auteurId = useUserStore((s) => s.utilisateurActif.id);
 
   const titreId = useId();
@@ -58,6 +60,7 @@ export function ModaleApprenti({ ouvert, apprenti, onAnnuler, onValide }: Modale
   const formationsList = useMemo(() => Object.values(formations), [formations]);
   const maitresList = useMemo(() => Object.values(maitres), [maitres]);
   const formateursList = useMemo(() => Object.values(formateurs), [formateurs]);
+  const coordosList = useMemo(() => Object.values(coordos), [coordos]);
 
   // Pré-remplir avec les valeurs de l'apprenti·e à éditer ou avec des défauts
   // sensés en création (premier·e formateur·rice + premier maître + 1ʳᵉ formation).
@@ -77,6 +80,9 @@ export function ModaleApprenti({ ouvert, apprenti, onAnnuler, onValide }: Modale
       maitreApprentissageId: maitre?.id ?? '',
       formateurReferentId: formateur?.id ?? '',
       entrepriseId: maitre?.entreprise ?? '',
+      // Un coordo qui crée un·e apprenti·e se l'affecte automatiquement ;
+      // l'admin choisit via le champ dédié (juin 2026).
+      coordoId: roleActif === 'coordo' ? auteurId : undefined,
     };
   }
 
@@ -323,6 +329,20 @@ export function ModaleApprenti({ ouvert, apprenti, onAnnuler, onValide }: Modale
               erreur={erreurs.formateurReferentId}
               obligatoire
             />
+            {/* Répartition entre coordos : réservée à l'admin (juin 2026) —
+                un coordo créateur est affecté automatiquement. */}
+            {roleActif === 'admin' && (
+              <ChampSelect
+                label="Coordinateur·rice"
+                valeur={saisie.coordoId ?? ''}
+                onChange={(v) => setSaisie((s) => ({ ...s, coordoId: v || undefined }))}
+                options={coordosList.map((c) => ({
+                  value: c.id,
+                  libelle: `${c.prenom} ${c.nom}`,
+                }))}
+                optionVide="— Aucun·e —"
+              />
+            )}
           </Section>
         </div>
 
