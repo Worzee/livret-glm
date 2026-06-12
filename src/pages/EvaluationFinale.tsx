@@ -6,6 +6,7 @@ import { useFormationsStore } from '@/store/useFormationsStore';
 import { useReferentielsStore } from '@/store/useReferentielsStore';
 import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
 import { useEtablissementsStore } from '@/store/useEtablissementsStore';
+import { useAttitudesStore } from '@/store/useAttitudesStore';
 import { peutEditer } from '@/lib/droits';
 import { libelleRole } from '@/lib/droits';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
@@ -16,7 +17,7 @@ import {
 import { getMaitreByIdFromStore } from '@/store/useUtilisateursStore';
 import { formationCapCuisine } from '@/fixtures/formations';
 import { GrilleCompetences } from '@/components/evaluation/GrilleCompetences';
-import { GrilleAttitudes } from '@/components/evaluation/GrilleAttitudes';
+import { SyntheseAttitudes } from '@/components/evaluation/SyntheseAttitudes';
 import { BandeauCloture } from '@/components/evaluation/BandeauCloture';
 import { BoutonExportPdf } from '@/components/pdf/BoutonExportPdf';
 import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelectionne';
@@ -27,7 +28,8 @@ import { cn } from '@/lib/utils';
  *
  * Deux onglets :
  *   - Compétences (avec synthèse graphique par bloc)
- *   - Attitudes professionnelles
+ *   - Attitudes professionnelles — synthèse en lecture seule des
+ *     évaluations portées à chaque entretien tripartite (juin 2026)
  *
  * R24 : consultable par tous les rôles, mode lecture si non-éditeur (la seule
  * différence est l'édition des cellules, gérée par chaque grille).
@@ -42,6 +44,7 @@ export function EvaluationFinale() {
   const referentiels = useReferentielsStore((s) => s.referentiels);
   const banqueQuestions = useBanqueQuestionsStore((s) => s.questions);
   const etablissements = useEtablissementsStore((s) => s.etablissements);
+  const attitudesMap = useAttitudesStore((s) => s.attitudes);
   const ctx = useApprentiActif();
 
   if (!ctx) return <AucunApprentiSelectionne />;
@@ -55,11 +58,11 @@ export function EvaluationFinale() {
   const etablissement = etablissements[formation.lieuId];
   const maitre = getMaitreByIdFromStore(apprenti.maitreApprentissageId) ?? maitreKarimBenali;
 
+  // Les attitudes ne se saisissent plus ici (synthèse lecture seule depuis
+  // juin 2026) — seules les grilles de compétences restent éditables.
   const aDroitEdition =
     peutEditer(roleActif, 'grille-competences.entreprise') ||
-    peutEditer(roleActif, 'grille-competences.centre') ||
-    peutEditer(roleActif, 'grille-attitudes.maitre') ||
-    peutEditer(roleActif, 'grille-attitudes.formateur');
+    peutEditer(roleActif, 'grille-competences.centre');
 
   return (
     <div className="space-y-6">
@@ -90,6 +93,7 @@ export function EvaluationFinale() {
           referentiel={referentiel}
           etablissement={etablissement}
           banqueQuestions={banqueQuestions}
+          attitudes={Object.values(attitudesMap)}
         />
       </header>
 
@@ -102,7 +106,7 @@ export function EvaluationFinale() {
 
       <div role="tabpanel">
         {onglet === 'competences' && <GrilleCompetences referentiel={referentiel} />}
-        {onglet === 'attitudes' && <GrilleAttitudes referentiel={referentiel} />}
+        {onglet === 'attitudes' && <SyntheseAttitudes />}
       </div>
     </div>
   );

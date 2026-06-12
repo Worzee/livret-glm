@@ -34,7 +34,6 @@ function fabriquerLivret(overrides: Partial<Livret> = {}): Livret {
     entretiens: { 1: null, 2: null, 3: null, 4: null },
     fichesSuivi: [],
     evaluationFinaleCompetences: { lignes: [], modifieLe: '2025-09-01T00:00:00.000Z' },
-    evaluationFinaleAttitudes: { lignes: [], modifieLe: '2025-09-01T00:00:00.000Z' },
     selectionCompetencesEntreprise: {
       ids: [],
       modifieLe: '2025-09-01T00:00:00.000Z',
@@ -69,6 +68,7 @@ const ENTRETIEN_VIDE: EntretienTripartite = {
   questionsMaitreSelectionnees: [],
   questionsImposees: [],
   questionsObligatoires: [],
+  evaluationsAttitudes: {},
   reponsesApprenti: {},
   reponsesMaitre: {},
   appreciationMaitre: {},

@@ -144,6 +144,7 @@ function entretien(overrides: Partial<EntretienTripartite> = {}): EntretienTripa
     questionsMaitreSelectionnees: [],
     questionsImposees: [],
     questionsObligatoires: [],
+    evaluationsAttitudes: {},
     reponsesApprenti: {},
     reponsesMaitre: {},
     appreciationMaitre: {},

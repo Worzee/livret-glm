@@ -1,6 +1,7 @@
 import { Document, Page, Text, View } from '@react-pdf/renderer';
 import type {
   Apprenti,
+  AttitudeProfessionnelle,
   EntretienTripartite,
   Etablissement,
   FicheSuiviPeriode,
@@ -65,6 +66,11 @@ interface LivretPdfProps {
    * dans `entretien.reponses{Apprenti,Maitre}`.
    */
   banqueQuestions: Record<string, QuestionBanque>;
+  /**
+   * Catalogue global des attitudes professionnelles (juin 2026) — évaluées
+   * par le maître à chaque entretien, synthétisées en évaluation finale.
+   */
+  attitudes: ReadonlyArray<AttitudeProfessionnelle>;
   /** ISO de la date d'export (test injectable). */
   dateExport?: string;
 }
@@ -78,6 +84,7 @@ export function LivretPdf({
   referentiel,
   etablissement,
   banqueQuestions,
+  attitudes,
   dateExport,
 }: LivretPdfProps) {
   const date = dateExport ?? new Date().toISOString();
@@ -112,6 +119,7 @@ export function LivretPdf({
             maitre={maitre}
             formateur={formateur}
             banqueQuestions={banqueQuestions}
+            attitudes={attitudes}
           />
         );
       })}
@@ -125,7 +133,7 @@ export function LivretPdf({
           formateur={formateur}
         />
       ))}
-      <PageEvaluationFinale livret={livret} referentiel={referentiel} />
+      <PageEvaluationFinale livret={livret} referentiel={referentiel} attitudes={attitudes} />
       <PageAnnexes livret={livret} />
     </Document>
   );
@@ -386,6 +394,7 @@ function PageEntretien({
   maitre,
   formateur,
   banqueQuestions,
+  attitudes,
 }: {
   numero: NumeroEntretien;
   entretien: EntretienTripartite;
@@ -393,6 +402,7 @@ function PageEntretien({
   maitre: Maitre;
   formateur: Formateur;
   banqueQuestions: Record<string, QuestionBanque>;
+  attitudes: ReadonlyArray<AttitudeProfessionnelle>;
 }) {
   const ap = entretien.appreciationMaitre;
   const da = entretien.demarchesAdministratives;
@@ -467,6 +477,16 @@ function PageEntretien({
         {ap.commentaires && (
           <ParagrapheLibre titre="Commentaires du maître" valeur={ap.commentaires} />
         )}
+
+        {/* Attitudes professionnelles évaluées à chaque entretien (juin 2026). */}
+        <Text style={styles.h3}>Attitudes professionnelles (maître)</Text>
+        {attitudes.map((a) => (
+          <Champ
+            key={a.id}
+            label={a.libelle}
+            valeur={libelleAppreciation(entretien.evaluationsAttitudes[a.id] ?? undefined)}
+          />
+        ))}
 
         <Text style={styles.h2}>Démarches administratives</Text>
         <Champ label="Contrat signé" valeur={libelleOuiNon(da.contratSigne)} />
@@ -638,9 +658,12 @@ function PageFiche({
 function PageEvaluationFinale({
   livret,
   referentiel,
+  attitudes,
 }: {
   livret: Livret;
   referentiel: Referentiel;
+  /** Catalogue global des attitudes professionnelles (juin 2026). */
+  attitudes: ReadonlyArray<AttitudeProfessionnelle>;
 }) {
   const synthese = synthetiserCompetences(livret.fichesSuivi, referentiel);
   const lignes = livret.evaluationFinaleCompetences.lignes;
@@ -719,44 +742,57 @@ function PageEvaluationFinale({
           </View>
         ))}
 
-        <Text style={styles.h2}>Attitudes professionnelles</Text>
-        <View style={styles.tableau}>
-          <View style={[styles.tableauLigne, styles.tableauEnTete]}>
-            <Text style={[styles.tableauCellule, { width: '45%' }]}>Attitude</Text>
-            <Text style={[styles.tableauCellule, { width: '15%' }]}>Maître</Text>
-            <Text style={[styles.tableauCellule, { width: '15%' }]}>Formateur</Text>
-            <Text style={[styles.tableauCelluleDerniere, { width: '25%' }]}>Commentaire</Text>
-          </View>
-          {referentiel.attitudes.map((a, idx) => {
-            const ligne = livret.evaluationFinaleAttitudes.lignes.find(
-              (l) => l.attitudeId === a.id,
-            );
-            const commentaire = [ligne?.commentaireMaitre, ligne?.commentaireFormateur]
-              .filter(Boolean)
-              .join(' — ');
-            return (
+        {/* Synthèse des attitudes professionnelles (juin 2026) : évaluées
+            par le maître / tuteur à chaque entretien — une colonne par
+            entretien initialisé. */}
+        <Text style={styles.h2}>Attitudes professionnelles (synthèse des entretiens)</Text>
+        {attitudes.length === 0 ? (
+          <Text style={styles.vide}>Aucune attitude dans le catalogue.</Text>
+        ) : (
+          <View style={styles.tableau}>
+            <View style={[styles.tableauLigne, styles.tableauEnTete]}>
+              <Text style={[styles.tableauCellule, { width: '40%' }]}>Attitude</Text>
+              {NUMEROS_ENTRETIEN.map((n, idx) => (
+                <Text
+                  key={n}
+                  style={[
+                    idx === NUMEROS_ENTRETIEN.length - 1
+                      ? styles.tableauCelluleDerniere
+                      : styles.tableauCellule,
+                    { width: '15%' },
+                  ]}
+                >
+                  Entretien {n}
+                </Text>
+              ))}
+            </View>
+            {attitudes.map((a, idx) => (
               <View
                 key={a.id}
                 style={
-                  idx === referentiel.attitudes.length - 1
+                  idx === attitudes.length - 1
                     ? styles.tableauLigneSansBordure
                     : styles.tableauLigne
                 }
               >
-                <Text style={[styles.tableauCellule, { width: '45%' }]}>{a.libelle}</Text>
-                <Text style={[styles.tableauCellule, { width: '15%' }]}>
-                  {libelleAppreciation(ligne?.evaluationMaitre)}
-                </Text>
-                <Text style={[styles.tableauCellule, { width: '15%' }]}>
-                  {libelleAppreciation(ligne?.evaluationFormateur)}
-                </Text>
-                <Text style={[styles.tableauCelluleDerniere, { width: '25%' }]}>
-                  {commentaire || '—'}
-                </Text>
+                <Text style={[styles.tableauCellule, { width: '40%' }]}>{a.libelle}</Text>
+                {NUMEROS_ENTRETIEN.map((n, idxN) => (
+                  <Text
+                    key={n}
+                    style={[
+                      idxN === NUMEROS_ENTRETIEN.length - 1
+                        ? styles.tableauCelluleDerniere
+                        : styles.tableauCellule,
+                      { width: '15%' },
+                    ]}
+                  >
+                    {libelleAppreciation(livret.entretiens[n]?.evaluationsAttitudes[a.id] ?? undefined)}
+                  </Text>
+                ))}
               </View>
-            );
-          })}
-        </View>
+            ))}
+          </View>
+        )}
       </View>
     </Page>
   );

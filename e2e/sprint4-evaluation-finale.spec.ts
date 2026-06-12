@@ -35,11 +35,18 @@ test("la synthèse hérite des fiches de période (last-write-wins)", async ({ p
   await expect(page.getByText(/Vue en Période \d+/i).first()).toBeVisible();
 });
 
-test("l'onglet Attitudes affiche la grille du référentiel", async ({ page }) => {
+test("l'onglet Attitudes affiche la synthèse lecture seule des entretiens (juin 2026)", async ({
+  page,
+}) => {
   await page.goto('/livret/evaluation-finale');
   await page.getByRole('tab', { name: /Attitudes professionnelles/i }).click();
-  // Les attitudes du référentiel CAP Cuisine — au moins une est visible.
-  await expect(page.getByRole('heading', { name: 'Attitudes professionnelles' }).first()).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Attitudes professionnelles' }).first(),
+  ).toBeVisible();
+  // Synthèse par entretien : la colonne « Entretien 1 » porte les évaluations
+  // de la fixture de Léa (E1 signé) — au moins un badge « ++ » visible.
+  await expect(page.getByRole('columnheader', { name: /Entretien 1/i })).toBeVisible();
+  await expect(page.getByText('++', { exact: true }).first()).toBeVisible();
 });
 
 test("en apprenti·e, les grilles sont en lecture seule (R24 + matrice)", async ({ page }) => {

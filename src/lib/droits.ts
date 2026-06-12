@@ -28,6 +28,11 @@ export type Ressource =
    * a pas accès.
    */
   | 'entretien.gestion'
+  /**
+   * Évaluation des attitudes professionnelles dans l'entretien (retours
+   * coordos juin 2026) — réservée au maître / tuteur, comme l'appréciation.
+   */
+  | 'entretien.attitudes'
   | 'entretien.questions-apprenti'
   | 'entretien.questions-maitre'
   | 'entretien.appreciation-maitre'
@@ -71,11 +76,12 @@ export type Ressource =
   // d'une période passe désormais par le planning de la formation
   // (`admin.formations.modifier`) ; plus de gestion individuelle par fiche.
   | 'fiche.deverrouiller' // R10
-  // Grilles d'évaluation finales (CDC §5.4-5.5)
+  // Grilles d'évaluation finales (CDC §5.4-5.5). Les ressources
+  // `grille-attitudes.*` ont été retirées (juin 2026) : les attitudes sont
+  // évaluées dans chaque entretien (`entretien.attitudes`) et l'onglet de
+  // l'évaluation finale est une synthèse en lecture seule.
   | 'grille-competences.entreprise'
   | 'grille-competences.centre'
-  | 'grille-attitudes.maitre'
-  | 'grille-attitudes.formateur'
   // Export et opérations administratives (CDC §5.6)
   | 'export-pdf'
   | 'cloturer-livret'
@@ -103,7 +109,12 @@ export type Ressource =
   /** CRUD sur la banque de questions de l'entretien tripartite. */
   | 'admin.banque-questions.gerer'
   /** CRUD sur les établissements (lieux de formation, URL Pronote). */
-  | 'admin.etablissements.gerer';
+  | 'admin.etablissements.gerer'
+  /**
+   * CRUD sur le catalogue global des attitudes professionnelles (retours
+   * coordos juin 2026 — évaluées par le maître à chaque entretien).
+   */
+  | 'admin.attitudes.gerer';
 
 /**
  * Matrice statique : pour chaque ressource, l'ensemble des rôles autorisés.
@@ -118,6 +129,7 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   // Entretien tripartite — questions/zones par rôle propriétaire
   // Initialisation + date de l'entretien : formateur uniquement
   'entretien.gestion': ['formateur'],
+  'entretien.attitudes': ['maitre'],
   'entretien.questions-apprenti': ['apprenti'],
   'entretien.questions-maitre': ['maitre'],
   'entretien.appreciation-maitre': ['maitre'],
@@ -152,8 +164,6 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   // Compétences centre : formateur uniquement
   'grille-competences.centre': ['formateur'],
   // Attitudes : maître + formateur
-  'grille-attitudes.maitre': ['maitre'],
-  'grille-attitudes.formateur': ['formateur'],
 
   // Opérations administratives sur le livret
   'export-pdf': ['formateur'],
@@ -180,6 +190,7 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'admin.referentiels.gerer': ['coordo', 'admin'],
   'admin.banque-questions.gerer': ['coordo', 'admin'],
   'admin.etablissements.gerer': ['admin'], // admin uniquement
+  'admin.attitudes.gerer': ['admin'], // admin uniquement
 };
 
 /**

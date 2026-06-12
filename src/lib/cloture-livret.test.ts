@@ -44,7 +44,6 @@ const livretBase = (fiches: FicheSuiviPeriode[], cloture: ClotureLivret | null =
   entretiens: { 1: null, 2: null, 3: null, 4: null },
   fichesSuivi: fiches,
   evaluationFinaleCompetences: { lignes: [], modifieLe: '2025-09-01T08:00:00.000Z' },
-  evaluationFinaleAttitudes: { lignes: [], modifieLe: '2025-09-01T08:00:00.000Z' },
   selectionCompetencesEntreprise: {
     ids: [],
     modifieLe: '2025-09-01T08:00:00.000Z',

@@ -1,6 +1,6 @@
 # État du projet — Livret d'apprentissage GRETA Lyon Métropole
 
-**Dernière mise à jour** : 2026-06-11 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites)
+**Dernière mise à jour** : 2026-06-12 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites, motifs par rôle + séquencement, attitudes professionnelles par entretien + catalogue admin)
 **Version applicative** : 0.1.0
 **Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3) **livrée + 4 vagues post-livraison**
 **Pilote métier** : Guillaume FERRERI
@@ -11,7 +11,7 @@
 
 ### État global
 
-L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 4 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **460 tests unitaires + 144 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
+L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 4 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **472 tests unitaires + 148 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
 
 ### Ce qui est livré
 
@@ -46,7 +46,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | Aperçu général et démarrage | [`README.md`](README.md) |
 | Modules livrés et périmètre fonctionnel | §4 |
 | Règles métier R1 → R24 | §5 |
-| État des tests (460 unit + 144 E2E) | §6 |
+| État des tests (472 unit + 148 E2E) | §6 |
 | Architecture des fichiers | §7 |
 | Reste à faire | §8 |
 | Limites connues | §9 |
@@ -68,8 +68,8 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
-| **Tests unitaires** | **460 / 460 ✓** (Vitest, 30 fichiers de test) |
-| **Tests E2E** | **144 / 144 ✓** (Playwright — 132 desktop + 12 mobile Pixel 5, 19 specs) |
+| **Tests unitaires** | **472 / 472 ✓** (Vitest, 31 fichiers de test) |
+| **Tests E2E** | **148 / 148 ✓** (Playwright — 136 desktop + 12 mobile Pixel 5, 20 specs) |
 | **Bundle JS gzippé** | 148 KB (cible CDC §19.1 : < 500 KB → marge × 3,4) |
 | **Bundle CSS gzippé** | 6,5 KB (cible : < 50 KB → marge × 7) |
 | **Chunk PDF lazy** | 493 KB (chargé uniquement au clic « Exporter ») |
@@ -83,8 +83,8 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 
 - **Frontend** : Vite 6 + React 18 + TypeScript 5.7 (strict)
 - **Style** : Tailwind CSS 3 + shadcn/ui (tokens CSS variables, palette 5 rôles équilibrée mai 2026)
-- **State** : Zustand 5 + middleware `persist` — **8 stores** persistés en localStorage :
-  - `livret-donnees` (schema v12) — livrets, fiches, **jusqu'à 4 entretiens tripartites par livret** (avec snapshots questions imposées/obligatoires), évaluations, sélection des compétences abordées en entreprise
+- **State** : Zustand 5 + middleware `persist` — **9 stores** persistés en localStorage :
+  - `livret-donnees` (schema v13) — livrets, fiches, **jusqu'à 4 entretiens tripartites par livret** (avec snapshots questions imposées/obligatoires + **évaluations des attitudes par entretien**), évaluations, sélection des compétences abordées en entreprise
   - `livret-role-actif` — rôle + maître actif
   - `livret-apprenti-actif` — id de l'apprenti·e affiché·e
   - `livret-utilisateurs` (schema v2) — apprenti·e·s, maîtres (avec `entreprise` + `fonction`), formateurs, coordos, admins
@@ -92,6 +92,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
   - `livret-referentiels` (schema v2) — référentiels de compétences (Bloc → Sous-famille? → Compétence)
   - `livret-banque-questions` (schema v3) — banque centrale des questions de l'entretien tripartite, **affectées E1..E4 + obligatoires par le coordo** (juin 2026)
   - `livret-etablissements` (schema v1) — lieux de formation + URL Pronote (gestion admin uniquement)
+  - `livret-attitudes` (schema v1) — **catalogue global des attitudes professionnelles** (gestion admin uniquement, juin 2026)
 - **Routing** : React Router v6
 - **PDF** : `@react-pdf/renderer` 4 (lazy-loaded — chargé uniquement au clic « Exporter », palette PDF alignée sur charte UI mai 2026)
 - **XLSX** : `fflate` (~12 KB) pour la décompression ZIP **et la génération** (modèles d'import utilisateurs), parser maison
@@ -214,7 +215,7 @@ Pour les formations de 2 ans, le livret peut désormais porter jusqu'à **4 entr
 - La ressource `organisation-suivi` (création / modification / suppression des événements de la page « Fiches de suivi ») passe de `formateur` seul à **`formateur` + `coordo` + `admin`** — gestion calendaire/organisationnelle, pas de contenu pédagogique
 - **Nouvelle ressource `entretien.gestion`** (formateur uniquement) : l'initialisation des entretiens et l'édition de leur date — auparavant adossées à `organisation-suivi` — restent des actes pédagogiques fermés au coordo/admin. La doctrine « coordo/admin sans droit pédagogique » est préservée (test transverse adapté)
 - **Liseré des cartes d'événements colorisé par rôle actif** : nouvelle utility CSS `.bordure-gauche-couleur-role` (variable `--ring`) remplace le violet formateur codé en dur — formateur violet, coordo orange, admin or
-- Matrice : 47 → **48 ressources × 5 rôles**
+- Matrice : 46 → **47 ressources × 5 rôles**
 - +1 test unitaire droits, +3 scénarios E2E (coordo gère un événement + liseré ; admin gère ; coordo ne peut pas initialiser un entretien)
 
 #### Répartition des motifs par rôle + séquencement des entretiens (12 juin 2026 — retours coordonnateurs pédagogiques)
@@ -223,6 +224,23 @@ Pour les formations de 2 ans, le livret peut désormais porter jusqu'à **4 entr
 - **Séquencement des entretiens** (`peutInitialiserEntretien`) : impossible d'initialiser l'entretien N tant que l'entretien N-1 n'est pas signé par les 3 parties (E1 toujours libre). Bouton désactivé avec raison explicite + garde dans le store (no-op) — l'événement peut en revanche être planifié à l'avance
 - L'initialisation reste réservée au formateur (`entretien.gestion` inchangée)
 - +9 tests unitaires, +2 scénarios E2E (motifs du formateur restreints ; blocage E3 si E2 non signé ; happy path E2 via E1 signé)
+
+#### Attitudes professionnelles évaluées à chaque entretien + catalogue admin (12 juin 2026 — retours coordonnateurs pédagogiques)
+
+Les attitudes professionnelles sortent du référentiel de compétences et de l'évaluation finale pour devenir un **catalogue global géré par l'admin**, évalué par le **maître / tuteur à chaque entretien tripartite** :
+
+- **Nouveau store `useAttitudesStore`** (`livret-attitudes` v1) — catalogue par défaut de 6 attitudes (ponctualité, respect des consignes, qualité du travail, intégration, initiative, communication), CRUD admin sur la nouvelle page `/admin/attitudes` (libellé + description, suppression en 2 clics **bloquée si l'attitude est évaluée dans au moins un entretien**)
+- **Évaluation dans l'entretien** : nouvelle section « Attitudes professionnelles » dans la zone Maître / Tuteur de chaque entretien (sélecteur ++/+/-/-- par attitude, stockée dans `EntretienTripartite.evaluationsAttitudes`) — nouvelle ressource `entretien.attitudes` (**maître seul**)
+- **R20 étendue** : le maître ne peut pas signer un entretien sans avoir évalué **au moins une attitude** (raison explicite « Évaluez au moins une attitude professionnelle. »)
+- **L'onglet « Attitudes » de l'évaluation finale devient une synthèse en lecture seule** (`SyntheseAttitudes` remplace `GrilleAttitudes`) : une ligne par attitude × une colonne par entretien E1..EN — la progression se lit d'un coup d'œil. Le modèle `Referentiel.attitudes` et `Livret.evaluationFinaleAttitudes` sont supprimés
+- **PDF aligné** : les évaluations d'attitudes apparaissent dans chaque page d'entretien + tableau de synthèse sur la page d'évaluation finale
+- Matrice : `grille-attitudes.maitre`/`grille-attitudes.formateur` retirées, `entretien.attitudes` + `admin.attitudes.gerer` ajoutées — **toujours 47 ressources × 5 rôles**
+- Bumps : `livret-donnees` v12 → v13 (reset)
+- +12 tests unitaires (lib `attitudes` 9 + droits + R20 maître), +4 scénarios E2E (`attitudes.spec.ts` : accès admin seul, CRUD, verrou de suppression, R20 bout-en-bout)
+
+#### Séparateur visuel dans la grille de compétences (12 juin 2026 — retours coordonnateurs pédagogiques)
+
+- Trait vertical entre les colonnes « Acquis en centre » et « Commentaire » de la grille de compétences (lisibilité de la frontière entreprise/centre vs annotations)
 
 #### Corrections de fond découvertes au passage (11 juin 2026)
 
@@ -378,7 +396,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 | R17 | 15 j sans modif → verrouillée | ✓ 3 tests + bouton manuel |
 | R18 | Signer son propre slot | ✓ matrice |
 | R19 | Horodatage ISO 8601 au clic | ✓ dans `signer()` |
-| **R20** | **Champs requis avant signature** (chantier #3 : zone formateur GRETA CFA non vide) | ✓ 18 tests |
+| **R20** | **Champs requis avant signature** (chantier #3 : zone formateur GRETA CFA non vide ; juin 2026 : questions obligatoires répondues + ≥ 1 attitude évaluée pour le maître en entretien) | ✓ 18 tests fiche + R20 entretien dans `regles-entretien` |
 | **R21** | **Retrait signature impossible** | ✓ 6 tests TDD + bugfix UI |
 | **R22** | **Clôture livret** | ✓ 14 tests TDD + bandeau 4 états |
 | R23 | Synthèse temps réel | ✓ recalcul à chaque render |
@@ -386,17 +404,19 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 
 ---
 
-## 6. Tests (460 unitaires + 144 E2E)
+## 6. Tests (472 unitaires + 148 E2E)
 
-### Tests unitaires Vitest (29 fichiers de test)
+### Tests unitaires Vitest (31 fichiers de test)
 
 | Fichier | Tests | Périmètre |
 |---|---|---|
-| `lib/droits.test.ts` | 41 | Matrice 48 ressources × 5 rôles (organisation-suivi partagée + `entretien.gestion`) |
+| `lib/droits.test.ts` | 43 | Matrice 47 ressources × 5 rôles (organisation-suivi partagée, `entretien.gestion`, `entretien.attitudes`, `admin.attitudes.gerer`) |
 | `lib/transitions-fiche.test.ts` | 22 | R15/R16/R17/R21 + adaptation suivi GRETA texte |
 | `lib/validation-signature.test.ts` | 18 | R18/R20 — refonte chantier #3 |
 | `lib/regles-periode.test.ts` | 18 | R11/R12/R13/R14 |
-| `lib/regles-entretien.test.ts` | 23 | R6/R7/R8/R9 (E1 ↔ E2) + R20 questions obligatoires (juin 2026) |
+| `lib/regles-entretien.test.ts` | 30 | R6/R7/R8/R9 (E1..E4) + R20 questions obligatoires + ≥ 1 attitude (maître) + séquencement `peutInitialiserEntretien` (juin 2026) |
+| `lib/attitudes.test.ts` | 9 | Catalogue par défaut + `attitudeEstUtilisee` + `auMoinsUneAttitudeEvaluee` (juin 2026) |
+| `lib/nombre-entretiens.test.ts` | 12 | Bornes 1-4 + verrou de réduction + numéros disponibles (juin 2026) |
 | `lib/synthese-evaluation.test.ts` | 12 | Last-write-wins fiches → finales |
 | `lib/stats-bloc.test.ts` | 6 | Compte des niveaux par bloc |
 | `lib/import-referentiel.test.ts` | 24 | Parsing CSV (encodage CP1252, 2/3 cols) |
@@ -414,8 +434,8 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 | `lib/parser-xlsx.test.ts` | 16 | Parser XLSX (Node env pour fflate) |
 | `lib/selection-competences-entreprise.test.ts` | 24 | Sélection par livret CDC v1.5 §12 |
 | `lib/validation-fiche-periode.test.ts` | 16 | Saisie fiche + verrous |
-| `lib/organisation-suivi.test.ts` | 17 | Catalogue motifs + 2 nouveaux motifs entretien |
-| `lib/questions-entretien.test.ts` | 29 | Banque 11 questions + affectation E1/E2 + obligatoires + verrou retrait (juin 2026) |
+| `lib/organisation-suivi.test.ts` | 21 | Catalogue motifs filtré par nombre d'entretiens + motifs proposables par rôle (juin 2026) |
+| `lib/questions-entretien.test.ts` | 30 | Banque 11 questions + affectation E1..E4 + obligatoires + verrou retrait (juin 2026) |
 | `lib/etablissement-verrou.test.ts` | 4 | Verrou suppression établissement |
 | `lib/etablissements-accessibles.test.ts` | 8 | Filtrage par rôle Pronote |
 | **`lib/validation-periode-formation.test.ts`** | **16** | **Chantier #1 : R11/R12 + verrou modif/suppression période formation** |
@@ -424,9 +444,9 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 
 *Les modules `creation-livret.ts`, `couleurs-role.ts` et `utils.ts` sont couverts indirectement via les tests E2E.*
 
-### Tests E2E Playwright (19 specs)
+### Tests E2E Playwright (20 specs)
 
-142 tests (131 + 3 scénarios « affectation des questions par le coordo » + 5 scénarios « jusqu'à 4 entretiens » + 3 scénarios « événements gérés par coordo/admin + liseré par rôle » — juin 2026). Quelques specs ont été adaptés aux refontes :
+148 tests (136 desktop + 12 mobile). Ajouts de juin 2026 : 3 scénarios « affectation des questions par le coordo », 5 scénarios « jusqu'à 4 entretiens », 3 scénarios « événements gérés par coordo/admin + liseré par rôle », 2 scénarios « motifs par rôle + séquencement », 4 scénarios « attitudes professionnelles » (`attitudes.spec.ts`). Quelques specs ont été adaptés aux refontes :
 - `fiches-periodes.spec.ts` : 8 tests réécrits pour le nouveau flow planning au niveau formation
 - `sprint3-droits-entretien.spec.ts` : route `/livret/entretien/1`
 - `entretien-selection-competences.spec.ts` : route `/livret/entretien/1` + auto-marquage E1 uniquement
@@ -451,15 +471,15 @@ LIVRET APPRENTISSAGE/
 ├── cahier-des-charges-livret-apprentissage-v1.5-addendum.md
 ├── design-system/MASTER.md         # palette équilibrée mai 2026
 ├── scripts/                        # déploiement VPS
-├── e2e/                            # tests Playwright (18 specs)
+├── e2e/                            # tests Playwright (20 specs)
 ├── playwright.config.ts            # 2 projets (desktop + mobile)
 ├── package.json
 └── src/
     ├── main.tsx, App.tsx, vite-env.d.ts
     ├── styles/index.css            # variables CSS + utilities couleur-role
     ├── types/index.ts              # modèle (CDC §7 + chantiers mai 2026)
-    ├── lib/                        # 32 modules + 29 fichiers tests
-    │   ├── droits.ts               # matrice §6 (48 ressources × 5 rôles)
+    ├── lib/                        # 34 modules + 31 fichiers tests
+    │   ├── droits.ts               # matrice §6 (47 ressources × 5 rôles)
     │   ├── transitions-fiche.ts    # R15/R16/R17/R21
     │   ├── validation-signature.ts # R18/R20 (zone GRETA texte chantier #3)
     │   ├── regles-periode.ts       # R11/R12/R13/R14
@@ -492,7 +512,7 @@ LIVRET APPRENTISSAGE/
     │   ├── couleurs-role.ts        # polish — mappings Tailwind par rôle
     │   ├── __fixtures__/
     │   └── utils.ts
-    ├── store/                      # 8 stores Zustand persistés
+    ├── store/                      # 9 stores Zustand persistés
     │   ├── useUserStore.ts
     │   ├── useLivretStore.ts       # v10 — entretien1/entretien2 + suiviGretaCfa texte
     │   ├── useApprentiActifStore.ts
@@ -533,8 +553,8 @@ LIVRET APPRENTISSAGE/
     │   │   └── SelecteurQuestions.tsx
     │   ├── evaluation/
     │   │   ├── SyntheseBloc.tsx
-    │   │   ├── GrilleCompetences.tsx
-    │   │   ├── GrilleAttitudes.tsx
+    │   │   ├── GrilleCompetences.tsx        # séparateur centre / commentaire (juin 2026)
+    │   │   ├── SyntheseAttitudes.tsx        # synthèse lecture seule par entretien (juin 2026)
     │   │   └── BandeauCloture.tsx           # Clôturer en violet formateur
     │   └── pdf/                             # export lazy, palette alignée UI
     ├── pages/
@@ -642,8 +662,8 @@ npm run dev            # serveur Vite sur http://localhost:5173
 ### Tests / qualité
 
 ```bash
-npm test               # 460 tests Vitest
-npm run e2e            # 144 tests E2E Playwright (build + preview + tests)
+npm test               # 472 tests Vitest
+npm run e2e            # 148 tests E2E Playwright (build + preview + tests)
 npm run e2e:ui         # UI Playwright pour debug
 npm run typecheck      # tsc --noEmit
 npm run lint           # ESLint
@@ -683,7 +703,7 @@ location.reload();
 - **2 entretiens par livret** (chantier #2) : `Livret.entretien1` + `entretien2`, mutations indexées par `numero: 1 | 2`. Auto-marquage de la sélection compétences à 3ᵉ signature E1 uniquement.
 - **Tests TDD ciblés** sur la logique métier pure (`lib/`) ; les composants UI sont testés via Playwright E2E
 - **Migration localStorage par bump de version** : reset complet à chaque bump (pas de migration logicielle, données fictives)
-- **8 stores Zustand persistés avec import croisé** : synchronisations cross-store dans les actions, cycle résolu par ESM
+- **9 stores Zustand persistés avec import croisé** : synchronisations cross-store dans les actions, cycle résolu par ESM
 - **Cohérence référentielle protectrice** : suppressions bloquées en cascade (apprenti·e si livret actif, maître/formateur si rattachements, formation si apprenti·e·s, référentiel si formations rattachées, période formation si fiches signées, événement organisation si verrouillé, question banque si utilisée, établissement si formation rattachée)
 - **Palette par rôle** (équilibrage mai 2026) : 5 tokens dans `tailwind.config.ts` + variable CSS `--ring` dynamique au niveau du wrapper AppShell pour propager la couleur du rôle actif à tous les focus/hover/sélection. PDF aligné sur la même charte.
 - **Mobile-first responsive** : drawer + RoleSwitcher compact + audit Playwright dédié 12 tests

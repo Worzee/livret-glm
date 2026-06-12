@@ -47,6 +47,7 @@ const entretienVide = (): EntretienTripartite => ({
   // renseignent explicitement.
   questionsImposees: [],
   questionsObligatoires: [],
+  evaluationsAttitudes: {},
   reponsesApprenti: {},
   reponsesMaitre: {},
   appreciationMaitre: {},
@@ -215,10 +216,19 @@ describe('validerSignatureEntretien', () => {
     expect(r.raisons.some((m) => m.includes('appréciation'))).toBe(true);
   });
 
-  it("maître peut signer dès qu'un critère d'appréciation est renseigné", () => {
+  it("maître peut signer avec un critère d'appréciation ET une attitude évaluée (juin 2026)", () => {
     const e = entretienVide();
     e.appreciationMaitre.qualiteTravail = 'plusplus';
+    e.evaluationsAttitudes = { a1: 'plus' };
     expect(validerSignatureEntretien(e, 'maitre', BANQUE).peutSigner).toBe(true);
+  });
+
+  it('maître bloqué sans aucune attitude évaluée, même avec appréciation (extension R20 juin 2026)', () => {
+    const e = entretienVide();
+    e.appreciationMaitre.qualiteTravail = 'plusplus';
+    const r = validerSignatureEntretien(e, 'maitre', BANQUE);
+    expect(r.peutSigner).toBe(false);
+    expect(r.raisons.some((m) => m.includes('attitude professionnelle'))).toBe(true);
   });
 
   it("formateur ne peut pas signer sans aucune démarche administrative", () => {
@@ -269,6 +279,7 @@ describe('validerSignatureEntretien', () => {
     const e = entretienVide();
     e.questionsObligatoires = ['q-mai-deja-forme'];
     e.appreciationMaitre.qualiteTravail = 'plus';
+    e.evaluationsAttitudes = { a1: 'plus' };
     e.reponsesMaitre['q-mai-deja-forme'] = false;
     expect(validerSignatureEntretien(e, 'maitre', BANQUE).peutSigner).toBe(true);
   });
@@ -277,6 +288,7 @@ describe('validerSignatureEntretien', () => {
     const e = entretienVide();
     e.questionsObligatoires = ['q-app-motivations', 'q-mai-deja-forme'];
     e.appreciationMaitre.qualiteTravail = 'plus';
+    e.evaluationsAttitudes = { a1: 'plus' };
     e.reponsesMaitre['q-mai-deja-forme'] = true;
     // Le maître signe alors que la question obligatoire APPRENTI est sans réponse.
     expect(validerSignatureEntretien(e, 'maitre', BANQUE).peutSigner).toBe(true);

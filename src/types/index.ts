@@ -181,6 +181,12 @@ export interface BlocCompetences {
   competences: Competence[];
 }
 
+/**
+ * Attitude professionnelle — catalogue global géré par l'admin (retours
+ * coordos juin 2026, page `/admin/attitudes`). Évaluées par le maître /
+ * tuteur à chaque entretien tripartite. Anciennement portées par le
+ * référentiel de compétences.
+ */
 export interface AttitudeProfessionnelle {
   id: string;
   libelle: string;
@@ -191,7 +197,6 @@ export interface Referentiel {
   id: string;
   formation: string;
   blocs: BlocCompetences[];
-  attitudes: AttitudeProfessionnelle[];
   /**
    * Métadonnée d'origine : nombre de niveaux hiérarchiques détectés à l'import.
    *   - 2 : Bloc → Compétence
@@ -408,6 +413,12 @@ export interface EntretienTripartite {
    * réponse exigée pour la signature de la cible concernée (extension R20).
    */
   questionsObligatoires: string[];
+  /**
+   * Évaluations des attitudes professionnelles par le maître / tuteur
+   * (retours coordos juin 2026 — à chaque entretien). Au moins une
+   * évaluation est exigée pour que le maître signe (extension R20).
+   */
+  evaluationsAttitudes: EvaluationsAttitudes;
   /** Réponses indexées par `questionId` (cf. `ReponsesEntretien`). */
   reponsesApprenti: ReponsesEntretien;
   reponsesMaitre: ReponsesEntretien;
@@ -507,18 +518,15 @@ export interface EvaluationFinaleCompetences {
   modifieLe: string;
 }
 
-export interface LigneEvaluationFinaleAttitude {
-  attitudeId: string;
-  evaluationMaitre: NiveauAppreciation | null;
-  evaluationFormateur: NiveauAppreciation | null;
-  commentaireMaitre?: string;
-  commentaireFormateur?: string;
-}
-
-export interface EvaluationFinaleAttitudes {
-  lignes: LigneEvaluationFinaleAttitude[];
-  modifieLe: string;
-}
+/**
+ * Évaluations des attitudes professionnelles d'un entretien tripartite
+ * (retours coordos juin 2026) : les attitudes sont évaluées par le
+ * **maître / tuteur** À CHAQUE entretien (échelle ++/+/-/--), indexées par
+ * `attitudeId` du catalogue global (`useAttitudesStore`). Une entrée
+ * manquante ou `null` = non évaluée. L'onglet « Attitudes » de l'évaluation
+ * finale devient une synthèse en lecture seule de ces évaluations (E1..E4).
+ */
+export type EvaluationsAttitudes = Record<string, NiveauAppreciation | null>;
 
 /**
  * Clôture du livret (R22).
@@ -608,7 +616,6 @@ export interface Livret {
   entretiens: Record<NumeroEntretien, EntretienTripartite | null>;
   fichesSuivi: FicheSuiviPeriode[];
   evaluationFinaleCompetences: EvaluationFinaleCompetences;
-  evaluationFinaleAttitudes: EvaluationFinaleAttitudes;
   /** Sélection des compétences abordées en entreprise (cf. SelectionCompetencesEntreprise). */
   selectionCompetencesEntreprise: SelectionCompetencesEntreprise;
   /** R22 — null tant que le livret n'a pas été clôturé. */

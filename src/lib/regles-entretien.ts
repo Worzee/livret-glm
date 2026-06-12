@@ -7,6 +7,7 @@ import type {
   Role,
 } from '@/types';
 import { questionsObligatoiresSansReponse } from './questions-entretien';
+import { auMoinsUneAttitudeEvaluee } from './attitudes';
 
 /**
  * Règles métier des entretiens tripartites.
@@ -217,6 +218,11 @@ export function validerSignatureEntretien(
         !!(ap.ponctualite || ap.comprehensionConsignes || ap.qualiteTravail || ap.integration);
       if (!auMoinsUnCritere) {
         raisons.push("Évaluez au moins un critère d'appréciation (++, +, -, --).");
+      }
+      // Retours coordos juin 2026 : les attitudes professionnelles sont
+      // évaluées à chaque entretien — au moins une est exigée pour signer.
+      if (!auMoinsUneAttitudeEvaluee(entretien)) {
+        raisons.push('Évaluez au moins une attitude professionnelle.');
       }
       for (const q of questionsObligatoiresSansReponse(entretien, 'maitre', banque)) {
         raisons.push(`Répondez à la question obligatoire « ${q.libelle} ».`);

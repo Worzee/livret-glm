@@ -8,6 +8,7 @@ import { useFormationsStore } from '@/store/useFormationsStore';
 import { useReferentielsStore } from '@/store/useReferentielsStore';
 import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
 import { useEtablissementsStore } from '@/store/useEtablissementsStore';
+import { useAttitudesStore } from '@/store/useAttitudesStore';
 import { apprentiLeaMartin, maitreKarimBenali } from '@/fixtures/utilisateurs';
 
 /**
@@ -29,6 +30,7 @@ export function BoutonReinitialiserDemo() {
   const reinitReferentiels = useReferentielsStore((s) => s.reinitialiser);
   const reinitBanqueQuestions = useBanqueQuestionsStore((s) => s.reinitialiser);
   const reinitEtablissements = useEtablissementsStore((s) => s.reinitialiser);
+  const reinitAttitudes = useAttitudesStore((s) => s.reinitialiser);
   const changerRole = useUserStore((s) => s.changerRole);
   const setMaitreActif = useUserStore((s) => s.setMaitreActif);
   const setApprentiActif = useApprentiActifStore((s) => s.setApprentiActif);
@@ -67,6 +69,7 @@ export function BoutonReinitialiserDemo() {
           reinitReferentiels();
           reinitBanqueQuestions();
           reinitEtablissements();
+          reinitAttitudes();
           reinitialiser();
           // Note : setMaitreActif réinit aussi l'apprenti·e actif·ve sur le 1er
           // apprenti·e du maître. On le fait avant setApprentiActif pour ne pas

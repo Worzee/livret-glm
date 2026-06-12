@@ -112,7 +112,6 @@ function livretAvec(...fiches: FicheSuiviPeriode[]): Livret {
     entretiens: { 1: null, 2: null, 3: null, 4: null },
     fichesSuivi: fiches,
     evaluationFinaleCompetences: { lignes: [], modifieLe: '' },
-    evaluationFinaleAttitudes: { lignes: [], modifieLe: '' },
     selectionCompetencesEntreprise: {
       ids: [],
       modifieLe: '',

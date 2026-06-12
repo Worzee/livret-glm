@@ -147,11 +147,21 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('apprenti', 'grille-competences.centre')).toBe(false);
     });
 
-    it("apprenti·e ne peut éditer aucune grille d'évaluation", () => {
+    it("apprenti·e ne peut éditer aucune grille d'évaluation ni les attitudes", () => {
       expect(peutEditer('apprenti', 'grille-competences.entreprise')).toBe(false);
       expect(peutEditer('apprenti', 'grille-competences.centre')).toBe(false);
-      expect(peutEditer('apprenti', 'grille-attitudes.maitre')).toBe(false);
-      expect(peutEditer('apprenti', 'grille-attitudes.formateur')).toBe(false);
+      expect(peutEditer('apprenti', 'entretien.attitudes')).toBe(false);
+    });
+
+    it('seul le maître évalue les attitudes professionnelles en entretien (juin 2026)', () => {
+      expect(peutEditer('maitre', 'entretien.attitudes')).toBe(true);
+      expect(peutEditer('formateur', 'entretien.attitudes')).toBe(false);
+    });
+
+    it('seul l\'admin gère le catalogue des attitudes (juin 2026)', () => {
+      expect(peutEditer('admin', 'admin.attitudes.gerer')).toBe(true);
+      expect(peutEditer('coordo', 'admin.attitudes.gerer')).toBe(false);
+      expect(peutEditer('formateur', 'admin.attitudes.gerer')).toBe(false);
     });
   });
 
@@ -219,8 +229,7 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
         'fiche.deverrouiller',
         'grille-competences.entreprise',
         'grille-competences.centre',
-        'grille-attitudes.maitre',
-        'grille-attitudes.formateur',
+        'entretien.attitudes',
         'export-pdf',
         'cloturer-livret',
       ];
@@ -371,7 +380,7 @@ describe('Admin — droits administratifs uniquement (pas de pédagogie)', () =>
     expect(peutEditer('admin', 'entretien.questions-apprenti')).toBe(false);
     expect(peutEditer('admin', 'entretien.appreciation-maitre')).toBe(false);
     expect(peutEditer('admin', 'grille-competences.entreprise')).toBe(false);
-    expect(peutEditer('admin', 'grille-attitudes.maitre')).toBe(false);
+    expect(peutEditer('admin', 'entretien.attitudes')).toBe(false);
   });
 
   it("rolesAutorises liste correctement les rôles admin par ressource", () => {

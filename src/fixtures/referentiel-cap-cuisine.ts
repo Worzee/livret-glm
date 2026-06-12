@@ -95,12 +95,7 @@ export const referentielCapCuisine: Referentiel = {
       ],
     },
   ],
-  attitudes: [
-    { id: 'a1', libelle: 'Ponctualité et assiduité' },
-    { id: 'a2', libelle: 'Respect des consignes et de la hiérarchie' },
-    { id: 'a3', libelle: 'Qualité du travail fourni' },
-    { id: 'a4', libelle: "Intégration dans l'équipe" },
-    { id: 'a5', libelle: "Prise d'initiative et autonomie" },
-    { id: 'a6', libelle: 'Communication professionnelle' },
-  ],
+  // Les attitudes professionnelles ont quitté le référentiel (juin 2026) :
+  // elles vivent dans le catalogue global `lib/attitudes.ts` /
+  // `useAttitudesStore`, évaluées à chaque entretien tripartite.
 };

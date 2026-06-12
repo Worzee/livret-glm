@@ -2,6 +2,7 @@ import { lazy, Suspense, useState } from 'react';
 import { AlertTriangle, FileDown } from 'lucide-react';
 import type {
   Apprenti,
+  AttitudeProfessionnelle,
   Etablissement,
   Formateur,
   Formation,
@@ -45,6 +46,8 @@ interface BoutonExportPdfProps {
   etablissement?: Etablissement;
   /** Banque indexée des questions de l'entretien (refonte mai 2026). */
   banqueQuestions: Record<string, QuestionBanque>;
+  /** Catalogue global des attitudes professionnelles (juin 2026). */
+  attitudes: ReadonlyArray<AttitudeProfessionnelle>;
 }
 
 export function BoutonExportPdf(props: BoutonExportPdfProps) {

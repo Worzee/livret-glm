@@ -60,7 +60,7 @@ const signaturesCompletes = (date: string): SignaturesTripartite => ({
   formateur: { signe: true, dateSignature: date },
 });
 
-/** Initialise les lignes vides des évaluations finales depuis le référentiel. */
+/** Initialise les lignes vides de l'évaluation finale depuis le référentiel. */
 function lignesEvaluationFinaleVides() {
   return {
     competences: referentielCapCuisine.blocs
@@ -70,11 +70,24 @@ function lignesEvaluationFinaleVides() {
         acquisEntreprise: null,
         acquisCentre: null,
       })),
-    attitudes: referentielCapCuisine.attitudes.map((a) => ({
-      attitudeId: a.id,
-      evaluationMaitre: null,
-      evaluationFormateur: null,
-    })),
+  };
+}
+
+/**
+ * Évaluations d'attitudes pour un entretien signé (retours coordos juin
+ * 2026 : le maître évalue les attitudes à chaque entretien — R20 exige au
+ * moins une évaluation pour signer). Les 6 attitudes du catalogue initial.
+ */
+function evaluationsAttitudesDemo(
+  dominante: 'plus' | 'plusplus' = 'plus',
+): Record<string, 'plusplus' | 'plus' | 'moins' | 'moinsmoins' | null> {
+  return {
+    a1: dominante,
+    a2: 'plus',
+    a3: dominante,
+    a4: 'plusplus',
+    a5: 'moins',
+    a6: 'plus',
   };
 }
 
@@ -165,10 +178,6 @@ function livretVierge(apprenti: Apprenti, livretId: string): Livret {
       lignes: lignesVides.competences,
       modifieLe: '2025-09-02T08:00:00.000Z',
     },
-    evaluationFinaleAttitudes: {
-      lignes: lignesVides.attitudes,
-      modifieLe: '2025-09-02T08:00:00.000Z',
-    },
     // Démarre vierge par défaut ; les livrets démo dont l'entretien est signé
     // override ce champ avec `selectionValideeDemo(...)` plus bas.
     selectionCompetencesEntreprise: selectionVierge('2025-09-02T08:00:00.000Z'),
@@ -193,6 +202,7 @@ const entretienLea: EntretienTripartite = {
   questionsMaitreSelectionnees: [...QUESTIONS_E1_MAITRE],
   questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],
   questionsObligatoires: [...QUESTIONS_E1_OBLIGATOIRES],
+  evaluationsAttitudes: evaluationsAttitudesDemo(),
   reponsesApprenti: {
     'q-app-motivations':
       "Devenir cuisinière dans la restauration traditionnelle, idéalement à mon compte d'ici 10 ans.",
@@ -494,6 +504,7 @@ const entretienTheo: EntretienTripartite = {
   questionsMaitreSelectionnees: [...QUESTIONS_E1_MAITRE],
   questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],
   questionsObligatoires: [...QUESTIONS_E1_OBLIGATOIRES],
+  evaluationsAttitudes: evaluationsAttitudesDemo(),
   reponsesApprenti: {
     'q-app-motivations':
       'Reprendre la cuisine familiale italienne (mes grands-parents) en y ajoutant des techniques actuelles.',
@@ -751,6 +762,7 @@ const entretienMinh: EntretienTripartite = {
   questionsMaitreSelectionnees: [...QUESTIONS_E1_MAITRE],
   questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],
   questionsObligatoires: [...QUESTIONS_E1_OBLIGATOIRES],
+  evaluationsAttitudes: evaluationsAttitudesDemo(),
   reponsesApprenti: {
     'q-app-motivations': 'Devenir cuisinier dans la restauration asiatique-fusion.',
     'q-app-contact-entreprise':
@@ -1001,6 +1013,7 @@ const entretienLuca: EntretienTripartite = {
   questionsMaitreSelectionnees: [...QUESTIONS_E1_MAITRE],
   questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],
   questionsObligatoires: [...QUESTIONS_E1_OBLIGATOIRES],
+  evaluationsAttitudes: evaluationsAttitudesDemo(),
   reponsesApprenti: {
     'q-app-motivations': 'Devenir cuisinier de bistrot, peut-être ouvrir mon affaire à terme.',
     'q-app-contact-entreprise': "J'ai trouvé l'annonce sur le site du GRETA.",

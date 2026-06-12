@@ -16,7 +16,6 @@ const referentiel: Referentiel = {
       ],
     },
   ],
-  attitudes: [],
 };
 
 const fiche = (

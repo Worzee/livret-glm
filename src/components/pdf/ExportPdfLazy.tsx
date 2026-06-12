@@ -1,6 +1,7 @@
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import type {
   Apprenti,
+  AttitudeProfessionnelle,
   Etablissement,
   Formateur,
   Formation,
@@ -29,6 +30,7 @@ interface ExportPdfLazyProps {
   referentiel: Referentiel;
   etablissement?: Etablissement;
   banqueQuestions: Record<string, QuestionBanque>;
+  attitudes: ReadonlyArray<AttitudeProfessionnelle>;
 }
 
 export default function ExportPdfLazy({
@@ -40,6 +42,7 @@ export default function ExportPdfLazy({
   referentiel,
   etablissement,
   banqueQuestions,
+  attitudes,
 }: ExportPdfLazyProps) {
   const document = (
     <LivretPdf
@@ -51,6 +54,7 @@ export default function ExportPdfLazy({
       referentiel={referentiel}
       etablissement={etablissement}
       banqueQuestions={banqueQuestions}
+      attitudes={attitudes}
     />
   );
 

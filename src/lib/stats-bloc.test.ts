@@ -23,7 +23,6 @@ const referentiel: Referentiel = {
       competences: [{ id: 'c4', code: 'C4', libelle: '...' }],
     },
   ],
-  attitudes: [],
 };
 
 const ligne = (

@@ -10,11 +10,11 @@ import type {
   EtatFiche,
   EvenementOrganisationSuivi,
   FicheSuiviPeriode,
-  LigneEvaluationFinaleAttitude,
   LigneEvaluationFinaleCompetence,
   LigneSuiviEntreprise,
   Livret,
   MotifOrganisationSuivi,
+  NiveauAppreciation,
   NiveauMaitriseEntreprise,
   NumeroEntretien,
   ObservationsFiche,
@@ -85,7 +85,12 @@ import { useUtilisateursStore } from './useUtilisateursStore';
 //        livret (formations de 2 ans). `Livret.entretien1`/`entretien2`
 //        remplacés par `entretiens: Record<1|2|3|4, EntretienTripartite|null>`.
 //        Le nombre autorisé est défini par `Formation.nombreEntretiens`.
-const VERSION_SCHEMA = 12;
+//   v13 — retours coordos juin 2026 : les attitudes professionnelles sont
+//        évaluées par le maître à CHAQUE entretien
+//        (`EntretienTripartite.evaluationsAttitudes`, catalogue global
+//        `useAttitudesStore`). `Livret.evaluationFinaleAttitudes` retiré —
+//        l'onglet de l'évaluation finale devient une synthèse lecture seule.
+const VERSION_SCHEMA = 13;
 
 interface LivretStore {
   livrets: Record<string, Livret>;
@@ -286,10 +291,15 @@ interface LivretStore {
     competenceId: string,
     patch: Partial<Omit<LigneEvaluationFinaleCompetence, 'competenceId'>>,
   ) => void;
-  setLigneAttitudeFinale: (
+  /**
+   * Évalue une attitude professionnelle dans un entretien (retours coordos
+   * juin 2026 — maître / tuteur, échelle ++/+/-/--, null = effacer).
+   */
+  setEvaluationAttitude: (
     livretId: string,
+    numero: NumeroEntretien,
     attitudeId: string,
-    patch: Partial<Omit<LigneEvaluationFinaleAttitude, 'attitudeId'>>,
+    niveau: NiveauAppreciation | null,
   ) => void;
 
   // ── Clôture livret (R22) ─────────────────────────────────────────────────
@@ -379,6 +389,7 @@ function entretienVierge(numero: NumeroEntretien): EntretienTripartite {
     questionsMaitreSelectionnees: maitre,
     questionsImposees: [...apprenti, ...maitre],
     questionsObligatoires: idsQuestionsObligatoiresAffectees(banque, numero),
+    evaluationsAttitudes: {},
     reponsesApprenti: {},
     reponsesMaitre: {},
     appreciationMaitre: {},
@@ -860,27 +871,15 @@ export const useLivretStore = create<LivretStore>()(
           }),
         ),
 
-      setLigneAttitudeFinale: (livretId, attitudeId, patch) =>
+      setEvaluationAttitude: (livretId, numero, attitudeId, niveau) =>
         set((s) =>
           muterLivret(s, livretId, (l) => {
-            const lignes = l.evaluationFinaleAttitudes.lignes.map((ligne) =>
-              ligne.attitudeId === attitudeId ? { ...ligne, ...patch } : ligne,
-            );
-            if (!lignes.some((ll) => ll.attitudeId === attitudeId)) {
-              lignes.push({
-                attitudeId,
-                evaluationMaitre: null,
-                evaluationFormateur: null,
-                ...patch,
-              });
-            }
-            return {
-              ...l,
-              evaluationFinaleAttitudes: {
-                lignes,
-                modifieLe: new Date().toISOString(),
-              },
-            };
+            const e = lireEntretien(l, numero);
+            if (!e) return l;
+            return ecrireEntretien(l, numero, {
+              ...e,
+              evaluationsAttitudes: { ...e.evaluationsAttitudes, [attitudeId]: niveau },
+            });
           }),
         ),
 

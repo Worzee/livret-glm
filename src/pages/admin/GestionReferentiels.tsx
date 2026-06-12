@@ -170,12 +170,6 @@ export function GestionReferentiels() {
                       label={`${sousFamilles.size} sous-famille${sousFamilles.size > 1 ? 's' : ''} (référentiel à 3 niveaux)`}
                     />
                   )}
-                  {r.attitudes.length > 0 && (
-                    <Statistique
-                      Icon={Sparkles}
-                      label={`${r.attitudes.length} attitude${r.attitudes.length > 1 ? 's' : ''} professionnelle${r.attitudes.length > 1 ? 's' : ''}`}
-                    />
-                  )}
                 </dl>
 
                 <FormationsRattachees formations={formationsRattachees} />

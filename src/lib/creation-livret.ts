@@ -40,11 +40,6 @@ export function creerLivretVierge(
       acquisEntreprise: null,
       acquisCentre: null,
     }));
-  const lignesAttitudes = referentielCapCuisine.attitudes.map((a) => ({
-    attitudeId: a.id,
-    evaluationMaitre: null,
-    evaluationFormateur: null,
-  }));
   return {
     id: livretId,
     apprentiId: apprenti.id,
@@ -81,10 +76,6 @@ export function creerLivretVierge(
     })),
     evaluationFinaleCompetences: {
       lignes: lignesCompetences,
-      modifieLe: iso,
-    },
-    evaluationFinaleAttitudes: {
-      lignes: lignesAttitudes,
       modifieLe: iso,
     },
     // CDC v1.5 addendum : la sélection des compétences abordées en entreprise

@@ -50,7 +50,6 @@ function ref(ids: string[]): Referentiel {
         })),
       },
     ],
-    attitudes: [],
   };
 }
 

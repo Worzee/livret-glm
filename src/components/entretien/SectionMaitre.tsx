@@ -9,6 +9,7 @@ import type {
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
+import { useAttitudesStore } from '@/store/useAttitudesStore';
 import { peutEditer } from '@/lib/droits';
 import { peutEncoreEditer } from '@/lib/regles-entretien';
 import { CaseOuiNon } from './CaseOuiNon';
@@ -48,7 +49,9 @@ export function SectionMaitre({ livretId, numero, entretien }: SectionMaitreProp
   const setQuestions = useLivretStore((s) => s.setQuestionsSelectionnees);
   const setAppreciation = useLivretStore((s) => s.setAppreciationMaitre);
   const setCommentaire = useLivretStore((s) => s.setCommentaireEntretien);
+  const setEvaluationAttitude = useLivretStore((s) => s.setEvaluationAttitude);
   const banque = useBanqueQuestionsStore((s) => s.questions);
+  const attitudesMap = useAttitudesStore((s) => s.attitudes);
 
   const [selecteurOuvert, setSelecteurOuvert] = useState(false);
 
@@ -61,11 +64,16 @@ export function SectionMaitre({ livretId, numero, entretien }: SectionMaitreProp
   const editableCommentaire =
     peutEditer(roleActif, 'entretien.commentaires-maitre') &&
     peutEncoreEditer('maitre', entretien);
+  // Attitudes professionnelles (juin 2026) : réservées au maître, figées
+  // par sa signature comme le reste de sa section.
+  const editableAttitudes =
+    peutEditer(roleActif, 'entretien.attitudes') && peutEncoreEditer('maitre', entretien);
   const peutChoisirQuestions = roleActif === 'formateur';
 
   const questions: QuestionBanque[] = entretien.questionsMaitreSelectionnees
     .map((id) => banque[id])
     .filter((q): q is QuestionBanque => !!q && q.cible === 'maitre');
+  const attitudes = Object.values(attitudesMap);
 
   // Retours coordos juin 2026 : les questions affectées par le coordo
   // (snapshot) ne sont pas retirables ; les obligatoires portent un badge.
@@ -159,6 +167,46 @@ export function SectionMaitre({ livretId, numero, entretien }: SectionMaitreProp
           onChange={(v) => setAppreciation(livretId, numero, { commentaires: v })}
           placeholder="Précisions sur l'appréciation portée."
         />
+      </div>
+
+      {/* ── Attitudes professionnelles (juin 2026 — évaluées à CHAQUE
+            entretien, catalogue global géré par l'admin). Au moins une
+            évaluation est exigée pour signer (extension R20). ──────────── */}
+      <div className="space-y-3 border-t border-border pt-4" data-testid="attitudes-entretien">
+        <h3 className="text-sm font-medium">
+          Attitudes professionnelles{' '}
+          <span className="text-xs text-muted-foreground font-normal">
+            (évaluées à chaque entretien — au moins une requise pour signer)
+          </span>
+        </h3>
+        {attitudes.length === 0 ? (
+          <p className="text-sm italic text-muted-foreground">
+            Aucune attitude dans le catalogue — un administrateur·rice peut en créer
+            depuis Administration → Attitudes.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {attitudes.map((a) => (
+              <div
+                key={a.id}
+                className="flex items-center justify-between gap-3 rounded-md border border-border bg-background px-3 py-2"
+              >
+                <span className="text-sm">
+                  {a.libelle}
+                  {a.description && (
+                    <span className="block text-xs text-muted-foreground">{a.description}</span>
+                  )}
+                </span>
+                <SelecteurAppreciation
+                  editable={editableAttitudes}
+                  valeur={entretien.evaluationsAttitudes[a.id] ?? null}
+                  onChange={(v) => setEvaluationAttitude(livretId, numero, a.id, v)}
+                  ariaLabel={`Attitude — ${a.libelle}`}
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ── Commentaire libre ───────────────────────────────────────────────── */}

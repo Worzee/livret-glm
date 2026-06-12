@@ -271,7 +271,6 @@ export function construireReferentiel(
     id,
     formation: options.nomFormation,
     blocs: [...blocsMap.values()],
-    attitudes: [],
     niveauxColonnes: niveaux,
     source: options.source ?? 'import-csv',
   };
