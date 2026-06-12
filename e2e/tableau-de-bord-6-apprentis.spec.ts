@@ -49,6 +49,29 @@ test('maître / tuteur Karim voit ses 4 apprenti·e·s (dont Luca en second — 
   ).toBeVisible();
 });
 
+test('filtre par année de formation sur le tableau de bord (juin 2026)', async ({ page }) => {
+  // Formateur (rôle par défaut, 6 cartes) : le sélecteur d'année est présent
+  // et propose la promo des fixtures.
+  const filtre = page.getByLabel(/Filtrer par année de formation/i);
+  await expect(filtre).toBeVisible();
+  await expect(filtre.getByRole('option', { name: '2025-2026' })).toHaveCount(1);
+
+  // Filtrer sur la promo 2025-2026 conserve les 6 cartes (toutes la même promo).
+  await filtre.selectOption('2025-2026');
+  await expect(page.getByRole('button', { name: /Ouvrir le livret de/i })).toHaveCount(6);
+  await filtre.selectOption('toutes');
+  await expect(page.getByRole('button', { name: /Ouvrir le livret de/i })).toHaveCount(6);
+
+  // L'année est visible sur les cartes (tri par promo la plus récente).
+  await expect(page.getByText(/CAP Cuisine \(2025-2026\)/i).first()).toBeVisible();
+
+  // Le sélecteur existe aussi pour le maître / tuteur (4 cartes) et l'admin.
+  await selectRole(page, 'Maître / Tuteur');
+  await expect(page.getByLabel(/Filtrer par année de formation/i)).toBeVisible();
+  await selectRole(page, 'Admin');
+  await expect(page.getByLabel(/Filtrer par année de formation/i)).toBeVisible();
+});
+
 test('apprenti·e ne voit que son propre livret (R3)', async ({ page }) => {
   await selectRole(page, 'Apprenti·e');
   const liens = page.getByRole('button', { name: /Ouvrir le livret de/i });

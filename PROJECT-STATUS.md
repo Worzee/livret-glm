@@ -1,6 +1,6 @@
 # État du projet — Livret d'apprentissage GRETA Lyon Métropole
 
-**Dernière mise à jour** : 2026-06-12 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites, motifs par rôle + séquencement, attitudes professionnelles par entretien + catalogue admin, confirmation avant écrasement d'une évaluation héritée, second maître / tuteur par apprenti·e)
+**Dernière mise à jour** : 2026-06-12 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites, motifs par rôle + séquencement, attitudes professionnelles par entretien + catalogue admin, confirmation avant écrasement d'une évaluation héritée, second maître / tuteur par apprenti·e, tri par année de formation sur le tableau de bord)
 **Version applicative** : 0.1.0
 **Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3) **livrée + 4 vagues post-livraison**
 **Pilote métier** : Guillaume FERRERI
@@ -11,7 +11,7 @@
 
 ### État global
 
-L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 4 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **488 tests unitaires + 149 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
+L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 4 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **494 tests unitaires + 150 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
 
 ### Ce qui est livré
 
@@ -46,7 +46,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | Aperçu général et démarrage | [`README.md`](README.md) |
 | Modules livrés et périmètre fonctionnel | §4 |
 | Règles métier R1 → R24 | §5 |
-| État des tests (488 unit + 149 E2E) | §6 |
+| État des tests (494 unit + 150 E2E) | §6 |
 | Architecture des fichiers | §7 |
 | Reste à faire | §8 |
 | Limites connues | §9 |
@@ -68,8 +68,8 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
-| **Tests unitaires** | **488 / 488 ✓** (Vitest, 32 fichiers de test) |
-| **Tests E2E** | **149 / 149 ✓** (Playwright — 137 desktop + 12 mobile Pixel 5, 20 specs) |
+| **Tests unitaires** | **494 / 494 ✓** (Vitest, 32 fichiers de test) |
+| **Tests E2E** | **150 / 150 ✓** (Playwright — 138 desktop + 12 mobile Pixel 5, 20 specs) |
 | **Bundle JS gzippé** | 148 KB (cible CDC §19.1 : < 500 KB → marge × 3,4) |
 | **Bundle CSS gzippé** | 6,5 KB (cible : < 50 KB → marge × 7) |
 | **Chunk PDF lazy** | 493 KB (chargé uniquement au clic « Exporter ») |
@@ -247,6 +247,16 @@ Les attitudes professionnelles sortent du référentiel de compétences et de l'
 - Le bandeau « MAQUETTE DE DÉMONSTRATION — Données fictives… » (CDC §21.6) est **retiré de l'interface** : le statut de démonstration est acquis pour toutes les parties prenantes
 - La mention reste sur la **page de garde du PDF exporté** — un document qui circule hors plateforme doit continuer d'annoncer ses données fictives
 - Specs E2E `sprint1-role-switcher` (4 → 3 tests, vérifie désormais l'absence du bandeau) et `sprint5-bout-en-bout` adaptés
+
+#### Tri / filtre par année de formation sur le tableau de bord (12 juin 2026 — retours coordonnateurs pédagogiques)
+
+Préparation des tableaux de bord multi-promos (maître, formateur, coordo, admin) :
+
+- **Sélecteur « Filtrer par année de formation »** à côté de la recherche par nom — liste les années académiques des formations des apprenti·e·s accessibles (+ « Toutes les années »), visible dès qu'il y a plus d'une carte
+- **Tri des cartes** : promo la plus récente d'abord, puis NOM/prénom (`trierApprentisParAnneePuisNom`) ; l'année apparaît sur chaque carte à côté de l'intitulé de la formation — « CAP Cuisine (2025-2026) »
+- 3 helpers purs dans `lib/apprentis-accessibles` (`anneesFormationsDisponibles`, `filtrerParAnneeFormation`, tri) — 6 tests TDD
+- Bugfix au passage : `min-w-0` sur les cartes de la grille (item grid `min-width:auto`) — la ligne « formation · contrat » en nowrap faisait déborder la page de 5 px sur mobile
+- +6 tests unitaires, +1 scénario E2E
 
 #### Second maître / tuteur par apprenti·e (12 juin 2026 — retours coordonnateurs pédagogiques)
 
@@ -432,7 +442,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 
 ---
 
-## 6. Tests (488 unitaires + 149 E2E)
+## 6. Tests (494 unitaires + 150 E2E)
 
 ### Tests unitaires Vitest (32 fichiers de test)
 
@@ -450,7 +460,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 | `lib/import-referentiel.test.ts` | 24 | Parsing CSV (encodage CP1252, 2/3 cols) |
 | `lib/cloture-livret.test.ts` | 14 | R22 |
 | `lib/deverrouillage-fiche.test.ts` | 8 | R10 |
-| `lib/apprentis-accessibles.test.ts` | 18 | Filtre par rôle (R3) + tri + recherche (Karim voit Luca en second — juin 2026) |
+| `lib/apprentis-accessibles.test.ts` | 24 | Filtre par rôle (R3) + tri + recherche (Karim voit Luca en second — juin 2026) |
 | `lib/maitres-apprenti.test.ts` | 8 | Double tutorat : ids des maîtres d'un·e apprenti·e + appartenance (juin 2026) |
 | `lib/etat-livret.test.ts` | 13 | Cas pédagogiques 6 apprenti·e·s |
 | `lib/validation-apprenti.test.ts` | 11 | Saisie apprenti·e + second maître ≠ principal (juin 2026) |
@@ -475,7 +485,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 
 ### Tests E2E Playwright (20 specs)
 
-149 tests (137 desktop + 12 mobile). Ajouts de juin 2026 : 3 scénarios « affectation des questions par le coordo », 5 scénarios « jusqu'à 4 entretiens », 3 scénarios « événements gérés par coordo/admin + liseré par rôle », 2 scénarios « motifs par rôle + séquencement », 4 scénarios « attitudes professionnelles » (`attitudes.spec.ts`), 1 scénario « confirmation avant écrasement d'un héritage ». Quelques specs ont été adaptés aux refontes :
+150 tests (138 desktop + 12 mobile). Ajouts de juin 2026 : 3 scénarios « affectation des questions par le coordo », 5 scénarios « jusqu'à 4 entretiens », 3 scénarios « événements gérés par coordo/admin + liseré par rôle », 2 scénarios « motifs par rôle + séquencement », 4 scénarios « attitudes professionnelles » (`attitudes.spec.ts`), 1 scénario « confirmation avant écrasement d'un héritage ». Quelques specs ont été adaptés aux refontes :
 - `fiches-periodes.spec.ts` : 8 tests réécrits pour le nouveau flow planning au niveau formation
 - `sprint3-droits-entretien.spec.ts` : route `/livret/entretien/1`
 - `entretien-selection-competences.spec.ts` : route `/livret/entretien/1` + auto-marquage E1 uniquement

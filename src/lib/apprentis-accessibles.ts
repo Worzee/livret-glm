@@ -14,10 +14,7 @@ import type { Apprenti, Coordo, Formateur, Maitre, Utilisateur } from '@/types';
  *                 (champ `formationIds`)
  *   - admin     → tous les apprenti·e·s du dispositif
  */
-export function apprentisAccessibles(
-  utilisateur: Utilisateur,
-  apprentis: Apprenti[],
-): Apprenti[] {
+export function apprentisAccessibles(utilisateur: Utilisateur, apprentis: Apprenti[]): Apprenti[] {
   switch (utilisateur.role) {
     case 'apprenti':
       return apprentis.filter((a) => a.id === utilisateur.id);
@@ -46,6 +43,63 @@ export function trierApprentis(apprentis: Apprenti[]): Apprenti[] {
   );
 }
 
+/** Vue minimale d'une formation pour le tri/filtre par année du tableau de bord. */
+type FormationAvecAnnee = { annee: string };
+
+/**
+ * Années académiques distinctes des formations des apprenti·e·s donnés,
+ * triées de la plus récente à la plus ancienne (retours coordos juin 2026 —
+ * tableau de bord multi-promos). Une formation introuvable est ignorée.
+ */
+export function anneesFormationsDisponibles(
+  apprentis: Apprenti[],
+  formations: Record<string, FormationAvecAnnee>,
+): string[] {
+  const annees = new Set<string>();
+  for (const a of apprentis) {
+    const annee = formations[a.formationId]?.annee;
+    if (annee) annees.add(annee);
+  }
+  // Format homogène « AAAA-AAAA » → le tri lexicographique inversé donne la
+  // promo la plus récente en premier.
+  return [...annees].sort().reverse();
+}
+
+/**
+ * Filtre les apprenti·e·s par année académique de leur formation.
+ * `'toutes'` retourne la liste d'origine (y compris les apprenti·e·s dont la
+ * formation est introuvable — on ne masque jamais de carte par défaut).
+ */
+export function filtrerParAnneeFormation(
+  apprentis: Apprenti[],
+  formations: Record<string, FormationAvecAnnee>,
+  annee: string | 'toutes',
+): Apprenti[] {
+  if (annee === 'toutes') return apprentis;
+  return apprentis.filter((a) => formations[a.formationId]?.annee === annee);
+}
+
+/**
+ * Tri du tableau de bord : année de formation décroissante (promo la plus
+ * récente d'abord), puis NOM/prénom. Les apprenti·e·s sans formation résolue
+ * passent en fin de liste.
+ */
+export function trierApprentisParAnneePuisNom(
+  apprentis: Apprenti[],
+  formations: Record<string, FormationAvecAnnee>,
+): Apprenti[] {
+  const collator = new Intl.Collator('fr-FR', { sensitivity: 'base' });
+  return [...apprentis].sort((a, b) => {
+    const anneeA = formations[a.formationId]?.annee ?? '';
+    const anneeB = formations[b.formationId]?.annee ?? '';
+    return (
+      anneeB.localeCompare(anneeA) ||
+      collator.compare(a.nom, b.nom) ||
+      collator.compare(a.prenom, b.prenom)
+    );
+  });
+}
+
 /**
  * Filtre des apprenti·e·s par requête textuelle (nom, prénom).
  * Insensible à la casse et aux accents (Intl.Collator base-sensitivity).
@@ -54,11 +108,7 @@ export function trierApprentis(apprentis: Apprenti[]): Apprenti[] {
 export function filtrerApprentis(apprentis: Apprenti[], requete: string): Apprenti[] {
   const q = requete.trim();
   if (!q) return apprentis;
-  const normalize = (s: string) =>
-    s
-      .normalize('NFD')
-      .replace(/\p{M}/gu, '')
-      .toLowerCase();
+  const normalize = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
   const qn = normalize(q);
   return apprentis.filter((a) => {
     const nomComplet = normalize(`${a.prenom} ${a.nom}`);

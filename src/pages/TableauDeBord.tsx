@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Briefcase, ChevronRight, GraduationCap, Search } from 'lucide-react';
+import { Briefcase, CalendarRange, ChevronRight, GraduationCap, Search } from 'lucide-react';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useApprentiActifStore } from '@/store/useApprentiActifStore';
@@ -8,15 +8,13 @@ import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { libelleRole } from '@/lib/droits';
 import {
+  anneesFormationsDisponibles,
   apprentisAccessibles,
   filtrerApprentis,
-  trierApprentis,
+  filtrerParAnneeFormation,
+  trierApprentisParAnneePuisNom,
 } from '@/lib/apprentis-accessibles';
-import {
-  calculerResumeLivret,
-  classesBadgeCas,
-  libelleCas,
-} from '@/lib/etat-livret';
+import { calculerResumeLivret, classesBadgeCas, libelleCas } from '@/lib/etat-livret';
 import { cn } from '@/lib/utils';
 
 /**
@@ -45,15 +43,30 @@ export function TableauDeBord() {
   const formations = useFormationsStore((s) => s.formations);
   const navigate = useNavigate();
   const [requete, setRequete] = useState('');
+  // Filtre par année académique de la formation (retours coordos juin 2026) —
+  // utile dès que plusieurs promos coexistent (maître, formateur, coordo, admin).
+  const [anneeFiltre, setAnneeFiltre] = useState<string>('toutes');
 
   const apprentisVisibles = useMemo(
-    () => trierApprentis(apprentisAccessibles(utilisateurActif, Object.values(apprentis))),
-    [utilisateurActif, apprentis],
+    () =>
+      trierApprentisParAnneePuisNom(
+        apprentisAccessibles(utilisateurActif, Object.values(apprentis)),
+        formations,
+      ),
+    [utilisateurActif, apprentis, formations],
   );
   const maitresList = useMemo(() => Object.values(maitres), [maitres]);
+  const annees = useMemo(
+    () => anneesFormationsDisponibles(apprentisVisibles, formations),
+    [apprentisVisibles, formations],
+  );
   const apprentisFiltres = useMemo(
-    () => filtrerApprentis(apprentisVisibles, requete),
-    [apprentisVisibles, requete],
+    () =>
+      filtrerApprentis(
+        filtrerParAnneeFormation(apprentisVisibles, formations, anneeFiltre),
+        requete,
+      ),
+    [apprentisVisibles, formations, anneeFiltre, requete],
   );
 
   function ouvrirLivret(apprentiId: string) {
@@ -68,10 +81,9 @@ export function TableauDeBord() {
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold">Tableau de bord</h1>
         <p className="text-muted-foreground">
-          Vue d'accueil pour le rôle <strong>{libelleRole(roleActif)}</strong>.
-          {' '}
+          Vue d'accueil pour le rôle <strong>{libelleRole(roleActif)}</strong>.{' '}
           {apprentisVisibles.length === 0
-            ? "Aucun·e apprenti·e accessible avec ce rôle."
+            ? 'Aucun·e apprenti·e accessible avec ce rôle.'
             : apprentisVisibles.length === 1
               ? '1 apprenti·e accessible.'
               : `${apprentisVisibles.length} apprenti·e·s accessibles.`}
@@ -107,10 +119,7 @@ export function TableauDeBord() {
                     {m.prenom} {m.nom}
                   </span>
                   <span
-                    className={cn(
-                      'text-xs',
-                      actif ? 'text-white/85' : 'text-muted-foreground',
-                    )}
+                    className={cn('text-xs', actif ? 'text-white/85' : 'text-muted-foreground')}
                   >
                     · {m.apprentiIds.length} apprenti·e·s
                   </span>
@@ -122,19 +131,42 @@ export function TableauDeBord() {
       )}
 
       {apprentisVisibles.length > 1 && (
-        <div className="relative max-w-md">
-          <Search
-            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <input
-            type="search"
-            value={requete}
-            onChange={(e) => setRequete(e.target.value)}
-            placeholder="Filtrer par nom ou prénom"
-            aria-label={ariaLabelChamp}
-            className="w-full rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          />
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[14rem] max-w-md">
+            <Search
+              className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <input
+              type="search"
+              value={requete}
+              onChange={(e) => setRequete(e.target.value)}
+              placeholder="Filtrer par nom ou prénom"
+              aria-label={ariaLabelChamp}
+              className="w-full rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </div>
+          {/* Filtre par année de formation — les cartes sont par ailleurs
+              triées promo la plus récente d'abord. */}
+          <div className="relative">
+            <CalendarRange
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <select
+              value={anneeFiltre}
+              onChange={(e) => setAnneeFiltre(e.target.value)}
+              aria-label="Filtrer par année de formation"
+              className="rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="toutes">Toutes les années</option>
+              {annees.map((annee) => (
+                <option key={annee} value={annee}>
+                  {annee}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       )}
 
@@ -147,13 +179,14 @@ export function TableauDeBord() {
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {apprentisFiltres.map((apprenti) => {
-            const livret = Object.values(livrets).find(
-              (l) => l.apprentiId === apprenti.id,
-            );
+            const livret = Object.values(livrets).find((l) => l.apprentiId === apprenti.id);
             const formation = formations[apprenti.formationId];
             const resume = livret ? calculerResumeLivret(apprenti, livret) : null;
             return (
-              <li key={apprenti.id}>
+              // min-w-0 : autorise la carte (item de grille, min-width:auto) à
+              // rétrécir sous la largeur intrinsèque de sa ligne « formation
+              // (année) · contrat » en nowrap — le truncate fait le reste.
+              <li key={apprenti.id} className="min-w-0">
                 <button
                   type="button"
                   onClick={() => ouvrirLivret(apprenti.id)}
@@ -173,6 +206,7 @@ export function TableauDeBord() {
                       </div>
                       <p className="mt-1 truncate text-xs text-muted-foreground">
                         {formation?.intitule ?? apprenti.formationId}
+                        {formation?.annee ? ` (${formation.annee})` : ''}
                         {' · '}
                         contrat {apprenti.contratDebut} → {apprenti.contratFin}
                       </p>

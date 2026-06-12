@@ -14,9 +14,12 @@ import {
   maitreKarimBenali,
 } from '@/fixtures/utilisateurs';
 import {
+  anneesFormationsDisponibles,
   apprentisAccessibles,
   filtrerApprentis,
+  filtrerParAnneeFormation,
   trierApprentis,
+  trierApprentisParAnneePuisNom,
 } from './apprentis-accessibles';
 
 /**
@@ -31,7 +34,7 @@ describe('apprentisAccessibles — filtre par rôle', () => {
     expect(r[0].id).toBe(apprentiLeaMartin.id);
   });
 
-  it('apprenti ne voit pas le livret d\'un·e autre apprenti·e (R3)', () => {
+  it("apprenti ne voit pas le livret d'un·e autre apprenti·e (R3)", () => {
     const r = apprentisAccessibles(apprentiLeaMartin, apprentisDemo);
     expect(r.some((a) => a.id === apprentiTheoDubois.id)).toBe(false);
   });
@@ -60,7 +63,7 @@ describe('apprentisAccessibles — filtre par rôle', () => {
     expect(r).toHaveLength(6);
   });
 
-  it('coordo voit tous les apprenti·e·s des formations qu\'il/elle gère', () => {
+  it("coordo voit tous les apprenti·e·s des formations qu'il/elle gère", () => {
     const r = apprentisAccessibles(coordoMartineLefevre, apprentisDemo);
     expect(r).toHaveLength(6);
   });
@@ -96,7 +99,7 @@ describe('trierApprentis — tri canonique fr-FR', () => {
     ]);
   });
 
-  it('ne mute pas le tableau d\'origine', () => {
+  it("ne mute pas le tableau d'origine", () => {
     const original = [...apprentisDemo];
     trierApprentis(apprentisDemo);
     expect(apprentisDemo).toEqual(original);
@@ -143,5 +146,49 @@ describe('filtrerApprentis — recherche par nom/prénom', () => {
 
   it('renvoie une liste vide si aucun match', () => {
     expect(filtrerApprentis(apprentisDemo, 'inexistant-zzz')).toEqual([]);
+  });
+});
+
+describe('tri / filtre par année de formation (retours coordos juin 2026)', () => {
+  // Mini-promos : 2 années académiques distinctes + une formation orpheline.
+  const formations = {
+    'f-2025': { annee: '2025-2026' },
+    'f-2024': { annee: '2024-2025' },
+  };
+  const a = (id: string, nom: string, formationId: string) => ({
+    ...apprentiLeaMartin,
+    id,
+    nom,
+    formationId,
+  });
+  const promo2025 = [a('a1', 'ZOLA', 'f-2025'), a('a2', 'AUBRY', 'f-2025')];
+  const promo2024 = [a('a3', 'BREL', 'f-2024')];
+  const orphelin = a('a4', 'CAMUS', 'f-supprimee');
+  const tous = [...promo2024, ...promo2025, orphelin];
+
+  it('anneesFormationsDisponibles : années distinctes, plus récente en premier', () => {
+    expect(anneesFormationsDisponibles(tous, formations)).toEqual(['2025-2026', '2024-2025']);
+  });
+
+  it('anneesFormationsDisponibles : ignore les formations introuvables', () => {
+    expect(anneesFormationsDisponibles([orphelin], formations)).toEqual([]);
+  });
+
+  it('filtrerParAnneeFormation : « toutes » retourne tout (y compris formation introuvable)', () => {
+    expect(filtrerParAnneeFormation(tous, formations, 'toutes')).toEqual(tous);
+  });
+
+  it('filtrerParAnneeFormation : restreint à la promo demandée', () => {
+    const r = filtrerParAnneeFormation(tous, formations, '2024-2025');
+    expect(r.map((x) => x.id)).toEqual(['a3']);
+  });
+
+  it("filtrerParAnneeFormation : un apprenti sans formation résolue est exclu d'un filtre précis", () => {
+    expect(filtrerParAnneeFormation([orphelin], formations, '2025-2026')).toEqual([]);
+  });
+
+  it('trierApprentisParAnneePuisNom : promo récente en premier, puis ordre alphabétique', () => {
+    const r = trierApprentisParAnneePuisNom(tous, formations);
+    expect(r.map((x) => x.nom)).toEqual(['AUBRY', 'ZOLA', 'BREL', 'CAMUS']);
   });
 });
