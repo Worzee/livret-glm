@@ -2,6 +2,7 @@ import type {
   EvenementOrganisationSuivi,
   MotifOrganisationSuivi,
   NumeroEntretien,
+  Role,
 } from '@/types';
 
 /**
@@ -209,4 +210,30 @@ export function motifsDisponibles(
     const n = numeroEntretienPourMotif(m.motif);
     return n === null || n <= nombreEntretiens;
   });
+}
+
+/**
+ * Motifs proposables dans le sélecteur d'ajout selon le rôle actif
+ * (retours coordos juin 2026, 2ᵉ passe) :
+ *
+ *  - **formateur référent** : uniquement les motifs entretien tripartite
+ *    (1..N de la formation) — la planification des autres événements
+ *    (réunions, visites, bilans…) relève du coordo ;
+ *  - **coordo / admin** : tous les motifs (entretiens compris) ;
+ *  - autres rôles : aucun (lecture seule de toute façon).
+ *
+ * La modification / suppression des événements existants reste régie par la
+ * ressource `organisation-suivi` (formateur + coordo + admin), quel que
+ * soit le motif.
+ */
+export function motifsProposablesPourRole(
+  nombreEntretiens: NumeroEntretien,
+  role: Role,
+): ReadonlyArray<MetadonneesMotif> {
+  const disponibles = motifsDisponibles(nombreEntretiens);
+  if (role === 'coordo' || role === 'admin') return disponibles;
+  if (role === 'formateur') {
+    return disponibles.filter((m) => numeroEntretienPourMotif(m.motif) !== null);
+  }
+  return [];
 }

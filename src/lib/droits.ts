@@ -110,9 +110,10 @@ export type Ressource =
  * Source : tableau §6 du cahier des charges.
  */
 const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
-  // Organisation du suivi : formateur + coordo (retours coordos juin 2026 —
-  // gestion calendaire des événements, pas de contenu pédagogique)
-  'organisation-suivi': ['formateur', 'coordo'],
+  // Organisation du suivi : formateur + coordo + admin (retours coordos
+  // juin 2026 — gestion calendaire des événements, pas de contenu
+  // pédagogique ; l'admin hérite comme pour les autres ressources de gestion)
+  'organisation-suivi': ['formateur', 'coordo', 'admin'],
 
   // Entretien tripartite — questions/zones par rôle propriétaire
   // Initialisation + date de l'entretien : formateur uniquement

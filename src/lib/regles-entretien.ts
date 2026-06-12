@@ -1,4 +1,11 @@
-import type { Apprenti, EntretienTripartite, QuestionBanque, Role } from '@/types';
+import type {
+  Apprenti,
+  EntretienTripartite,
+  Livret,
+  NumeroEntretien,
+  QuestionBanque,
+  Role,
+} from '@/types';
 import { questionsObligatoiresSansReponse } from './questions-entretien';
 
 /**
@@ -98,6 +105,58 @@ export function peutEncoreEditer(
   if (role === 'formateur' && sig.formateur.signe) return false;
 
   return true;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Séquencement des entretiens (retours coordos juin 2026)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Un entretien est complet quand les 3 parties ont signé (R9). */
+function entretienSigneParTous(entretien: EntretienTripartite | null): boolean {
+  return (
+    !!entretien &&
+    entretien.signatures.apprenti.signe &&
+    entretien.signatures.maitre.signe &&
+    entretien.signatures.formateur.signe
+  );
+}
+
+export interface ResultatInitialisationEntretien {
+  ok: boolean;
+  /** Message lisible expliquant le blocage. Défini uniquement si !ok. */
+  raison?: string;
+}
+
+/**
+ * L'entretien tripartite N peut-il être initialisé ?
+ *
+ * Règle (retours coordos juin 2026) : on ne peut pas initialiser
+ * l'entretien suivant tant que le précédent n'est pas signé par les 3
+ * parties. E1 est toujours initialisable ; un entretien déjà initialisé
+ * ne l'est pas une seconde fois (R6).
+ */
+export function peutInitialiserEntretien(
+  numero: NumeroEntretien,
+  entretiens: Livret['entretiens'],
+): ResultatInitialisationEntretien {
+  if (entretiens[numero] !== null) {
+    return { ok: false, raison: `L'entretien tripartite ${numero} est déjà initialisé.` };
+  }
+  if (numero === 1) return { ok: true };
+  const precedent = (numero - 1) as NumeroEntretien;
+  if (entretiens[precedent] === null) {
+    return {
+      ok: false,
+      raison: `Initialisez et faites signer l'entretien tripartite ${precedent} avant d'ouvrir l'entretien ${numero}.`,
+    };
+  }
+  if (!entretienSigneParTous(entretiens[precedent])) {
+    return {
+      ok: false,
+      raison: `L'entretien tripartite ${precedent} doit être signé par les 3 parties avant d'initialiser l'entretien ${numero}.`,
+    };
+  }
+  return { ok: true };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -11,7 +11,7 @@
 
 ### État global
 
-L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 4 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **451 tests unitaires + 141 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
+L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 4 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **460 tests unitaires + 144 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
 
 ### Ce qui est livré
 
@@ -46,7 +46,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | Aperçu général et démarrage | [`README.md`](README.md) |
 | Modules livrés et périmètre fonctionnel | §4 |
 | Règles métier R1 → R24 | §5 |
-| État des tests (451 unit + 141 E2E) | §6 |
+| État des tests (460 unit + 144 E2E) | §6 |
 | Architecture des fichiers | §7 |
 | Reste à faire | §8 |
 | Limites connues | §9 |
@@ -68,8 +68,8 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | **URL publique** | https://livret-glm.duckdns.org |
 | **Accès** | Basic Auth `demo` / *(mdp partagé hors-canal)* |
 | **Dépôt source** | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
-| **Tests unitaires** | **451 / 451 ✓** (Vitest, 30 fichiers de test) |
-| **Tests E2E** | **141 / 141 ✓** (Playwright — 129 desktop + 12 mobile Pixel 5, 19 specs) |
+| **Tests unitaires** | **460 / 460 ✓** (Vitest, 30 fichiers de test) |
+| **Tests E2E** | **144 / 144 ✓** (Playwright — 132 desktop + 12 mobile Pixel 5, 19 specs) |
 | **Bundle JS gzippé** | 148 KB (cible CDC §19.1 : < 500 KB → marge × 3,4) |
 | **Bundle CSS gzippé** | 6,5 KB (cible : < 50 KB → marge × 7) |
 | **Chunk PDF lazy** | 493 KB (chargé uniquement au clic « Exporter ») |
@@ -209,12 +209,20 @@ Pour les formations de 2 ans, le livret peut désormais porter jusqu'à **4 entr
 - Bumps : `livret-donnees` v11 → v12, `livret-formations` v3 → v4, `livret-banque-questions` v2 → v3
 - +15 tests unitaires (lib `nombre-entretiens` + motifs + affectations) et +5 scénarios E2E (`entretiens-multiples.spec.ts`)
 
-#### Événements de suivi gérables par le coordo (11 juin 2026 — retours coordonnateurs pédagogiques)
+#### Événements de suivi gérables par le coordo et l'admin (11-12 juin 2026 — retours coordonnateurs pédagogiques)
 
-- La ressource `organisation-suivi` (création / modification / suppression des événements de la page « Fiches de suivi ») passe de `formateur` seul à **`formateur` + `coordo`** — gestion calendaire/organisationnelle, pas de contenu pédagogique
-- **Nouvelle ressource `entretien.gestion`** (formateur uniquement) : l'initialisation des entretiens et l'édition de leur date — auparavant adossées à `organisation-suivi` — restent des actes pédagogiques fermés au coordo. La doctrine « coordo/admin sans droit pédagogique » est préservée (test transverse adapté)
+- La ressource `organisation-suivi` (création / modification / suppression des événements de la page « Fiches de suivi ») passe de `formateur` seul à **`formateur` + `coordo` + `admin`** — gestion calendaire/organisationnelle, pas de contenu pédagogique
+- **Nouvelle ressource `entretien.gestion`** (formateur uniquement) : l'initialisation des entretiens et l'édition de leur date — auparavant adossées à `organisation-suivi` — restent des actes pédagogiques fermés au coordo/admin. La doctrine « coordo/admin sans droit pédagogique » est préservée (test transverse adapté)
+- **Liseré des cartes d'événements colorisé par rôle actif** : nouvelle utility CSS `.bordure-gauche-couleur-role` (variable `--ring`) remplace le violet formateur codé en dur — formateur violet, coordo orange, admin or
 - Matrice : 47 → **48 ressources × 5 rôles**
-- +1 test unitaire droits, +2 scénarios E2E (coordo gère un événement ; coordo ne peut pas initialiser un entretien)
+- +1 test unitaire droits, +3 scénarios E2E (coordo gère un événement + liseré ; admin gère ; coordo ne peut pas initialiser un entretien)
+
+#### Répartition des motifs par rôle + séquencement des entretiens (12 juin 2026 — retours coordonnateurs pédagogiques)
+
+- **Motifs de création répartis par rôle** (`motifsProposablesPourRole`) : le formateur référent ne peut créer que les événements « Entretien Tripartite 1..N » ; le coordo et l'admin créent tous les motifs (réunions, visites, bilans, autre — et les entretiens aussi). La modification/suppression des événements existants reste partagée
+- **Séquencement des entretiens** (`peutInitialiserEntretien`) : impossible d'initialiser l'entretien N tant que l'entretien N-1 n'est pas signé par les 3 parties (E1 toujours libre). Bouton désactivé avec raison explicite + garde dans le store (no-op) — l'événement peut en revanche être planifié à l'avance
+- L'initialisation reste réservée au formateur (`entretien.gestion` inchangée)
+- +9 tests unitaires, +2 scénarios E2E (motifs du formateur restreints ; blocage E3 si E2 non signé ; happy path E2 via E1 signé)
 
 #### Corrections de fond découvertes au passage (11 juin 2026)
 
@@ -378,7 +386,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 
 ---
 
-## 6. Tests (451 unitaires + 141 E2E)
+## 6. Tests (460 unitaires + 144 E2E)
 
 ### Tests unitaires Vitest (29 fichiers de test)
 
@@ -418,7 +426,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 
 ### Tests E2E Playwright (19 specs)
 
-141 tests (131 + 3 scénarios « affectation des questions par le coordo » + 5 scénarios « jusqu'à 4 entretiens » + 2 scénarios « événements gérés par le coordo » — juin 2026). Quelques specs ont été adaptés aux refontes :
+142 tests (131 + 3 scénarios « affectation des questions par le coordo » + 5 scénarios « jusqu'à 4 entretiens » + 3 scénarios « événements gérés par coordo/admin + liseré par rôle » — juin 2026). Quelques specs ont été adaptés aux refontes :
 - `fiches-periodes.spec.ts` : 8 tests réécrits pour le nouveau flow planning au niveau formation
 - `sprint3-droits-entretien.spec.ts` : route `/livret/entretien/1`
 - `entretien-selection-competences.spec.ts` : route `/livret/entretien/1` + auto-marquage E1 uniquement
@@ -634,8 +642,8 @@ npm run dev            # serveur Vite sur http://localhost:5173
 ### Tests / qualité
 
 ```bash
-npm test               # 451 tests Vitest
-npm run e2e            # 141 tests E2E Playwright (build + preview + tests)
+npm test               # 460 tests Vitest
+npm run e2e            # 144 tests E2E Playwright (build + preview + tests)
 npm run e2e:ui         # UI Playwright pour debug
 npm run typecheck      # tsc --noEmit
 npm run lint           # ESLint

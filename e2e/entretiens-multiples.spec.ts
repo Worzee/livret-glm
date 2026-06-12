@@ -49,6 +49,9 @@ test('les motifs entretien 3 et 4 ne sont proposés que si la formation les auto
   await page.goto('/admin/formations');
   await page.getByRole('button', { name: /Planning des périodes de CAP Cuisine/i }).click();
   await page.getByTestId('planning-nb-entretiens').selectOption('4');
+  // Synchronisation : attendre que le store ait appliqué la valeur (le
+  // select est contrôlé) avant de naviguer.
+  await expect(page.getByTestId('planning-nb-entretiens')).toHaveValue('4');
 
   // Les motifs E3/E4 apparaissent côté formateur.
   await selectRole(page, 'Formateur référent');
@@ -57,7 +60,7 @@ test('les motifs entretien 3 et 4 ne sont proposés que si la formation les auto
   await expect(selectMotif.locator('option[value="entretien-tripartite-4"]')).toHaveCount(1);
 });
 
-test('parcours complet E3 : événement → lien sidebar → initialisation avec questions de suivi', async ({
+test('parcours E3 : événement → lien sidebar → initialisation bloquée par le séquencement (E2 non signé)', async ({
   page,
 }) => {
   // 1. Le coordo autorise 4 entretiens.
@@ -65,8 +68,10 @@ test('parcours complet E3 : événement → lien sidebar → initialisation avec
   await page.goto('/admin/formations');
   await page.getByRole('button', { name: /Planning des périodes de CAP Cuisine/i }).click();
   await page.getByTestId('planning-nb-entretiens').selectOption('4');
+  await expect(page.getByTestId('planning-nb-entretiens')).toHaveValue('4');
 
-  // 2. Le formateur crée l'événement « Entretien Tripartite 3 » pour Léa.
+  // 2. Le formateur crée l'événement « Entretien Tripartite 3 » pour Léa
+  //    (motif entretien : seul type de création autorisé au formateur).
   await selectRole(page, 'Formateur référent');
   await page.goto('/livret/organisation-suivi');
   await page.locator('#org-motif-ajout').selectOption('entretien-tripartite-3');
@@ -76,10 +81,23 @@ test('parcours complet E3 : événement → lien sidebar → initialisation avec
   const lienE3 = page.getByRole('link', { name: /Entretien tripartite 3/i });
   await expect(lienE3).toBeVisible();
 
-  // 4. Initialisation : les questions de suivi (affectées E3 par défaut)
-  //    sont injectées — 4 questions apprenti·e.
+  // 4. Séquencement (juin 2026) : E2 de Léa n'est pas signé (pas même
+  //    initialisé) → le bouton d'initialisation de E3 est désactivé avec
+  //    une raison explicite.
   await lienE3.click();
-  await page.getByTestId('init-entretien-3').click();
+  await expect(page.getByTestId('init-entretien-3')).toBeDisabled();
+  await expect(page.getByText(/signé par les 3 parties|Initialisez et faites signer/i)).toBeVisible();
+});
+
+test("séquencement : E2 de Léa est initialisable car E1 est signé par les 3 parties", async ({
+  page,
+}) => {
+  // Léa : E1 signé 3/3 + événement E2 existant dans les fixtures.
+  await page.goto('/livret/entretien/2');
+  const bouton = page.getByTestId('init-entretien-2');
+  await expect(bouton).toBeEnabled();
+  await bouton.click();
+  // L'entretien E2 s'initialise avec les questions de suivi (4 apprenti·e).
   await expect(page.getByTestId('apprenti-choisir-questions')).toContainText('(4)');
 });
 
@@ -89,6 +107,7 @@ test("verrou : impossible de réduire en dessous d'un entretien engagé", async 
   await page.goto('/admin/formations');
   await page.getByRole('button', { name: /Planning des périodes de CAP Cuisine/i }).click();
   await page.getByTestId('planning-nb-entretiens').selectOption('4');
+  await expect(page.getByTestId('planning-nb-entretiens')).toHaveValue('4');
 
   await selectRole(page, 'Formateur référent');
   await page.goto('/livret/organisation-suivi');

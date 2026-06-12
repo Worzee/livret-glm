@@ -42,9 +42,24 @@ test('le sélecteur d\'ajout est masqué pour l\'apprenti·e (lecture seule)', a
   await expect(page.getByText(/modification réservée au formateur référent/i)).toBeVisible();
 });
 
-test('le formateur peut ajouter un événement « Autre » et y saisir un titre', async ({
+test('le formateur ne peut créer QUE les motifs entretien tripartite (juin 2026)', async ({
   page,
 }) => {
+  // Rôle formateur par défaut : le sélecteur ne propose que les entretiens
+  // (1..N de la formation), les autres motifs relèvent du coordo.
+  await page.goto('/livret/organisation-suivi');
+  const select = page.getByTestId('org-motif-ajout');
+  await expect(select.locator('option[value="entretien-tripartite-1"]')).toHaveCount(1);
+  await expect(select.locator('option[value="entretien-tripartite-2"]')).toHaveCount(1);
+  await expect(select.locator('option[value="reunion-rentree"]')).toHaveCount(0);
+  await expect(select.locator('option[value="visite-entreprise"]')).toHaveCount(0);
+  await expect(select.locator('option[value="autre"]')).toHaveCount(0);
+});
+
+test('le coordo peut ajouter un événement « Autre » et y saisir un titre', async ({
+  page,
+}) => {
+  await selectRole(page, 'Coordinateur·rice');
   await page.goto('/livret/organisation-suivi');
   const cartesAvant = await page
     .locator('article[data-testid^="org-evt-"]')
@@ -71,6 +86,7 @@ test('le formateur peut ajouter un événement « Autre » et y saisir un titre'
 test('plusieurs événements du même motif sont autorisés (ajout 2× « Visites en entreprise »)', async ({
   page,
 }) => {
+  await selectRole(page, 'Coordinateur·rice');
   await page.goto('/livret/organisation-suivi');
   // Léa en a déjà 3 dans la fixture, on en ajoute 2 supplémentaires.
   const visitesAvant = await page
@@ -119,6 +135,9 @@ test('suppression d\'un événement avec confirmation à 2 clics', async ({ page
 test('un événement verrouillé ne peut pas être supprimé tant qu\'on ne le déverrouille pas', async ({
   page,
 }) => {
+  // Coordo : seul rôle (avec l'admin) pouvant créer un motif « Autre »
+  // depuis juin 2026.
+  await selectRole(page, 'Coordinateur·rice');
   await page.goto('/livret/organisation-suivi');
 
   // Créer un événement frais pour ne dépendre d'aucune fixture.
@@ -157,11 +176,26 @@ test('le coordo peut gérer les événements de suivi (juin 2026)', async ({ pag
   // Le sélecteur d'ajout est visible (plus de lecture seule pour le coordo).
   await expect(page.getByTestId('ajout-evenement')).toBeVisible();
 
+  // Le liseré des cartes suit la couleur du rôle actif (utility --ring),
+  // plus le violet formateur codé en dur.
+  await expect(
+    page.locator('article[data-testid^="org-evt-"]').first(),
+  ).toHaveClass(/bordure-gauche-couleur-role/);
+
   // Ajout d'un événement « Autre ».
   const avant = await page.locator('article[data-testid^="org-evt-"]').count();
   await page.getByTestId('org-motif-ajout').selectOption('autre');
   await page.getByTestId('org-ajouter-evt').click();
   await expect(page.locator('article[data-testid^="org-evt-"]')).toHaveCount(avant + 1);
+});
+
+test("l'admin peut aussi gérer les événements de suivi (juin 2026)", async ({ page }) => {
+  await selectRole(page, 'Admin');
+  await page.goto('/livret/organisation-suivi');
+  await expect(page.getByTestId('ajout-evenement')).toBeVisible();
+  await expect(
+    page.locator('article[data-testid^="org-evt-"]').first(),
+  ).toHaveClass(/bordure-gauche-couleur-role/);
 });
 
 test("le coordo ne peut PAS initialiser un entretien (acte pédagogique du formateur)", async ({
@@ -176,6 +210,7 @@ test("le coordo ne peut PAS initialiser un entretien (acte pédagogique du forma
 });
 
 test('persistance après reload : un nouvel événement survit', async ({ page }) => {
+  await selectRole(page, 'Coordinateur·rice');
   await page.goto('/livret/organisation-suivi');
   await page.getByTestId('org-motif-ajout').selectOption('bilan-formation');
   await page.getByTestId('org-ajouter-evt').click();

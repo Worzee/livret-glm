@@ -100,6 +100,16 @@
 }
 
 /*
+ * Liseré gauche suivant la couleur du rôle actif — pour marquer les cartes
+ * éditables par le rôle connecté (ex : événements de l'organisation du
+ * suivi, gérables par formateur / coordo / admin depuis juin 2026).
+ * À combiner avec `border-l-4`.
+ */
+.bordure-gauche-couleur-role {
+  border-left-color: hsl(var(--ring));
+}
+
+/*
  * Bandeau d'information contextuelle suivant la couleur du rôle actif.
  * Distinct du bleu fixe utilisé pour les états standards (signée, verrouillée)
  * qui portent une sémantique propre indépendante du rôle qui consulte.

@@ -6,7 +6,8 @@ import { useUserStore } from '@/store/useUserStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { peutEditer } from '@/lib/droits';
-import { calculerAlerteR7 } from '@/lib/regles-entretien';
+import { calculerAlerteR7, peutInitialiserEntretien } from '@/lib/regles-entretien';
+import { cn } from '@/lib/utils';
 import { formationCapCuisine } from '@/fixtures/formations';
 import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelectionne';
 import { NotFound } from '@/pages/NotFound';
@@ -64,6 +65,9 @@ export function EntretienTripartite() {
 
   // Cas « pas encore initialisé » — bouton « Initialiser » pour le formateur.
   if (!entretien) {
+    // Séquencement juin 2026 : l'entretien précédent doit être signé par
+    // les 3 parties avant de pouvoir initialiser celui-ci.
+    const sequencement = peutInitialiserEntretien(numero, livret.entretiens);
     return (
       <div className="space-y-6">
         <header className="space-y-2">
@@ -84,12 +88,27 @@ export function EntretienTripartite() {
             <strong> « Entretien Tripartite {numero} » </strong>
             depuis la page <em>Fiches de suivi</em> pour qu'il apparaisse dans la sidebar.
           </p>
+          {peutInitialiser && !sequencement.ok && (
+            <p
+              role="alert"
+              className="mx-auto max-w-md rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800"
+            >
+              {sequencement.raison}
+            </p>
+          )}
           {peutInitialiser && (
             <button
               type="button"
+              disabled={!sequencement.ok}
               onClick={() => initialiser(livret.id, numero)}
               data-testid={`init-entretien-${numero}`}
-              className="inline-flex items-center gap-2 rounded-md bg-role-formateur px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+              title={sequencement.ok ? undefined : sequencement.raison}
+              className={cn(
+                'inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium',
+                sequencement.ok
+                  ? 'bg-role-formateur text-white hover:opacity-90'
+                  : 'bg-muted text-muted-foreground cursor-not-allowed',
+              )}
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
               Initialiser l'entretien {numero}

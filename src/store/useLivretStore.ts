@@ -23,6 +23,7 @@ import type {
 } from '@/types';
 import { livretsDemo } from '@/fixtures/livret-demo';
 import { deduireEtat } from '@/lib/transitions-fiche';
+import { peutInitialiserEntretien } from '@/lib/regles-entretien';
 import { creerCloture } from '@/lib/cloture-livret';
 import { creerEvenementVierge } from '@/lib/organisation-suivi';
 import {
@@ -632,8 +633,10 @@ export const useLivretStore = create<LivretStore>()(
       initialiserEntretien: (livretId, numero) =>
         set((s) =>
           muterLivret(s, livretId, (l) => {
-            // R6 par entretien : pas d'écrasement si déjà initialisé
-            if (lireEntretien(l, numero)) return l;
+            // R6 (pas d'écrasement) + séquencement juin 2026 : l'entretien
+            // précédent doit être signé par les 3 parties. L'UI désactive le
+            // bouton, le store reste la dernière ligne de défense (no-op).
+            if (!peutInitialiserEntretien(numero, l.entretiens).ok) return l;
             return ecrireEntretien(l, numero, entretienVierge(numero));
           }),
         ),

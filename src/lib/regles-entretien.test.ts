@@ -5,6 +5,7 @@ import {
   calculerProgression,
   DELAI_ENTRETIEN_JOURS,
   peutEncoreEditer,
+  peutInitialiserEntretien,
   validerSignatureEntretien,
 } from './regles-entretien';
 import { QUESTIONS_BANQUE_INITIALE, indexerBanque } from './questions-entretien';
@@ -139,6 +140,53 @@ describe('R8 / R9 — verrouillage progressif des sections', () => {
     expect(peutEncoreEditer('apprenti', e)).toBe(false);
     expect(peutEncoreEditer('maitre', e)).toBe(false);
     expect(peutEncoreEditer('formateur', e)).toBe(false);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+describe('peutInitialiserEntretien — séquencement (juin 2026)', () => {
+  const signe = (): EntretienTripartite => ({
+    ...entretienVide(),
+    signatures: {
+      apprenti: { signe: true, dateSignature: '2026-04-01T10:00:00Z' },
+      maitre: { signe: true, dateSignature: '2026-04-01T10:00:00Z' },
+      formateur: { signe: true, dateSignature: '2026-04-01T10:00:00Z' },
+    },
+  });
+  const vides = { 1: null, 2: null, 3: null, 4: null } as const;
+
+  it('E1 est toujours initialisable', () => {
+    expect(peutInitialiserEntretien(1, { ...vides }).ok).toBe(true);
+  });
+
+  it('un entretien déjà initialisé ne l\'est pas une seconde fois (R6)', () => {
+    expect(peutInitialiserEntretien(1, { ...vides, 1: entretienVide() }).ok).toBe(false);
+  });
+
+  it('E2 refusé tant que E1 n\'est pas initialisé', () => {
+    const r = peutInitialiserEntretien(2, { ...vides });
+    expect(r.ok).toBe(false);
+    expect(r.raison).toMatch(/entretien tripartite 1/);
+  });
+
+  it('E2 refusé tant que E1 n\'est pas signé par les 3 parties', () => {
+    const partiel = entretienVide();
+    partiel.signatures.apprenti = { signe: true, dateSignature: '2026-04-01T10:00:00Z' };
+    const r = peutInitialiserEntretien(2, { ...vides, 1: partiel });
+    expect(r.ok).toBe(false);
+    expect(r.raison).toMatch(/signé par les 3 parties/);
+  });
+
+  it('E2 autorisé quand E1 est signé par les 3 parties', () => {
+    expect(peutInitialiserEntretien(2, { ...vides, 1: signe() }).ok).toBe(true);
+  });
+
+  it('E4 exige E3 signé — peu importe E1/E2', () => {
+    const entretiens = { 1: signe(), 2: signe(), 3: entretienVide(), 4: null };
+    const r = peutInitialiserEntretien(4, entretiens);
+    expect(r.ok).toBe(false);
+    expect(r.raison).toMatch(/entretien tripartite 3/);
+    expect(peutInitialiserEntretien(4, { ...entretiens, 3: signe() }).ok).toBe(true);
   });
 });
 

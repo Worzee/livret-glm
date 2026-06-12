@@ -14,9 +14,10 @@ const ROLES_METIER: Role[] = ['apprenti', 'maitre', 'formateur', 'coordo'];
 
 describe('peutEditer — droits par ressource (CDC §6)', () => {
   describe('Module organisation du suivi', () => {
-    it('le formateur et le coordo peuvent gérer organisation-suivi (juin 2026)', () => {
+    it('formateur, coordo et admin peuvent gérer organisation-suivi (juin 2026)', () => {
       expect(peutEditer('formateur', 'organisation-suivi')).toBe(true);
       expect(peutEditer('coordo', 'organisation-suivi')).toBe(true);
+      expect(peutEditer('admin', 'organisation-suivi')).toBe(true);
       expect(peutEditer('apprenti', 'organisation-suivi')).toBe(false);
       expect(peutEditer('maitre', 'organisation-suivi')).toBe(false);
     });
@@ -300,7 +301,7 @@ describe('Administration — droits du rôle coordo', () => {
 
 describe('rolesAutorises', () => {
   it('retourne la liste exacte des rôles autorisés', () => {
-    expect(rolesAutorises('organisation-suivi')).toEqual(['formateur', 'coordo']);
+    expect(rolesAutorises('organisation-suivi')).toEqual(['formateur', 'coordo', 'admin']);
     expect(rolesAutorises('fiche.evaluation-entreprise')).toEqual(['maitre']);
     expect(rolesAutorises('fiche.retour-apprenti')).toEqual(['apprenti']);
   });

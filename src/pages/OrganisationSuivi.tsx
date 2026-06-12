@@ -16,7 +16,7 @@ import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
 import {
   metadonneesMotif,
-  motifsDisponibles,
+  motifsProposablesPourRole,
   numeroEntretienPourMotif,
   peutSupprimerEvenement,
 } from '@/lib/organisation-suivi';
@@ -31,12 +31,13 @@ import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelec
  * Module — Fiches de suivi (ex « Organisation du suivi », renommé mai 2026).
  * Référence CDC §5.1, refonte modulaire mai 2026.
  *
- * Le formateur référent ou le coordo (retours coordos juin 2026) ajoute à
- * la demande chaque événement (réunion de rentrée, visites en entreprise
- * multiples, conseil de classe, etc.) en choisissant un motif parmi le
- * catalogue filtré par la formation (`motifsDisponibles`).
+ * Le formateur référent, le coordo ou l'admin (retours coordos juin 2026)
+ * ajoute à la demande chaque événement (réunion de rentrée, visites en
+ * entreprise multiples, conseil de classe, etc.) en choisissant un motif
+ * parmi le catalogue filtré par la formation (`motifsDisponibles`). Le
+ * liseré des cartes suit la couleur du rôle actif.
  *
- * Lecture seule pour l'apprenti·e, le maître et l'admin.
+ * Lecture seule pour l'apprenti·e et le maître.
  *
  * Auto-save : chaque modification est persistée immédiatement dans le store.
  */
@@ -69,10 +70,14 @@ export function OrganisationSuivi() {
   const org = livret.organisationSuivi;
   const evenements = org.evenements;
 
-  // Juin 2026 : seuls les motifs entretien-tripartite-{1..N} de la formation
-  // sont proposés (N = nombre d'entretiens défini par le coordo).
+  // Juin 2026 : motifs filtrés par formation (entretiens 1..N) ET par rôle —
+  // le formateur ne crée que les événements entretien tripartite, le coordo
+  // et l'admin créent tous les motifs.
   const formation = formations[apprenti.formationId];
-  const motifsProposables = motifsDisponibles(formation?.nombreEntretiens ?? 2);
+  const motifsProposables = motifsProposablesPourRole(
+    formation?.nombreEntretiens ?? 2,
+    roleActif,
+  );
 
   function ajouter() {
     if (!motifAAjouter) return;
@@ -106,7 +111,8 @@ export function OrganisationSuivi() {
         <div className="inline-flex items-center gap-2 rounded-md bg-muted px-3 py-1.5 text-xs text-muted-foreground">
           <Lock className="h-3.5 w-3.5" aria-hidden="true" />
           Vous consultez en mode <strong className="text-foreground">{libelleRole(roleActif)}</strong>{' '}
-          — modification réservée au formateur référent et au coordinateur·rice.
+          — modification réservée au formateur référent, au coordinateur·rice et à
+          l'administrateur·rice.
         </div>
       )}
 
@@ -245,7 +251,9 @@ function CarteEvenement({
       data-testid={`org-evt-${evenement.id}`}
       className={cn(
         'flex flex-col gap-3 rounded-lg border border-border bg-card p-4',
-        editable && 'border-l-4 border-l-role-formateur',
+        // Liseré coloré selon le rôle actif (formateur violet, coordo orange,
+        // admin or) — la carte est éditable par ces 3 rôles depuis juin 2026.
+        editable && 'border-l-4 bordure-gauche-couleur-role',
         verrouille && 'bg-muted/30',
         enConfirmationSuppression && 'border-red-300 bg-red-50/50',
       )}

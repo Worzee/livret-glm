@@ -7,6 +7,7 @@ import {
   libelleMotif,
   metadonneesMotif,
   motifsDisponibles,
+  motifsProposablesPourRole,
   numeroEntretienPourMotif,
   peutSupprimerEvenement,
 } from './organisation-suivi';
@@ -48,6 +49,27 @@ describe('MOTIFS_ORGANISATION_SUIVI', () => {
     expect(numeroEntretienPourMotif('entretien-tripartite-3')).toBe(3);
     expect(numeroEntretienPourMotif('entretien-tripartite-4')).toBe(4);
     expect(numeroEntretienPourMotif('visite-entreprise')).toBeNull();
+  });
+
+  it('motifsProposablesPourRole : le formateur ne crée que les motifs entretien (juin 2026)', () => {
+    const motifs = motifsProposablesPourRole(2, 'formateur').map((m) => m.motif);
+    expect(motifs).toEqual(['entretien-tripartite-1', 'entretien-tripartite-2']);
+  });
+
+  it('motifsProposablesPourRole : le coordo et l\'admin créent tous les motifs', () => {
+    const coordo = motifsProposablesPourRole(2, 'coordo').map((m) => m.motif);
+    expect(coordo).toContain('reunion-rentree');
+    expect(coordo).toContain('entretien-tripartite-1');
+    expect(coordo).toContain('autre');
+    expect(coordo).not.toContain('entretien-tripartite-3'); // formation à 2
+    expect(motifsProposablesPourRole(4, 'admin').map((m) => m.motif)).toContain(
+      'entretien-tripartite-4',
+    );
+  });
+
+  it('motifsProposablesPourRole : aucun motif pour les rôles en lecture seule', () => {
+    expect(motifsProposablesPourRole(2, 'apprenti')).toEqual([]);
+    expect(motifsProposablesPourRole(2, 'maitre')).toEqual([]);
   });
 
   it('chaque motif porte un libellé, une description et un placeholder non vides', () => {
