@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { EvenementOrganisationSuivi, MotifOrganisationSuivi } from '@/types';
+import type {
+  EntretienTripartite,
+  EvenementOrganisationSuivi,
+  Livret,
+  MotifOrganisationSuivi,
+} from '@/types';
 import {
   MOTIFS_ORGANISATION_SUIVI,
   creerEvenementVierge,
@@ -12,8 +17,41 @@ import {
   peutSupprimerEvenement,
 } from './organisation-suivi';
 
+/** Entretien minimal avec n signatures apposées (0 à 3). */
+function entretienAvecSignatures(nbSignatures: number): EntretienTripartite {
+  return {
+    questionsApprentiSelectionnees: [],
+    questionsMaitreSelectionnees: [],
+    questionsImposees: [],
+    questionsObligatoires: [],
+    evaluationsAttitudes: {},
+    reponsesApprenti: {},
+    reponsesMaitre: {},
+    appreciationMaitre: {},
+    demarchesAdministratives: {
+      contratSigne: null,
+      visiteMedicale: null,
+      permisConduire: null,
+      voiture: null,
+    },
+    conditionsPratiques: {},
+    aidesDemandees: { logement: null, premierEquipement: null, permis: null },
+    commentaires: {},
+    signatures: {
+      apprenti: { signe: nbSignatures >= 1 },
+      maitre: { signe: nbSignatures >= 2 },
+      formateur: { signe: nbSignatures >= 3 },
+    },
+  };
+}
+
+/** Record des 4 entretiens avec E1 fourni, les autres non initialisés. */
+function entretiens(e1: EntretienTripartite | null): Livret['entretiens'] {
+  return { 1: e1, 2: null, 3: null, 4: null };
+}
+
 describe('MOTIFS_ORGANISATION_SUIVI', () => {
-  it('expose les 11 motifs (juin 2026 : jusqu\'à 4 entretiens tripartites)', () => {
+  it("expose les 11 motifs (juin 2026 : jusqu'à 4 entretiens tripartites)", () => {
     const cles = MOTIFS_ORGANISATION_SUIVI.map((m) => m.motif);
     expect(cles).toEqual([
       'reunion-rentree',
@@ -56,7 +94,7 @@ describe('MOTIFS_ORGANISATION_SUIVI', () => {
     expect(motifs).toEqual(['entretien-tripartite-1', 'entretien-tripartite-2']);
   });
 
-  it('motifsProposablesPourRole : le coordo et l\'admin créent tous les motifs', () => {
+  it("motifsProposablesPourRole : le coordo et l'admin créent tous les motifs", () => {
     const coordo = motifsProposablesPourRole(2, 'coordo').map((m) => m.motif);
     expect(coordo).toContain('reunion-rentree');
     expect(coordo).toContain('entretien-tripartite-1');
@@ -151,7 +189,7 @@ describe('peutSupprimerEvenement', () => {
     expect(peutSupprimerEvenement(base)).toEqual({ supprimable: true });
   });
 
-  it("autorise la suppression quand verrouille vaut explicitement false", () => {
+  it('autorise la suppression quand verrouille vaut explicitement false', () => {
     expect(peutSupprimerEvenement({ ...base, verrouille: false })).toEqual({
       supprimable: true,
     });
@@ -162,10 +200,47 @@ describe('peutSupprimerEvenement', () => {
     expect(r.supprimable).toBe(false);
     expect(r.raison).toMatch(/déverrouillez/i);
   });
+
+  // ── Entretien signé = fiche de suivi insupprimable (juin 2026) ───────────
+  const evtE1: EvenementOrganisationSuivi = { id: 'evt-e1', motif: 'entretien-tripartite-1' };
+
+  it("bloque la suppression d'un événement entretien dès qu'une partie a signé", () => {
+    const r = peutSupprimerEvenement(evtE1, entretiens(entretienAvecSignatures(1)));
+    expect(r.supprimable).toBe(false);
+    expect(r.raison).toMatch(/signé/i);
+  });
+
+  it('bloque aussi avec les 3 signatures', () => {
+    const r = peutSupprimerEvenement(evtE1, entretiens(entretienAvecSignatures(3)));
+    expect(r.supprimable).toBe(false);
+  });
+
+  it("autorise la suppression si l'entretien est initialisé mais sans aucune signature", () => {
+    const r = peutSupprimerEvenement(evtE1, entretiens(entretienAvecSignatures(0)));
+    expect(r).toEqual({ supprimable: true });
+  });
+
+  it("autorise la suppression si l'entretien n'est pas initialisé", () => {
+    expect(peutSupprimerEvenement(evtE1, entretiens(null))).toEqual({ supprimable: true });
+  });
+
+  it('un motif non-entretien reste supprimable même avec un entretien signé', () => {
+    const r = peutSupprimerEvenement(base, entretiens(entretienAvecSignatures(3)));
+    expect(r).toEqual({ supprimable: true });
+  });
+
+  it('le verrou manuel prime sur la règle de signature (message déverrouillage)', () => {
+    const r = peutSupprimerEvenement(
+      { ...evtE1, verrouille: true },
+      entretiens(entretienAvecSignatures(2)),
+    );
+    expect(r.supprimable).toBe(false);
+    expect(r.raison).toMatch(/déverrouillez/i);
+  });
 });
 
 describe('creerEvenementVierge', () => {
-  it("génère un événement avec id unique, motif fourni, autres champs vides", () => {
+  it('génère un événement avec id unique, motif fourni, autres champs vides', () => {
     const evt = creerEvenementVierge('autre');
     expect(evt.motif).toBe('autre');
     expect(evt.id).toMatch(/^evt-/);
@@ -175,12 +250,12 @@ describe('creerEvenementVierge', () => {
     expect(evt.verrouille).toBeUndefined();
   });
 
-  it("respecte un id custom (utile pour les fixtures déterministes)", () => {
+  it('respecte un id custom (utile pour les fixtures déterministes)', () => {
     const evt = creerEvenementVierge('reunion-rentree', 'evt-fixture-1');
     expect(evt.id).toBe('evt-fixture-1');
   });
 
-  it("génère deux ids distincts pour deux appels successifs", () => {
+  it('génère deux ids distincts pour deux appels successifs', () => {
     const a = creerEvenementVierge('visite-entreprise');
     const b = creerEvenementVierge('visite-entreprise');
     expect(a.id).not.toBe(b.id);

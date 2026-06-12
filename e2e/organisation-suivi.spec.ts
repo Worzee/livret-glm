@@ -32,9 +32,7 @@ test('le formateur voit les événements scénarisés de Léa MARTIN (10 événe
   expect(titres.some((t) => /Visite n°3/.test(t))).toBe(true);
 });
 
-test('le sélecteur d\'ajout est masqué pour l\'apprenti·e (lecture seule)', async ({
-  page,
-}) => {
+test("le sélecteur d'ajout est masqué pour l'apprenti·e (lecture seule)", async ({ page }) => {
   await selectRole(page, 'Apprenti·e');
   await page.goto('/livret/organisation-suivi');
   await expect(page.getByTestId('ajout-evenement')).toHaveCount(0);
@@ -56,23 +54,17 @@ test('le formateur ne peut créer QUE les motifs entretien tripartite (juin 2026
   await expect(select.locator('option[value="autre"]')).toHaveCount(0);
 });
 
-test('le coordo peut ajouter un événement « Autre » et y saisir un titre', async ({
-  page,
-}) => {
+test('le coordo peut ajouter un événement « Autre » et y saisir un titre', async ({ page }) => {
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/livret/organisation-suivi');
-  const cartesAvant = await page
-    .locator('article[data-testid^="org-evt-"]')
-    .count();
+  const cartesAvant = await page.locator('article[data-testid^="org-evt-"]').count();
 
   // Choisir un motif puis cliquer Ajouter.
   await page.getByTestId('org-motif-ajout').selectOption('autre');
   await page.getByTestId('org-ajouter-evt').click();
 
   // Une carte de plus.
-  await expect(page.locator('article[data-testid^="org-evt-"]')).toHaveCount(
-    cartesAvant + 1,
-  );
+  await expect(page.locator('article[data-testid^="org-evt-"]')).toHaveCount(cartesAvant + 1);
 
   // La nouvelle carte (la dernière) est de motif « Autre » et permet d'éditer
   // titre / date / commentaire.
@@ -104,14 +96,16 @@ test('plusieurs événements du même motif sont autorisés (ajout 2× « Visite
   expect(visitesApres).toBe(visitesAvant + 2);
 });
 
-test('suppression d\'un événement avec confirmation à 2 clics', async ({ page }) => {
+test("suppression d'un événement avec confirmation à 2 clics", async ({ page }) => {
   await page.goto('/livret/organisation-suivi');
-  const cartesAvant = await page
-    .locator('article[data-testid^="org-evt-"]')
-    .count();
+  const cartesAvant = await page.locator('article[data-testid^="org-evt-"]').count();
 
-  // Cible la première carte (n'importe laquelle convient pour le scénario)
-  const premiere = page.locator('article[data-testid^="org-evt-"]').first();
+  // Cible une carte SUPPRIMABLE : les événements « Entretien Tripartite »
+  // dont l'entretien est signé sont insupprimables depuis juin 2026 — on
+  // prend une visite en entreprise.
+  const premiere = page
+    .locator('article[data-testid^="org-evt-"]', { hasText: 'Visites en entreprise' })
+    .first();
   const idAttr = await premiere.getAttribute('data-testid');
   expect(idAttr).not.toBeNull();
   const evtId = idAttr!.replace('org-evt-', '');
@@ -121,18 +115,14 @@ test('suppression d\'un événement avec confirmation à 2 clics', async ({ page
   await bouton.click();
   await expect(bouton).toContainText(/Confirmer/i);
   // Toujours présente
-  await expect(page.locator('article[data-testid^="org-evt-"]')).toHaveCount(
-    cartesAvant,
-  );
+  await expect(page.locator('article[data-testid^="org-evt-"]')).toHaveCount(cartesAvant);
 
   // 2ᵉ clic — suppression effective
   await bouton.click();
-  await expect(page.locator('article[data-testid^="org-evt-"]')).toHaveCount(
-    cartesAvant - 1,
-  );
+  await expect(page.locator('article[data-testid^="org-evt-"]')).toHaveCount(cartesAvant - 1);
 });
 
-test('un événement verrouillé ne peut pas être supprimé tant qu\'on ne le déverrouille pas', async ({
+test("un événement verrouillé ne peut pas être supprimé tant qu'on ne le déverrouille pas", async ({
   page,
 }) => {
   // Coordo : seul rôle (avec l'admin) pouvant créer un motif « Autre »
@@ -169,6 +159,30 @@ test('un événement verrouillé ne peut pas être supprimé tant qu\'on ne le d
   await expect(page.locator(`[data-testid="org-evt-${evtId}"]`)).toHaveCount(0);
 });
 
+test("l'événement d'un entretien signé par au moins une partie est insupprimable (juin 2026)", async ({
+  page,
+}) => {
+  await page.goto('/livret/organisation-suivi');
+
+  // E1 de Léa est signé 3/3 dans les fixtures → la fiche de suivi
+  // correspondante est protégée (bouton désactivé + raison en infobulle).
+  const carteE1 = page
+    .locator('article[data-testid^="org-evt-"]', { hasText: 'Entretien Tripartite 1' })
+    .first();
+  const idE1 = (await carteE1.getAttribute('data-testid'))!.replace('org-evt-', '');
+  const boutonE1 = page.getByTestId(`org-supprimer-${idE1}`);
+  await expect(boutonE1).toBeDisabled();
+  await expect(boutonE1).toHaveAttribute('title', /signé par 3 parties/i);
+
+  // L'événement « Entretien Tripartite 2 » (entretien non initialisé, donc
+  // sans signature) reste supprimable.
+  const carteE2 = page
+    .locator('article[data-testid^="org-evt-"]', { hasText: 'Entretien Tripartite 2' })
+    .first();
+  const idE2 = (await carteE2.getAttribute('data-testid'))!.replace('org-evt-', '');
+  await expect(page.getByTestId(`org-supprimer-${idE2}`)).toBeEnabled();
+});
+
 test('le coordo peut gérer les événements de suivi (juin 2026)', async ({ page }) => {
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/livret/organisation-suivi');
@@ -178,9 +192,9 @@ test('le coordo peut gérer les événements de suivi (juin 2026)', async ({ pag
 
   // Le liseré des cartes suit la couleur du rôle actif (utility --ring),
   // plus le violet formateur codé en dur.
-  await expect(
-    page.locator('article[data-testid^="org-evt-"]').first(),
-  ).toHaveClass(/bordure-gauche-couleur-role/);
+  await expect(page.locator('article[data-testid^="org-evt-"]').first()).toHaveClass(
+    /bordure-gauche-couleur-role/,
+  );
 
   // Ajout d'un événement « Autre ».
   const avant = await page.locator('article[data-testid^="org-evt-"]').count();
@@ -193,12 +207,12 @@ test("l'admin peut aussi gérer les événements de suivi (juin 2026)", async ({
   await selectRole(page, 'Admin');
   await page.goto('/livret/organisation-suivi');
   await expect(page.getByTestId('ajout-evenement')).toBeVisible();
-  await expect(
-    page.locator('article[data-testid^="org-evt-"]').first(),
-  ).toHaveClass(/bordure-gauche-couleur-role/);
+  await expect(page.locator('article[data-testid^="org-evt-"]').first()).toHaveClass(
+    /bordure-gauche-couleur-role/,
+  );
 });
 
-test("le coordo ne peut PAS initialiser un entretien (acte pédagogique du formateur)", async ({
+test('le coordo ne peut PAS initialiser un entretien (acte pédagogique du formateur)', async ({
   page,
 }) => {
   await selectRole(page, 'Coordinateur·rice');

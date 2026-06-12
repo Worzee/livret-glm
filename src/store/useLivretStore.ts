@@ -25,7 +25,7 @@ import { livretsDemo } from '@/fixtures/livret-demo';
 import { deduireEtat } from '@/lib/transitions-fiche';
 import { peutInitialiserEntretien } from '@/lib/regles-entretien';
 import { creerCloture } from '@/lib/cloture-livret';
-import { creerEvenementVierge } from '@/lib/organisation-suivi';
+import { creerEvenementVierge, peutSupprimerEvenement } from '@/lib/organisation-suivi';
 import {
   idsQuestionsAffectees,
   idsQuestionsObligatoiresAffectees,
@@ -609,15 +609,21 @@ export const useLivretStore = create<LivretStore>()(
 
       supprimerEvenementOrganisation: (livretId, auteurId, evenementId) =>
         set((s) =>
-          muterLivret(s, livretId, (l) => ({
-            ...l,
-            organisationSuivi: {
-              ...l.organisationSuivi,
-              evenements: l.organisationSuivi.evenements.filter((e) => e.id !== evenementId),
-              modifieLe: new Date().toISOString(),
-              modifiePar: auteurId,
-            },
-          })),
+          muterLivret(s, livretId, (l) => {
+            // Garde (juin 2026) : un événement entretien signé par au moins
+            // une partie est insupprimable — no-op, cohérent avec l'UI.
+            const evt = l.organisationSuivi.evenements.find((e) => e.id === evenementId);
+            if (evt && !peutSupprimerEvenement(evt, l.entretiens).supprimable) return l;
+            return {
+              ...l,
+              organisationSuivi: {
+                ...l.organisationSuivi,
+                evenements: l.organisationSuivi.evenements.filter((e) => e.id !== evenementId),
+                modifieLe: new Date().toISOString(),
+                modifiePar: auteurId,
+              },
+            };
+          }),
         ),
 
       // ── Entretiens tripartites (refonte chantier #2 mai 2026) ────────────

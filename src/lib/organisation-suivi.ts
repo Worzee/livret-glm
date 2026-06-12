@@ -1,5 +1,6 @@
 import type {
   EvenementOrganisationSuivi,
+  Livret,
   MotifOrganisationSuivi,
   NumeroEntretien,
   Role,
@@ -65,14 +66,13 @@ export const MOTIFS_ORGANISATION_SUIVI: ReadonlyArray<MetadonneesMotif> = [
     motif: 'entretien-tripartite-1',
     libelle: 'Entretien Tripartite 1',
     description:
-      "Premier entretien tripartite — typiquement dans les 2 mois suivant la signature du contrat (R7).",
+      'Premier entretien tripartite — typiquement dans les 2 mois suivant la signature du contrat (R7).',
     placeholderCommentaire: 'Date prévue, modalités, participants…',
   },
   {
     motif: 'entretien-tripartite-2',
     libelle: 'Entretien Tripartite 2',
-    description:
-      'Deuxième entretien tripartite — bilan ou réajustement en cours de formation.',
+    description: 'Deuxième entretien tripartite — bilan ou réajustement en cours de formation.',
     placeholderCommentaire: 'Date prévue, modalités, participants…',
   },
   {
@@ -85,15 +85,14 @@ export const MOTIFS_ORGANISATION_SUIVI: ReadonlyArray<MetadonneesMotif> = [
   {
     motif: 'entretien-tripartite-4',
     libelle: 'Entretien Tripartite 4',
-    description:
-      'Quatrième entretien tripartite — formations longues (2 ans), bilan final.',
+    description: 'Quatrième entretien tripartite — formations longues (2 ans), bilan final.',
     placeholderCommentaire: 'Date prévue, modalités, participants…',
   },
   {
     motif: 'autre',
     libelle: 'Autre',
     description: 'Tout événement non couvert par les motifs standards.',
-    placeholderCommentaire: 'Conseil de classe, sortie pédagogique, période d\'examen…',
+    placeholderCommentaire: "Conseil de classe, sortie pédagogique, période d'examen…",
   },
 ];
 
@@ -156,20 +155,40 @@ export interface VerrouSuppressionEvenement {
 /**
  * Indique si un événement peut être supprimé. Cohérent avec
  * `peutSupprimerFichePeriode` : la validation se fait côté UI, le store
- * reste déterministe.
+ * reste déterministe (garde no-op en plus dans le store).
  *
- * Règle : un événement verrouillé doit d'abord être déverrouillé. Évite
- * qu'un clic accidentel sur « Supprimer » fasse perdre une saisie qu'on
- * a justement protégée.
+ * Règles :
+ *  1. Un événement verrouillé doit d'abord être déverrouillé. Évite qu'un
+ *     clic accidentel sur « Supprimer » fasse perdre une saisie qu'on a
+ *     justement protégée.
+ *  2. (juin 2026) Un événement « Entretien Tripartite N » dont l'entretien
+ *     est **signé par au moins une partie** ne peut plus être supprimé —
+ *     la fiche de suivi trace un acte engagé.
  */
 export function peutSupprimerEvenement(
   evt: EvenementOrganisationSuivi,
+  entretiens?: Livret['entretiens'],
 ): VerrouSuppressionEvenement {
   if (evt.verrouille) {
     return {
       supprimable: false,
-      raison: 'Déverrouillez d\'abord cet événement pour pouvoir le supprimer.',
+      raison: "Déverrouillez d'abord cet événement pour pouvoir le supprimer.",
     };
+  }
+  const numero = numeroEntretienPourMotif(evt.motif);
+  if (numero !== null && entretiens) {
+    const entretien = entretiens[numero];
+    const nbSignatures = entretien
+      ? Object.values(entretien.signatures).filter((s) => s.signe).length
+      : 0;
+    if (nbSignatures > 0) {
+      return {
+        supprimable: false,
+        raison: `L'entretien tripartite ${numero} est signé par ${nbSignatures} partie${
+          nbSignatures > 1 ? 's' : ''
+        } — sa fiche de suivi ne peut plus être supprimée.`,
+      };
+    }
   }
   return { supprimable: true };
 }
@@ -179,9 +198,7 @@ export function peutSupprimerEvenement(
  * si le motif n'est pas un entretien. Pratique pour aiguiller l'UI :
  * « cet événement ouvre-t-il un entretien tripartite et lequel ? ».
  */
-export function numeroEntretienPourMotif(
-  motif: MotifOrganisationSuivi,
-): NumeroEntretien | null {
+export function numeroEntretienPourMotif(motif: MotifOrganisationSuivi): NumeroEntretien | null {
   switch (motif) {
     case 'entretien-tripartite-1':
       return 1;

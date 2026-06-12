@@ -20,10 +20,7 @@ import {
   numeroEntretienPourMotif,
   peutSupprimerEvenement,
 } from '@/lib/organisation-suivi';
-import type {
-  EvenementOrganisationSuivi,
-  MotifOrganisationSuivi,
-} from '@/types';
+import type { EvenementOrganisationSuivi, Livret, MotifOrganisationSuivi } from '@/types';
 import { cn } from '@/lib/utils';
 import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelectionne';
 
@@ -53,9 +50,7 @@ export function OrganisationSuivi() {
 
   // Le motif sélectionné dans le sélecteur d'ajout — réinitialisé après ajout.
   const [motifAAjouter, setMotifAAjouter] = useState<MotifOrganisationSuivi | ''>('');
-  const [confirmationSuppression, setConfirmationSuppression] = useState<string | null>(
-    null,
-  );
+  const [confirmationSuppression, setConfirmationSuppression] = useState<string | null>(null);
 
   useEffect(() => {
     if (!confirmationSuppression) return;
@@ -74,10 +69,7 @@ export function OrganisationSuivi() {
   // le formateur ne crée que les événements entretien tripartite, le coordo
   // et l'admin créent tous les motifs.
   const formation = formations[apprenti.formationId];
-  const motifsProposables = motifsProposablesPourRole(
-    formation?.nombreEntretiens ?? 2,
-    roleActif,
-  );
+  const motifsProposables = motifsProposablesPourRole(formation?.nombreEntretiens ?? 2, roleActif);
 
   function ajouter() {
     if (!motifAAjouter) return;
@@ -99,20 +91,23 @@ export function OrganisationSuivi() {
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold">Fiches de suivi</h1>
         <p className="text-muted-foreground">
-          Cadre de suivi de la promo, défini par le formateur référent ou le
-          coordinateur·rice. Consultable par l'apprenti·e et le maître / tuteur.
+          Cadre de suivi de la promo, défini par le formateur référent ou le coordinateur·rice.
+          Consultable par l'apprenti·e et le maître / tuteur.
         </p>
         <p className="text-xs text-muted-foreground">
-          Apprenti·e : <strong>{apprenti.prenom} {apprenti.nom}</strong>
+          Apprenti·e :{' '}
+          <strong>
+            {apprenti.prenom} {apprenti.nom}
+          </strong>
         </p>
       </header>
 
       {!editable && (
         <div className="inline-flex items-center gap-2 rounded-md bg-muted px-3 py-1.5 text-xs text-muted-foreground">
           <Lock className="h-3.5 w-3.5" aria-hidden="true" />
-          Vous consultez en mode <strong className="text-foreground">{libelleRole(roleActif)}</strong>{' '}
-          — modification réservée au formateur référent, au coordinateur·rice et à
-          l'administrateur·rice.
+          Vous consultez en mode{' '}
+          <strong className="text-foreground">{libelleRole(roleActif)}</strong> — modification
+          réservée au formateur référent, au coordinateur·rice et à l'administrateur·rice.
         </div>
       )}
 
@@ -123,19 +118,14 @@ export function OrganisationSuivi() {
           data-testid="ajout-evenement"
         >
           <div className="flex-1 space-y-1">
-            <label
-              htmlFor="org-motif-ajout"
-              className="text-xs font-medium text-muted-foreground"
-            >
+            <label htmlFor="org-motif-ajout" className="text-xs font-medium text-muted-foreground">
               Ajouter un événement
             </label>
             <select
               id="org-motif-ajout"
               data-testid="org-motif-ajout"
               value={motifAAjouter}
-              onChange={(e) =>
-                setMotifAAjouter(e.target.value as MotifOrganisationSuivi | '')
-              }
+              onChange={(e) => setMotifAAjouter(e.target.value as MotifOrganisationSuivi | '')}
               className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">— Choisir un motif —</option>
@@ -175,14 +165,13 @@ export function OrganisationSuivi() {
             <CarteEvenement
               key={evt.id}
               evenement={evt}
+              entretiens={livret.entretiens}
               editable={editable}
               enConfirmationSuppression={confirmationSuppression === evt.id}
               onChangeTitre={(titre) =>
                 modifierEvt(livret.id, utilisateurActif.id, evt.id, { titre })
               }
-              onChangeDate={(date) =>
-                modifierEvt(livret.id, utilisateurActif.id, evt.id, { date })
-              }
+              onChangeDate={(date) => modifierEvt(livret.id, utilisateurActif.id, evt.id, { date })}
               onChangeCommentaire={(commentaire) =>
                 modifierEvt(livret.id, utilisateurActif.id, evt.id, { commentaire })
               }
@@ -218,6 +207,8 @@ export function OrganisationSuivi() {
 
 interface CarteEvenementProps {
   evenement: EvenementOrganisationSuivi;
+  /** Entretiens du livret — la règle « entretien signé = fiche insupprimable ». */
+  entretiens: Livret['entretiens'];
   editable: boolean;
   enConfirmationSuppression: boolean;
   onChangeTitre: (titre: string) => void;
@@ -229,6 +220,7 @@ interface CarteEvenementProps {
 
 function CarteEvenement({
   evenement,
+  entretiens,
   editable,
   enConfirmationSuppression,
   onChangeTitre,
@@ -243,7 +235,7 @@ function CarteEvenement({
   const idCommentaire = `org-com-${evenement.id}`;
   const verrouille = evenement.verrouille === true;
   const peutEditerChamp = editable && !verrouille;
-  const verrouSuppression = peutSupprimerEvenement(evenement);
+  const verrouSuppression = peutSupprimerEvenement(evenement, entretiens);
   const supprimable = verrouSuppression.supprimable;
 
   return (
@@ -284,13 +276,12 @@ function CarteEvenement({
               enConfirmationSuppression
                 ? 'border border-red-300 bg-red-600 text-white hover:bg-red-700'
                 : 'border border-input bg-background text-muted-foreground hover:bg-secondary hover:text-foreground',
-              !supprimable && 'cursor-not-allowed opacity-40 hover:bg-background hover:text-muted-foreground',
+              !supprimable &&
+                'cursor-not-allowed opacity-40 hover:bg-background hover:text-muted-foreground',
             )}
           >
             <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-            {enConfirmationSuppression && (
-              <span className="text-xs font-medium">Confirmer</span>
-            )}
+            {enConfirmationSuppression && <span className="text-xs font-medium">Confirmer</span>}
           </button>
         )}
       </header>
@@ -314,10 +305,7 @@ function CarteEvenement({
       {/* Titre custom — affiché en lecture seule pour les autres rôles si renseigné */}
       {peutEditerChamp ? (
         <div className="space-y-1">
-          <label
-            htmlFor={idTitre}
-            className="text-xs font-medium text-muted-foreground"
-          >
+          <label htmlFor={idTitre} className="text-xs font-medium text-muted-foreground">
             Titre (optionnel — utile pour distinguer plusieurs événements du même motif)
           </label>
           <input
@@ -337,10 +325,7 @@ function CarteEvenement({
         {/* Colonne date + bouton verrou */}
         <div className="sm:w-44 sm:shrink-0 space-y-2">
           <div className="space-y-1">
-            <label
-              htmlFor={idDate}
-              className="text-xs font-medium text-muted-foreground"
-            >
+            <label htmlFor={idDate} className="text-xs font-medium text-muted-foreground">
               Date (optionnelle)
             </label>
             {peutEditerChamp ? (
