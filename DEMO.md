@@ -8,6 +8,7 @@ Référence : cahier des charges v1.3, section 25.
 
 > **⚠ Mise à jour 26 mai 2026** — la vague de chantiers métier de fin mai a fait évoluer plusieurs
 > éléments du script ci-dessous. Adapter mentalement :
+>
 > - Sidebar : « Fiches de suivi » = ancienne « Organisation du suivi » (page d'événements). Les
 >   « Période en Entreprise » sont en-dessous (cahier de période).
 > - **2 entretiens tripartites** désormais possibles par livret. Léa a un événement « Entretien
@@ -27,16 +28,37 @@ Référence : cahier des charges v1.3, section 25.
 > Le **fond métier** du script (co-édition tripartite, R10 motivé, R22 clôture, export PDF) reste
 > valide. Réécriture complète du script à prévoir pour l'étape 2 (auth réelle).
 
+> **⚠ Mise à jour 13 juin 2026** — la vague « retours coordonnateurs » a fait évoluer d'autres
+> éléments du script. À adapter avant la prochaine démo :
+>
+> - **Logo officiel GRETA CFA** (Marianne + bandeau réseau) en en-tête et sur le PDF, à la place
+>   du carré « GLM ».
+> - **« Maître / Tuteur »** partout (ex-« Maître d'apprentissage ») ; un·e apprenti·e peut avoir
+>   **2 tuteurs** (principal + second). Luca BIANCHI a Hélène en principale + Karim en second.
+> - **Jusqu'à 4 entretiens tripartites** par livret (selon la formation), au lieu de 2.
+> - **Attitudes professionnelles refondues** : ce n'est plus une grille 4×4 figée en évaluation
+>   finale. Le **choix** des attitudes (catalogue admin de 16 entrées) se fait à l'**entretien 1**
+>   (maître + formateur), puis le maître les **évalue à chaque entretien** ; l'onglet « Attitudes »
+>   de l'évaluation finale est une **synthèse en lecture seule** (cf. §3 étape 06:30, à reformuler).
+> - **Signature manuscrite tactile** : « Signer » ouvre désormais une zone de dessin (doigt / souris)
+>   avant confirmation — le tracé apparaît dans la carte de signature et le PDF.
+> - **Répartition par coordo** : chaque coordo ne voit que ses apprenti·e·s (Martine LEFÈVRE ↔
+>   Bernard PETIT) ; l'admin voit tout et répartit. Sélecteur de coordo actif au tableau de bord.
+> - **Tri / filtre par année de formation** au tableau de bord.
+>
+> Le **bandeau « MAQUETTE DE DÉMONSTRATION » a été retiré** (cf. §3, 00:00). Une **réécriture
+> complète et datée du script** est recommandée avant la prochaine présentation à la direction.
+
 ---
 
 ## 1. URL et accès
 
-| | |
-|---|---|
-| **URL publique** | https://livret-glm.duckdns.org |
-| **Basic Auth** | `demo` / *(mot de passe communiqué de vive voix — jamais par mail)* |
-| **Navigateurs validés** | Chrome ≥ 120, Firefox ≥ 120 |
-| **Mobile / desktop** | Tester en desktop pour la démo (le mobile reste fonctionnel mais l'effet visuel est moins lisible) |
+|                         |                                                                                                    |
+| ----------------------- | -------------------------------------------------------------------------------------------------- |
+| **URL publique**        | https://livret-glm.duckdns.org                                                                     |
+| **Basic Auth**          | `demo` / _(mot de passe communiqué de vive voix — jamais par mail)_                                |
+| **Navigateurs validés** | Chrome ≥ 120, Firefox ≥ 120                                                                        |
+| **Mobile / desktop**    | Tester en desktop pour la démo (le mobile reste fonctionnel mais l'effet visuel est moins lisible) |
 
 ---
 
@@ -59,9 +81,9 @@ Référence : cahier des charges v1.3, section 25.
 ### 00:00 — 01:00 · Introduction et vue formateur
 
 1. Ouvrir l'URL, saisir le Basic Auth devant le public.
-   - 🗣️ *« L'accès est protégé par mot de passe et HTTPS, hébergé sur un VPS européen, sans aucun tracker ni télémétrie. »*
+   - 🗣️ _« L'accès est protégé par mot de passe et HTTPS, hébergé sur un VPS européen, sans aucun tracker ni télémétrie. »_
 2. L'application charge sur le **Tableau de bord du formateur référent** (rôle par défaut).
-3. Pointer le **role switcher** en haut à droite (5 rôles : apprenti·e, maître, formateur, coordo, admin). *(Le bandeau « MAQUETTE DE DÉMONSTRATION » a été retiré en juin 2026 — préciser oralement si besoin que les données sont fictives.)*
+3. Pointer le **role switcher** en haut à droite (5 rôles : apprenti·e, maître, formateur, coordo, admin). _(Le bandeau « MAQUETTE DE DÉMONSTRATION » a été retiré en juin 2026 — préciser oralement si besoin que les données sont fictives.)_
 4. Montrer rapidement les **6 cartes apprenti·e·s** du tableau de bord (Léa MARTIN — cas principal, Théo DUBOIS — « bon élève », Sofia PEREIRA — alerte R7, Minh NGUYEN — démarrage, Aya KOUAMÉ — désaccord R10, Luca BIANCHI — mi-parcours).
 5. Cliquer sur **« Ouvrir le livret de Léa MARTIN »**.
 
@@ -84,26 +106,26 @@ Référence : cahier des charges v1.3, section 25.
 3. **Ajouter un retour apprenti** sur une compétence : taper un commentaire dans la colonne « Retour apprenti·e ».
    - L'**indicateur « Enregistré »** apparaît brièvement en bas à droite (debounce 500 ms).
 4. Faire défiler vers la **zone Observations de fin de période** :
-   - 🗣️ *« Chaque rôle a sa propre zone, et — important — une fois que le rôle a signé, sa zone est figée pour respecter l'engagement. »*
+   - 🗣️ _« Chaque rôle a sa propre zone, et — important — une fois que le rôle a signé, sa zone est figée pour respecter l'engagement. »_
 5. **Bascule rôle → Maître / Tuteur (Karim BENALI)**.
    - Évaluer une nouvelle compétence en colonne entreprise.
 6. **Bascule rôle → Formateur référent (Sophie DUBOIS)**.
    - Faire défiler vers le **bloc Signatures** en bas de fiche.
    - Cliquer **« Signer en tant que Sophie »** → un encart ambre apparaît avec le récapitulatif d'engagement.
-   - 🎯 *« Une signature est tracée et ne peut être retirée que par un déverrouillage explicite — c'est l'objet du point suivant. »*
+   - 🎯 _« Une signature est tracée et ne peut être retirée que par un déverrouillage explicite — c'est l'objet du point suivant. »_
    - Cliquer **« Confirmer »** : la signature est apposée et horodatée à la seconde.
 
 ### 05:30 — 06:30 · Verrouillage et déverrouillage R10
 
 1. Revenir aux fiches de suivi → ouvrir **Période 1** (verrouillée 🔒).
-2. Pointer le bandeau ambre en haut : *« La fiche est verrouillée. Le déverrouillage invalide les trois signatures et requiert un motif tracé (R10). »*
+2. Pointer le bandeau ambre en haut : _« La fiche est verrouillée. Le déverrouillage invalide les trois signatures et requiert un motif tracé (R10). »_
 3. Cliquer **« Déverrouiller… »** → la **modale R10** s'ouvre :
    - Avertissement explicite : invalidation des 3 signatures.
    - Champ **« Motif »** obligatoire (≥ 10 caractères).
-4. Saisir un motif réel : *« Erreur de niveau de maîtrise sur la compétence C2-1 — à corriger en accord avec le maître. »*
+4. Saisir un motif réel : _« Erreur de niveau de maîtrise sur la compétence C2-1 — à corriger en accord avec le maître. »_
 5. Cliquer **« Confirmer le déverrouillage »**.
 6. La fiche repasse en **« en cours »**, les 3 signatures sont effacées, et un **encart historique** apparaît en bas avec date / auteur / motif.
-   - 🎯 *Traçabilité totale : toute correction post-signature est auditée.*
+   - 🎯 _Traçabilité totale : toute correction post-signature est auditée._
 
 ### 06:30 — 08:00 · Évaluation finale et clôture R22
 
@@ -112,16 +134,16 @@ Référence : cahier des charges v1.3, section 25.
    - **Synthèse par bloc** en haut (statistiques entreprise / centre).
    - Tableau détaillé : certaines cellules portent un badge ✨ **« Hérité des fiches »** — les valeurs non saisies sont déduites des fiches de période (last-write-wins).
 3. Onglet **Attitudes professionnelles** : grille 4×4 (++/+/-/--) maître + formateur.
-4. Faire défiler vers le haut : un **bandeau gris** indique *« Clôture du livret indisponible — 2 fiches doivent encore être verrouillées »*.
-   - 🗣️ *« Tant que les 3 fiches ne sont pas verrouillées, le livret reste éditable. »*
-5. *(Si la démo a le temps, et seulement si on a réinitialisé en début pour avoir l'état initial sans déverrouillage)* basculer côté formateur, signer + verrouiller P2 et P3, puis revenir sur Évaluation finale → le bandeau passe au vert avec bouton **« Clôturer le livret »**.
-6. *(Sinon, sauter cette étape — le bandeau gris suffit à montrer la règle.)*
+4. Faire défiler vers le haut : un **bandeau gris** indique _« Clôture du livret indisponible — 2 fiches doivent encore être verrouillées »_.
+   - 🗣️ _« Tant que les 3 fiches ne sont pas verrouillées, le livret reste éditable. »_
+5. _(Si la démo a le temps, et seulement si on a réinitialisé en début pour avoir l'état initial sans déverrouillage)_ basculer côté formateur, signer + verrouiller P2 et P3, puis revenir sur Évaluation finale → le bandeau passe au vert avec bouton **« Clôturer le livret »**.
+6. _(Sinon, sauter cette étape — le bandeau gris suffit à montrer la règle.)_
 
 ### 08:00 — 09:00 · Export PDF
 
 1. Sur la page **Évaluation finale**, en haut à droite : bouton **« Exporter le livret »**.
 2. Cliquer.
-   - Première fois : indicateur *« Préparation du PDF… »* (~500 ms).
+   - Première fois : indicateur _« Préparation du PDF… »_ (~500 ms).
    - Le bouton se transforme en **« Télécharger le PDF »**.
 3. Cliquer sur le lien → fichier `livret-apprentissage-MARTIN-Lea-AAAA-MM-JJ.pdf` téléchargé.
 4. Ouvrir le PDF dans un nouvel onglet.
@@ -135,7 +157,7 @@ Référence : cahier des charges v1.3, section 25.
 
 ### 09:00 — 10:00 · Perspectives et clôture
 
-1. **Bascule rôle → Coordo (Martine LEFÈVRE)** : section *Administration* apparaît dans la sidebar avec **CRUD réel** — gestion utilisateurs, formations, affectations, référentiels (import CSV/XLSX), banque de questions d'entretien.
+1. **Bascule rôle → Coordo (Martine LEFÈVRE)** : section _Administration_ apparaît dans la sidebar avec **CRUD réel** — gestion utilisateurs, formations, affectations, référentiels (import CSV/XLSX), banque de questions d'entretien.
 2. **Bascule rôle → Admin (Guillaume FERRERI)** : droits étendus + gestion **établissements** + URLs Pronote.
 3. Rappeler les **limites du périmètre étape 1** :
    - Pas d'authentification réelle (role switcher de démo).
@@ -160,15 +182,15 @@ Cible 5 min : Intro + Navigation + Co-édition + Évaluation finale rapide.
 
 ## 5. Plan B en cas d'incident
 
-| Incident | Action |
-|---|---|
-| URL publique inaccessible | Bascule sur `npm run dev` du poste présentateur (cf. README §1). |
-| Données corrompues juste avant la démo | Footer → **« Réinitialiser la démo »** → confirmer. |
-| Bug bloquant sur un clic spécifique | Passer au point suivant du script, ne pas insister, noter l'incident pour post-mortem. |
-| Le PDF met > 5 secondes à se générer | Garder le PDF de secours préparé la veille ouvert dans un onglet caché, basculer dessus. |
-| Question hors scope | *« Je réponds précisément après la démo. »* — ne pas improviser. |
-| TLS expiré (rare) | Le script `verifier-vps.sh` alerte si < 30 j ; sinon, restart manuel : `ssh root@69.62.107.157 "cd /docker && docker compose restart traefik"`. |
-| `localStorage` plein (5 Mo) | Modale d'erreur native de l'app + DevTools → `localStorage.clear()` en dernier recours. |
+| Incident                               | Action                                                                                                                                          |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| URL publique inaccessible              | Bascule sur `npm run dev` du poste présentateur (cf. README §1).                                                                                |
+| Données corrompues juste avant la démo | Footer → **« Réinitialiser la démo »** → confirmer.                                                                                             |
+| Bug bloquant sur un clic spécifique    | Passer au point suivant du script, ne pas insister, noter l'incident pour post-mortem.                                                          |
+| Le PDF met > 5 secondes à se générer   | Garder le PDF de secours préparé la veille ouvert dans un onglet caché, basculer dessus.                                                        |
+| Question hors scope                    | _« Je réponds précisément après la démo. »_ — ne pas improviser.                                                                                |
+| TLS expiré (rare)                      | Le script `verifier-vps.sh` alerte si < 30 j ; sinon, restart manuel : `ssh root@69.62.107.157 "cd /docker && docker compose restart traefik"`. |
+| `localStorage` plein (5 Mo)            | Modale d'erreur native de l'app + DevTools → `localStorage.clear()` en dernier recours.                                                         |
 
 ---
 
@@ -180,10 +202,17 @@ Cible 5 min : Intro + Navigation + Co-édition + Évaluation finale rapide.
 
 ```js
 // DevTools > Console
-['livret-donnees','livret-role-actif','livret-apprenti-actif',
- 'livret-utilisateurs','livret-formations','livret-referentiels',
- 'livret-banque-questions','livret-etablissements']
-  .forEach(k => localStorage.removeItem(k));
+[
+  'livret-donnees',
+  'livret-role-actif',
+  'livret-apprenti-actif',
+  'livret-utilisateurs',
+  'livret-formations',
+  'livret-referentiels',
+  'livret-banque-questions',
+  'livret-etablissements',
+  'livret-attitudes',
+].forEach((k) => localStorage.removeItem(k));
 location.reload();
 ```
 
@@ -198,4 +227,4 @@ location.reload();
 
 ---
 
-*Référence : CDC v1.3 §25 + addendum v1.5 · Étape 1 livrée + 3 vagues post-livraison.*
+_Référence : CDC v1.3 §25 + addendum v1.5 · Étape 1 livrée + 3 vagues post-livraison._
