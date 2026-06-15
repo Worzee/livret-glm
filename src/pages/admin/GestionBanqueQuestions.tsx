@@ -1,15 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import {
-  GraduationCap,
-  HardHat,
-  ListChecks,
-  Lock,
-  Pencil,
-  Plus,
-  Trash2,
-} from 'lucide-react';
+import { GraduationCap, HardHat, ListChecks, Lock, Pencil, Plus, Trash2 } from 'lucide-react';
 import type { CibleQuestion, QuestionBanque, Role } from '@/types';
-import { NUMEROS_ENTRETIEN } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
 import { useLivretStore } from '@/store/useLivretStore';
@@ -37,9 +28,7 @@ export function GestionBanqueQuestions() {
 
   const [modaleOuverte, setModaleOuverte] = useState(false);
   const [enEdition, setEnEdition] = useState<QuestionBanque | undefined>(undefined);
-  const [confirmationSuppression, setConfirmationSuppression] = useState<string | null>(
-    null,
-  );
+  const [confirmationSuppression, setConfirmationSuppression] = useState<string | null>(null);
 
   useEffect(() => {
     if (!confirmationSuppression) return;
@@ -101,10 +90,10 @@ export function GestionBanqueQuestions() {
             <h1 className="text-2xl font-semibold">Banque de questions</h1>
           </div>
           <p className="text-muted-foreground">
-            Catalogue des questions de l'entretien tripartite. Affectez chaque question à
-            l'entretien 1 et/ou 2 : elles seront posées dans tous les livrets (le formateur
-            référent peut en ajouter d'autres, mais pas retirer celles affectées). Une
-            question <strong>obligatoire</strong> exige une réponse avant signature.
+            Catalogue des questions de l'entretien tripartite. Par défaut, <strong>toute</strong>{' '}
+            question est posée dans tous les entretiens et sa réponse est exigée pour signer. Le
+            choix des questions à retirer se fait <strong>par formation</strong> (page Formations →
+            Planning), pas ici. Le formateur référent ne compose plus les questions.
           </p>
           <p className="text-xs text-muted-foreground">
             <strong>{nbQuestionsCible('apprenti')}</strong> questions apprenti·e ·{' '}
@@ -133,8 +122,6 @@ export function GestionBanqueQuestions() {
               <tr>
                 <th className="px-2 md:px-4 py-2 text-left">Question</th>
                 <th className="px-2 md:px-4 py-2 text-left">Type</th>
-                <th className="px-2 md:px-4 py-2 text-center">Entretiens</th>
-                <th className="px-2 md:px-4 py-2 text-center">Obligatoire</th>
                 <th className="px-2 md:px-4 py-2 text-right">Actions</th>
               </tr>
             </thead>
@@ -155,7 +142,7 @@ export function GestionBanqueQuestions() {
                         <div className="min-w-0">
                           <p className="font-medium text-foreground">{q.libelle}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {q.cible === 'apprenti' ? "Apprenti·e" : 'Maître / Tuteur'}
+                            {q.cible === 'apprenti' ? 'Apprenti·e' : 'Maître / Tuteur'}
                             {q.placeholder && (
                               <>
                                 {' · '}
@@ -168,49 +155,6 @@ export function GestionBanqueQuestions() {
                     </td>
                     <td className="px-2 md:px-4 py-2 text-muted-foreground align-top whitespace-nowrap">
                       {libelleType(q.type)}
-                    </td>
-                    {/* Affectation E1..E4 par le coordo (retours coordos juin 2026 —
-                        jusqu'à 4 entretiens pour les formations de 2 ans). Snapshot
-                        à l'initialisation : ne modifie pas les entretiens déjà
-                        initialisés. */}
-                    <td className="px-2 md:px-4 py-2 align-top text-center whitespace-nowrap">
-                      <div className="inline-flex items-center gap-2.5">
-                        {NUMEROS_ENTRETIEN.map((n) => (
-                          <label
-                            key={n}
-                            className="inline-flex items-center gap-1 text-xs cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={q.pourEntretiens.includes(n)}
-                              onChange={(e) =>
-                                modifierQuestion(q.id, {
-                                  pourEntretiens: e.target.checked
-                                    ? [...q.pourEntretiens, n].sort((a, b) => a - b)
-                                    : q.pourEntretiens.filter((x) => x !== n),
-                                })
-                              }
-                              data-testid={`banque-q-e${n}-${q.id}`}
-                              aria-label={`Affecter à l'entretien tripartite ${n} : ${q.libelle}`}
-                              className="h-4 w-4 rounded border-input accent-[hsl(var(--ring))] focus-visible:ring-2 focus-visible:ring-ring"
-                            />
-                            E{n}
-                          </label>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-2 md:px-4 py-2 align-top text-center">
-                      <input
-                        type="checkbox"
-                        checked={q.obligatoire}
-                        onChange={(e) =>
-                          modifierQuestion(q.id, { obligatoire: e.target.checked })
-                        }
-                        data-testid={`banque-q-obligatoire-${q.id}`}
-                        aria-label={`Rendre obligatoire : ${q.libelle}`}
-                        title="Obligatoire : non retirable de l'entretien et réponse exigée pour signer."
-                        className="h-4 w-4 rounded border-input accent-[hsl(var(--ring))] focus-visible:ring-2 focus-visible:ring-ring"
-                      />
                     </td>
                     <td className="px-2 md:px-4 py-2 text-right align-top">
                       <div className="inline-flex items-center gap-1">
@@ -241,14 +185,11 @@ export function GestionBanqueQuestions() {
                             enConfirmation
                               ? 'border border-red-300 bg-red-600 text-white hover:bg-red-700'
                               : 'border border-input bg-background text-muted-foreground hover:bg-secondary hover:text-foreground',
-                            !supprimable &&
-                              'opacity-40 cursor-not-allowed hover:bg-background',
+                            !supprimable && 'opacity-40 cursor-not-allowed hover:bg-background',
                           )}
                         >
                           <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                          {enConfirmation && (
-                            <span className="text-xs font-medium">Confirmer</span>
-                          )}
+                          {enConfirmation && <span className="text-xs font-medium">Confirmer</span>}
                         </button>
                       </div>
                       {utilisee && (
@@ -274,17 +215,12 @@ export function GestionBanqueQuestions() {
         }}
         onValider={(valeurs, existante) => {
           if (existante) {
-            // Patch partiel : l'affectation E1/E2/obligatoire (cases du
-            // tableau) n'est pas touchée par la modale.
             modifierQuestion(existante.id, valeurs);
           } else {
-            // Une nouvelle question arrive non affectée : le coordo la
-            // branche ensuite sur E1..E4 depuis le tableau.
-            ajouterQuestion({
-              ...valeurs,
-              pourEntretiens: [],
-              obligatoire: false,
-            });
+            // Catalogue pur (13 juin 2026) : une nouvelle question est de fait
+            // active et obligatoire dans toutes les formations, sauf à être
+            // retirée formation par formation (modale Planning).
+            ajouterQuestion(valeurs);
           }
           setModaleOuverte(false);
           setEnEdition(undefined);
@@ -304,10 +240,7 @@ function IconeCible({ cible }: { cible: CibleQuestion }) {
     );
   }
   return (
-    <HardHat
-      className="h-4 w-4 shrink-0 mt-0.5 text-role-maitre"
-      aria-label="Question maître"
-    />
+    <HardHat className="h-4 w-4 shrink-0 mt-0.5 text-role-maitre" aria-label="Question maître" />
   );
 }
 
@@ -328,9 +261,7 @@ function AccesRefuse({ roleActif }: { roleActif: Role }) {
       <div className="flex items-start gap-3">
         <Lock className="h-5 w-5 shrink-0 text-amber-700 mt-0.5" aria-hidden="true" />
         <div>
-          <h1 className="text-lg font-medium text-amber-900">
-            Accès réservé à l'administration
-          </h1>
+          <h1 className="text-lg font-medium text-amber-900">Accès réservé à l'administration</h1>
           <p className="mt-2 text-sm text-amber-900/80">
             Vous êtes actuellement connecté·e en tant que <strong>{libelleRole(roleActif)}</strong>.
             La gestion de la banque de questions est réservée aux rôles{' '}

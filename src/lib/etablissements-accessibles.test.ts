@@ -32,6 +32,7 @@ const form1: Formation = {
   lieuId: eta1.id,
   periodes: [],
   nombreEntretiens: 2,
+      questionsRetirees: [],
 };
 const form2: Formation = {
   id: 'f-2',
@@ -44,6 +45,7 @@ const form2: Formation = {
   lieuId: eta2.id,
   periodes: [],
   nombreEntretiens: 2,
+      questionsRetirees: [],
 };
 
 const app1: Apprenti = {

@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { HardHat, ListChecks } from 'lucide-react';
+import { HardHat } from 'lucide-react';
 import type {
   AppreciationMaitre,
   EntretienTripartite,
@@ -15,16 +14,16 @@ import { peutEncoreEditer } from '@/lib/regles-entretien';
 import { attitudesRetenues } from '@/lib/selection-attitudes';
 import { CaseOuiNon } from './CaseOuiNon';
 import { SelecteurAppreciation } from '@/components/common/SelecteurAppreciation';
-import { SelecteurQuestions } from './SelecteurQuestions';
 import { cn } from '@/lib/utils';
 
 /**
- * Sections de l'entretien réservées au maître d'apprentissage (CDC §5.2,
- * refonte mai 2026).
+ * Sections de l'entretien réservées au maître / tuteur (CDC §5.2).
  *
- *   - Questions sélectionnées par le formateur référent depuis la banque
- *     (cf. `useBanqueQuestionsStore`). Le maître y répond ici.
+ *   - Questions issues de la banque, composées par formation (13 juin 2026 :
+ *     toutes présentes sauf celles retirées par le coordo, toutes
+ *     obligatoires). Le maître y répond ici, sans pouvoir les modifier.
  *   - Grille d'appréciation 4×4 (en dur — élément standardisé du livret).
+ *   - Attitudes professionnelles retenues à l'E1 (évaluées à chaque entretien).
  *   - Commentaire libre du maître.
  */
 
@@ -47,15 +46,12 @@ const CRITERES_APPRECIATION: Array<{
 export function SectionMaitre({ livretId, numero, entretien }: SectionMaitreProps) {
   const roleActif = useUserStore((s) => s.roleActif);
   const setReponse = useLivretStore((s) => s.setReponseEntretien);
-  const setQuestions = useLivretStore((s) => s.setQuestionsSelectionnees);
   const setAppreciation = useLivretStore((s) => s.setAppreciationMaitre);
   const setCommentaire = useLivretStore((s) => s.setCommentaireEntretien);
   const setEvaluationAttitude = useLivretStore((s) => s.setEvaluationAttitude);
   const livret = useLivretStore((s) => s.livrets[livretId]);
   const banque = useBanqueQuestionsStore((s) => s.questions);
   const attitudesMap = useAttitudesStore((s) => s.attitudes);
-
-  const [selecteurOuvert, setSelecteurOuvert] = useState(false);
 
   const editableQuestions =
     peutEditer(roleActif, 'entretien.questions-maitre') && peutEncoreEditer('maitre', entretien);
@@ -67,7 +63,6 @@ export function SectionMaitre({ livretId, numero, entretien }: SectionMaitreProp
   // par sa signature comme le reste de sa section.
   const editableAttitudes =
     peutEditer(roleActif, 'entretien.attitudes') && peutEncoreEditer('maitre', entretien);
-  const peutChoisirQuestions = roleActif === 'formateur';
 
   const questions: QuestionBanque[] = entretien.questionsMaitreSelectionnees
     .map((id) => banque[id])
@@ -79,44 +74,26 @@ export function SectionMaitre({ livretId, numero, entretien }: SectionMaitreProp
     livret?.attitudesSelectionnees ?? [],
   );
 
-  // Retours coordos juin 2026 : les questions affectées par le coordo
-  // (snapshot) ne sont pas retirables ; les obligatoires portent un badge.
-  const idsNonRetirables = [...entretien.questionsImposees, ...entretien.questionsObligatoires];
-  const idsObligatoires = new Set(entretien.questionsObligatoires);
-
   return (
     <section className="rounded-lg border border-border border-l-4 border-l-role-maitre bg-card p-4 space-y-5">
-      <header className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex items-start gap-2">
-          <HardHat className="mt-1 h-5 w-5 shrink-0 text-role-maitre" aria-hidden="true" />
-          <div>
-            <h2 className="text-lg font-medium text-role-maitre">Maître / Tuteur</h2>
-            <p className="text-xs text-muted-foreground">
-              Réservé au maître / tuteur. Verrouillé après votre signature.
-            </p>
-          </div>
+      <header className="flex items-start gap-2">
+        <HardHat className="mt-1 h-5 w-5 shrink-0 text-role-maitre" aria-hidden="true" />
+        <div>
+          <h2 className="text-lg font-medium text-role-maitre">Maître / Tuteur</h2>
+          <p className="text-xs text-muted-foreground">
+            Réservé au maître / tuteur. Toutes les questions sont à renseigner pour signer.
+            Verrouillé après votre signature.
+          </p>
         </div>
-        {peutChoisirQuestions && (
-          <button
-            type="button"
-            onClick={() => setSelecteurOuvert(true)}
-            data-testid="maitre-choisir-questions"
-            className="inline-flex items-center gap-1.5 rounded-md border border-role-formateur/30 bg-role-formateur/10 px-2.5 py-1 text-xs font-medium text-role-formateur hover:bg-role-formateur/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <ListChecks className="h-3.5 w-3.5" aria-hidden="true" />
-            Choisir les questions ({questions.length})
-          </button>
-        )}
       </header>
 
-      {/* ── Questions sélectionnées ──────────────────────────────────────────── */}
+      {/* ── Questions (composées par formation — toutes obligatoires) ────────── */}
       <div className="space-y-3">
         <h3 className="text-sm font-medium">Questions</h3>
         {questions.length === 0 ? (
           <p className="text-sm italic text-muted-foreground">
-            {peutChoisirQuestions
-              ? 'Aucune question sélectionnée. Cliquez sur « Choisir les questions » pour démarrer.'
-              : "Le formateur référent n'a pas encore sélectionné de questions."}
+            Aucune question pour cet entretien — le coordo a retiré toutes les questions destinées
+            au maître / tuteur pour cette formation.
           </p>
         ) : (
           questions.map((q) => (
@@ -125,7 +102,6 @@ export function SectionMaitre({ livretId, numero, entretien }: SectionMaitreProp
               question={q}
               valeur={entretien.reponsesMaitre[q.id]}
               editable={editableQuestions}
-              obligatoire={idsObligatoires.has(q.id)}
               onChange={(valeur) => setReponse(livretId, numero, 'maitre', q.id, valeur)}
             />
           ))
@@ -218,19 +194,6 @@ export function SectionMaitre({ livretId, numero, entretien }: SectionMaitreProp
           rows={3}
         />
       </div>
-
-      {/* Modale de sélection des questions — visible uniquement pour le formateur. */}
-      <SelecteurQuestions
-        ouvert={selecteurOuvert}
-        cible="maitre"
-        selectionInitiale={entretien.questionsMaitreSelectionnees}
-        idsNonRetirables={idsNonRetirables}
-        onAnnuler={() => setSelecteurOuvert(false)}
-        onValider={(ids) => {
-          setQuestions(livretId, numero, 'maitre', ids);
-          setSelecteurOuvert(false);
-        }}
-      />
     </section>
   );
 }
@@ -239,29 +202,16 @@ interface ChampQuestionProps {
   question: QuestionBanque;
   valeur: string | boolean | null | undefined;
   editable: boolean;
-  /** Réponse exigée pour signer (extension R20) — affiche un badge. */
-  obligatoire?: boolean;
   onChange: (valeur: string | boolean | null) => void;
 }
 
-function BadgeObligatoire() {
-  return (
-    <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 align-middle">
-      Obligatoire
-    </span>
-  );
-}
-
-function ChampQuestion({ question, valeur, editable, obligatoire, onChange }: ChampQuestionProps) {
+function ChampQuestion({ question, valeur, editable, onChange }: ChampQuestionProps) {
   const id = `entretien-q-${question.id}`;
 
   if (question.type === 'oui-non') {
     return (
       <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-sm">
-          {question.libelle}
-          {obligatoire && <BadgeObligatoire />}
-        </span>
+        <span className="text-sm">{question.libelle}</span>
         <CaseOuiNon
           editable={editable}
           valeur={typeof valeur === 'boolean' ? valeur : null}
@@ -279,7 +229,6 @@ function ChampQuestion({ question, valeur, editable, obligatoire, onChange }: Ch
     <div className="space-y-1">
       <label htmlFor={id} className="text-sm font-medium block">
         {question.libelle}
-        {obligatoire && <BadgeObligatoire />}
       </label>
       {editable ? (
         question.type === 'texte-long' ? (

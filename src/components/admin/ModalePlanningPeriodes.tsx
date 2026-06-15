@@ -1,17 +1,10 @@
 import { useEffect, useId, useMemo, useState } from 'react';
-import {
-  AlertCircle,
-  CalendarRange,
-  Lock,
-  Pencil,
-  Plus,
-  Trash2,
-  X,
-} from 'lucide-react';
+import { AlertCircle, CalendarRange, Lock, Pencil, Plus, Trash2, X } from 'lucide-react';
 import type { Formation, NumeroEntretien, PeriodeFormation } from '@/types';
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
+import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
 import {
   evaluerVerrouPeriode,
   libellePeriode,
@@ -51,8 +44,10 @@ export function ModalePlanningPeriodes({
   const modifier = useFormationsStore((s) => s.modifierPeriode);
   const supprimer = useFormationsStore((s) => s.supprimerPeriode);
   const setNombreEntretiens = useFormationsStore((s) => s.setNombreEntretiens);
+  const toggleQuestionRetiree = useFormationsStore((s) => s.toggleQuestionRetiree);
   const livretsTous = useLivretStore((s) => s.livrets);
   const apprentis = useUtilisateursStore((s) => s.apprentis);
+  const questionsBanque = useBanqueQuestionsStore((s) => s.questions);
 
   const titreId = useId();
   const [editionId, setEditionId] = useState<string | null>(null);
@@ -62,9 +57,7 @@ export function ModalePlanningPeriodes({
   const [confirmationSuppression, setConfirmationSuppression] = useState<string | null>(null);
 
   // Live re-read : la formation dans le store évolue à chaque mutation.
-  const formationCourante = useFormationsStore(
-    (s) => s.formations[formation.id] ?? formation,
-  );
+  const formationCourante = useFormationsStore((s) => s.formations[formation.id] ?? formation);
   const periodes = useMemo(
     () => [...formationCourante.periodes].sort((a, b) => a.numero - b.numero),
     [formationCourante.periodes],
@@ -167,8 +160,8 @@ export function ModalePlanningPeriodes({
                 Planning des périodes — {formation.intitule}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {formation.annee} · {livretsPromo.length} apprenti·e·s rattaché·e·s.
-                Chaque période génère une fiche dans le livret de chacun·e.
+                {formation.annee} · {livretsPromo.length} apprenti·e·s rattaché·e·s. Chaque période
+                génère une fiche dans le livret de chacun·e.
               </p>
             </div>
           </div>
@@ -210,23 +203,78 @@ export function ModalePlanningPeriodes({
                 ))}
               </select>
               <p className="flex-1 min-w-[14rem] text-xs text-muted-foreground">
-                Jusqu'à 4 pour les formations de 2 ans. Seuls les motifs « Entretien
-                Tripartite 1 à {formationCourante.nombreEntretiens} » sont proposés dans
-                les fiches de suivi des livrets de la promo.
+                Jusqu'à 4 pour les formations de 2 ans. Seuls les motifs « Entretien Tripartite 1 à{' '}
+                {formationCourante.nombreEntretiens} » sont proposés dans les fiches de suivi des
+                livrets de la promo.
               </p>
             </div>
             {erreurEntretiens && (
-              <p role="alert" className="rounded-md border border-red-200 bg-red-50 p-2 text-xs text-red-700">
+              <p
+                role="alert"
+                className="rounded-md border border-red-200 bg-red-50 p-2 text-xs text-red-700"
+              >
                 {erreurEntretiens}
               </p>
             )}
           </section>
 
+          {/* Questions de l'entretien retirées pour la formation (13 juin 2026) ── */}
+          <section className="space-y-2">
+            <h3 className="text-sm font-medium">Questions de l'entretien tripartite</h3>
+            <div className="space-y-2 rounded-md border border-border bg-secondary/30 p-3">
+              <p className="text-xs text-muted-foreground">
+                Par défaut, <strong>toutes</strong> les questions de la banque sont posées et
+                obligatoires dans les entretiens de cette formation. Décochez celles à{' '}
+                <strong>retirer</strong> pour cette formation. Sans effet sur les entretiens déjà
+                initialisés.
+              </p>
+              {(() => {
+                const retirees = new Set(formationCourante.questionsRetirees ?? []);
+                const triees = Object.values(questionsBanque).sort((a, b) => {
+                  if (a.cible !== b.cible) return a.cible === 'apprenti' ? -1 : 1;
+                  return a.libelle.localeCompare(b.libelle, 'fr-FR');
+                });
+                if (triees.length === 0) {
+                  return (
+                    <p className="text-xs italic text-muted-foreground">
+                      Aucune question dans la banque.
+                    </p>
+                  );
+                }
+                return (
+                  <ul className="space-y-1">
+                    {triees.map((q) => {
+                      const incluse = !retirees.has(q.id);
+                      return (
+                        <li key={q.id}>
+                          <label className="flex items-start gap-2 text-sm cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={incluse}
+                              onChange={() => toggleQuestionRetiree(formation.id, q.id)}
+                              data-testid={`planning-question-${q.id}`}
+                              aria-label={`Inclure la question : ${q.libelle}`}
+                              className="mt-0.5 h-4 w-4 rounded border-input accent-[hsl(var(--ring))] focus-visible:ring-2 focus-visible:ring-ring"
+                            />
+                            <span className={cn(!incluse && 'text-muted-foreground line-through')}>
+                              <span className="text-[10px] uppercase tracking-wide text-muted-foreground mr-1">
+                                {q.cible === 'apprenti' ? 'Apprenti·e' : 'Maître'}
+                              </span>
+                              {q.libelle}
+                            </span>
+                          </label>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                );
+              })()}
+            </div>
+          </section>
+
           {/* Liste des périodes existantes ─────────────────────────────── */}
           <section className="space-y-2">
-            <h3 className="text-sm font-medium">
-              Périodes définies ({periodes.length})
-            </h3>
+            <h3 className="text-sm font-medium">Périodes définies ({periodes.length})</h3>
             {periodes.length === 0 ? (
               <p className="rounded-md border border-dashed border-border bg-secondary/30 p-3 text-sm text-muted-foreground">
                 Aucune période planifiée. Ajoutez la première via le formulaire ci-dessous.
@@ -234,16 +282,8 @@ export function ModalePlanningPeriodes({
             ) : (
               <ul className="space-y-2">
                 {periodes.map((p) => {
-                  const verrouModif = evaluerVerrouPeriode(
-                    p,
-                    livretsPromo,
-                    'modification',
-                  );
-                  const verrouSuppr = evaluerVerrouPeriode(
-                    p,
-                    livretsPromo,
-                    'suppression',
-                  );
+                  const verrouModif = evaluerVerrouPeriode(p, livretsPromo, 'modification');
+                  const verrouSuppr = evaluerVerrouPeriode(p, livretsPromo, 'suppression');
                   const enEdition = editionId === p.id;
                   const enConfirmation = confirmationSuppression === p.id;
 
@@ -263,8 +303,7 @@ export function ModalePlanningPeriodes({
                       <div className="flex-1 min-w-0">
                         <p className="font-medium">{libellePeriode(p)}</p>
                         <p className="text-xs text-muted-foreground">
-                          Du {formaterDateCourte(p.dateDebut)} au{' '}
-                          {formaterDateCourte(p.dateFin)}
+                          Du {formaterDateCourte(p.dateDebut)} au {formaterDateCourte(p.dateFin)}
                         </p>
                         {!verrouModif.peut && (
                           <p className="mt-1 flex items-center gap-1 text-[10px] italic text-amber-700">
@@ -299,14 +338,11 @@ export function ModalePlanningPeriodes({
                           enConfirmation
                             ? 'border border-red-300 bg-red-600 text-white hover:bg-red-700'
                             : 'border border-input bg-background text-muted-foreground hover:bg-secondary hover:text-foreground',
-                          !verrouSuppr.peut &&
-                            'opacity-40 cursor-not-allowed hover:bg-background',
+                          !verrouSuppr.peut && 'opacity-40 cursor-not-allowed hover:bg-background',
                         )}
                       >
                         <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                        {enConfirmation && (
-                          <span className="text-xs font-medium">Confirmer</span>
-                        )}
+                        {enConfirmation && <span className="text-xs font-medium">Confirmer</span>}
                       </button>
                     </li>
                   );

@@ -1,11 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type {
-  FicheSuiviPeriode,
-  Formation,
-  NumeroEntretien,
-  PeriodeFormation,
-} from '@/types';
+import type { FicheSuiviPeriode, Formation, NumeroEntretien, PeriodeFormation } from '@/types';
 import { formationsDemo } from '@/fixtures/formations';
 import { useUtilisateursStore } from './useUtilisateursStore';
 import { useLivretStore } from './useLivretStore';
@@ -15,10 +10,7 @@ import {
   type SaisiePeriode,
   validerSaisiePeriode,
 } from '@/lib/validation-periode-formation';
-import {
-  NOMBRE_ENTRETIENS_DEFAUT,
-  peutDefinirNombreEntretiens,
-} from '@/lib/nombre-entretiens';
+import { NOMBRE_ENTRETIENS_DEFAUT, peutDefinirNombreEntretiens } from '@/lib/nombre-entretiens';
 
 /**
  * Store des formations du dispositif.
@@ -57,13 +49,10 @@ interface FormationsStore {
    * @returns la formation créée (avec id auto-généré).
    */
   ajouterFormation: (
-    input: Omit<Formation, 'id' | 'periodes' | 'nombreEntretiens'>,
+    input: Omit<Formation, 'id' | 'periodes' | 'nombreEntretiens' | 'questionsRetirees'>,
   ) => Formation;
   /** Met à jour les champs d'une formation existante (hors `periodes`). */
-  modifierFormation: (
-    id: string,
-    patch: Partial<Omit<Formation, 'id' | 'periodes'>>,
-  ) => void;
+  modifierFormation: (id: string, patch: Partial<Omit<Formation, 'id' | 'periodes'>>) => void;
   /**
    * Supprime une formation. **Empêche la suppression** si au moins un·e
    * apprenti·e y est rattaché·e (cohérence référentielle).
@@ -77,10 +66,7 @@ interface FormationsStore {
    * d'une fiche correspondante dans **tous les livrets** de la promo.
    * Validation R11/R12 effectuée — retourne `{ ok: false }` si conflit.
    */
-  ajouterPeriode: (
-    formationId: string,
-    saisie: SaisiePeriode,
-  ) => ResultatMutationPeriode;
+  ajouterPeriode: (formationId: string, saisie: SaisiePeriode) => ResultatMutationPeriode;
   /**
    * Modifie une période existante (titre, dates) et propage les nouvelles
    * valeurs dans toutes les fiches correspondantes. Refus si au moins une
@@ -96,10 +82,7 @@ interface FormationsStore {
    * les livrets de la promo. Refus si au moins une fiche est signée ou
    * verrouillée. Renumérote ensuite les périodes restantes (1..N).
    */
-  supprimerPeriode: (
-    formationId: string,
-    periodeId: string,
-  ) => ResultatMutationPeriode;
+  supprimerPeriode: (formationId: string, periodeId: string) => ResultatMutationPeriode;
 
   /**
    * Définit le nombre d'entretiens tripartites de la formation (1 à 4 —
@@ -107,10 +90,16 @@ interface FormationsStore {
    * entretien déjà engagé (initialisé ou planifié) dans un livret de la
    * promo (cf. `lib/nombre-entretiens`).
    */
-  setNombreEntretiens: (
-    formationId: string,
-    nombre: NumeroEntretien,
-  ) => ResultatMutationPeriode;
+  setNombreEntretiens: (formationId: string, nombre: NumeroEntretien) => ResultatMutationPeriode;
+
+  /**
+   * Coche/décoche une question de l'entretien comme **retirée** pour la
+   * formation (13 juin 2026). Par défaut toute question de la banque est
+   * présente et obligatoire ; ce toggle l'écarte (ou la réintègre) pour
+   * tous les entretiens de cette formation. Sans effet sur les entretiens
+   * déjà initialisés (snapshot figé) — n'impacte que les futurs entretiens.
+   */
+  toggleQuestionRetiree: (formationId: string, questionId: string) => void;
 
   /** Réinitialise le store aux fixtures (utilisé par BoutonReinitialiserDemo). */
   reinitialiser: () => void;
@@ -126,7 +115,9 @@ interface FormationsStore {
 //   v4 — retours coordos juin 2026 : `Formation.nombreEntretiens` (1 à 4,
 //        défaut 2) — nombre d'entretiens tripartites de la formation, réglé
 //        dans la modale Planning.
-const VERSION_SCHEMA = 4;
+//   v5 — 13 juin 2026 : `Formation.questionsRetirees` (ids des questions de
+//        l'entretien écartées pour la formation ; tout le reste = obligatoire).
+const VERSION_SCHEMA = 5;
 
 function etatInitial(): Pick<FormationsStore, 'formations'> {
   return { formations: { ...formationsDemo } };
@@ -143,6 +134,7 @@ export const useFormationsStore = create<FormationsStore>()(
           id,
           periodes: [],
           nombreEntretiens: NOMBRE_ENTRETIENS_DEFAUT,
+          questionsRetirees: [],
           ...input,
         };
         set({ formations: { ...get().formations, [id]: formation } });
@@ -206,8 +198,8 @@ export const useFormationsStore = create<FormationsStore>()(
         const cible = formation.periodes.find((p) => p.id === periodeId);
         if (!cible) return { ok: false, raison: 'Période introuvable.' };
         // Verrou : refus si une fiche correspondante est signée ou verrouillée.
-        const livrets = Object.values(useLivretStore.getState().livrets).filter(
-          (l) => apprentiAppartientPromo(l.apprentiId, formationId),
+        const livrets = Object.values(useLivretStore.getState().livrets).filter((l) =>
+          apprentiAppartientPromo(l.apprentiId, formationId),
         );
         const verrou = evaluerVerrouPeriode(cible, livrets, 'modification');
         if (!verrou.peut) return { ok: false, raison: verrou.raison };
@@ -244,14 +236,12 @@ export const useFormationsStore = create<FormationsStore>()(
         if (!formation) return { ok: false, raison: 'Formation introuvable.' };
         const cible = formation.periodes.find((p) => p.id === periodeId);
         if (!cible) return { ok: false, raison: 'Période introuvable.' };
-        const livrets = Object.values(useLivretStore.getState().livrets).filter(
-          (l) => apprentiAppartientPromo(l.apprentiId, formationId),
+        const livrets = Object.values(useLivretStore.getState().livrets).filter((l) =>
+          apprentiAppartientPromo(l.apprentiId, formationId),
         );
         const verrou = evaluerVerrouPeriode(cible, livrets, 'suppression');
         if (!verrou.peut) return { ok: false, raison: verrou.raison };
-        const periodes = renumeroterPeriodes(
-          formation.periodes.filter((p) => p.id !== periodeId),
-        );
+        const periodes = renumeroterPeriodes(formation.periodes.filter((p) => p.id !== periodeId));
         set((s) => ({
           formations: {
             ...s.formations,
@@ -290,6 +280,22 @@ export const useFormationsStore = create<FormationsStore>()(
         }));
         return { ok: true };
       },
+
+      toggleQuestionRetiree: (formationId, questionId) =>
+        set((s) => {
+          const formation = s.formations[formationId];
+          if (!formation) return s;
+          const retirees = formation.questionsRetirees ?? [];
+          const nouvelles = retirees.includes(questionId)
+            ? retirees.filter((id) => id !== questionId)
+            : [...retirees, questionId];
+          return {
+            formations: {
+              ...s.formations,
+              [formationId]: { ...formation, questionsRetirees: nouvelles },
+            },
+          };
+        }),
 
       reinitialiser: () => set(etatInitial()),
     }),
@@ -355,10 +361,7 @@ function propagerCreationFiche(formationId: string, periode: PeriodeFormation): 
 }
 
 /** Met à jour le numéro, le titre et les dates de la fiche correspondante. */
-function propagerModificationFiche(
-  formationId: string,
-  periode: PeriodeFormation,
-): void {
+function propagerModificationFiche(formationId: string, periode: PeriodeFormation): void {
   useLivretStore.setState((state) => {
     const livretsMaj = { ...state.livrets };
     for (const livret of Object.values(state.livrets)) {
@@ -392,9 +395,7 @@ function propagerSuppressionFiche(formationId: string, periodeId: string): void 
       if (!apprentiAppartientPromo(livret.apprentiId, formationId)) continue;
       livretsMaj[livret.id] = {
         ...livret,
-        fichesSuivi: livret.fichesSuivi.filter(
-          (f) => f.periodeFormationId !== periodeId,
-        ),
+        fichesSuivi: livret.fichesSuivi.filter((f) => f.periodeFormationId !== periodeId),
         modifieLe: new Date().toISOString(),
       };
     }

@@ -49,6 +49,9 @@ export const formationCapCuisine: Formation = {
   // Retours coordos juin 2026 : nombre d'entretiens tripartites (1 à 4).
   // Le CAP Cuisine reste au défaut historique de 2.
   nombreEntretiens: 2,
+  // 13 juin 2026 : aucune question retirée par défaut — toutes les questions
+  // de la banque sont présentes et obligatoires dans les entretiens.
+  questionsRetirees: [],
 };
 
 /**

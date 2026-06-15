@@ -18,18 +18,14 @@ import {
   formatriceSophieDubois,
 } from './utilisateurs';
 import { referentielCapCuisine } from './referentiel-cap-cuisine';
-import {
-  QUESTIONS_BANQUE_INITIALE,
-  idsQuestionsAffectees,
-  idsQuestionsObligatoiresAffectees,
-} from '@/lib/questions-entretien';
+import { QUESTIONS_BANQUE_INITIALE, idsQuestionsActives } from '@/lib/questions-entretien';
 
-// Snapshot E1 de la configuration coordo par défaut — les 4 entretiens de
-// démo sont des E1 initialisés avec la banque initiale (retours coordos
-// juin 2026 : questions affectées par le coordo + obligatoires).
-const QUESTIONS_E1_APPRENTI = idsQuestionsAffectees(QUESTIONS_BANQUE_INITIALE, 1, 'apprenti');
-const QUESTIONS_E1_MAITRE = idsQuestionsAffectees(QUESTIONS_BANQUE_INITIALE, 1, 'maitre');
-const QUESTIONS_E1_OBLIGATOIRES = idsQuestionsObligatoiresAffectees(QUESTIONS_BANQUE_INITIALE, 1);
+// Snapshot des entretiens de démo (13 juin 2026) : la formation CAP Cuisine
+// ne retire aucune question → toutes les questions de la banque sont actives
+// et toutes obligatoires (réponse exigée pour signer).
+const QUESTIONS_E1_APPRENTI = idsQuestionsActives(QUESTIONS_BANQUE_INITIALE, [], 'apprenti');
+const QUESTIONS_E1_MAITRE = idsQuestionsActives(QUESTIONS_BANQUE_INITIALE, [], 'maitre');
+const QUESTIONS_E1_OBLIGATOIRES = [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE];
 
 /**
  * Livrets de démonstration — 6 apprenti·e·s, un livret par cas pédagogique.

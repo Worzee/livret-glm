@@ -13,6 +13,7 @@ const formation = (id: string, lieuId: string): Formation => ({
   lieuId,
   periodes: [],
   nombreEntretiens: 2,
+      questionsRetirees: [],
 });
 
 describe('evaluerVerrouEtablissement', () => {

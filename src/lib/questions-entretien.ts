@@ -1,7 +1,6 @@
 import type {
   CibleQuestion,
   EntretienTripartite,
-  NumeroEntretien,
   QuestionBanque,
   ReponsesEntretien,
   TypeQuestion,
@@ -11,21 +10,20 @@ import type {
 /**
  * Banque de questions de l'entretien tripartite — catalogue par défaut + helpers.
  * Référence : refonte mai 2026 (les questions étaient codées en dur dans
- * `SectionApprenti` / `SectionMaitre`), enrichie juin 2026 (retours coordos) :
- * le coordo affecte chaque question à l'entretien 1 et/ou 2 (`pourEntretienN`)
- * et peut la marquer `obligatoire` (non retirable + réponse exigée pour signer).
+ * `SectionApprenti` / `SectionMaitre`).
+ *
+ * Refonte 13 juin 2026 (retours coordos) : la banque est un **pur catalogue**
+ * géré par le coordo / admin. L'affectation n'est plus portée par la question
+ * (plus de `pourEntretiens` / `obligatoire` global) mais **par formation** :
+ * par défaut, TOUTE question est présente et **obligatoire** dans tous les
+ * entretiens de la formation (réponse exigée pour signer) ; le coordo retire
+ * les questions non pertinentes via `Formation.questionsRetirees`. Le
+ * formateur référent n'a plus la main sur la composition (lecture seule).
  *
  * Les 11 questions ci-dessous reprennent celles existantes en les reformulant
  * de manière **neutre** (pas de référence à un domaine ou une formation
  * particulière). Elles servent de point de départ : le coordo / admin peut
  * en ajouter, modifier ou supprimer depuis la page d'administration dédiée.
- *
- * Affectations par défaut : toutes les questions sont affectées à E1
- * (comportement historique) ; les questions de suivi/bilan le sont aussi à
- * E2, E3 et E4 (jusqu'à 4 entretiens pour les formations de 2 ans — le
- * nombre effectif est défini par formation). Deux questions sont
- * obligatoires pour la démonstration : les motivations de l'apprenti·e et
- * l'expérience de formation du maître / tuteur.
  */
 
 export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
@@ -36,8 +34,6 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     type: 'texte-long',
     libelle: 'Quelles sont vos motivations pour cette formation ?',
     placeholder: 'Votre projet, vos objectifs…',
-    pourEntretiens: [1],
-    obligatoire: true,
   },
   {
     id: 'q-app-contact-entreprise',
@@ -45,8 +41,6 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     type: 'texte-court',
     libelle: 'Comment êtes-vous entré·e en contact avec votre entreprise ?',
     placeholder: 'Candidature spontanée, journée portes ouvertes, réseau…',
-    pourEntretiens: [1],
-    obligatoire: false,
   },
   {
     id: 'q-app-connaissance-entreprise',
@@ -54,8 +48,6 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     type: 'texte-court',
     libelle: 'Connaissiez-vous cette entreprise auparavant ?',
     placeholder: 'Stage antérieur, visite, recommandation…',
-    pourEntretiens: [1],
-    obligatoire: false,
   },
   {
     id: 'q-app-metier-representation',
@@ -63,28 +55,20 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     type: 'texte-long',
     libelle: 'Le métier correspond-il à la représentation que vous en aviez ?',
     placeholder: 'Surprises, confirmations, ajustements…',
-    pourEntretiens: [1, 2, 3, 4],
-    obligatoire: false,
   },
   {
     id: 'q-app-difficultes-formation',
     cible: 'apprenti',
     type: 'texte-long',
-    libelle:
-      'Rencontrez-vous des difficultés dans certaines matières du centre de formation ?',
+    libelle: 'Rencontrez-vous des difficultés dans certaines matières du centre de formation ?',
     placeholder: 'Matières, contenus, méthodes…',
-    pourEntretiens: [1, 2, 3, 4],
-    obligatoire: false,
   },
   {
     id: 'q-app-difficultes-autres',
     cible: 'apprenti',
     type: 'texte-long',
-    libelle:
-      "Rencontrez-vous d'autres difficultés (matérielles, personnelles) ?",
+    libelle: "Rencontrez-vous d'autres difficultés (matérielles, personnelles) ?",
     placeholder: 'Transport, logement, santé, etc.',
-    pourEntretiens: [1, 2, 3, 4],
-    obligatoire: false,
   },
   {
     id: 'q-app-ressenti-equipe',
@@ -92,8 +76,6 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     type: 'texte-long',
     libelle: 'Comment vous sentez-vous au sein de votre équipe en entreprise ?',
     placeholder: 'Intégration, ambiance, soutien…',
-    pourEntretiens: [1, 2, 3, 4],
-    obligatoire: false,
   },
   // ── Maître / Tuteur ─────────────────────────────────────────────────────────
   {
@@ -101,8 +83,6 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     cible: 'maitre',
     type: 'oui-non',
     libelle: 'Avez-vous déjà formé un·e apprenti·e auparavant ?',
-    pourEntretiens: [1],
-    obligatoire: true,
   },
   {
     id: 'q-mai-diplomes-deja-formes',
@@ -110,18 +90,13 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     type: 'texte-court',
     libelle: "Si oui, quels diplômes / combien d'apprenti·e·s ?",
     placeholder: 'Ex : 3 CAP sur 8 ans',
-    pourEntretiens: [1],
-    obligatoire: false,
   },
   {
     id: 'q-mai-objectifs-embauche',
     cible: 'maitre',
     type: 'texte-long',
-    libelle:
-      "Quels sont vos objectifs en termes d'embauche à l'issue du contrat ?",
+    libelle: "Quels sont vos objectifs en termes d'embauche à l'issue du contrat ?",
     placeholder: 'Embauche envisagée, conditions…',
-    pourEntretiens: [1, 2, 3, 4],
-    obligatoire: false,
   },
   {
     id: 'q-mai-organisation-tutorat',
@@ -129,56 +104,26 @@ export const QUESTIONS_BANQUE_INITIALE: ReadonlyArray<QuestionBanque> = [
     type: 'texte-long',
     libelle: "Quelle est l'organisation prévue de l'accueil et du tutorat ?",
     placeholder: 'Tuteur·rice·s désigné·e·s, fréquence des points…',
-    pourEntretiens: [1, 2, 3, 4],
-    obligatoire: false,
   },
 ];
 
 /**
- * Ids des questions affectées par le coordo à un entretien donné, pour une
- * cible, dans l'ordre du catalogue. C'est ce sous-ensemble qui est injecté
- * (snapshot) à l'initialisation d'un entretien.
+ * Ids des questions **actives** pour une formation et une cible, dans l'ordre
+ * du catalogue (13 juin 2026). Une question est active si elle n'est pas dans
+ * la liste des questions retirées de la formation. C'est ce sous-ensemble qui
+ * est injecté (snapshot) à l'initialisation de chaque entretien — toutes les
+ * questions actives sont obligatoires (réponse exigée pour signer la cible).
  */
-export function idsQuestionsAffectees(
+export function idsQuestionsActives(
   banque: ReadonlyArray<QuestionBanque>,
-  numero: NumeroEntretien,
+  questionsRetirees: ReadonlyArray<string>,
   cible: CibleQuestion,
 ): string[] {
+  const retirees = new Set(questionsRetirees);
   return banque
     .filter((q) => q.cible === cible)
-    .filter((q) => q.pourEntretiens.includes(numero))
+    .filter((q) => !retirees.has(q.id))
     .map((q) => q.id);
-}
-
-/**
- * Ids des questions obligatoires parmi celles affectées à un entretien
- * (toutes cibles confondues). Snapshot à l'initialisation : non retirables
- * ET réponse exigée pour la signature de la cible (extension R20).
- */
-export function idsQuestionsObligatoiresAffectees(
-  banque: ReadonlyArray<QuestionBanque>,
-  numero: NumeroEntretien,
-): string[] {
-  return banque
-    .filter((q) => q.pourEntretiens.includes(numero))
-    .filter((q) => q.obligatoire)
-    .map((q) => q.id);
-}
-
-/**
- * Le formateur référent peut-il retirer cette question de l'entretien ?
- * Non si elle fait partie du snapshot affecté par le coordo (`questionsImposees`)
- * ou du snapshot obligatoire (`questionsObligatoires`). Les questions que le
- * formateur a lui-même ajoutées après l'initialisation restent retirables.
- */
-export function peutRetirerQuestion(
-  entretien: Pick<EntretienTripartite, 'questionsImposees' | 'questionsObligatoires'>,
-  questionId: string,
-): boolean {
-  return (
-    !entretien.questionsImposees.includes(questionId) &&
-    !entretien.questionsObligatoires.includes(questionId)
-  );
 }
 
 /**
@@ -249,7 +194,5 @@ export function nettoyerReponses(
   questionsSelectionnees: ReadonlyArray<string>,
 ): ReponsesEntretien {
   const garde = new Set(questionsSelectionnees);
-  return Object.fromEntries(
-    Object.entries(reponses).filter(([id]) => garde.has(id)),
-  );
+  return Object.fromEntries(Object.entries(reponses).filter(([id]) => garde.has(id)));
 }

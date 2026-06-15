@@ -86,10 +86,12 @@ test('parcours E3 : événement → lien sidebar → initialisation bloquée par
   //    une raison explicite.
   await lienE3.click();
   await expect(page.getByTestId('init-entretien-3')).toBeDisabled();
-  await expect(page.getByText(/signé par les 3 parties|Initialisez et faites signer/i)).toBeVisible();
+  await expect(
+    page.getByText(/signé par les 3 parties|Initialisez et faites signer/i),
+  ).toBeVisible();
 });
 
-test("séquencement : E2 de Léa est initialisable car E1 est signé par les 3 parties", async ({
+test('séquencement : E2 de Léa est initialisable car E1 est signé par les 3 parties', async ({
   page,
 }) => {
   // Léa : E1 signé 3/3 + événement E2 existant dans les fixtures.
@@ -97,8 +99,10 @@ test("séquencement : E2 de Léa est initialisable car E1 est signé par les 3 p
   const bouton = page.getByTestId('init-entretien-2');
   await expect(bouton).toBeEnabled();
   await bouton.click();
-  // L'entretien E2 s'initialise avec les questions de suivi (4 apprenti·e).
-  await expect(page.getByTestId('apprenti-choisir-questions')).toContainText('(4)');
+  // L'entretien E2 s'initialise avec les questions de la formation (13 juin
+  // 2026 : toutes les questions de la banque, aucune retirée pour CAP Cuisine).
+  await expect(page.getByText(/Quelles sont vos motivations pour cette formation/i)).toBeVisible();
+  await expect(page.getByTestId('attitudes-entretien')).toBeVisible();
 });
 
 test("verrou : impossible de réduire en dessous d'un entretien engagé", async ({ page }) => {

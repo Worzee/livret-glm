@@ -27,13 +27,9 @@ import { peutInitialiserEntretien } from '@/lib/regles-entretien';
 import { creerCloture } from '@/lib/cloture-livret';
 import { creerEvenementVierge, peutSupprimerEvenement } from '@/lib/organisation-suivi';
 import { selectionAttitudesFigee, toggleIdSelection } from '@/lib/selection-attitudes';
-import {
-  idsQuestionsAffectees,
-  idsQuestionsObligatoiresAffectees,
-  nettoyerReponses,
-  peutRetirerQuestion,
-} from '@/lib/questions-entretien';
+import { idsQuestionsActives } from '@/lib/questions-entretien';
 import { useBanqueQuestionsStore } from './useBanqueQuestionsStore';
+import { useFormationsStore } from './useFormationsStore';
 import {
   creerSelectionVierge,
   invaliderAvecMotif as invaliderSelection,
@@ -94,7 +90,11 @@ import { useUtilisateursStore } from './useUtilisateursStore';
 //   v14 — 13 juin 2026 : les attitudes à évaluer se CHOISISSENT à l'E1
 //        (`Livret.attitudesSelectionnees`, maître + formateur, figées à la
 //        3ᵉ signature de l'E1) puis sont évaluées à chaque entretien.
-const VERSION_SCHEMA = 14;
+//   v15 — 13 juin 2026 : les questions de l'entretien ne sont plus affectées
+//        globalement (banque) mais par formation (`Formation.questionsRetirees`).
+//        Le snapshot d'initialisation injecte toutes les questions actives
+//        (non retirées), toutes obligatoires ; le formateur n'a plus la main.
+const VERSION_SCHEMA = 15;
 
 interface LivretStore {
   livrets: Record<string, Livret>;
@@ -201,17 +201,9 @@ interface LivretStore {
   /** Initialise un entretien vierge (E1 ou E2) si pas encore présent (R6 par entretien). */
   initialiserEntretien: (livretId: string, numero: NumeroEntretien) => void;
   setEntretienDate: (livretId: string, numero: NumeroEntretien, dateEntretien: string) => void;
-  /**
-   * Met à jour la liste ordonnée des questions sélectionnées par le formateur
-   * référent. Les réponses orphelines (questions désélectionnées) sont
-   * automatiquement nettoyées pour ne pas peser dans le store.
-   */
-  setQuestionsSelectionnees: (
-    livretId: string,
-    numero: NumeroEntretien,
-    cible: 'apprenti' | 'maitre',
-    questionIds: string[],
-  ) => void;
+  // Note (13 juin 2026) : `setQuestionsSelectionnees` retiré. La composition
+  // des questions n'est plus pilotée par le formateur — elle est figée par la
+  // formation (questions retirées par le coordo) au moment de l'initialisation.
   /** Met à jour la réponse à une question. */
   setReponseEntretien: (
     livretId: string,
@@ -376,15 +368,22 @@ function ecrireEntretien(
  * deux modules ne déréférence l'autre à l'évaluation (pattern identique aux
  * autres stores croisés, cf. §11 PROJECT-STATUS).
  */
-function entretienVierge(numero: NumeroEntretien): EntretienTripartite {
+function entretienVierge(
+  numero: NumeroEntretien,
+  questionsRetirees: ReadonlyArray<string> = [],
+): EntretienTripartite {
+  void numero; // toutes les questions actives sont identiques pour chaque entretien (13 juin 2026)
   const banque = Object.values(useBanqueQuestionsStore.getState().questions);
-  const apprenti = idsQuestionsAffectees(banque, numero, 'apprenti');
-  const maitre = idsQuestionsAffectees(banque, numero, 'maitre');
+  // 13 juin 2026 : snapshot des questions ACTIVES de la formation (toutes
+  // sauf celles retirées). Toutes sont imposées ET obligatoires — le
+  // formateur n'a plus la main sur la composition.
+  const apprenti = idsQuestionsActives(banque, questionsRetirees, 'apprenti');
+  const maitre = idsQuestionsActives(banque, questionsRetirees, 'maitre');
   return {
     questionsApprentiSelectionnees: apprenti,
     questionsMaitreSelectionnees: maitre,
     questionsImposees: [...apprenti, ...maitre],
-    questionsObligatoires: idsQuestionsObligatoiresAffectees(banque, numero),
+    questionsObligatoires: [...apprenti, ...maitre],
     evaluationsAttitudes: {},
     reponsesApprenti: {},
     reponsesMaitre: {},
@@ -645,7 +644,11 @@ export const useLivretStore = create<LivretStore>()(
             // précédent doit être signé par les 3 parties. L'UI désactive le
             // bouton, le store reste la dernière ligne de défense (no-op).
             if (!peutInitialiserEntretien(numero, l.entretiens).ok) return l;
-            return ecrireEntretien(l, numero, entretienVierge(numero));
+            // 13 juin 2026 : le snapshot des questions dépend de la formation
+            // (questions retirées par le coordo). Cross-store résolu au runtime.
+            const questionsRetirees =
+              useFormationsStore.getState().formations[l.formationId]?.questionsRetirees ?? [];
+            return ecrireEntretien(l, numero, entretienVierge(numero, questionsRetirees));
           }),
         ),
 
@@ -654,37 +657,6 @@ export const useLivretStore = create<LivretStore>()(
           muterLivret(s, livretId, (l) => {
             const e = lireEntretien(l, numero) ?? entretienVierge(numero);
             return ecrireEntretien(l, numero, { ...e, dateEntretien });
-          }),
-        ),
-
-      setQuestionsSelectionnees: (livretId, numero, cible, questionIds) =>
-        set((s) =>
-          muterLivret(s, livretId, (l) => {
-            const e = lireEntretien(l, numero) ?? entretienVierge(numero);
-            // Garde-fou (retours coordos juin 2026) : les questions imposées /
-            // obligatoires (snapshots) ne peuvent pas être retirées, même si
-            // l'UI envoie une liste qui les omet. On les réinjecte en tête,
-            // dans leur ordre actuel.
-            const actuelles =
-              cible === 'apprenti'
-                ? e.questionsApprentiSelectionnees
-                : e.questionsMaitreSelectionnees;
-            const reinjectees = actuelles.filter(
-              (id) => !peutRetirerQuestion(e, id) && !questionIds.includes(id),
-            );
-            const finales = [...reinjectees, ...questionIds];
-            if (cible === 'apprenti') {
-              return ecrireEntretien(l, numero, {
-                ...e,
-                questionsApprentiSelectionnees: finales,
-                reponsesApprenti: nettoyerReponses(e.reponsesApprenti, finales),
-              });
-            }
-            return ecrireEntretien(l, numero, {
-              ...e,
-              questionsMaitreSelectionnees: finales,
-              reponsesMaitre: nettoyerReponses(e.reponsesMaitre, finales),
-            });
           }),
         ),
 

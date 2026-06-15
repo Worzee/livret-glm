@@ -1,10 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { QuestionBanque } from '@/types';
-import {
-  QUESTIONS_BANQUE_INITIALE,
-  questionEstUtilisee,
-} from '@/lib/questions-entretien';
+import { QUESTIONS_BANQUE_INITIALE, questionEstUtilisee } from '@/lib/questions-entretien';
 import { useLivretStore } from './useLivretStore';
 
 /**
@@ -12,8 +9,9 @@ import { useLivretStore } from './useLivretStore';
  * Référence : refonte mai 2026.
  *
  * CRUD réservé aux rôles `coordo` et `admin` (matrice §6 — ressource
- * `admin.banque-questions.gerer`). Le formateur référent ne fait que
- * sélectionner les questions à poser pour chaque entretien.
+ * `admin.banque-questions.gerer`). Depuis le 13 juin 2026, la banque est un
+ * **pur catalogue** (libellé, cible, type) : l'affectation des questions est
+ * gérée par formation (`Formation.questionsRetirees`), plus sur la question.
  *
  * Cohérence référentielle : la suppression d'une question est bloquée si elle
  * est encore référencée dans au moins un entretien existant (cf. helper
@@ -31,10 +29,7 @@ interface BanqueQuestionsStore {
   /** Crée une question. L'id est auto-généré. */
   ajouterQuestion: (input: Omit<QuestionBanque, 'id'>) => QuestionBanque;
   /** Met à jour les champs d'une question existante. */
-  modifierQuestion: (
-    id: string,
-    patch: Partial<Omit<QuestionBanque, 'id'>>,
-  ) => void;
+  modifierQuestion: (id: string, patch: Partial<Omit<QuestionBanque, 'id'>>) => void;
   /**
    * Supprime une question. Bloquée si la question est utilisée dans au moins
    * un entretien existant.
@@ -50,7 +45,10 @@ interface BanqueQuestionsStore {
 //      `obligatoire` sur chaque question (affectation par le coordo).
 // v3 — jusqu'à 4 entretiens (formations de 2 ans) : `pourEntretiens:
 //      NumeroEntretien[]` remplace les 2 booleans.
-const VERSION_SCHEMA = 3;
+// v4 — 13 juin 2026 : banque = pur catalogue. `pourEntretiens` et
+//      `obligatoire` retirés de la question (affectation portée par la
+//      formation via `questionsRetirees`). Reset.
+const VERSION_SCHEMA = 4;
 
 function etatInitial(): Pick<BanqueQuestionsStore, 'questions'> {
   return {

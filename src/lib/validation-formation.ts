@@ -15,7 +15,10 @@ import type { Formation } from '@/types';
  * d'entretiens tripartites) n'est pas géré via ce formulaire mais via
  * `ModalePlanningPeriodes` (chantier #1 + retours coordos juin 2026).
  */
-export type SaisieFormation = Omit<Formation, 'id' | 'periodes' | 'nombreEntretiens'>;
+export type SaisieFormation = Omit<
+  Formation,
+  'id' | 'periodes' | 'nombreEntretiens' | 'questionsRetirees'
+>;
 
 export interface ErreursFormation {
   intitule?: string;
@@ -51,7 +54,8 @@ export function validerSaisieFormation(saisie: SaisieFormation): ResultatValidat
   if (!saisie.annee?.trim()) {
     erreurs.annee = "L'année académique est obligatoire.";
   } else if (!REGEX_ANNEE.test(saisie.annee.trim())) {
-    avertissements.annee = "Format inhabituel — le format conseillé est « YYYY-YYYY » (ex : 2025-2026).";
+    avertissements.annee =
+      'Format inhabituel — le format conseillé est « YYYY-YYYY » (ex : 2025-2026).';
   }
   // Le référentiel peut ne pas exister encore au moment de créer la formation
   // (cas où on l'importe plus tard). On ne bloque donc pas la sauvegarde, mais
@@ -59,7 +63,7 @@ export function validerSaisieFormation(saisie: SaisieFormation): ResultatValidat
   // d'évaluation finales n'auront pas de compétences à afficher.
   if (!saisie.referentielId?.trim()) {
     avertissements.referentielId =
-      'Aucun référentiel sélectionné. Vous pourrez en associer un plus tard ; les grilles d\'évaluation resteront vides en attendant.';
+      "Aucun référentiel sélectionné. Vous pourrez en associer un plus tard ; les grilles d'évaluation resteront vides en attendant.";
   }
 
   if (!saisie.dateDebut) {
@@ -74,7 +78,7 @@ export function validerSaisieFormation(saisie: SaisieFormation): ResultatValidat
 
   if (!saisie.lieuId?.trim()) {
     erreurs.lieuId =
-      "Le lieu de formation est obligatoire. Sélectionnez un établissement dans la liste.";
+      'Le lieu de formation est obligatoire. Sélectionnez un établissement dans la liste.';
   }
 
   return {

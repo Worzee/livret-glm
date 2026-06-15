@@ -1,6 +1,5 @@
-import { useState } from 'react';
-import { GraduationCap, ListChecks } from 'lucide-react';
 import type { EntretienTripartite, NumeroEntretien, QuestionBanque } from '@/types';
+import { GraduationCap } from 'lucide-react';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
@@ -8,14 +7,15 @@ import { peutEditer } from '@/lib/droits';
 import { peutEncoreEditer } from '@/lib/regles-entretien';
 import { cn } from '@/lib/utils';
 import { CaseOuiNon } from './CaseOuiNon';
-import { SelecteurQuestions } from './SelecteurQuestions';
 
 /**
- * Section de l'entretien réservée à l'apprenti·e (CDC §5.2, refonte mai 2026).
+ * Section de l'entretien réservée à l'apprenti·e (CDC §5.2).
  *
- * Les questions ne sont plus codées en dur : elles viennent de la banque
- * (`useBanqueQuestionsStore`) et sont **sélectionnées par le formateur
- * référent** pour ce livret précis (bouton « Choisir les questions »).
+ * Les questions viennent de la banque (`useBanqueQuestionsStore`). Refonte
+ * 13 juin 2026 : leur composition est **gérée par formation** (le coordo
+ * retire les questions non pertinentes dans la modale Planning) — le
+ * formateur n'a plus de bouton de sélection. Toutes les questions présentes
+ * sont **obligatoires** (réponse exigée pour signer, extension R20).
  *
  * Verrouillage : peutEncoreEditer (R8/R9) côté avancement signatures + droit
  * `entretien.questions-apprenti` côté matrice.
@@ -30,11 +30,8 @@ interface SectionApprentiProps {
 export function SectionApprenti({ livretId, numero, entretien }: SectionApprentiProps) {
   const roleActif = useUserStore((s) => s.roleActif);
   const setReponse = useLivretStore((s) => s.setReponseEntretien);
-  const setQuestions = useLivretStore((s) => s.setQuestionsSelectionnees);
   const setCommentaire = useLivretStore((s) => s.setCommentaireEntretien);
   const banque = useBanqueQuestionsStore((s) => s.questions);
-
-  const [selecteurOuvert, setSelecteurOuvert] = useState(false);
 
   const editable =
     peutEditer(roleActif, 'entretien.questions-apprenti') &&
@@ -42,57 +39,29 @@ export function SectionApprenti({ livretId, numero, entretien }: SectionApprenti
   const editableCommentaire =
     peutEditer(roleActif, 'entretien.commentaires-apprenti') &&
     peutEncoreEditer('apprenti', entretien);
-  // Le formateur référent (et lui seul) peut configurer la sélection.
-  const peutChoisirQuestions = roleActif === 'formateur';
 
   const questions: QuestionBanque[] = entretien.questionsApprentiSelectionnees
     .map((id) => banque[id])
     .filter((q): q is QuestionBanque => !!q && q.cible === 'apprenti');
 
-  // Retours coordos juin 2026 : les questions affectées par le coordo
-  // (snapshot) ne sont pas retirables ; les obligatoires portent un badge.
-  const idsNonRetirables = [
-    ...entretien.questionsImposees,
-    ...entretien.questionsObligatoires,
-  ];
-  const idsObligatoires = new Set(entretien.questionsObligatoires);
-
   return (
     <section className="rounded-lg border border-border border-l-4 border-l-role-apprenti bg-card p-4 space-y-4">
-      <header className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex items-start gap-2">
-          <GraduationCap
-            className="mt-1 h-5 w-5 shrink-0 text-role-apprenti"
-            aria-hidden="true"
-          />
-          <div>
-            <h2 className="text-lg font-medium text-role-apprenti">
-              Questions à l'apprenti·e
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              Réservé à l'apprenti·e. Verrouillé après votre signature.
-            </p>
-          </div>
+      <header className="flex items-start gap-2">
+        <GraduationCap className="mt-1 h-5 w-5 shrink-0 text-role-apprenti" aria-hidden="true" />
+        <div>
+          <h2 className="text-lg font-medium text-role-apprenti">Questions à l'apprenti·e</h2>
+          <p className="text-xs text-muted-foreground">
+            Réservé à l'apprenti·e. Toutes les questions sont à renseigner pour signer. Verrouillé
+            après votre signature.
+          </p>
         </div>
-        {peutChoisirQuestions && (
-          <button
-            type="button"
-            onClick={() => setSelecteurOuvert(true)}
-            data-testid="apprenti-choisir-questions"
-            className="inline-flex items-center gap-1.5 rounded-md border border-role-formateur/30 bg-role-formateur/10 px-2.5 py-1 text-xs font-medium text-role-formateur hover:bg-role-formateur/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <ListChecks className="h-3.5 w-3.5" aria-hidden="true" />
-            Choisir les questions ({questions.length})
-          </button>
-        )}
       </header>
 
       <div className="space-y-4">
         {questions.length === 0 ? (
           <p className="text-sm italic text-muted-foreground">
-            {peutChoisirQuestions
-              ? "Aucune question sélectionnée. Cliquez sur « Choisir les questions » pour démarrer."
-              : "Le formateur référent n'a pas encore sélectionné de questions."}
+            Aucune question pour cet entretien — le coordo a retiré toutes les questions destinées à
+            l'apprenti·e pour cette formation.
           </p>
         ) : (
           questions.map((q) => (
@@ -101,10 +70,7 @@ export function SectionApprenti({ livretId, numero, entretien }: SectionApprenti
               question={q}
               valeur={entretien.reponsesApprenti[q.id]}
               editable={editable}
-              obligatoire={idsObligatoires.has(q.id)}
-              onChange={(valeur) =>
-                setReponse(livretId, numero, 'apprenti', q.id, valeur)
-              }
+              onChange={(valeur) => setReponse(livretId, numero, 'apprenti', q.id, valeur)}
             />
           ))
         )}
@@ -134,19 +100,6 @@ export function SectionApprenti({ livretId, numero, entretien }: SectionApprenti
           </p>
         )}
       </div>
-
-      {/* Modale de sélection des questions — visible uniquement pour le formateur. */}
-      <SelecteurQuestions
-        ouvert={selecteurOuvert}
-        cible="apprenti"
-        selectionInitiale={entretien.questionsApprentiSelectionnees}
-        idsNonRetirables={idsNonRetirables}
-        onAnnuler={() => setSelecteurOuvert(false)}
-        onValider={(ids) => {
-          setQuestions(livretId, numero, 'apprenti', ids);
-          setSelecteurOuvert(false);
-        }}
-      />
     </section>
   );
 }
@@ -159,29 +112,16 @@ interface ChampQuestionProps {
   question: QuestionBanque;
   valeur: string | boolean | null | undefined;
   editable: boolean;
-  /** Réponse exigée pour signer (extension R20) — affiche un badge. */
-  obligatoire?: boolean;
   onChange: (valeur: string | boolean | null) => void;
 }
 
-function BadgeObligatoire() {
-  return (
-    <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 align-middle">
-      Obligatoire
-    </span>
-  );
-}
-
-function ChampQuestion({ question, valeur, editable, obligatoire, onChange }: ChampQuestionProps) {
+function ChampQuestion({ question, valeur, editable, onChange }: ChampQuestionProps) {
   const id = `entretien-q-${question.id}`;
 
   if (question.type === 'oui-non') {
     return (
       <div className="space-y-1">
-        <span className="text-sm font-medium block">
-          {question.libelle}
-          {obligatoire && <BadgeObligatoire />}
-        </span>
+        <span className="text-sm font-medium block">{question.libelle}</span>
         <CaseOuiNon
           editable={editable}
           valeur={typeof valeur === 'boolean' ? valeur : null}
@@ -199,7 +139,6 @@ function ChampQuestion({ question, valeur, editable, obligatoire, onChange }: Ch
     <div className="space-y-1">
       <label htmlFor={id} className="text-sm font-medium">
         {question.libelle}
-        {obligatoire && <BadgeObligatoire />}
       </label>
       {editable ? (
         question.type === 'texte-long' ? (

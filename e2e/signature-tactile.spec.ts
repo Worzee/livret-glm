@@ -9,9 +9,9 @@ import { resetState, selectRole } from './helpers';
  * reste désactivé tant que le tracé n'est pas significatif (≥ 60 px). Le PNG
  * est stocké avec la signature et affiché dans la carte (R19/R21 inchangées).
  *
- * Terrain de jeu : l'entretien 2 de Léa, initialisable (E1 signé 3/3) et
- * signable immédiatement par l'apprenti·e (aucune question obligatoire E2
- * dans la banque par défaut).
+ * Terrain de jeu : l'entretien 2 de Léa, initialisable (E1 signé 3/3).
+ * Depuis le 13 juin 2026, TOUTES les questions de la cible sont obligatoires
+ * pour signer — le helper y répond toutes.
  */
 
 test.beforeEach(async ({ page }) => {
@@ -38,12 +38,19 @@ async function initialiserE2CommeFormateur(page: Page) {
   await expect(page.getByTestId('attitudes-entretien')).toBeVisible();
 }
 
-/** Bascule côté apprenti·e et débloque R20 (au moins une réponse renseignée). */
+/**
+ * Bascule côté apprenti·e et débloque R20 : depuis le 13 juin 2026 toutes les
+ * questions de l'apprenti·e sont obligatoires → on répond à tous les champs
+ * (questions + commentaire) de la section apprenti·e.
+ */
 async function preparerSignatureApprenti(page: Page) {
   await selectRole(page, 'Apprenti·e');
-  await page
-    .getByLabel(/Comment vous sentez-vous au sein de votre équipe/i)
-    .fill("L'équipe m'a bien accueillie.");
+  const section = page.locator('section', {
+    has: page.getByRole('heading', { name: "Questions à l'apprenti·e" }),
+  });
+  const champs = section.locator('textarea, input[type="text"]');
+  const n = await champs.count();
+  for (let i = 0; i < n; i++) await champs.nth(i).fill('Réponse de test.');
 }
 
 test('le tracé manuscrit est exigé pour confirmer une signature', async ({ page }) => {

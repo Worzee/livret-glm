@@ -106,6 +106,15 @@ export interface Formation {
    * l'organisation du suivi des livrets de la promo.
    */
   nombreEntretiens: NumeroEntretien;
+  /**
+   * Questions de l'entretien tripartite **retirées** pour cette formation
+   * (13 juin 2026). Par défaut, toute question de la banque est présente et
+   * **obligatoire** dans tous les entretiens de la formation ; le coordo /
+   * admin retire ici les questions non pertinentes (par ids). Une question
+   * absente de la banque (supprimée) est ignorée. Géré dans la modale
+   * Planning, au même endroit que les périodes et le nombre d'entretiens.
+   */
+  questionsRetirees: string[];
 }
 
 export interface Entreprise {
@@ -349,19 +358,11 @@ export interface QuestionBanque {
   libelle: string;
   /** Aide de saisie facultative (placeholder). Ignorée pour le type oui-non. */
   placeholder?: string;
-  /**
-   * Affectation par le coordo (retours coordos juin 2026) : numéros des
-   * entretiens tripartites (1 à 4) dont la question fait partie du tronc
-   * commun. Une question affectée est injectée à l'initialisation de
-   * l'entretien concerné (snapshot) et ne peut pas en être retirée par le
-   * formateur référent. Tableau vide = question au catalogue mais inactive.
-   */
-  pourEntretiens: NumeroEntretien[];
-  /**
-   * Question obligatoire : non retirable de l'entretien ET réponse exigée
-   * pour que la personne concernée (cible) puisse signer (extension R20).
-   */
-  obligatoire: boolean;
+  // Note (13 juin 2026) : `pourEntretiens` et `obligatoire` ont été retirés.
+  // La banque est désormais un **pur catalogue** géré par le coordo / admin.
+  // L'affectation est gérée par formation : par défaut TOUTE question est
+  // présente et obligatoire dans tous les entretiens ; le coordo retire
+  // certaines questions au niveau de la formation (`Formation.questionsRetirees`).
 }
 
 /**

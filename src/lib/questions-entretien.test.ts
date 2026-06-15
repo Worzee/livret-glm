@@ -1,12 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { EntretienTripartite, QuestionBanque } from '@/types';
+import type { EntretienTripartite } from '@/types';
 import {
   QUESTIONS_BANQUE_INITIALE,
-  idsQuestionsAffectees,
-  idsQuestionsObligatoiresAffectees,
+  idsQuestionsActives,
   indexerBanque,
   nettoyerReponses,
-  peutRetirerQuestion,
   questionEstUtilisee,
   questionsObligatoiresSansReponse,
   reponseEstRenseignee,
@@ -33,10 +31,17 @@ describe('QUESTIONS_BANQUE_INITIALE', () => {
     }
   });
 
+  it("est un pur catalogue : pas de champ d'affectation sur la question (13 juin 2026)", () => {
+    // `pourEntretiens` et `obligatoire` ont migré vers la formation
+    // (`Formation.questionsRetirees`). La question ne porte plus que son
+    // identité (id, cible, type, libellé, placeholder).
+    for (const q of QUESTIONS_BANQUE_INITIALE) {
+      expect('pourEntretiens' in q).toBe(false);
+      expect('obligatoire' in q).toBe(false);
+    }
+  });
+
   it('les libellés sont neutres : pas de référence à un domaine particulier', () => {
-    // Reformulation neutre demandée par le pilote (mai 2026) : on ne doit
-    // plus voir « brigade », « cuisine », « CFA » ou autres marqueurs de
-    // domaine.
     const motsInterdits = ['brigade', 'cuisine', 'cfa'];
     for (const q of QUESTIONS_BANQUE_INITIALE) {
       const libelle = q.libelle.toLowerCase();
@@ -45,95 +50,28 @@ describe('QUESTIONS_BANQUE_INITIALE', () => {
       }
     }
   });
-
-  it('toutes les questions sont affectées à E1 par défaut (comportement historique)', () => {
-    for (const q of QUESTIONS_BANQUE_INITIALE) {
-      expect(q.pourEntretiens).toContain(1);
-    }
-  });
-
-  it('les questions de suivi/bilan sont affectées à E2, E3 et E4 par défaut', () => {
-    // Jusqu'à 4 entretiens (formations de 2 ans) : les questions de suivi
-    // valent pour tous les entretiens de bilan.
-    const suivi = QUESTIONS_BANQUE_INITIALE.filter((q) => q.pourEntretiens.includes(2));
-    expect(suivi.length).toBeGreaterThan(0);
-    for (const q of suivi) {
-      expect(q.pourEntretiens).toEqual([1, 2, 3, 4]);
-    }
-  });
-
-  it('exactement 2 questions obligatoires par défaut (1 apprenti + 1 maître), toutes affectées', () => {
-    const obligatoires = QUESTIONS_BANQUE_INITIALE.filter((q) => q.obligatoire);
-    expect(obligatoires.map((q) => q.id).sort()).toEqual([
-      'q-app-motivations',
-      'q-mai-deja-forme',
-    ]);
-    // Cohérence : une question obligatoire doit être affectée à au moins un entretien.
-    for (const q of obligatoires) {
-      expect(q.pourEntretiens.length).toBeGreaterThan(0);
-    }
-  });
 });
 
-describe('idsQuestionsAffectees', () => {
-  it('E1 apprenti : les 7 questions (toutes affectées à E1), motivations en tête', () => {
-    const ids = idsQuestionsAffectees(QUESTIONS_BANQUE_INITIALE, 1, 'apprenti');
-    expect(ids).toHaveLength(7);
-    expect(ids[0]).toBe('q-app-motivations');
+describe('idsQuestionsActives (13 juin 2026 — par formation)', () => {
+  it('sans question retirée : toutes les questions de la cible, ordre du catalogue', () => {
+    const apprenti = idsQuestionsActives(QUESTIONS_BANQUE_INITIALE, [], 'apprenti');
+    expect(apprenti).toHaveLength(7);
+    expect(apprenti[0]).toBe('q-app-motivations');
+    expect(idsQuestionsActives(QUESTIONS_BANQUE_INITIALE, [], 'maitre')).toHaveLength(4);
   });
 
-  it('E1 maître : les 4 questions', () => {
-    const ids = idsQuestionsAffectees(QUESTIONS_BANQUE_INITIALE, 1, 'maitre');
-    expect(ids).toHaveLength(4);
-    expect(ids).toContain('q-mai-deja-forme');
-  });
-
-  it('E2 : seulement les questions de suivi/bilan (4 apprenti + 2 maître)', () => {
-    const apprenti = idsQuestionsAffectees(QUESTIONS_BANQUE_INITIALE, 2, 'apprenti');
-    const maitre = idsQuestionsAffectees(QUESTIONS_BANQUE_INITIALE, 2, 'maitre');
-    expect(apprenti).toHaveLength(4);
+  it('exclut les questions retirées de la formation', () => {
+    const retirees = ['q-app-motivations', 'q-mai-deja-forme'];
+    const apprenti = idsQuestionsActives(QUESTIONS_BANQUE_INITIALE, retirees, 'apprenti');
+    expect(apprenti).toHaveLength(6);
     expect(apprenti).not.toContain('q-app-motivations');
-    expect(maitre).toEqual(['q-mai-objectifs-embauche', 'q-mai-organisation-tutorat']);
+    const maitre = idsQuestionsActives(QUESTIONS_BANQUE_INITIALE, retirees, 'maitre');
+    expect(maitre).not.toContain('q-mai-deja-forme');
   });
 
-  it("respecte l'ordre du catalogue", () => {
-    const ids = idsQuestionsAffectees(QUESTIONS_BANQUE_INITIALE, 2, 'apprenti');
-    expect(ids).toEqual([
-      'q-app-metier-representation',
-      'q-app-difficultes-formation',
-      'q-app-difficultes-autres',
-      'q-app-ressenti-equipe',
-    ]);
-  });
-});
-
-describe('idsQuestionsObligatoiresAffectees', () => {
-  it('E1 : les 2 obligatoires par défaut (toutes cibles confondues)', () => {
-    expect(idsQuestionsObligatoiresAffectees(QUESTIONS_BANQUE_INITIALE, 1).sort()).toEqual([
-      'q-app-motivations',
-      'q-mai-deja-forme',
-    ]);
-  });
-
-  it("E2 : aucune (les 2 obligatoires par défaut ne sont affectées qu'à E1)", () => {
-    expect(idsQuestionsObligatoiresAffectees(QUESTIONS_BANQUE_INITIALE, 2)).toEqual([]);
-  });
-
-  it("une question obligatoire non affectée à l'entretien n'est pas retenue", () => {
-    const banque: QuestionBanque[] = [
-      {
-        id: 'q-x',
-        cible: 'apprenti',
-        type: 'texte-court',
-        libelle: 'Question test ?',
-        pourEntretiens: [2, 4],
-        obligatoire: true,
-      },
-    ];
-    expect(idsQuestionsObligatoiresAffectees(banque, 1)).toEqual([]);
-    expect(idsQuestionsObligatoiresAffectees(banque, 2)).toEqual(['q-x']);
-    expect(idsQuestionsObligatoiresAffectees(banque, 3)).toEqual([]);
-    expect(idsQuestionsObligatoiresAffectees(banque, 4)).toEqual(['q-x']);
+  it('ne renvoie que la cible demandée', () => {
+    const maitre = idsQuestionsActives(QUESTIONS_BANQUE_INITIALE, [], 'maitre');
+    expect(maitre.every((id) => id.startsWith('q-mai-'))).toBe(true);
   });
 });
 
@@ -166,26 +104,6 @@ function entretien(overrides: Partial<EntretienTripartite> = {}): EntretienTripa
   };
 }
 
-describe('peutRetirerQuestion', () => {
-  it('une question imposée par le coordo (snapshot) ne peut pas être retirée', () => {
-    const e = entretien({ questionsImposees: ['q-app-motivations'] });
-    expect(peutRetirerQuestion(e, 'q-app-motivations')).toBe(false);
-  });
-
-  it('une question obligatoire (snapshot) ne peut pas être retirée', () => {
-    const e = entretien({ questionsObligatoires: ['q-mai-deja-forme'] });
-    expect(peutRetirerQuestion(e, 'q-mai-deja-forme')).toBe(false);
-  });
-
-  it('une question ajoutée par le formateur (hors snapshots) peut être retirée', () => {
-    const e = entretien({
-      questionsImposees: ['q-app-motivations'],
-      questionsObligatoires: ['q-app-motivations'],
-    });
-    expect(peutRetirerQuestion(e, 'q-app-ressenti-equipe')).toBe(true);
-  });
-});
-
 describe('questionsObligatoiresSansReponse', () => {
   const banque = indexerBanque(QUESTIONS_BANQUE_INITIALE);
 
@@ -212,9 +130,9 @@ describe('questionsObligatoiresSansReponse', () => {
       questionsObligatoires: ['q-app-motivations'],
       reponsesApprenti: { 'q-app-motivations': '   ' },
     });
-    expect(
-      questionsObligatoiresSansReponse(e, 'apprenti', banque).map((q) => q.id),
-    ).toEqual(['q-app-motivations']);
+    expect(questionsObligatoiresSansReponse(e, 'apprenti', banque).map((q) => q.id)).toEqual([
+      'q-app-motivations',
+    ]);
   });
 
   it('oui-non : false est une réponse valable', () => {
