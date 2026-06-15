@@ -35,6 +35,8 @@ import type {
 } from '@/types';
 import { cn } from '@/lib/utils';
 import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelectionne';
+import { BoutonExportPdf } from '@/components/pdf/BoutonExportPdf';
+import { useDonneesLivretPdf } from '@/components/pdf/useDonneesLivretPdf';
 
 /**
  * Module — Fiches de suivi (ex « Organisation du suivi », renommé mai 2026).
@@ -59,6 +61,7 @@ export function OrganisationSuivi() {
   const roleActif = useUserStore((s) => s.roleActif);
   const utilisateurActif = useUserStore((s) => s.utilisateurActif);
   const formations = useFormationsStore((s) => s.formations);
+  const donneesPdf = useDonneesLivretPdf();
 
   // Le motif sélectionné dans le sélecteur d'ajout — réinitialisé après ajout.
   const [motifAAjouter, setMotifAAjouter] = useState<MotifOrganisationSuivi | ''>('');
@@ -103,18 +106,27 @@ export function OrganisationSuivi() {
 
   return (
     <div className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold">Fiches de suivi</h1>
-        <p className="text-muted-foreground">
-          Cadre de suivi de la promo, défini par le formateur référent ou le coordinateur·rice.
-          Consultable par l'apprenti·e et le maître / tuteur.
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Apprenti·e :{' '}
-          <strong>
-            {apprenti.prenom} {apprenti.nom}
-          </strong>
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-semibold">Fiches de suivi</h1>
+          <p className="text-muted-foreground">
+            Cadre de suivi de la promo, défini par le formateur référent ou le coordinateur·rice.
+            Consultable par l'apprenti·e et le maître / tuteur.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Apprenti·e :{' '}
+            <strong>
+              {apprenti.prenom} {apprenti.nom}
+            </strong>
+          </p>
+        </div>
+        {donneesPdf && (
+          <BoutonExportPdf
+            {...donneesPdf}
+            variante={{ type: 'fiches-suivi' }}
+            label="Exporter les fiches de suivi"
+          />
+        )}
       </header>
 
       {!editable && (

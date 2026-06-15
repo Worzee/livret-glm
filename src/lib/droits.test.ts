@@ -183,8 +183,10 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
   });
 
   describe('Opérations administratives', () => {
-    it("seul le formateur peut générer l'export PDF", () => {
+    it("le formateur, le coordo et l'admin peuvent générer un export PDF (16 juin 2026)", () => {
       expect(peutEditer('formateur', 'export-pdf')).toBe(true);
+      expect(peutEditer('coordo', 'export-pdf')).toBe(true);
+      expect(peutEditer('admin', 'export-pdf')).toBe(true);
       expect(peutEditer('apprenti', 'export-pdf')).toBe(false);
       expect(peutEditer('maitre', 'export-pdf')).toBe(false);
     });
@@ -200,6 +202,8 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
     it('chaque ressource du livret est éditable par exactement 1 rôle métier (hors admin)', () => {
       // `organisation-suivi` sortie de la liste depuis juin 2026 (gestion
       // partagée formateur + coordo) — remplacée ici par `entretien.gestion`.
+      // `export-pdf` sortie le 16 juin 2026 : devenue multi-rôle (formateur +
+      // coordo + admin), elle n'est plus « éditable par un seul rôle métier ».
       const RESSOURCES_LIVRET: Ressource[] = [
         'entretien.gestion',
         'entretien.questions-apprenti',
@@ -207,7 +211,6 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
         'fiche.evaluation-entreprise',
         'fiche.evaluation-greta',
         'fiche.retour-apprenti',
-        'export-pdf',
       ];
       RESSOURCES_LIVRET.forEach((r) => {
         const autorises = ROLES_METIER.filter((role) => peutEditer(role, r));
@@ -248,7 +251,8 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
         'grille-competences.centre',
         'entretien.attitudes',
         'entretien.attitudes-selection',
-        'export-pdf',
+        // `export-pdf` retiré le 16 juin 2026 : ouvert au coordo / admin (sortie
+        // documentaire, pas de contenu pédagogique) — cf. test dédié plus haut.
         'cloturer-livret',
       ];
       RESSOURCES_PEDAGOGIQUES.forEach((r) => {
@@ -423,6 +427,6 @@ describe('Admin — droits administratifs uniquement (pas de pédagogie)', () =>
   it('rolesAutorises ne mentionne PAS admin sur les ressources pédagogiques', () => {
     expect(rolesAutorises('fiche.evaluation-entreprise')).toEqual(['maitre']);
     expect(rolesAutorises('fiche.retour-apprenti')).toEqual(['apprenti']);
-    expect(rolesAutorises('export-pdf')).toEqual(['formateur']);
+    expect(rolesAutorises('cloturer-livret')).toEqual(['formateur']);
   });
 });

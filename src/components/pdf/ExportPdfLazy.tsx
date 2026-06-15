@@ -10,18 +10,31 @@ import type {
   QuestionBanque,
   Referentiel,
 } from '@/types';
-import { LivretPdf } from './LivretPdf';
-import { nomFichierPdf } from './format';
+import { EntretienPdf, FichesSuiviPdf, LivretPdf, PeriodePdf } from './LivretPdf';
+import type { VarianteExportPdf } from './BoutonExportPdf';
+import {
+  nomFichierEntretien,
+  nomFichierFichesSuivi,
+  nomFichierPdf,
+  nomFichierPeriode,
+} from './format';
 
 /**
  * Wrapper du `PDFDownloadLink` chargé en lazy (cf. BoutonExportPdf).
  * Tout le code lourd (`@react-pdf/renderer`, `LivretPdf`, sections) reste hors
  * du bundle initial tant que l'utilisateur n'a pas cliqué sur le bouton.
  *
+ * La `variante` choisit le document à générer (16 juin 2026) :
+ *   - livret      : le livret complet (toutes sections)
+ *   - periode     : une seule fiche de période en entreprise
+ *   - entretien   : un seul entretien tripartite
+ *   - fiches-suivi : la page « Fiches de suivi » (événements de suivi)
+ *
  * Sortie par défaut pour que `React.lazy(() => import('./ExportPdfLazy'))`
  * fonctionne sans couche supplémentaire.
  */
 interface ExportPdfLazyProps {
+  variante: VarianteExportPdf;
   livret: Livret;
   apprenti: Apprenti;
   maitre: Maitre;
@@ -35,39 +48,52 @@ interface ExportPdfLazyProps {
   attitudes: ReadonlyArray<AttitudeProfessionnelle>;
 }
 
-export default function ExportPdfLazy({
-  livret,
-  apprenti,
-  maitre,
-  maitreSecond,
-  formateur,
-  formation,
-  referentiel,
-  etablissement,
-  banqueQuestions,
-  attitudes,
-}: ExportPdfLazyProps) {
-  const document = (
-    <LivretPdf
-      livret={livret}
-      apprenti={apprenti}
-      maitre={maitre}
-      maitreSecond={maitreSecond}
-      formateur={formateur}
-      formation={formation}
-      referentiel={referentiel}
-      etablissement={etablissement}
-      banqueQuestions={banqueQuestions}
-      attitudes={attitudes}
-    />
-  );
+export default function ExportPdfLazy({ variante, ...donnees }: ExportPdfLazyProps) {
+  const { apprenti, livret } = donnees;
+
+  let document: React.ReactElement;
+  let fileName: string;
+  let ariaLabel: string;
+
+  switch (variante.type) {
+    case 'periode': {
+      const fiche = livret.fichesSuivi.find((f) => f.id === variante.ficheId);
+      // Garde : si la fiche a disparu entre le clic et le rendu, on retombe sur
+      // le livret complet plutôt que d'échouer.
+      if (!fiche) {
+        document = <LivretPdf {...donnees} />;
+        fileName = nomFichierPdf(apprenti.nom, apprenti.prenom);
+        ariaLabel = 'Télécharger le livret au format PDF';
+        break;
+      }
+      document = <PeriodePdf {...donnees} fiche={fiche} />;
+      fileName = nomFichierPeriode(apprenti.nom, apprenti.prenom, fiche.numeroPeriode);
+      ariaLabel = `Télécharger la période ${fiche.numeroPeriode} au format PDF`;
+      break;
+    }
+    case 'entretien':
+      document = <EntretienPdf {...donnees} numero={variante.numero} />;
+      fileName = nomFichierEntretien(apprenti.nom, apprenti.prenom, variante.numero);
+      ariaLabel = `Télécharger l'entretien tripartite ${variante.numero} au format PDF`;
+      break;
+    case 'fiches-suivi':
+      document = <FichesSuiviPdf {...donnees} />;
+      fileName = nomFichierFichesSuivi(apprenti.nom, apprenti.prenom);
+      ariaLabel = 'Télécharger les fiches de suivi au format PDF';
+      break;
+    case 'livret':
+    default:
+      document = <LivretPdf {...donnees} />;
+      fileName = nomFichierPdf(apprenti.nom, apprenti.prenom);
+      ariaLabel = 'Télécharger le livret au format PDF';
+  }
 
   return (
     <PDFDownloadLink
       document={document}
-      fileName={nomFichierPdf(apprenti.nom, apprenti.prenom)}
+      fileName={fileName}
       className="inline-flex items-center gap-1.5 rounded-md bouton-plein-couleur-role px-3 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      aria-label="Télécharger le livret au format PDF"
+      aria-label={ariaLabel}
     >
       {({ loading, error }) => {
         if (error) return 'Erreur — voir la console';

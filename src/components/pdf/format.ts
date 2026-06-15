@@ -102,16 +102,49 @@ export function libelleOuiNon(b: boolean | null | undefined): string {
   return b ? 'Oui' : 'Non';
 }
 
-export function nomFichierPdf(nom: string, prenom: string, dateIso?: string): string {
-  const safe = (s: string) =>
-    s
-      .normalize('NFD')
-      .replace(/[̀-ͯ]/g, '')
-      .replace(/[^a-zA-Z0-9-]/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
+/** Normalise une chaîne pour un nom de fichier (sans accents ni caractères spéciaux). */
+function safeNom(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-zA-Z0-9-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+/** Suffixe commun aux noms de fichiers : NOM-prenom-AAAA-MM-JJ. */
+function suffixeApprenti(nom: string, prenom: string, dateIso?: string): string {
   const date = (dateIso ? new Date(dateIso) : new Date()).toISOString().slice(0, 10);
-  return `livret-apprentissage-${safe(nom).toUpperCase()}-${safe(prenom)}-${date}.pdf`;
+  return `${safeNom(nom).toUpperCase()}-${safeNom(prenom)}-${date}`;
+}
+
+export function nomFichierPdf(nom: string, prenom: string, dateIso?: string): string {
+  return `livret-apprentissage-${suffixeApprenti(nom, prenom, dateIso)}.pdf`;
+}
+
+/** Nom de fichier pour l'export d'une seule période en entreprise (16 juin 2026). */
+export function nomFichierPeriode(
+  nom: string,
+  prenom: string,
+  numeroPeriode: number,
+  dateIso?: string,
+): string {
+  return `periode-${numeroPeriode}-${suffixeApprenti(nom, prenom, dateIso)}.pdf`;
+}
+
+/** Nom de fichier pour l'export d'un seul entretien tripartite (16 juin 2026). */
+export function nomFichierEntretien(
+  nom: string,
+  prenom: string,
+  numero: number,
+  dateIso?: string,
+): string {
+  return `entretien-tripartite-${numero}-${suffixeApprenti(nom, prenom, dateIso)}.pdf`;
+}
+
+/** Nom de fichier pour l'export des fiches de suivi (événements — 16 juin 2026). */
+export function nomFichierFichesSuivi(nom: string, prenom: string, dateIso?: string): string {
+  return `fiches-suivi-${suffixeApprenti(nom, prenom, dateIso)}.pdf`;
 }
 
 /** Estime grossièrement le nombre de pages pour avertir au-delà de 50. */

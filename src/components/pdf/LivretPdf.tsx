@@ -49,7 +49,7 @@ import {
  * pas de Tailwind). Les styles partagés sont dans `./styles.ts`.
  */
 
-interface LivretPdfProps {
+export interface LivretPdfProps {
   livret: Livret;
   apprenti: Apprenti;
   maitre: Maitre;
@@ -148,6 +148,140 @@ export function LivretPdf({
         attitudes={attitudesDuLivret}
       />
       <PageAnnexes livret={livret} />
+    </Document>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Documents partiels (16 juin 2026) — réutilisent les sections ci-dessus pour
+// exporter séparément une période, un entretien, ou les fiches de suivi.
+// Mêmes données que `LivretPdf` (cf. `LivretPdfProps`).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** PDF d'une seule période en entreprise : page de garde + la fiche ciblée. */
+export function PeriodePdf({
+  fiche,
+  livret,
+  apprenti,
+  maitre,
+  maitreSecond,
+  formateur,
+  formation,
+  referentiel,
+  etablissement,
+  dateExport,
+}: LivretPdfProps & { fiche: FicheSuiviPeriode }) {
+  const date = dateExport ?? new Date().toISOString();
+  const nomComplet = `${apprenti.prenom} ${apprenti.nom}`;
+  return (
+    <Document
+      title={`Période ${fiche.numeroPeriode} — ${nomComplet}`}
+      author="GRETA Lyon Métropole"
+      subject={`Période en entreprise — ${formation.intitule}`}
+      creator="Maquette Livret GRETA — étape 1"
+    >
+      <PageDeGarde
+        apprenti={apprenti}
+        maitre={maitre}
+        maitreSecond={maitreSecond}
+        formateur={formateur}
+        formation={formation}
+        etablissement={etablissement}
+        livret={livret}
+        dateExport={date}
+      />
+      <PageFiche
+        fiche={fiche}
+        referentiel={referentiel}
+        apprenti={apprenti}
+        maitre={maitre}
+        formateur={formateur}
+      />
+    </Document>
+  );
+}
+
+/** PDF d'un seul entretien tripartite : page de garde + l'entretien ciblé. */
+export function EntretienPdf({
+  numero,
+  livret,
+  apprenti,
+  maitre,
+  maitreSecond,
+  formateur,
+  formation,
+  etablissement,
+  banqueQuestions,
+  attitudes,
+  dateExport,
+}: LivretPdfProps & { numero: NumeroEntretien }) {
+  const date = dateExport ?? new Date().toISOString();
+  const nomComplet = `${apprenti.prenom} ${apprenti.nom}`;
+  const entretien = livret.entretiens[numero];
+  const attitudesDuLivret = attitudesRetenues(attitudes, livret.attitudesSelectionnees ?? []);
+  return (
+    <Document
+      title={`Entretien tripartite ${numero} — ${nomComplet}`}
+      author="GRETA Lyon Métropole"
+      subject={`Entretien tripartite — ${formation.intitule}`}
+      creator="Maquette Livret GRETA — étape 1"
+    >
+      <PageDeGarde
+        apprenti={apprenti}
+        maitre={maitre}
+        maitreSecond={maitreSecond}
+        formateur={formateur}
+        formation={formation}
+        etablissement={etablissement}
+        livret={livret}
+        dateExport={date}
+      />
+      {entretien && (
+        <PageEntretien
+          numero={numero}
+          entretien={entretien}
+          apprenti={apprenti}
+          maitre={maitre}
+          formateur={formateur}
+          banqueQuestions={banqueQuestions}
+          attitudes={attitudesDuLivret}
+        />
+      )}
+    </Document>
+  );
+}
+
+/** PDF des fiches de suivi (événements d'organisation) : page de garde + section. */
+export function FichesSuiviPdf({
+  livret,
+  apprenti,
+  maitre,
+  maitreSecond,
+  formateur,
+  formation,
+  etablissement,
+  dateExport,
+}: LivretPdfProps) {
+  const date = dateExport ?? new Date().toISOString();
+  const nomComplet = `${apprenti.prenom} ${apprenti.nom}`;
+  return (
+    <Document
+      title={`Fiches de suivi — ${nomComplet}`}
+      author="GRETA Lyon Métropole"
+      subject={`Fiches de suivi — ${formation.intitule}`}
+      creator="Maquette Livret GRETA — étape 1"
+    >
+      <PageDeGarde
+        apprenti={apprenti}
+        maitre={maitre}
+        maitreSecond={maitreSecond}
+        formateur={formateur}
+        formation={formation}
+        etablissement={etablissement}
+        livret={livret}
+        dateExport={date}
+      />
+      <PageOrganisation livret={livret} />
     </Document>
   );
 }
@@ -267,7 +401,7 @@ function BlocSignaturesPdf({
 // Section : Page de garde
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PageDeGarde({
+export function PageDeGarde({
   apprenti,
   maitre,
   maitreSecond,
@@ -374,7 +508,7 @@ function Ligne({ label, valeur }: { label: string; valeur: string }) {
 // Section : Fiches de suivi (anciennement « Organisation du suivi »)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PageOrganisation({ livret }: { livret: Livret }) {
+export function PageOrganisation({ livret }: { livret: Livret }) {
   const o = livret.organisationSuivi;
 
   /** Combine modalité (entretiens) + date + commentaire en une chaîne PDF. */
@@ -423,7 +557,7 @@ function PageOrganisation({ livret }: { livret: Livret }) {
 // Section : Entretien tripartite
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PageEntretien({
+export function PageEntretien({
   numero,
   entretien,
   apprenti,
@@ -560,7 +694,7 @@ function PageEntretien({
 // Section : Fiche de suivi par période
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PageFiche({
+export function PageFiche({
   fiche,
   referentiel,
   apprenti,

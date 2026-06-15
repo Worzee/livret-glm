@@ -13,6 +13,8 @@ import { TableauTriColonnes } from '@/components/livret/TableauTriColonnes';
 import { ZoneObservation } from '@/components/livret/ZoneObservation';
 import { BlocSignatures } from '@/components/livret/BlocSignatures';
 import { DialogDeverrouillage } from '@/components/livret/DialogDeverrouillage';
+import { BoutonExportPdf } from '@/components/pdf/BoutonExportPdf';
+import { useDonneesLivretPdf } from '@/components/pdf/useDonneesLivretPdf';
 import { NotFound } from '@/pages/NotFound';
 
 /**
@@ -35,6 +37,7 @@ export function FicheSuiviPeriodeDetail() {
   const deverrouiller = useLivretStore((s) => s.deverrouillerFiche);
   const roleActif = useUserStore((s) => s.roleActif);
   const utilisateurActif = useUserStore((s) => s.utilisateurActif);
+  const donneesPdf = useDonneesLivretPdf();
   const [dialogOuvert, setDialogOuvert] = useState(false);
 
   if (!ctx) return <AucunApprentiSelectionne />;
@@ -58,14 +61,23 @@ export function FicheSuiviPeriodeDetail() {
         </Link>
       </nav>
 
-      <header className="space-y-2">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold">{libelleFichePeriode(fiche)}</h1>
-          <BadgeEtatFiche etat={fiche.etat} />
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-semibold">{libelleFichePeriode(fiche)}</h1>
+            <BadgeEtatFiche etat={fiche.etat} />
+          </div>
+          <p className="text-muted-foreground">
+            Du {debut} au {fin}
+          </p>
         </div>
-        <p className="text-muted-foreground">
-          Du {debut} au {fin}
-        </p>
+        {donneesPdf && (
+          <BoutonExportPdf
+            {...donneesPdf}
+            variante={{ type: 'periode', ficheId: fiche.id }}
+            label="Exporter cette période"
+          />
+        )}
       </header>
 
       {/* Bandeau de verrouillage / actions formateur */}

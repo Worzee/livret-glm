@@ -20,6 +20,8 @@ import { SectionFormateur } from '@/components/entretien/SectionFormateur';
 import { SectionSelectionCompetences } from '@/components/entretien/SectionSelectionCompetences';
 import { SectionSelectionAttitudes } from '@/components/entretien/SectionSelectionAttitudes';
 import { BlocSignaturesEntretien } from '@/components/entretien/BlocSignaturesEntretien';
+import { BoutonExportPdf } from '@/components/pdf/BoutonExportPdf';
+import { useDonneesLivretPdf } from '@/components/pdf/useDonneesLivretPdf';
 import { creerSelectionVierge } from '@/lib/selection-competences-entreprise';
 
 /**
@@ -46,6 +48,7 @@ export function EntretienTripartite() {
   const initialiser = useLivretStore((s) => s.initialiserEntretien);
   const roleActif = useUserStore((s) => s.roleActif);
   const formations = useFormationsStore((s) => s.formations);
+  const donneesPdf = useDonneesLivretPdf();
 
   const numero = parseNumeroEntretien(params.numero);
   if (numero === null) return <NotFound />;
@@ -130,13 +133,22 @@ export function EntretienTripartite() {
 
   return (
     <div className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold">{titre}</h1>
-        <p className="text-muted-foreground">
-          {isE1
-            ? "Entretien d'évaluation à tenir dans les 2 mois suivant la signature du contrat d'apprentissage (CDC §5.2)."
-            : "Bilan mi-parcours — point d'étape sur la progression de l'apprenti·e."}
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-semibold">{titre}</h1>
+          <p className="text-muted-foreground">
+            {isE1
+              ? "Entretien d'évaluation à tenir dans les 2 mois suivant la signature du contrat d'apprentissage (CDC §5.2)."
+              : "Bilan mi-parcours — point d'étape sur la progression de l'apprenti·e."}
+          </p>
+        </div>
+        {donneesPdf && (
+          <BoutonExportPdf
+            {...donneesPdf}
+            variante={{ type: 'entretien', numero }}
+            label="Exporter cet entretien"
+          />
+        )}
       </header>
 
       {isE1 && <BandeauAlerteR7 alerte={alerteR7} />}

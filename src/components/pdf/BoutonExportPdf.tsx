@@ -8,6 +8,7 @@ import type {
   Formation,
   Livret,
   Maitre,
+  NumeroEntretien,
   QuestionBanque,
   Referentiel,
 } from '@/types';
@@ -16,15 +17,18 @@ import { peutEditer } from '@/lib/droits';
 import { estimerNombrePages } from './format';
 
 /**
- * Bouton "Exporter le livret" (CDC §5.6).
+ * Bouton d'export PDF (CDC §5.6).
  *
  * Comportement :
  *  - Visible uniquement pour les rôles disposant du droit `export-pdf`
- *    (formateur référent, par défaut — cf. matrice des droits §6).
- *  - 1er clic : si > 50 pages estimées (CDC §C14), affiche un avertissement
- *    de durée. Sinon, déclenche directement le chargement de @react-pdf.
- *  - 2ᵉ clic (ou clic confirmation) : monte `<ExportPdfLazy>` qui charge le
- *    bundle PDF et expose `<PDFDownloadLink>` pour récupérer le fichier.
+ *    (formateur référent, coordo, admin — cf. matrice des droits §6).
+ *  - La `variante` choisit quel document générer (16 juin 2026) : le livret
+ *    complet, une période, un entretien, ou les fiches de suivi.
+ *  - Pour le livret complet : 1er clic affiche un avertissement si > 50 pages
+ *    estimées (CDC §C14), sinon déclenche directement le chargement. Les
+ *    exports partiels (1 à 2 pages) n'affichent jamais cet avertissement.
+ *  - Au déclenchement, monte `<ExportPdfLazy>` qui charge le bundle PDF et
+ *    expose `<PDFDownloadLink>` pour récupérer le fichier.
  *
  * Le composant `ExportPdfLazy` est importé via `React.lazy()` ; tant que
  * l'utilisateur ne clique pas, ni @react-pdf/renderer ni LivretPdf ne sont
@@ -34,6 +38,13 @@ import { estimerNombrePages } from './format';
 const ExportPdfLazy = lazy(() => import('./ExportPdfLazy'));
 
 const SEUIL_PAGES_AVERTISSEMENT = 50;
+
+/** Document à exporter — discrimine le contenu du PDF (16 juin 2026). */
+export type VarianteExportPdf =
+  | { type: 'livret' }
+  | { type: 'periode'; ficheId: string }
+  | { type: 'entretien'; numero: NumeroEntretien }
+  | { type: 'fiches-suivi' };
 
 interface BoutonExportPdfProps {
   livret: Livret;
@@ -50,21 +61,31 @@ interface BoutonExportPdfProps {
   banqueQuestions: Record<string, QuestionBanque>;
   /** Catalogue global des attitudes professionnelles (juin 2026). */
   attitudes: ReadonlyArray<AttitudeProfessionnelle>;
+  /** Document à générer (défaut : livret complet). */
+  variante?: VarianteExportPdf;
+  /** Libellé du bouton (défaut : « Exporter le livret »). */
+  label?: string;
 }
 
-export function BoutonExportPdf(props: BoutonExportPdfProps) {
+export function BoutonExportPdf({
+  variante = { type: 'livret' },
+  label = 'Exporter le livret',
+  ...donnees
+}: BoutonExportPdfProps) {
   const roleActif = useUserStore((s) => s.roleActif);
   const [demande, setDemande] = useState(false);
   const [confirmationGros, setConfirmationGros] = useState(false);
 
   if (!peutEditer(roleActif, 'export-pdf')) return null;
 
-  const totalDeverrouillages = props.livret.fichesSuivi.reduce(
+  // L'avertissement « livret volumineux » ne concerne que l'export complet ;
+  // les exports partiels font 1 à 2 pages.
+  const totalDeverrouillages = donnees.livret.fichesSuivi.reduce(
     (n, f) => n + f.historiqueDeverrouillages.length,
     0,
   );
-  const pagesEstimees = estimerNombrePages(props.livret.fichesSuivi.length, totalDeverrouillages);
-  const livretVolumineux = pagesEstimees > SEUIL_PAGES_AVERTISSEMENT;
+  const pagesEstimees = estimerNombrePages(donnees.livret.fichesSuivi.length, totalDeverrouillages);
+  const livretVolumineux = variante.type === 'livret' && pagesEstimees > SEUIL_PAGES_AVERTISSEMENT;
 
   if (demande) {
     return (
@@ -76,7 +97,7 @@ export function BoutonExportPdf(props: BoutonExportPdfProps) {
           </span>
         }
       >
-        <ExportPdfLazy {...props} />
+        <ExportPdfLazy variante={variante} {...donnees} />
       </Suspense>
     );
   }
@@ -127,10 +148,10 @@ export function BoutonExportPdf(props: BoutonExportPdfProps) {
         else setDemande(true);
       }}
       className="inline-flex items-center gap-1.5 rounded-md bouton-plein-couleur-role px-3 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      aria-label="Exporter le livret au format PDF"
+      aria-label={`${label} au format PDF`}
     >
       <FileDown className="h-4 w-4" aria-hidden="true" />
-      Exporter le livret
+      {label}
     </button>
   );
 }

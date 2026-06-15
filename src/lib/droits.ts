@@ -184,7 +184,10 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   // Attitudes : maître + formateur
 
   // Opérations administratives sur le livret
-  'export-pdf': ['formateur'],
+  // Export PDF (livret complet, période, entretien, fiches de suivi) : ouvert
+  // au formateur référent, au coordo et à l'admin (16 juin 2026) — c'est une
+  // sortie/consultation, pas du contenu pédagogique. Apprenti·e et maître exclus.
+  'export-pdf': ['formateur', 'coordo', 'admin'],
   'cloturer-livret': ['formateur'],
 
   // ── Administration (rôles coordo, admin et formateur partiel) ──────────
