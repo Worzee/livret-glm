@@ -1,6 +1,6 @@
 # État du projet — Livret d'apprentissage GRETA Lyon Métropole
 
-**Dernière mise à jour** : 2026-06-15 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites, motifs par rôle + séquencement, attitudes professionnelles par entretien + catalogue admin, confirmation avant écrasement d'une évaluation héritée, second maître / tuteur par apprenti·e, tri par année de formation sur le tableau de bord, **signature manuscrite tactile**, **répartition des apprenti·e·s entre coordos**, **questions de l'entretien gérées par formation**, **compétences activées par défaut + maître seul**, **bascule de périmètre coordo depuis l'administration**, **harmonisation du planning des périodes sur toute la promo**)
+**Dernière mise à jour** : 2026-06-15 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites, motifs par rôle + séquencement, attitudes professionnelles par entretien + catalogue admin, confirmation avant écrasement d'une évaluation héritée, second maître / tuteur par apprenti·e, tri par année de formation sur le tableau de bord, **signature manuscrite tactile**, **répartition des apprenti·e·s entre coordos**, **questions de l'entretien gérées par formation**, **compétences activées par défaut + maître seul**, **bascule de périmètre coordo depuis l'administration**, **harmonisation du planning des périodes sur toute la promo**, **modalité présentiel/distanciel des entretiens + verrou de la fiche de suivi par signature**)
 **Version applicative** : 0.1.0
 **Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3) **livrée + 4 vagues post-livraison**
 **Pilote métier** : Guillaume FERRERI
@@ -11,7 +11,7 @@
 
 ### État global
 
-L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 5 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026 + retours coordonnateurs juin 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **515 tests unitaires + 158 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
+L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 5 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026 + retours coordonnateurs juin 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **530 tests unitaires + 161 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
 
 ### Ce qui est livré
 
@@ -47,7 +47,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | Aperçu général et démarrage                                     | [`README.md`](README.md)                                                                                  |
 | Modules livrés et périmètre fonctionnel                         | §4                                                                                                        |
 | Règles métier R1 → R24                                          | §5                                                                                                        |
-| État des tests (515 unit + 158 E2E)                             | §6                                                                                                        |
+| État des tests (530 unit + 161 E2E)                             | §6                                                                                                        |
 | Architecture des fichiers                                       | §7                                                                                                        |
 | Reste à faire                                                   | §8                                                                                                        |
 | Limites connues                                                 | §9                                                                                                        |
@@ -69,8 +69,8 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | **URL publique**      | https://livret-glm.duckdns.org                                                                   |
 | **Accès**             | Basic Auth `demo` / _(mdp partagé hors-canal)_                                                   |
 | **Dépôt source**      | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
-| **Tests unitaires**   | **515 / 515 ✓** (Vitest, 34 fichiers de test)                                                    |
-| **Tests E2E**         | **158 / 158 ✓** (Playwright — 146 desktop + 12 mobile Pixel 5, 22 specs)                         |
+| **Tests unitaires**   | **530 / 530 ✓** (Vitest, 34 fichiers de test)                                                    |
+| **Tests E2E**         | **161 / 161 ✓** (Playwright — 149 desktop + 12 mobile Pixel 5, 22 specs)                         |
 | **Bundle JS gzippé**  | 148 KB (cible CDC §19.1 : < 500 KB → marge × 3,4)                                                |
 | **Bundle CSS gzippé** | 6,5 KB (cible : < 50 KB → marge × 7)                                                             |
 | **Chunk PDF lazy**    | 493 KB (chargé uniquement au clic « Exporter »)                                                  |
@@ -213,11 +213,12 @@ Pour les formations de 2 ans, le livret peut désormais porter jusqu'à **4 entr
 
 #### Événements de suivi gérables par le coordo et l'admin (11-12 juin 2026 — retours coordonnateurs pédagogiques)
 
-- La ressource `organisation-suivi` (création / modification / suppression des événements de la page « Fiches de suivi ») passe de `formateur` seul à **`formateur` + `coordo` + `admin`** — gestion calendaire/organisationnelle, pas de contenu pédagogique
+- La ressource `organisation-suivi` (création / modification des événements de la page « Fiches de suivi ») passe de `formateur` seul à **`formateur` + `coordo` + `admin`** — gestion calendaire/organisationnelle, pas de contenu pédagogique _(la suppression en est détachée le 15 juin, cf. ci-dessous)_
 - **Nouvelle ressource `entretien.gestion`** (formateur uniquement) : l'initialisation des entretiens et l'édition de leur date — auparavant adossées à `organisation-suivi` — restent des actes pédagogiques fermés au coordo/admin. La doctrine « coordo/admin sans droit pédagogique » est préservée (test transverse adapté)
 - **Liseré des cartes d'événements colorisé par rôle actif** : nouvelle utility CSS `.bordure-gauche-couleur-role` (variable `--ring`) remplace le violet formateur codé en dur — formateur violet, coordo orange, admin or
 - Matrice : 46 → **47 ressources × 5 rôles**
 - +1 test unitaire droits, +3 scénarios E2E (coordo gère un événement + liseré ; admin gère ; coordo ne peut pas initialiser un entretien)
+- **Suivi 15 juin 2026 — suppression réservée au coordo / admin** : la suppression d'un événement est détachée dans une ressource dédiée `organisation-suivi.supprimer` (coordo + admin uniquement). Le formateur référent crée et modifie les événements mais ne peut plus les **supprimer** (acte destructif de gouvernance — le bouton corbeille n'apparaît plus pour lui). Matrice : 48 → **49 ressources** ; +1 test droits, +1 scénario E2E (« le formateur ne voit pas le bouton supprimer ») + 2 specs de suppression repassées en coordo
 
 #### Répartition des motifs par rôle + séquencement des entretiens (12 juin 2026 — retours coordonnateurs pédagogiques)
 
@@ -450,6 +451,7 @@ Cinq chantiers fonctionnels structurants livrés en cascade (ordre risque croiss
 - PDF : 2 sections entretien (E2 omis si null)
 - Bump `useLivretStore` v9 → v10
 - Fixtures : Léa a un événement E2 créé mais entretien vide (cas « à initialiser »), Sofia conserve son cas alerte R7 (override sans événement E1)
+- **Suivi 15 juin 2026 — modalité + verrou par signature** : chaque événement entretien tripartite porte désormais une **modalité de déroulement** (`EvenementOrganisationSuivi.modalite`) — E1 imposé en **présentiel**, E2..E4 au choix (sélecteur présentiel / distanciel directement sur la fiche de suivi). Et dès qu'un entretien est **signé par les 3 parties**, sa fiche de suivi est **entièrement figée** (titre, date, commentaire et modalité en lecture seule, sans déverrouillage — cohérent avec R9). Helpers purs `modaliteImposee` / `modaliteEffective` / `evenementFigeParSignature` ; modalité reflétée dans l'export PDF ; bump `livret-donnees` v17 → v18 (reset). Fixture : l'E2 de Léa est en distanciel pour la démonstration
 
 ### Polish graphique — équilibrage palette par rôle (26 mai 2026)
 
@@ -529,13 +531,13 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 
 ---
 
-## 6. Tests (515 unitaires + 158 E2E)
+## 6. Tests (530 unitaires + 161 E2E)
 
 ### Tests unitaires Vitest (34 fichiers de test)
 
 | Fichier                                        | Tests  | Périmètre                                                                                                                                                           |
 | ---------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lib/droits.test.ts`                           | 44     | Matrice 48 ressources × 5 rôles (organisation-suivi partagée, `entretien.gestion`, `entretien.attitudes`, `entretien.attitudes-selection`, `admin.attitudes.gerer`) |
+| `lib/droits.test.ts`                           | 45     | Matrice 49 ressources × 5 rôles (organisation-suivi partagée, **`organisation-suivi.supprimer` coordo/admin**, `entretien.gestion`, `entretien.attitudes`, `entretien.attitudes-selection`, `admin.attitudes.gerer`) |
 | `lib/selection-attitudes.test.ts`              | 9      | Choix des attitudes à l'E1 : verrou 3ᵉ signature + toggle + filtre catalogue (13 juin 2026)                                                                         |
 | `lib/transitions-fiche.test.ts`                | 22     | R15/R16/R17/R21 + adaptation suivi GRETA texte                                                                                                                      |
 | `lib/validation-signature.test.ts`             | 18     | R18/R20 — refonte chantier #3                                                                                                                                       |
@@ -562,7 +564,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 | `lib/parser-xlsx.test.ts`                      | 16     | Parser XLSX (Node env pour fflate)                                                                                                                                  |
 | `lib/selection-competences-entreprise.test.ts` | 27     | Sélection par livret CDC v1.5 §12 + `creerSelectionInitiale` tout activé (13 juin 2026)                                                                             |
 | `lib/validation-fiche-periode.test.ts`         | 16     | Saisie fiche + verrous                                                                                                                                              |
-| `lib/organisation-suivi.test.ts`               | 27     | Catalogue motifs + motifs par rôle + verrou de suppression (entretien signé — juin 2026)                                                                            |
+| `lib/organisation-suivi.test.ts`               | 41     | Catalogue motifs + motifs par rôle + verrou de suppression + **modalité présentiel/distanciel + verrou de la fiche par signature (15 juin 2026)**                    |
 | `lib/questions-entretien.test.ts`              | 21     | Banque 11 questions (catalogue pur) + `idsQuestionsActives` par formation (13 juin 2026)                                                                            |
 | `lib/etablissement-verrou.test.ts`             | 4      | Verrou suppression établissement                                                                                                                                    |
 | `lib/etablissements-accessibles.test.ts`       | 8      | Filtrage par rôle Pronote                                                                                                                                           |
@@ -574,7 +576,7 @@ _Les modules `creation-livret.ts`, `couleurs-role.ts` et `utils.ts` sont couvert
 
 ### Tests E2E Playwright (22 specs)
 
-158 tests (146 desktop + 12 mobile). Ajouts de juin 2026 : 3 scénarios « affectation des questions par le coordo », 5 scénarios « jusqu'à 4 entretiens », 3 scénarios « événements gérés par coordo/admin + liseré par rôle », 2 scénarios « motifs par rôle + séquencement », 4 scénarios « attitudes professionnelles » (`attitudes.spec.ts`), 1 scénario « confirmation avant écrasement d'un héritage », 1 scénario « bascule de périmètre coordo depuis la page Affectations ». Quelques specs ont été adaptés aux refontes :
+161 tests (149 desktop + 12 mobile). Ajouts de juin 2026 : 3 scénarios « affectation des questions par le coordo », 5 scénarios « jusqu'à 4 entretiens », 3 scénarios « événements gérés par coordo/admin + liseré par rôle », 2 scénarios « motifs par rôle + séquencement », 4 scénarios « attitudes professionnelles » (`attitudes.spec.ts`), 1 scénario « confirmation avant écrasement d'un héritage », 1 scénario « bascule de périmètre coordo depuis la page Affectations », 2 scénarios « modalité présentiel/distanciel + verrou de la fiche de suivi par signature », 1 scénario « suppression d'un événement réservée au coordo/admin ». Quelques specs ont été adaptés aux refontes :
 
 - `fiches-periodes.spec.ts` : 8 tests réécrits pour le nouveau flow planning au niveau formation
 - `sprint3-droits-entretien.spec.ts` : route `/livret/entretien/1`

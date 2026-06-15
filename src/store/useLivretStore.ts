@@ -100,7 +100,10 @@ import { useUtilisateursStore } from './useUtilisateursStore';
 //   v17 — 15 juin 2026 : harmonisation du planning — tous les livrets de la
 //        promo héritent des 3 périodes de la formation (Minh 0→3, Sofia 1→3,
 //        Aya 2→3, en brouillon vierge). Reset pour recharger les fixtures.
-const VERSION_SCHEMA = 17;
+//   v18 — 15 juin 2026 : modalité présentiel/distanciel des entretiens
+//        tripartites sur les fiches de suivi (E1 présentiel imposé, E2..E4 au
+//        choix) — `EvenementOrganisationSuivi.modalite`. Reset (fixtures).
+const VERSION_SCHEMA = 18;
 
 interface LivretStore {
   livrets: Record<string, Livret>;

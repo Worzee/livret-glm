@@ -8,9 +8,15 @@ import type {
 import {
   MOTIFS_ORGANISATION_SUIVI,
   creerEvenementVierge,
+  evenementFigeParSignature,
   libelleEvenement,
+  libelleModalite,
   libelleMotif,
   metadonneesMotif,
+  modaliteEffective,
+  modaliteImposee,
+  modaliteParDefaut,
+  motifAvecModalite,
   motifsDisponibles,
   motifsProposablesPourRole,
   numeroEntretienPourMotif,
@@ -248,6 +254,16 @@ describe('creerEvenementVierge', () => {
     expect(evt.date).toBe('');
     expect(evt.commentaire).toBe('');
     expect(evt.verrouille).toBeUndefined();
+    expect(evt.modalite).toBeUndefined();
+  });
+
+  it('initialise la modalité « presentiel » pour un entretien tripartite (15 juin 2026)', () => {
+    expect(creerEvenementVierge('entretien-tripartite-1').modalite).toBe('presentiel');
+    expect(creerEvenementVierge('entretien-tripartite-2').modalite).toBe('presentiel');
+  });
+
+  it('ne pose pas de modalité pour un motif non-entretien', () => {
+    expect(creerEvenementVierge('visite-entreprise').modalite).toBeUndefined();
   });
 
   it('respecte un id custom (utile pour les fixtures déterministes)', () => {
@@ -259,5 +275,86 @@ describe('creerEvenementVierge', () => {
     const a = creerEvenementVierge('visite-entreprise');
     const b = creerEvenementVierge('visite-entreprise');
     expect(a.id).not.toBe(b.id);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Modalité présentiel / distanciel (15 juin 2026)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('modalité présentiel / distanciel', () => {
+  it('motifAvecModalite : vrai pour les entretiens tripartites uniquement', () => {
+    expect(motifAvecModalite('entretien-tripartite-1')).toBe(true);
+    expect(motifAvecModalite('entretien-tripartite-4')).toBe(true);
+    expect(motifAvecModalite('visite-entreprise')).toBe(false);
+    expect(motifAvecModalite('autre')).toBe(false);
+  });
+
+  it('modaliteImposee : présentiel pour E1, libre (null) pour E2..E4 et les autres', () => {
+    expect(modaliteImposee('entretien-tripartite-1')).toBe('presentiel');
+    expect(modaliteImposee('entretien-tripartite-2')).toBeNull();
+    expect(modaliteImposee('entretien-tripartite-3')).toBeNull();
+    expect(modaliteImposee('visite-entreprise')).toBeNull();
+  });
+
+  it('modaliteParDefaut : présentiel pour tout entretien, undefined sinon', () => {
+    expect(modaliteParDefaut('entretien-tripartite-1')).toBe('presentiel');
+    expect(modaliteParDefaut('entretien-tripartite-3')).toBe('presentiel');
+    expect(modaliteParDefaut('reunion-rentree')).toBeUndefined();
+  });
+
+  it('modaliteEffective : E1 toujours présentiel, même si une autre valeur est stockée', () => {
+    const e1 = {
+      id: 'e1',
+      motif: 'entretien-tripartite-1' as const,
+      modalite: 'distanciel' as const,
+    };
+    expect(modaliteEffective(e1)).toBe('presentiel');
+  });
+
+  it('modaliteEffective : E2 reflète la valeur stockée, défaut présentiel', () => {
+    const e2 = { id: 'e2', motif: 'entretien-tripartite-2' as const };
+    expect(modaliteEffective(e2)).toBe('presentiel');
+    expect(modaliteEffective({ ...e2, modalite: 'distanciel' })).toBe('distanciel');
+  });
+
+  it('modaliteEffective : null pour un motif sans modalité', () => {
+    expect(modaliteEffective({ id: 'v', motif: 'visite-entreprise' })).toBeNull();
+  });
+
+  it('libelleModalite : libellés humains', () => {
+    expect(libelleModalite('presentiel')).toBe('Présentiel');
+    expect(libelleModalite('distanciel')).toBe('Distanciel');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Verrou de la fiche de suivi par signature de l'entretien (15 juin 2026)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('evenementFigeParSignature', () => {
+  const evtE1: EvenementOrganisationSuivi = { id: 'evt-e1', motif: 'entretien-tripartite-1' };
+  const evtAutre: EvenementOrganisationSuivi = { id: 'evt-a', motif: 'visite-entreprise' };
+
+  it("fige la carte dès que l'entretien est signé par les 3 parties", () => {
+    expect(evenementFigeParSignature(evtE1, entretiens(entretienAvecSignatures(3)))).toBe(true);
+  });
+
+  it('ne fige pas tant que les 3 signatures ne sont pas réunies', () => {
+    expect(evenementFigeParSignature(evtE1, entretiens(entretienAvecSignatures(0)))).toBe(false);
+    expect(evenementFigeParSignature(evtE1, entretiens(entretienAvecSignatures(1)))).toBe(false);
+    expect(evenementFigeParSignature(evtE1, entretiens(entretienAvecSignatures(2)))).toBe(false);
+  });
+
+  it("ne fige pas si l'entretien n'est pas initialisé", () => {
+    expect(evenementFigeParSignature(evtE1, entretiens(null))).toBe(false);
+  });
+
+  it('ne fige jamais un motif hors entretien tripartite', () => {
+    expect(evenementFigeParSignature(evtAutre, entretiens(entretienAvecSignatures(3)))).toBe(false);
+  });
+
+  it('renvoie false sans le registre des entretiens', () => {
+    expect(evenementFigeParSignature(evtE1)).toBe(false);
   });
 });

@@ -15,10 +15,17 @@ import type { Role } from '@/types';
  */
 export type Ressource =
   // Module organisation du suivi (CDC §5.1). Retours coordos juin 2026 :
-  // la gestion des événements (création / modification / suppression) est
-  // ouverte au coordo en plus du formateur référent — c'est de
-  // l'organisation calendaire, pas du contenu pédagogique.
+  // la gestion des événements (création / modification) est ouverte au coordo
+  // en plus du formateur référent — c'est de l'organisation calendaire, pas
+  // du contenu pédagogique.
   | 'organisation-suivi'
+  /**
+   * Suppression d'un événement de la page « Fiches de suivi » — réservée au
+   * coordo et à l'admin (15 juin 2026). Le formateur référent crée et modifie
+   * les événements mais ne peut pas les supprimer : acte destructif réservé à
+   * la gouvernance (coordo / admin).
+   */
+  | 'organisation-suivi.supprimer'
   // Entretien tripartite (CDC §5.2)
   /**
    * Gestion de l'entretien par le formateur référent : initialisation
@@ -132,6 +139,9 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   // juin 2026 — gestion calendaire des événements, pas de contenu
   // pédagogique ; l'admin hérite comme pour les autres ressources de gestion)
   'organisation-suivi': ['formateur', 'coordo', 'admin'],
+  // Suppression d'un événement : coordo + admin uniquement (15 juin 2026) —
+  // le formateur référent crée / modifie mais ne supprime pas.
+  'organisation-suivi.supprimer': ['coordo', 'admin'],
 
   // Entretien tripartite — questions/zones par rôle propriétaire
   // Initialisation + date de l'entretien : formateur uniquement

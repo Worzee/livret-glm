@@ -307,6 +307,13 @@ export const NUMEROS_ENTRETIEN: ReadonlyArray<NumeroEntretien> = [1, 2, 3, 4];
  * partager le même motif (ex. plusieurs visites en entreprise) — le `titre`
  * optionnel permet de les distinguer dans la liste.
  */
+/**
+ * Modalité de déroulement d'un entretien tripartite (15 juin 2026).
+ * L'entretien tripartite 1 est **obligatoirement** en présentiel ; les
+ * entretiens 2 à 4 peuvent se tenir en présentiel ou en distanciel.
+ */
+export type ModaliteEntretien = 'presentiel' | 'distanciel';
+
 export interface EvenementOrganisationSuivi {
   /** Identifiant stable (UUID court) — clé React et cible des mutations. */
   id: string;
@@ -318,6 +325,12 @@ export interface EvenementOrganisationSuivi {
   date?: string;
   /** Commentaire libre — lieu, modalités, dates secondaires, etc. */
   commentaire?: string;
+  /**
+   * Modalité de déroulement — pertinent uniquement pour les motifs
+   * `entretien-tripartite-{1..4}` (15 juin 2026). E1 est imposé à
+   * `'presentiel'` ; E2..E4 sont au choix. `undefined` pour les autres motifs.
+   */
+  modalite?: ModaliteEntretien;
   /**
    * Verrou local de l'événement — quand `true`, le titre, la date et le
    * commentaire passent en lecture seule jusqu'à un déverrouillage explicite.

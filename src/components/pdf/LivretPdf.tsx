@@ -19,7 +19,7 @@ import { NUMEROS_ENTRETIEN } from '@/types';
 import { libelleRole } from '@/lib/droits';
 import { synthetiserCompetences, valeurEffective } from '@/lib/synthese-evaluation';
 import { calculerStatsParBloc } from '@/lib/stats-bloc';
-import { libelleEvenement } from '@/lib/organisation-suivi';
+import { libelleEvenement, libelleModalite, modaliteEffective } from '@/lib/organisation-suivi';
 import { attitudesRetenues } from '@/lib/selection-attitudes';
 import { COULEURS, styles } from './styles';
 import {
@@ -377,12 +377,12 @@ function Ligne({ label, valeur }: { label: string; valeur: string }) {
 function PageOrganisation({ livret }: { livret: Livret }) {
   const o = livret.organisationSuivi;
 
-  /** Combine date + commentaire en une chaîne lisible pour le PDF. */
-  const fmt = (c: { date?: string; commentaire?: string }): string => {
+  /** Combine modalité (entretiens) + date + commentaire en une chaîne PDF. */
+  const fmt = (c: { date?: string; commentaire?: string }, modalite?: string): string => {
     const date = c.date ? formaterDateLongue(c.date) : '';
     const comm = c.commentaire?.trim() ?? '';
-    if (date && comm) return `${date} — ${comm}`;
-    return date || comm || '—';
+    const parts = [modalite, date, comm].filter(Boolean);
+    return parts.length ? parts.join(' — ') : '—';
   };
 
   return (
@@ -398,9 +398,16 @@ function PageOrganisation({ livret }: { livret: Livret }) {
             Aucun événement n'a encore été ajouté à l'organisation du suivi.
           </Text>
         ) : (
-          o.evenements.map((evt) => (
-            <Champ key={evt.id} label={libelleEvenement(evt)} valeur={fmt(evt)} />
-          ))
+          o.evenements.map((evt) => {
+            const modalite = modaliteEffective(evt);
+            return (
+              <Champ
+                key={evt.id}
+                label={libelleEvenement(evt)}
+                valeur={fmt(evt, modalite ? libelleModalite(modalite) : undefined)}
+              />
+            );
+          })
         )}
         <View style={[styles.encart, { marginTop: 12 }]}>
           <Text>

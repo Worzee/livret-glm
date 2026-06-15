@@ -22,6 +22,15 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('maitre', 'organisation-suivi')).toBe(false);
     });
 
+    it('seuls le coordo et l’admin peuvent SUPPRIMER un événement (15 juin 2026)', () => {
+      // Le formateur référent crée / modifie mais ne supprime pas.
+      expect(peutEditer('formateur', 'organisation-suivi.supprimer')).toBe(false);
+      expect(peutEditer('coordo', 'organisation-suivi.supprimer')).toBe(true);
+      expect(peutEditer('admin', 'organisation-suivi.supprimer')).toBe(true);
+      expect(peutEditer('apprenti', 'organisation-suivi.supprimer')).toBe(false);
+      expect(peutEditer('maitre', 'organisation-suivi.supprimer')).toBe(false);
+    });
+
     it("la gestion de l'entretien (initialisation, date) reste au formateur seul", () => {
       expect(peutEditer('formateur', 'entretien.gestion')).toBe(true);
       expect(peutEditer('coordo', 'entretien.gestion')).toBe(false);

@@ -4,9 +4,11 @@ import {
   CalendarDays,
   Lock,
   LockOpen,
+  MapPin,
   MessageSquare,
   Plus,
   Trash2,
+  Video,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useUserStore } from '@/store/useUserStore';
@@ -15,12 +17,22 @@ import { useFormationsStore } from '@/store/useFormationsStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
 import {
+  evenementFigeParSignature,
+  libelleModalite,
   metadonneesMotif,
+  modaliteEffective,
+  modaliteImposee,
+  motifAvecModalite,
   motifsProposablesPourRole,
   numeroEntretienPourMotif,
   peutSupprimerEvenement,
 } from '@/lib/organisation-suivi';
-import type { EvenementOrganisationSuivi, Livret, MotifOrganisationSuivi } from '@/types';
+import type {
+  EvenementOrganisationSuivi,
+  Livret,
+  ModaliteEntretien,
+  MotifOrganisationSuivi,
+} from '@/types';
 import { cn } from '@/lib/utils';
 import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelectionne';
 
@@ -62,6 +74,9 @@ export function OrganisationSuivi() {
   const { apprenti, livret } = ctx;
 
   const editable = peutEditer(roleActif, 'organisation-suivi');
+  // Suppression d'un événement : coordo + admin uniquement (15 juin 2026).
+  // Le formateur référent crée / modifie mais ne supprime pas.
+  const peutSupprimer = peutEditer(roleActif, 'organisation-suivi.supprimer');
   const org = livret.organisationSuivi;
   const evenements = org.evenements;
 
@@ -167,6 +182,7 @@ export function OrganisationSuivi() {
               evenement={evt}
               entretiens={livret.entretiens}
               editable={editable}
+              peutSupprimer={peutSupprimer}
               enConfirmationSuppression={confirmationSuppression === evt.id}
               onChangeTitre={(titre) =>
                 modifierEvt(livret.id, utilisateurActif.id, evt.id, { titre })
@@ -174,6 +190,9 @@ export function OrganisationSuivi() {
               onChangeDate={(date) => modifierEvt(livret.id, utilisateurActif.id, evt.id, { date })}
               onChangeCommentaire={(commentaire) =>
                 modifierEvt(livret.id, utilisateurActif.id, evt.id, { commentaire })
+              }
+              onChangeModalite={(modalite) =>
+                modifierEvt(livret.id, utilisateurActif.id, evt.id, { modalite })
               }
               onToggleVerrouille={() =>
                 modifierEvt(livret.id, utilisateurActif.id, evt.id, {
@@ -210,10 +229,13 @@ interface CarteEvenementProps {
   /** Entretiens du livret — la règle « entretien signé = fiche insupprimable ». */
   entretiens: Livret['entretiens'];
   editable: boolean;
+  /** Droit de supprimer l'événement — coordo / admin uniquement (15 juin 2026). */
+  peutSupprimer: boolean;
   enConfirmationSuppression: boolean;
   onChangeTitre: (titre: string) => void;
   onChangeDate: (date: string) => void;
   onChangeCommentaire: (commentaire: string) => void;
+  onChangeModalite: (modalite: ModaliteEntretien) => void;
   onToggleVerrouille: () => void;
   onSupprimer: () => void;
 }
@@ -222,10 +244,12 @@ function CarteEvenement({
   evenement,
   entretiens,
   editable,
+  peutSupprimer,
   enConfirmationSuppression,
   onChangeTitre,
   onChangeDate,
   onChangeCommentaire,
+  onChangeModalite,
   onToggleVerrouille,
   onSupprimer,
 }: CarteEvenementProps) {
@@ -233,10 +257,19 @@ function CarteEvenement({
   const idTitre = `org-titre-${evenement.id}`;
   const idDate = `org-date-${evenement.id}`;
   const idCommentaire = `org-com-${evenement.id}`;
-  const verrouille = evenement.verrouille === true;
+  // Verrou « dur » par signature : dès que l'entretien tripartite correspondant
+  // est signé par les 3 parties, toute la carte est figée (R9), sans
+  // déverrouillage possible. Le verrou manuel (bouton) reste un verrou local
+  // optionnel tant que l'entretien n'est pas signé.
+  const figeParSignature = evenementFigeParSignature(evenement, entretiens);
+  const verrouille = evenement.verrouille === true || figeParSignature;
   const peutEditerChamp = editable && !verrouille;
   const verrouSuppression = peutSupprimerEvenement(evenement, entretiens);
   const supprimable = verrouSuppression.supprimable;
+  // Modalité (présentiel / distanciel) — uniquement pour les entretiens.
+  const avecModalite = motifAvecModalite(evenement.motif);
+  const modaliteFigee = modaliteImposee(evenement.motif); // 'presentiel' pour E1, sinon null
+  const modaliteCourante = modaliteEffective(evenement);
 
   return (
     <article
@@ -259,7 +292,9 @@ function CarteEvenement({
           <h2 className="text-sm font-medium">{meta.libelle}</h2>
           <p className="text-xs text-muted-foreground">{meta.description}</p>
         </div>
-        {editable && (
+        {/* Suppression réservée au coordo / admin (15 juin 2026) — masquée
+            pour le formateur référent, qui crée et modifie sans supprimer. */}
+        {peutSupprimer && (
           <button
             type="button"
             onClick={onSupprimer}
@@ -286,6 +321,18 @@ function CarteEvenement({
         )}
       </header>
 
+      {/* Verrou « dur » : l'entretien est signé par les 3 parties (15 juin 2026)
+          → toute la carte est figée, sans déverrouillage possible (R9). */}
+      {figeParSignature && (
+        <div
+          data-testid={`org-evt-fige-${evenement.id}`}
+          className="inline-flex w-fit items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-900"
+        >
+          <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+          Entretien signé par les 3 parties — fiche verrouillée
+        </div>
+      )}
+
       {/* Lien direct vers l'entretien correspondant — si motif entretien-tripartite */}
       {(() => {
         const numero = numeroEntretienPourMotif(evenement.motif);
@@ -301,6 +348,70 @@ function CarteEvenement({
           </Link>
         );
       })()}
+
+      {/* Modalité de l'entretien (présentiel / distanciel) — 15 juin 2026.
+          E1 est imposé en présentiel ; E2..E4 sont au choix (sélecteur). */}
+      {avecModalite && (
+        <div className="space-y-1">
+          <span className="text-xs font-medium text-muted-foreground">Modalité</span>
+          {modaliteFigee ? (
+            // E1 — présentiel obligatoire, non modifiable.
+            <p
+              data-testid={`org-modalite-${evenement.id}`}
+              className="inline-flex w-fit items-center gap-1.5 rounded-md border border-input bg-muted px-2.5 py-1 text-sm font-medium"
+            >
+              <MapPin className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+              Présentiel{' '}
+              <span className="text-xs font-normal text-muted-foreground">(obligatoire)</span>
+            </p>
+          ) : peutEditerChamp ? (
+            // E2..E4 — sélecteur présentiel / distanciel.
+            <div
+              role="group"
+              aria-label="Modalité de l'entretien"
+              data-testid={`org-modalite-${evenement.id}`}
+              className="inline-flex overflow-hidden rounded-md border border-input"
+            >
+              {(['presentiel', 'distanciel'] as const).map((m) => {
+                const actif = modaliteCourante === m;
+                const Icone = m === 'presentiel' ? MapPin : Video;
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => onChangeModalite(m)}
+                    aria-pressed={actif}
+                    data-testid={`org-modalite-${m}-${evenement.id}`}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
+                      actif
+                        ? 'bouton-plein-couleur-role font-medium'
+                        : 'bg-background text-muted-foreground hover:bg-secondary',
+                    )}
+                  >
+                    <Icone className="h-3.5 w-3.5" aria-hidden="true" />
+                    {libelleModalite(m)}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            // Lecture seule (rôle non éditeur, carte verrouillée ou figée).
+            <p
+              data-testid={`org-modalite-${evenement.id}`}
+              className="inline-flex w-fit items-center gap-1.5 text-sm font-medium"
+            >
+              {modaliteCourante === 'distanciel' ? (
+                <Video className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+              ) : (
+                <MapPin className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+              )}
+              {modaliteCourante ? libelleModalite(modaliteCourante) : '—'}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Titre custom — affiché en lecture seule pour les autres rôles si renseigné */}
       {peutEditerChamp ? (
@@ -362,7 +473,9 @@ function CarteEvenement({
             )}
           </div>
 
-          {editable && (
+          {/* Verrou local optionnel — masqué quand la carte est déjà figée par
+              la signature de l'entretien (verrou imposé, non basculable). */}
+          {editable && !figeParSignature && (
             <div className="flex justify-center">
               <button
                 type="button"

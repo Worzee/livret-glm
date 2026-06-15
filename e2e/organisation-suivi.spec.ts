@@ -96,7 +96,23 @@ test('plusieurs événements du même motif sont autorisés (ajout 2× « Visite
   expect(visitesApres).toBe(visitesAvant + 2);
 });
 
-test("suppression d'un événement avec confirmation à 2 clics", async ({ page }) => {
+test('le formateur référent ne peut PAS supprimer un événement (réservé coordo/admin — 15 juin 2026)', async ({
+  page,
+}) => {
+  // Rôle formateur par défaut : les cartes existent mais aucun bouton de
+  // suppression n'est rendu (le formateur crée / modifie sans supprimer).
+  await page.goto('/livret/organisation-suivi');
+  await expect(page.locator('article[data-testid^="org-evt-"]').first()).toBeVisible();
+  await expect(page.locator('[data-testid^="org-supprimer-"]')).toHaveCount(0);
+
+  // Le coordo, lui, dispose des boutons de suppression.
+  await selectRole(page, 'Coordinateur·rice');
+  await expect(page.locator('[data-testid^="org-supprimer-"]').first()).toBeVisible();
+});
+
+test("suppression d'un événement avec confirmation à 2 clics (coordo)", async ({ page }) => {
+  // Suppression réservée au coordo / admin (15 juin 2026).
+  await selectRole(page, 'Coordinateur·rice');
   await page.goto('/livret/organisation-suivi');
   const cartesAvant = await page.locator('article[data-testid^="org-evt-"]').count();
 
@@ -162,6 +178,9 @@ test("un événement verrouillé ne peut pas être supprimé tant qu'on ne le d�
 test("l'événement d'un entretien signé par au moins une partie est insupprimable (juin 2026)", async ({
   page,
 }) => {
+  // Suppression réservée au coordo / admin (15 juin 2026) → on se place en
+  // coordo pour voir le bouton, désactivé par le verrou « entretien signé ».
+  await selectRole(page, 'Coordinateur·rice');
   await page.goto('/livret/organisation-suivi');
 
   // E1 de Léa est signé 3/3 dans les fixtures → la fiche de suivi
@@ -242,4 +261,49 @@ test('persistance après reload : un nouvel événement survit', async ({ page }
       hasText: 'Bilan ajouté via test E2E',
     }),
   ).toBeVisible();
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Modalité présentiel / distanciel + verrou par signature (15 juin 2026)
+// ─────────────────────────────────────────────────────────────────────────────
+
+test("entretien tripartite 1 : présentiel imposé et fiche figée quand l'entretien est signé (Minh)", async ({
+  page,
+}) => {
+  // Minh : E1 signé par les 3 parties → sa fiche de suivi E1 est figée (R9).
+  await page.getByRole('button', { name: /Ouvrir le livret de Minh NGUYEN/i }).click();
+  await page.goto('/livret/organisation-suivi');
+
+  const carte = page.getByTestId('org-evt-evt-minh-6');
+  // Modalité E1 : présentiel obligatoire, affiché sans sélecteur (non modifiable).
+  await expect(carte.getByTestId('org-modalite-evt-minh-6')).toContainText(/Présentiel/i);
+  await expect(carte.getByTestId('org-modalite-presentiel-evt-minh-6')).toHaveCount(0);
+  // Verrou par signature : bandeau visible + champs en lecture seule.
+  await expect(carte.getByTestId('org-evt-fige-evt-minh-6')).toBeVisible();
+  await expect(carte.locator('input[type="date"]')).toBeDisabled();
+  // Le bouton « Verrouiller » manuel est masqué (verrou imposé, non basculable).
+  await expect(carte.getByRole('button', { name: /Verrouiller le champ/i })).toHaveCount(0);
+});
+
+test('entretien tripartite 2 : la modalité présentiel / distanciel est sélectionnable (Léa)', async ({
+  page,
+}) => {
+  // Léa, E2 non initialisé → carte éditable. Fixture : modalité « distanciel ».
+  await page.goto('/livret/organisation-suivi');
+
+  const presentiel = page.getByTestId('org-modalite-presentiel-evt-lea-10');
+  const distanciel = page.getByTestId('org-modalite-distanciel-evt-lea-10');
+  await expect(distanciel).toHaveAttribute('aria-pressed', 'true');
+  await expect(presentiel).toHaveAttribute('aria-pressed', 'false');
+
+  // Bascule vers présentiel → l'état suit et persiste au rechargement.
+  await presentiel.click();
+  await expect(presentiel).toHaveAttribute('aria-pressed', 'true');
+  await expect(distanciel).toHaveAttribute('aria-pressed', 'false');
+
+  await page.reload();
+  await expect(page.getByTestId('org-modalite-presentiel-evt-lea-10')).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
 });

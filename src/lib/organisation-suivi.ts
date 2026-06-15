@@ -1,6 +1,7 @@
 import type {
   EvenementOrganisationSuivi,
   Livret,
+  ModaliteEntretien,
   MotifOrganisationSuivi,
   NumeroEntretien,
   Role,
@@ -137,12 +138,16 @@ export function creerEvenementVierge(
   motif: MotifOrganisationSuivi,
   idCustom?: string,
 ): EvenementOrganisationSuivi {
+  // Les entretiens tripartites démarrent en présentiel (imposé pour E1,
+  // défaut modifiable pour E2..E4) ; les autres motifs n'ont pas de modalité.
+  const modalite = modaliteParDefaut(motif);
   return {
     id: idCustom ?? `evt-${crypto.randomUUID().slice(0, 8)}`,
     motif,
     titre: '',
     date: '',
     commentaire: '',
+    ...(modalite ? { modalite } : {}),
   };
 }
 
@@ -211,6 +216,68 @@ export function numeroEntretienPourMotif(motif: MotifOrganisationSuivi): NumeroE
     default:
       return null;
   }
+}
+
+/**
+ * La modalité de déroulement (présentiel / distanciel) s'applique-t-elle à ce
+ * motif ? Vrai uniquement pour les entretiens tripartites (15 juin 2026).
+ */
+export function motifAvecModalite(motif: MotifOrganisationSuivi): boolean {
+  return numeroEntretienPourMotif(motif) !== null;
+}
+
+/**
+ * Modalité **imposée** pour un motif, ou `null` si elle est libre (au choix)
+ * ou non applicable. L'entretien tripartite 1 est obligatoirement en
+ * présentiel ; les entretiens 2 à 4 sont au choix (présentiel ou distanciel).
+ */
+export function modaliteImposee(motif: MotifOrganisationSuivi): ModaliteEntretien | null {
+  return motif === 'entretien-tripartite-1' ? 'presentiel' : null;
+}
+
+/**
+ * Modalité par défaut à la création d'un événement : `'presentiel'` pour tout
+ * entretien tripartite (imposé pour E1, défaut modifiable pour E2..E4),
+ * `undefined` pour les autres motifs.
+ */
+export function modaliteParDefaut(motif: MotifOrganisationSuivi): ModaliteEntretien | undefined {
+  return motifAvecModalite(motif) ? 'presentiel' : undefined;
+}
+
+/**
+ * Modalité **effective** d'un événement, telle qu'elle doit être affichée :
+ * la modalité imposée prime (E1 → présentiel), sinon la valeur stockée, sinon
+ * le défaut `'presentiel'`. Renvoie `null` pour les motifs sans modalité.
+ */
+export function modaliteEffective(evt: EvenementOrganisationSuivi): ModaliteEntretien | null {
+  if (!motifAvecModalite(evt.motif)) return null;
+  return modaliteImposee(evt.motif) ?? evt.modalite ?? 'presentiel';
+}
+
+/** Libellé court d'une modalité, pour l'UI et le PDF. */
+export function libelleModalite(modalite: ModaliteEntretien): string {
+  return modalite === 'presentiel' ? 'Présentiel' : 'Distanciel';
+}
+
+/**
+ * Indique si la fiche de suivi d'un événement est **figée par la signature**
+ * de son entretien tripartite (15 juin 2026) : dès que l'entretien
+ * correspondant est signé par les **3 parties** (apprenti·e + maître +
+ * formateur), tous les champs de la carte (titre, date, commentaire,
+ * modalité) passent en lecture seule, sans déverrouillage possible —
+ * cohérent avec R9 (entretien signé = figé). Faux pour les motifs hors
+ * entretien tripartite.
+ */
+export function evenementFigeParSignature(
+  evt: EvenementOrganisationSuivi,
+  entretiens?: Livret['entretiens'],
+): boolean {
+  const numero = numeroEntretienPourMotif(evt.motif);
+  if (numero === null || !entretiens) return false;
+  const entretien = entretiens[numero];
+  if (!entretien) return false;
+  const { apprenti, maitre, formateur } = entretien.signatures;
+  return apprenti.signe && maitre.signe && formateur.signe;
 }
 
 /**
