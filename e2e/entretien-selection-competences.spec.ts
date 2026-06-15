@@ -8,10 +8,10 @@ import { resetState, selectRole } from './helpers';
  *   - Léa (sélection déjà validée — cf. fixtures) : badge « validée »,
  *     cases désactivées, cellules grisées dans la grille finale pour les
  *     compétences non sélectionnées (a1).
- *   - Sofia (entretien jamais initialisé, sélection vierge) : bandeau
- *     « non validée » sur la fiche de période et message dédié sur la grille
- *     finale.
- *   - Co-édition formateur après initialisation d'un entretien pour Sofia.
+ *   - Sofia (entretien jamais initialisé) : bandeau « non validée » sur la
+ *     fiche de période et message dédié sur la grille finale.
+ *   - 13 juin 2026 : toutes les compétences sont activées par défaut ; le
+ *     maître / tuteur seul décoche (le formateur consulte).
  */
 
 test.beforeEach(async ({ page }) => {
@@ -19,16 +19,19 @@ test.beforeEach(async ({ page }) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sofia PEREIRA — pas d'entretien initialisé, sélection vierge
+// Sofia PEREIRA — pas d'entretien initialisé (sélection non encore validée)
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("Sofia : la fiche de période affiche le bandeau « sélection non validée »", async ({
+test('Sofia : la fiche de période affiche le bandeau « sélection non validée »', async ({
   page,
 }) => {
   await selectRole(page, 'Formateur référent');
   await page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }).click();
   await page.goto('/livret/fiches-suivi');
-  await page.getByRole('link', { name: /Période 1/i }).first().click();
+  await page
+    .getByRole('link', { name: /Période 1/i })
+    .first()
+    .click();
   await expect(
     page.getByText(/Sélection des compétences abordées en entreprise non validée/i),
   ).toBeVisible();
@@ -71,51 +74,50 @@ test("Léa : la section dans l'entretien affiche le badge « Sélection validée
   await expect(page.getByTestId('selection-comp-c2-4')).not.toBeChecked();
 });
 
-test("Léa : la grille finale grise la colonne « Acquis en entreprise » pour c2-4 (non sélectionnée)", async ({
+test('Léa : la grille finale grise la colonne « Acquis en entreprise » pour c2-4 (non sélectionnée)', async ({
   page,
 }) => {
   await selectRole(page, 'Maître / Tuteur');
   await page.goto('/livret/evaluation-finale');
   // Cellule entreprise pour c2-4 (non sélectionnée) → texte « — » + aria-label dédié
-  await expect(
-    page.getByLabel(/Compétence C2\.4 non abordée en entreprise/i),
-  ).toBeVisible();
+  await expect(page.getByLabel(/Compétence C2\.4 non abordée en entreprise/i)).toBeVisible();
   // Cellule entreprise pour c1-1 (sélectionnée) → SelecteurNiveau éditable
   // (aria-label « Acquis en entreprise pour C1.1 »)
-  await expect(
-    page.getByLabel(/^Acquis en entreprise pour C1\.1$/i).first(),
-  ).toBeVisible();
+  await expect(page.getByLabel(/^Acquis en entreprise pour C1\.1$/i).first()).toBeVisible();
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Co-édition par le formateur (Sofia après initialisation de l'entretien)
+// Tout activé par défaut + maître seul édite (13 juin 2026)
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("Sofia + formateur : après initialisation de l'entretien, les cases sont éditables", async ({
+test('Sofia : après initialisation, toutes les compétences sont cochées par défaut ; le maître seul décoche', async ({
   page,
 }) => {
+  // 1. Le formateur initialise l'entretien de Sofia.
   await selectRole(page, 'Formateur référent');
   await page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }).click();
   await page.goto('/livret/entretien/1');
-  // Initialiser l'entretien
   await page.getByRole('button', { name: /Initialiser l'entretien/i }).click();
-  // La section sélection est visible avec des cases activées
   await expect(
     page.getByRole('heading', { name: /Compétences abordées en entreprise/i }),
   ).toBeVisible();
-  await expect(page.getByText(/Sélection en cours/i)).toBeVisible();
+
+  // 2. Le formateur ne compose plus (lecture seule) : case cochée mais désactivée.
+  const caseFormateur = page.getByTestId('selection-comp-c1-1');
+  await expect(caseFormateur).toBeChecked();
+  await expect(caseFormateur).toBeDisabled();
+
+  // 3. Côté maître : toutes les cases sont cochées par défaut et éditables.
+  await selectRole(page, 'Maître / Tuteur');
   const caseC11 = page.getByTestId('selection-comp-c1-1');
-  await expect(caseC11).not.toBeChecked();
+  await expect(caseC11).toBeChecked();
   await expect(caseC11).toBeEnabled();
-  // Cocher c1-1 et c2-1 → le compteur passe à 2
-  await caseC11.check();
-  await page.getByTestId('selection-comp-c2-1').check();
-  await expect(
-    page.getByText(/Sélection en cours — 2 compétences sur \d+/i),
-  ).toBeVisible();
+  // Le maître décoche une compétence non abordée → elle se décoche.
+  await caseC11.uncheck();
+  await expect(caseC11).not.toBeChecked();
 });
 
-test("Léa + apprenti·e : la section sélection est en lecture seule (matrice droits)", async ({
+test('Léa + apprenti·e : la section sélection est en lecture seule (matrice droits)', async ({
   page,
 }) => {
   await selectRole(page, 'Apprenti·e');

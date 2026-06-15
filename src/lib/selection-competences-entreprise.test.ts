@@ -7,6 +7,7 @@ import type {
 } from '@/types';
 import {
   competencesNonSelectionneesAvecSaisie,
+  creerSelectionInitiale,
   creerSelectionVierge,
   estSelectionnee,
   estValidee,
@@ -43,11 +44,13 @@ function ref(ids: string[]): Referentiel {
         id: 'b1',
         code: 'B1',
         libelle: 'Bloc 1',
-        competences: ids.map((id): Competence => ({
-          id,
-          code: id.toUpperCase(),
-          libelle: `Lib ${id}`,
-        })),
+        competences: ids.map(
+          (id): Competence => ({
+            id,
+            code: id.toUpperCase(),
+            libelle: `Lib ${id}`,
+          }),
+        ),
       },
     ],
   };
@@ -73,6 +76,27 @@ describe('creerSelectionVierge', () => {
     const t = Date.parse(s.modifieLe);
     expect(t).toBeGreaterThanOrEqual(avant);
     expect(t).toBeLessThanOrEqual(apres);
+  });
+});
+
+describe('creerSelectionInitiale (13 juin 2026 — toutes activées par défaut)', () => {
+  it('active toutes les compétences fournies, non validée', () => {
+    const s = creerSelectionInitiale(['c1', 'c2', 'c3'], dateRef);
+    expect(s.ids).toEqual(['c1', 'c2', 'c3']);
+    expect(s.validePar).toBeUndefined();
+    expect(s.modifieLe).toBe(dateRef.toISOString());
+    expect(s.historiqueInvalidations).toEqual([]);
+  });
+
+  it("copie le tableau d'ids (pas de référence partagée)", () => {
+    const ids = ['c1'];
+    const s = creerSelectionInitiale(ids, dateRef);
+    ids.push('c2');
+    expect(s.ids).toEqual(['c1']);
+  });
+
+  it('accepte une liste vide (référentiel sans compétence)', () => {
+    expect(creerSelectionInitiale([], dateRef).ids).toEqual([]);
   });
 });
 
@@ -163,7 +187,7 @@ describe('toggleCompetence', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('marquerValidee', () => {
-  it('renseigne validePar avec les ids et l\'horodatage fournis', () => {
+  it("renseigne validePar avec les ids et l'horodatage fournis", () => {
     const s = marquerValidee(sel({ ids: ['c1'] }), 'f1', 'm1', dateRef);
     expect(s.validePar).toEqual({
       formateurId: 'f1',
@@ -178,7 +202,7 @@ describe('marquerValidee', () => {
     expect(s.ids).toEqual(['a', 'b']);
   });
 
-  it('ne modifie pas la sélection d\'origine', () => {
+  it("ne modifie pas la sélection d'origine", () => {
     const initial = sel({ ids: ['a'] });
     marquerValidee(initial, 'f', 'm', dateRef);
     expect(initial.validePar).toBeUndefined();
@@ -201,7 +225,7 @@ describe('invaliderAvecMotif', () => {
       auteurId: 'f1',
       auteurNom: 'Sophie DUBOIS',
       auteurRole: 'formateur',
-      motif: "Désaccord apprenti·e sur 3 compétences — à revoir en visite",
+      motif: 'Désaccord apprenti·e sur 3 compétences — à revoir en visite',
       maintenant: dateRef,
     });
     expect(s.validePar).toBeUndefined();
@@ -212,7 +236,7 @@ describe('invaliderAvecMotif', () => {
       auteurId: 'f1',
       auteurNom: 'Sophie DUBOIS',
       auteurRole: 'formateur',
-      motif: "Désaccord apprenti·e sur 3 compétences — à revoir en visite",
+      motif: 'Désaccord apprenti·e sur 3 compétences — à revoir en visite',
     });
   });
 
@@ -300,26 +324,27 @@ describe('competencesNonSelectionneesAvecSaisie', () => {
   });
 
   it('retourne les compétences non sélectionnées qui ont une saisie historique', () => {
-    const ids = competencesNonSelectionneesAvecSaisie(
-      sel({ ids: ['c1'] }),
-      [ligne('c1', 'maitrise'), ligne('c2', 'partiel'), ligne('c3', null)],
-    );
+    const ids = competencesNonSelectionneesAvecSaisie(sel({ ids: ['c1'] }), [
+      ligne('c1', 'maitrise'),
+      ligne('c2', 'partiel'),
+      ligne('c3', null),
+    ]);
     expect(ids).toEqual(['c2']);
   });
 
   it('retourne un tableau vide quand toutes les saisies concernent des compétences sélectionnées', () => {
-    const ids = competencesNonSelectionneesAvecSaisie(
-      sel({ ids: ['c1', 'c2'] }),
-      [ligne('c1', 'maitrise'), ligne('c2', 'partiel')],
-    );
+    const ids = competencesNonSelectionneesAvecSaisie(sel({ ids: ['c1', 'c2'] }), [
+      ligne('c1', 'maitrise'),
+      ligne('c2', 'partiel'),
+    ]);
     expect(ids).toEqual([]);
   });
 
-  it('retourne un tableau vide quand aucune saisie historique n\'existe', () => {
-    const ids = competencesNonSelectionneesAvecSaisie(
-      sel({ ids: [] }),
-      [ligne('c1', null), ligne('c2', null)],
-    );
+  it("retourne un tableau vide quand aucune saisie historique n'existe", () => {
+    const ids = competencesNonSelectionneesAvecSaisie(sel({ ids: [] }), [
+      ligne('c1', null),
+      ligne('c2', null),
+    ]);
     expect(ids).toEqual([]);
   });
 });

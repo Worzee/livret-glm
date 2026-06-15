@@ -15,11 +15,12 @@ import type {
  * `useLivretStore` (cf. `setSelectionCompetencesEntreprise`,
  * `invaliderSelectionCompetencesEntreprise`).
  *
- * Workflow métier (W1) :
- *   1. À la création du livret, `selectionCompetencesEntreprise` est créée
- *      vierge (cf. `creerSelectionVierge`).
- *   2. Le formateur référent et le maître d'apprentissage cochent/décochent
- *      les compétences (cf. `toggleCompetence`).
+ * Workflow métier (W1, révisé 13 juin 2026) :
+ *   1. À la création du livret, **toutes** les compétences du référentiel
+ *      sont activées par défaut (cf. `creerSelectionInitiale`).
+ *   2. Le **maître / tuteur seul** décoche les compétences non abordées en
+ *      entreprise (cf. `toggleCompetence` ; droit `entretien.selection-
+ *      competences-entreprise` réservé au maître). Le formateur consulte.
  *   3. La 3ᵉ signature de l'entretien tripartite déclenche `marquerValidee`
  *      (effet dans `signerEntretien` côté store).
  *   4. Une fois validée, la sélection n'est plus éditable. Seule une
@@ -36,6 +37,22 @@ export function creerSelectionVierge(
 ): SelectionCompetencesEntreprise {
   return {
     ids: [],
+    modifieLe: maintenant.toISOString(),
+    historiqueInvalidations: [],
+  };
+}
+
+/**
+ * Sélection initiale d'un nouveau livret (13 juin 2026) : **toutes** les
+ * compétences du référentiel sont activées par défaut. Le maître / tuteur
+ * décochera ensuite celles non abordées en entreprise lors de l'E1.
+ */
+export function creerSelectionInitiale(
+  competenceIds: ReadonlyArray<string>,
+  maintenant: Date = new Date(),
+): SelectionCompetencesEntreprise {
+  return {
+    ids: [...competenceIds],
     modifieLe: maintenant.toISOString(),
     historiqueInvalidations: [],
   };
@@ -75,9 +92,7 @@ export function toggleCompetence(
   maintenant: Date = new Date(),
 ): SelectionCompetencesEntreprise {
   const present = sel.ids.includes(competenceId);
-  const ids = present
-    ? sel.ids.filter((id) => id !== competenceId)
-    : [...sel.ids, competenceId];
+  const ids = present ? sel.ids.filter((id) => id !== competenceId) : [...sel.ids, competenceId];
   return { ...sel, ids, modifieLe: maintenant.toISOString() };
 }
 

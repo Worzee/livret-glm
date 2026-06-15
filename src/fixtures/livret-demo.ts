@@ -109,10 +109,14 @@ function selectionValideeDemo(
   };
 }
 
-/** Sélection vierge utilisée pour les livrets sans entretien signé. */
-function selectionVierge(dateIso: string): SelectionCompetencesEntreprise {
+/**
+ * Sélection initiale (13 juin 2026) pour les livrets sans entretien signé :
+ * toutes les compétences du référentiel sont activées par défaut. Le maître /
+ * tuteur décochera celles non abordées lors de l'E1.
+ */
+function selectionInitialeDemo(dateIso: string): SelectionCompetencesEntreprise {
   return {
-    ids: [],
+    ids: referentielCapCuisine.blocs.flatMap((b) => b.competences).map((c) => c.id),
     modifieLe: dateIso,
     historiqueInvalidations: [],
   };
@@ -176,7 +180,7 @@ function livretVierge(apprenti: Apprenti, livretId: string): Livret {
     },
     // Démarre vierge par défaut ; les livrets démo dont l'entretien est signé
     // override ce champ avec `selectionValideeDemo(...)` plus bas.
-    selectionCompetencesEntreprise: selectionVierge('2025-09-02T08:00:00.000Z'),
+    selectionCompetencesEntreprise: selectionInitialeDemo('2025-09-02T08:00:00.000Z'),
     // Choix des attitudes : se fera à l'E1 (13 juin 2026).
     attitudesSelectionnees: [],
     cloture: null,

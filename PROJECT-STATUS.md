@@ -1,6 +1,6 @@
 # État du projet — Livret d'apprentissage GRETA Lyon Métropole
 
-**Dernière mise à jour** : 2026-06-13 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites, motifs par rôle + séquencement, attitudes professionnelles par entretien + catalogue admin, confirmation avant écrasement d'une évaluation héritée, second maître / tuteur par apprenti·e, tri par année de formation sur le tableau de bord, **signature manuscrite tactile**, **répartition des apprenti·e·s entre coordos**, **questions de l'entretien gérées par formation**)
+**Dernière mise à jour** : 2026-06-13 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites, motifs par rôle + séquencement, attitudes professionnelles par entretien + catalogue admin, confirmation avant écrasement d'une évaluation héritée, second maître / tuteur par apprenti·e, tri par année de formation sur le tableau de bord, **signature manuscrite tactile**, **répartition des apprenti·e·s entre coordos**, **questions de l'entretien gérées par formation**, **compétences activées par défaut + maître seul**)
 **Version applicative** : 0.1.0
 **Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3) **livrée + 4 vagues post-livraison**
 **Pilote métier** : Guillaume FERRERI
@@ -11,7 +11,7 @@
 
 ### État global
 
-L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 5 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026 + retours coordonnateurs juin 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **512 tests unitaires + 157 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
+L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 5 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026 + retours coordonnateurs juin 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **515 tests unitaires + 157 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
 
 ### Ce qui est livré
 
@@ -47,7 +47,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | Aperçu général et démarrage                                     | [`README.md`](README.md)                                                                                  |
 | Modules livrés et périmètre fonctionnel                         | §4                                                                                                        |
 | Règles métier R1 → R24                                          | §5                                                                                                        |
-| État des tests (512 unit + 157 E2E)                             | §6                                                                                                        |
+| État des tests (515 unit + 157 E2E)                             | §6                                                                                                        |
 | Architecture des fichiers                                       | §7                                                                                                        |
 | Reste à faire                                                   | §8                                                                                                        |
 | Limites connues                                                 | §9                                                                                                        |
@@ -69,7 +69,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | **URL publique**      | https://livret-glm.duckdns.org                                                                   |
 | **Accès**             | Basic Auth `demo` / _(mdp partagé hors-canal)_                                                   |
 | **Dépôt source**      | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
-| **Tests unitaires**   | **512 / 512 ✓** (Vitest, 34 fichiers de test)                                                    |
+| **Tests unitaires**   | **515 / 515 ✓** (Vitest, 34 fichiers de test)                                                    |
 | **Tests E2E**         | **157 / 157 ✓** (Playwright — 145 desktop + 12 mobile Pixel 5, 22 specs)                         |
 | **Bundle JS gzippé**  | 148 KB (cible CDC §19.1 : < 500 KB → marge × 3,4)                                                |
 | **Bundle CSS gzippé** | 6,5 KB (cible : < 50 KB → marge × 7)                                                             |
@@ -85,7 +85,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 - **Frontend** : Vite 6 + React 18 + TypeScript 5.7 (strict)
 - **Style** : Tailwind CSS 3 + shadcn/ui (tokens CSS variables, palette 5 rôles équilibrée mai 2026)
 - **State** : Zustand 5 + middleware `persist` — **9 stores** persistés en localStorage :
-  - `livret-donnees` (schema v15) — livrets, fiches, **jusqu'à 4 entretiens tripartites par livret** (avec snapshots questions imposées/obligatoires + **évaluations des attitudes par entretien**), évaluations, sélection des compétences abordées en entreprise
+  - `livret-donnees` (schema v16) — livrets, fiches, **jusqu'à 4 entretiens tripartites par livret** (avec snapshots questions imposées/obligatoires + **évaluations des attitudes par entretien**), évaluations, sélection des compétences abordées en entreprise
   - `livret-role-actif` — rôle + maître actif
   - `livret-apprenti-actif` — id de l'apprenti·e affiché·e
   - `livret-utilisateurs` (schema v4) — apprenti·e·s (avec **second maître / tuteur optionnel** et **coordo de rattachement**, juin 2026), maîtres (avec `entreprise` + `fonction`), formateurs, coordos, admins
@@ -248,6 +248,15 @@ Les attitudes professionnelles sortent du référentiel de compétences et de l'
 - Le bandeau « MAQUETTE DE DÉMONSTRATION — Données fictives… » (CDC §21.6) est **retiré de l'interface** : le statut de démonstration est acquis pour toutes les parties prenantes
 - La mention reste sur la **page de garde du PDF exporté** — un document qui circule hors plateforme doit continuer d'annoncer ses données fictives
 - Specs E2E `sprint1-role-switcher` (4 → 3 tests, vérifie désormais l'absence du bandeau) et `sprint5-bout-en-bout` adaptés
+
+#### Compétences abordées en entreprise : tout activé par défaut, maître seul décide (13 juin 2026 — modification technique)
+
+- **Défaut « tout activé »** : à la création d'un livret, toutes les compétences du référentiel sont retenues (`creerSelectionInitiale`) — au lieu d'une sélection vierge. Le maître / tuteur n'a plus qu'à **retirer** les compétences non abordées en entreprise
+- **Maître seul** : la ressource `entretien.selection-competences-entreprise` passe de `['formateur', 'maitre']` à **`['maitre']`**. Le formateur référent consulte (cases désactivées). L'invalidation R10 (après validation) reste au formateur
+- Validation à la 3ᵉ signature de l'E1 et gating de la grille finale **inchangés**
+- Fixtures : le livret vierge (Minh) démarre avec toutes les compétences cochées ; les livrets E1 signés gardent leur sélection validée
+- Bump `livret-donnees` v15 → v16 (reset)
+- +3 tests unitaires (`creerSelectionInitiale`), droits + 1 scénario E2E adaptés (maître décoche, formateur lecture seule)
 
 #### Questions de l'entretien gérées par formation (13 juin 2026 — modification technique)
 
@@ -519,7 +528,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 
 ---
 
-## 6. Tests (512 unitaires + 157 E2E)
+## 6. Tests (515 unitaires + 157 E2E)
 
 ### Tests unitaires Vitest (34 fichiers de test)
 
@@ -550,7 +559,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 | `lib/validation-import-referentiel.test.ts`    | 11     | Saisie d'import                                                                                                                                                     |
 | `lib/referentiel-verrou.test.ts`               | 4      | Verrou suppression référentiel                                                                                                                                      |
 | `lib/parser-xlsx.test.ts`                      | 16     | Parser XLSX (Node env pour fflate)                                                                                                                                  |
-| `lib/selection-competences-entreprise.test.ts` | 24     | Sélection par livret CDC v1.5 §12                                                                                                                                   |
+| `lib/selection-competences-entreprise.test.ts` | 27     | Sélection par livret CDC v1.5 §12 + `creerSelectionInitiale` tout activé (13 juin 2026)                                                                             |
 | `lib/validation-fiche-periode.test.ts`         | 16     | Saisie fiche + verrous                                                                                                                                              |
 | `lib/organisation-suivi.test.ts`               | 27     | Catalogue motifs + motifs par rôle + verrou de suppression (entretien signé — juin 2026)                                                                            |
 | `lib/questions-entretien.test.ts`              | 21     | Banque 11 questions (catalogue pur) + `idsQuestionsActives` par formation (13 juin 2026)                                                                            |

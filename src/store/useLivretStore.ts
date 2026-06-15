@@ -94,7 +94,10 @@ import { useUtilisateursStore } from './useUtilisateursStore';
 //        globalement (banque) mais par formation (`Formation.questionsRetirees`).
 //        Le snapshot d'initialisation injecte toutes les questions actives
 //        (non retirées), toutes obligatoires ; le formateur n'a plus la main.
-const VERSION_SCHEMA = 15;
+//   v16 — 13 juin 2026 : la sélection des compétences abordées en entreprise
+//        démarre avec TOUTES les compétences activées (au lieu de vierge) ;
+//        le maître / tuteur seul décoche. Reset pour recharger les fixtures.
+const VERSION_SCHEMA = 16;
 
 interface LivretStore {
   livrets: Record<string, Livret>;

@@ -1,6 +1,6 @@
 import type { Apprenti, FicheSuiviPeriode, Livret, PeriodeFormation } from '@/types';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
-import { creerSelectionVierge } from './selection-competences-entreprise';
+import { creerSelectionInitiale } from './selection-competences-entreprise';
 
 /**
  * Crée un livret vierge pour un·e apprenti·e fraîchement créé·e.
@@ -80,11 +80,13 @@ export function creerLivretVierge(
       lignes: lignesCompetences,
       modifieLe: iso,
     },
-    // CDC v1.5 addendum : la sélection des compétences abordées en entreprise
-    // démarre vierge — elle sera définie conjointement par le formateur
-    // référent et le maître d'apprentissage, puis validée à la 3ᵉ signature
-    // de l'entretien tripartite.
-    selectionCompetencesEntreprise: creerSelectionVierge(maintenant),
+    // 13 juin 2026 : la sélection des compétences abordées en entreprise
+    // démarre avec TOUTES les compétences activées. Le maître / tuteur seul
+    // décoche celles non abordées lors de l'E1 ; figée à la 3ᵉ signature.
+    selectionCompetencesEntreprise: creerSelectionInitiale(
+      lignesCompetences.map((l) => l.competenceId),
+      maintenant,
+    ),
     // 13 juin 2026 : les attitudes à évaluer se choisissent à l'E1 (maître +
     // formateur) — vierge à la création, figée à la 3ᵉ signature de l'E1.
     attitudesSelectionnees: [],

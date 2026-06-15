@@ -1,21 +1,13 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, CheckCircle2, ListChecks, Lock, RotateCcw, X } from 'lucide-react';
-import type {
-  Apprenti,
-  Competence,
-  Referentiel,
-  SelectionCompetencesEntreprise,
-} from '@/types';
+import type { Apprenti, Competence, Referentiel, SelectionCompetencesEntreprise } from '@/types';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { useReferentielsStore } from '@/store/useReferentielsStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
-import {
-  estSelectionnee,
-  estValidee,
-} from '@/lib/selection-competences-entreprise';
+import { estSelectionnee, estValidee } from '@/lib/selection-competences-entreprise';
 import {
   LONGUEUR_MAX_MOTIF,
   LONGUEUR_MIN_MOTIF,
@@ -28,10 +20,11 @@ import { cn } from '@/lib/utils';
  * Section « Compétences abordées en entreprise » dans l'entretien tripartite.
  * Référence : CDC v1.5 addendum (mai 2026).
  *
- * Co-édition formateur référent + maître d'apprentissage. La sélection est
- * figée automatiquement à la 3ᵉ signature de l'entretien (cf.
- * `useLivretStore.signerEntretien`). Une fois validée, seul le formateur
- * référent peut l'invalider via un motif obligatoire (R10).
+ * 13 juin 2026 : toutes les compétences sont activées par défaut ; le
+ * **maître / tuteur seul** décoche celles non abordées en entreprise (le
+ * formateur consulte). La sélection est figée automatiquement à la 3ᵉ
+ * signature de l'entretien (cf. `useLivretStore.signerEntretien`). Une fois
+ * validée, seul le formateur référent peut l'invalider via un motif R10.
  */
 
 interface SectionSelectionCompetencesProps {
@@ -84,9 +77,9 @@ export function SectionSelectionCompetences({
           Compétences abordées en entreprise
         </h2>
         <p className="text-xs text-muted-foreground">
-          Décision conjointe formateur référent + maître / tuteur. Cochez les compétences
-          que l'apprenti·e abordera sur le terrain. La sélection sera figée à la 3<sup>ᵉ</sup>{' '}
-          signature de l'entretien.
+          Toutes les compétences sont activées par défaut. Le <strong>maître / tuteur</strong>{' '}
+          décoche celles qui ne seront pas abordées sur le terrain (le formateur référent consulte).
+          La sélection sera figée à la 3<sup>ᵉ</sup> signature de l'entretien.
         </p>
       </header>
 
@@ -102,10 +95,7 @@ export function SectionSelectionCompetences({
         {referentiel.blocs.map((bloc, idxBloc) => (
           <div
             key={bloc.id}
-            className={cn(
-              'p-3 space-y-2',
-              idxBloc > 0 && 'border-t border-border',
-            )}
+            className={cn('p-3 space-y-2', idxBloc > 0 && 'border-t border-border')}
           >
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {bloc.code} — {bloc.libelle}
@@ -197,10 +187,12 @@ function BadgeStatut({
         <Lock className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
         <div>
           <p className="font-medium">
-            Sélection validée — {nbCochees} compétence{nbCochees > 1 ? 's' : ''} sur {totalCompetences}
+            Sélection validée — {nbCochees} compétence{nbCochees > 1 ? 's' : ''} sur{' '}
+            {totalCompetences}
           </p>
           <p className="text-xs">
-            Figée le {date} par {formateurNom} (formateur référent) et {maitreNom} (maître / tuteur).
+            Figée le {date} par {formateurNom} (formateur référent) et {maitreNom} (maître /
+            tuteur).
           </p>
         </div>
       </div>
@@ -211,7 +203,8 @@ function BadgeStatut({
       <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
       <div>
         <p className="font-medium">
-          Sélection en cours — {nbCochees} compétence{nbCochees > 1 ? 's' : ''} sur {totalCompetences}
+          Sélection en cours — {nbCochees} compétence{nbCochees > 1 ? 's' : ''} sur{' '}
+          {totalCompetences}
         </p>
         <p className="text-xs">
           La sélection sera figée automatiquement à la 3<sup>ᵉ</sup> signature de l'entretien.
@@ -272,8 +265,8 @@ function HistoriqueInvalidations({ selection }: { selection: SelectionCompetence
                   dateStyle: 'short',
                   timeStyle: 'short',
                 })}
-              </time>
-              {' '}— {e.auteurNom} ({libelleRole(e.auteurRole)})
+              </time>{' '}
+              — {e.auteurNom} ({libelleRole(e.auteurRole)})
             </p>
             <p className="text-muted-foreground italic">« {e.motif} »</p>
           </li>
@@ -376,8 +369,8 @@ function DialogInvaliderSelection({
           <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
             <strong>Attention.</strong> La sélection actuelle sera <strong>invalidée</strong>{' '}
             (validation conjointe retirée). Vous pourrez ensuite la modifier avant qu'une nouvelle
-            validation conjointe ne soit apposée. Les fiches et la grille finale s'aligneront sur
-            la nouvelle sélection (les saisies existantes restent visibles).
+            validation conjointe ne soit apposée. Les fiches et la grille finale s'aligneront sur la
+            nouvelle sélection (les saisies existantes restent visibles).
           </div>
 
           <label htmlFor={motifId} className="text-sm font-medium">

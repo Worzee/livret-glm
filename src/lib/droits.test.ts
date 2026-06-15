@@ -66,9 +66,9 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('formateur', 'entretien.signature-apprenti')).toBe(false);
     });
 
-    it('formateur et maître co-éditent la sélection des compétences abordées en entreprise', () => {
-      expect(peutEditer('formateur', 'entretien.selection-competences-entreprise')).toBe(true);
+    it('le maître / tuteur seul édite la sélection des compétences abordées en entreprise (13 juin 2026)', () => {
       expect(peutEditer('maitre', 'entretien.selection-competences-entreprise')).toBe(true);
+      expect(peutEditer('formateur', 'entretien.selection-competences-entreprise')).toBe(false);
       expect(peutEditer('apprenti', 'entretien.selection-competences-entreprise')).toBe(false);
       expect(peutEditer('coordo', 'entretien.selection-competences-entreprise')).toBe(false);
       expect(peutEditer('admin', 'entretien.selection-competences-entreprise')).toBe(false);
