@@ -39,7 +39,9 @@ export function formaterDateHeure(iso: string | undefined): string {
   });
 }
 
-export function libelleNiveau(n: NiveauMaitrise | NiveauMaitriseEntreprise | null | undefined): string {
+export function libelleNiveau(
+  n: NiveauMaitrise | NiveauMaitriseEntreprise | null | undefined,
+): string {
   switch (n) {
     case 'maitrise':
       return 'Maîtrisé';

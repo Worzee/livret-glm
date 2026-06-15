@@ -15,10 +15,7 @@ import { useFormationsStore } from '@/store/useFormationsStore';
 import { useReferentielsStore } from '@/store/useReferentielsStore';
 import { peutEditer } from '@/lib/droits';
 import { peutEncoreEditerFiche } from '@/lib/transitions-fiche';
-import {
-  estSelectionnee,
-  estValidee,
-} from '@/lib/selection-competences-entreprise';
+import { estSelectionnee, estValidee } from '@/lib/selection-competences-entreprise';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
 import { SelecteurNiveau } from '@/components/common/SelecteurNiveau';
 import { BoutonSupprimer } from '@/components/common/BoutonSupprimer';
@@ -67,9 +64,7 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
   // — cohérent avec EvaluationFinale.
   const referentiel: Referentiel = useMemo(() => {
     const formation = ctx ? formations[ctx.apprenti.formationId] : undefined;
-    return (
-      (formation && referentiels[formation.referentielId]) ?? referentielCapCuisine
-    );
+    return (formation && referentiels[formation.referentielId]) ?? referentielCapCuisine;
   }, [ctx, formations, referentiels]);
 
   // Lookup des compétences par id pour l'affichage des lignes existantes
@@ -115,7 +110,9 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
             referentiel={referentiel}
             selection={selection}
             onAjouter={(id) => ajouter(livretId, fiche.id, id)}
-            competencesPresentes={fiche.suiviEntreprise.map((l) => l.competenceId).filter(Boolean) as string[]}
+            competencesPresentes={
+              fiche.suiviEntreprise.map((l) => l.competenceId).filter(Boolean) as string[]
+            }
           />
         )}
       </header>
@@ -127,12 +124,17 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
         >
           <Info className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
           <div className="space-y-1">
-            <p className="font-medium">Sélection des compétences abordées en entreprise non validée</p>
+            <p className="font-medium">
+              Sélection des compétences abordées en entreprise non validée
+            </p>
             <p className="text-xs">
               La liste des compétences à travailler en entreprise pour cet·te apprenti·e doit être
-              définie conjointement par le formateur référent et le maître / tuteur, puis
-              validée à l'<Link className="underline hover:no-underline" to="/livret/entretien">entretien tripartite</Link>.
-              Les lignes déjà saisies restent visibles ci-dessous.
+              définie conjointement par le formateur référent et le maître / tuteur, puis validée à
+              l'
+              <Link className="underline hover:no-underline" to="/livret/entretien">
+                entretien tripartite
+              </Link>
+              . Les lignes déjà saisies restent visibles ci-dessous.
             </p>
           </div>
         </div>
@@ -456,8 +458,7 @@ function AjouterCompetence({
         // pas l'imbrication d'optgroups — on aplatit en utilisant un libellé
         // composite « Bloc — Sous-famille ».
         const aDesSousFamilles =
-          referentiel.niveauxColonnes === 3 &&
-          competencesAbordees.some((c) => c.sousFamille);
+          referentiel.niveauxColonnes === 3 && competencesAbordees.some((c) => c.sousFamille);
         if (!aDesSousFamilles) {
           return [
             <optgroup key={bloc.id} label={`${bloc.code} — ${bloc.libelle}`}>
@@ -480,11 +481,7 @@ function AjouterCompetence({
         return [...groupes.entries()].map(([sousFamille, comps]) => (
           <optgroup
             key={`${bloc.id}-${sousFamille}`}
-            label={
-              sousFamille
-                ? `${bloc.code} — ${sousFamille}`
-                : `${bloc.code} — ${bloc.libelle}`
-            }
+            label={sousFamille ? `${bloc.code} — ${sousFamille}` : `${bloc.code} — ${bloc.libelle}`}
           >
             {comps.map((c) => (
               <option key={c.id} value={c.id} disabled={competencesPresentes.includes(c.id)}>

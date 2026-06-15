@@ -21,14 +21,14 @@ const ficheBase = (): FicheSuiviPeriode => ({
 
 describe('validerSignature — R20 (champs requis par rôle)', () => {
   describe('Apprenti·e', () => {
-    it("interdit la signature si aucun retour apprenti et observation vide", () => {
+    it('interdit la signature si aucun retour apprenti et observation vide', () => {
       const f = ficheBase();
       const r = validerSignature(f, 'apprenti');
       expect(r.peutSigner).toBe(false);
       expect(r.raisons).toHaveLength(2);
     });
 
-    it("autorise la signature avec ≥ 1 retour ET observation non vide", () => {
+    it('autorise la signature avec ≥ 1 retour ET observation non vide', () => {
       const f = ficheBase();
       f.suiviEntreprise = [
         {
@@ -81,7 +81,7 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
   });
 
   describe("Maître d'apprentissage", () => {
-    it("interdit la signature sans évaluation entreprise", () => {
+    it('interdit la signature sans évaluation entreprise', () => {
       const f = ficheBase();
       f.observations.maitre = 'Bon travail.';
       const r = validerSignature(f, 'maitre');
@@ -89,7 +89,7 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
       expect(r.raisons.some((m) => m.includes('Évaluation entreprise'))).toBe(true);
     });
 
-    it("interdit la signature sans observation maître", () => {
+    it('interdit la signature sans observation maître', () => {
       const f = ficheBase();
       f.suiviEntreprise = [
         {
@@ -104,7 +104,7 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
       expect(r.peutSigner).toBe(false);
     });
 
-    it("autorise la signature avec ≥ 1 évaluation entreprise + observation", () => {
+    it('autorise la signature avec ≥ 1 évaluation entreprise + observation', () => {
       const f = ficheBase();
       f.suiviEntreprise = [
         {
@@ -119,7 +119,7 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
       expect(validerSignature(f, 'maitre').peutSigner).toBe(true);
     });
 
-    it("rejette la signature si la seule éval entreprise est « Non fait »", () => {
+    it('rejette la signature si la seule éval entreprise est « Non fait »', () => {
       // « Non fait » signale une compétence non abordée durant la période —
       // ce n'est pas une évaluation utilisable. Il faut au moins une
       // compétence réellement abordée pour pouvoir signer.
@@ -171,7 +171,7 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
   });
 
   describe('Formateur référent', () => {
-    it("interdit la signature si la zone « Suivi GRETA CFA — Formateur » est vide", () => {
+    it('interdit la signature si la zone « Suivi GRETA CFA — Formateur » est vide', () => {
       // Refonte mai 2026 : R20 formateur exige désormais que la zone texte
       // formateur soit non vide (au lieu de « ≥ 1 ligne »).
       const f = ficheBase();
@@ -190,7 +190,7 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
       expect(r.raisons.some((m) => m.includes('GRETA CFA'))).toBe(true);
     });
 
-    it("rejette la signature si la zone formateur ne contient que des espaces", () => {
+    it('rejette la signature si la zone formateur ne contient que des espaces', () => {
       const f = ficheBase();
       f.suiviGretaCfa = { formateur: '   \n  ' };
       f.suiviEntreprise = [
@@ -234,7 +234,7 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
       expect(r.raisons.some((m) => m.includes('Évaluation GRETA CFA'))).toBe(true);
     });
 
-    it("autorise la signature avec les 3 prérequis remplis", () => {
+    it('autorise la signature avec les 3 prérequis remplis', () => {
       const f = ficheBase();
       f.suiviGretaCfa = { formateur: 'Contenus abordés.' };
       f.suiviEntreprise = [
@@ -250,7 +250,7 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
       expect(validerSignature(f, 'formateur').peutSigner).toBe(true);
     });
 
-    it("rejette la signature si la seule éval centre est « Non fait »", () => {
+    it('rejette la signature si la seule éval centre est « Non fait »', () => {
       // Par symétrie avec la règle maître : « Non fait » ne compte pas comme
       // une éval utilisable, il faut au moins une vraie évaluation.
       const f = ficheBase();
@@ -295,7 +295,7 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
   });
 
   describe('Coordo', () => {
-    it("ne peut jamais signer une fiche de période", () => {
+    it('ne peut jamais signer une fiche de période', () => {
       const f = ficheBase();
       // Même avec tout rempli :
       f.suiviGretaCfa = { formateur: 'Contenus abordés.', apprenti: 'OK' };
@@ -316,7 +316,7 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
   });
 
   describe('Admin', () => {
-    it("ne signe pas en son nom propre — appelez avec le rôle métier ciblé", () => {
+    it('ne signe pas en son nom propre — appelez avec le rôle métier ciblé', () => {
       const f = ficheBase();
       const r = validerSignature(f, 'admin');
       expect(r.peutSigner).toBe(false);

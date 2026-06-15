@@ -55,11 +55,21 @@
  *   coordo    #c2410c orange-700   →  17 88% 40%
  *   admin     #a16207 yellow-700   →  38 92% 33%
  */
-.role-actif-apprenti  { --ring: 226 71% 40%; }
-.role-actif-maitre    { --ring: 161 94% 30%; }
-.role-actif-formateur { --ring: 262 83% 58%; }
-.role-actif-coordo    { --ring:  17 88% 40%; }
-.role-actif-admin     { --ring:  38 92% 33%; }
+.role-actif-apprenti {
+  --ring: 226 71% 40%;
+}
+.role-actif-maitre {
+  --ring: 161 94% 30%;
+}
+.role-actif-formateur {
+  --ring: 262 83% 58%;
+}
+.role-actif-coordo {
+  --ring: 17 88% 40%;
+}
+.role-actif-admin {
+  --ring: 38 92% 33%;
+}
 
 /*
  * Utilities suivant la couleur du rôle actif via la variable CSS `--ring`.
@@ -166,7 +176,9 @@
   }
   body {
     @apply bg-background text-foreground font-sans;
-    font-feature-settings: 'rlig' 1, 'calt' 1;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
   }
   /* Focus visible — accessibilité (CDC §14.5) */
   :focus-visible {

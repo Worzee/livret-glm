@@ -44,14 +44,13 @@ export function motifBlocageCloture(livret: Livret): string | null {
     return 'Ce livret est déjà clôturé.';
   }
   if (livret.fichesSuivi.length === 0) {
-    return 'Aucune fiche de période n\'a été créée. Créez et complétez au moins une période avant de clôturer le livret.';
+    return "Aucune fiche de période n'a été créée. Créez et complétez au moins une période avant de clôturer le livret.";
   }
   const nonVerrouillees = livret.fichesSuivi.filter((f) => f.etat !== 'verrouillee');
   if (nonVerrouillees.length > 0) {
     const numeros = nonVerrouillees.map((f) => f.numeroPeriode).sort((a, b) => a - b);
-    const liste = numeros.length === 1
-      ? `la période ${numeros[0]}`
-      : `les périodes ${numeros.join(', ')}`;
+    const liste =
+      numeros.length === 1 ? `la période ${numeros[0]}` : `les périodes ${numeros.join(', ')}`;
     return `Pour clôturer le livret, ${nonVerrouillees.length} fiche(s) doivent encore être verrouillée(s) (${liste}).`;
   }
   return null;

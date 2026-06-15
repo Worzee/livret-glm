@@ -103,7 +103,7 @@ describe('R7 — alerte délai entretien tripartite', () => {
     expect(r.declenchee).toBe(true);
   });
 
-  it("la butée est exactement contratDebut + DELAI jours", () => {
+  it('la butée est exactement contratDebut + DELAI jours', () => {
     const a = apprenti('2026-01-01');
     const r = calculerAlerteR7(a, null, new Date('2026-01-02'));
     const debut = new Date('2026-01-01').getTime();
@@ -131,7 +131,7 @@ describe('R8 / R9 — verrouillage progressif des sections', () => {
     expect(peutEncoreEditer('formateur', e)).toBe(true);
   });
 
-  it("R9 : 3 signatures → tout figé pour tous", () => {
+  it('R9 : 3 signatures → tout figé pour tous', () => {
     const e = entretienVide();
     e.signatures = {
       apprenti: { signe: true, dateSignature: '2026-04-01T10:00:00Z' },
@@ -160,17 +160,17 @@ describe('peutInitialiserEntretien — séquencement (juin 2026)', () => {
     expect(peutInitialiserEntretien(1, { ...vides }).ok).toBe(true);
   });
 
-  it('un entretien déjà initialisé ne l\'est pas une seconde fois (R6)', () => {
+  it("un entretien déjà initialisé ne l'est pas une seconde fois (R6)", () => {
     expect(peutInitialiserEntretien(1, { ...vides, 1: entretienVide() }).ok).toBe(false);
   });
 
-  it('E2 refusé tant que E1 n\'est pas initialisé', () => {
+  it("E2 refusé tant que E1 n'est pas initialisé", () => {
     const r = peutInitialiserEntretien(2, { ...vides });
     expect(r.ok).toBe(false);
     expect(r.raison).toMatch(/entretien tripartite 1/);
   });
 
-  it('E2 refusé tant que E1 n\'est pas signé par les 3 parties', () => {
+  it("E2 refusé tant que E1 n'est pas signé par les 3 parties", () => {
     const partiel = entretienVide();
     partiel.signatures.apprenti = { signe: true, dateSignature: '2026-04-01T10:00:00Z' };
     const r = peutInitialiserEntretien(2, { ...vides, 1: partiel });
@@ -195,13 +195,13 @@ describe('peutInitialiserEntretien — séquencement (juin 2026)', () => {
 describe('validerSignatureEntretien', () => {
   const BANQUE = indexerBanque(QUESTIONS_BANQUE_INITIALE);
 
-  it("apprenti·e ne peut pas signer sans aucune réponse", () => {
+  it('apprenti·e ne peut pas signer sans aucune réponse', () => {
     const e = entretienVide();
     const r = validerSignatureEntretien(e, 'apprenti', BANQUE);
     expect(r.peutSigner).toBe(false);
   });
 
-  it("apprenti·e peut signer avec au moins une réponse renseignée", () => {
+  it('apprenti·e peut signer avec au moins une réponse renseignée', () => {
     const e = entretienVide();
     e.reponsesApprenti['q-app-motivations'] = 'Mon projet professionnel.';
     expect(validerSignatureEntretien(e, 'apprenti', BANQUE).peutSigner).toBe(true);
@@ -231,12 +231,12 @@ describe('validerSignatureEntretien', () => {
     expect(r.raisons.some((m) => m.includes('attitude professionnelle'))).toBe(true);
   });
 
-  it("formateur ne peut pas signer sans aucune démarche administrative", () => {
+  it('formateur ne peut pas signer sans aucune démarche administrative', () => {
     const e = entretienVide();
     expect(validerSignatureEntretien(e, 'formateur', BANQUE).peutSigner).toBe(false);
   });
 
-  it("formateur peut signer avec au moins une démarche renseignée", () => {
+  it('formateur peut signer avec au moins une démarche renseignée', () => {
     const e = entretienVide();
     e.demarchesAdministratives.contratSigne = true;
     expect(validerSignatureEntretien(e, 'formateur', BANQUE).peutSigner).toBe(true);
@@ -249,24 +249,26 @@ describe('validerSignatureEntretien', () => {
   });
 
   // Extension R20 juin 2026 (retours coordos) : questions obligatoires.
-  it("apprenti·e bloqué·e si une question obligatoire (cible apprenti) est sans réponse", () => {
+  it('apprenti·e bloqué·e si une question obligatoire (cible apprenti) est sans réponse', () => {
     const e = entretienVide();
     e.questionsObligatoires = ['q-app-motivations'];
     // Une réponse à une AUTRE question ne suffit pas.
     e.reponsesApprenti['q-app-ressenti-equipe'] = 'Bonne ambiance.';
     const r = validerSignatureEntretien(e, 'apprenti', BANQUE);
     expect(r.peutSigner).toBe(false);
-    expect(r.raisons.some((m) => m.includes('obligatoire') && m.includes('motivations'))).toBe(true);
+    expect(r.raisons.some((m) => m.includes('obligatoire') && m.includes('motivations'))).toBe(
+      true,
+    );
   });
 
-  it("apprenti·e peut signer une fois la question obligatoire répondue", () => {
+  it('apprenti·e peut signer une fois la question obligatoire répondue', () => {
     const e = entretienVide();
     e.questionsObligatoires = ['q-app-motivations'];
     e.reponsesApprenti['q-app-motivations'] = 'Devenir chef·fe de partie.';
     expect(validerSignatureEntretien(e, 'apprenti', BANQUE).peutSigner).toBe(true);
   });
 
-  it("maître bloqué si une question obligatoire (cible maître) est sans réponse, même avec appréciation", () => {
+  it('maître bloqué si une question obligatoire (cible maître) est sans réponse, même avec appréciation', () => {
     const e = entretienVide();
     e.questionsObligatoires = ['q-mai-deja-forme'];
     e.appreciationMaitre.qualiteTravail = 'plus';
@@ -275,7 +277,7 @@ describe('validerSignatureEntretien', () => {
     expect(r.raisons.some((m) => m.includes('obligatoire'))).toBe(true);
   });
 
-  it("maître : « non » (false) est une réponse valable à une question oui-non obligatoire", () => {
+  it('maître : « non » (false) est une réponse valable à une question oui-non obligatoire', () => {
     const e = entretienVide();
     e.questionsObligatoires = ['q-mai-deja-forme'];
     e.appreciationMaitre.qualiteTravail = 'plus';
@@ -297,7 +299,7 @@ describe('validerSignatureEntretien', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('calculerProgression', () => {
-  it("retourne 0% sur un entretien vierge", () => {
+  it('retourne 0% sur un entretien vierge', () => {
     const r = calculerProgression(entretienVide());
     expect(r.global).toBe(0);
     expect(r.parRole.apprenti).toBe(0);
@@ -305,7 +307,7 @@ describe('calculerProgression', () => {
     expect(r.parRole.formateur).toBe(0);
   });
 
-  it("incrémente le score apprenti·e au fur et à mesure", () => {
+  it('incrémente le score apprenti·e au fur et à mesure', () => {
     const e = entretienVide();
     e.reponsesApprenti['q-app-motivations'] = 'X';
     e.reponsesApprenti['q-app-contact-entreprise'] = 'Y';
@@ -315,7 +317,7 @@ describe('calculerProgression', () => {
     expect(r.parRole.apprenti).toBeLessThan(40);
   });
 
-  it("retourne 100% pour le rôle dont la section est entièrement remplie", () => {
+  it('retourne 100% pour le rôle dont la section est entièrement remplie', () => {
     const e = entretienVide();
     e.demarchesAdministratives = {
       contratSigne: true,

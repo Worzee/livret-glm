@@ -30,14 +30,7 @@ export type TypeImport = 'apprenti' | 'maitre' | 'formateur';
 
 export const MODELES: Record<TypeImport, ModeleXlsx> = {
   apprenti: {
-    entetes: [
-      'Prénom',
-      'Nom',
-      'Email',
-      'Date de naissance',
-      'Début de contrat',
-      'Fin de contrat',
-    ],
+    entetes: ['Prénom', 'Nom', 'Email', 'Date de naissance', 'Début de contrat', 'Fin de contrat'],
     // Colonnes 3, 4, 5 = dates → formatées en cellules date Excel
     // (numFmt yyyy-mm-dd). Évite les saisies texte ambiguës type
     // « 20/01/1988 » qui ne passeraient pas la validation ISO.
@@ -55,9 +48,7 @@ export const MODELES: Record<TypeImport, ModeleXlsx> = {
   },
   formateur: {
     entetes: ['Prénom', 'Nom', 'Email'],
-    exemples: [
-      ['Sophie', 'DUBOIS', 'sophie.dubois@greta-demo.fr'],
-    ],
+    exemples: [['Sophie', 'DUBOIS', 'sophie.dubois@greta-demo.fr']],
   },
 };
 
@@ -327,7 +318,7 @@ function validerLignes<T extends TypeImport>(
     erreurs.push({
       ligne: 0,
       colonne: null,
-      message: 'Aucune ligne de donnée à importer (le fichier ne contient que l\'en-tête).',
+      message: "Aucune ligne de donnée à importer (le fichier ne contient que l'en-tête).",
     });
   }
 

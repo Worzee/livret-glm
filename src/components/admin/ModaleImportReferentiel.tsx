@@ -1,11 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import {
-  AlertTriangle,
-  CheckCircle2,
-  FileSpreadsheet,
-  Upload,
-  X,
-} from 'lucide-react';
+import { AlertTriangle, CheckCircle2, FileSpreadsheet, Upload, X } from 'lucide-react';
 import {
   estXlsxBuffer,
   importerReferentielDepuisBuffer,
@@ -88,10 +82,7 @@ export function ModaleImportReferentiel({
   const premierChampRef = useRef<HTMLSelectElement>(null);
 
   const formationsListe = useMemo(
-    () =>
-      Object.values(formations).sort((a, b) =>
-        a.intitule.localeCompare(b.intitule, 'fr-FR'),
-      ),
+    () => Object.values(formations).sort((a, b) => a.intitule.localeCompare(b.intitule, 'fr-FR')),
     [formations],
   );
 
@@ -234,8 +225,8 @@ export function ModaleImportReferentiel({
                 Importer un référentiel
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Format CSV (UTF-8 ou Windows-1252, séparateur <code>;</code>) ou XLSX. La
-                première ligne est ignorée (en-têtes). 2 ou 3 colonnes selon la profondeur.
+                Format CSV (UTF-8 ou Windows-1252, séparateur <code>;</code>) ou XLSX. La première
+                ligne est ignorée (en-têtes). 2 ou 3 colonnes selon la profondeur.
               </p>
             </div>
           </div>
@@ -293,8 +284,8 @@ export function ModaleImportReferentiel({
               </p>
             ) : (
               <p className="text-xs text-muted-foreground">
-                Le référentiel pourra être rattaché à une ou plusieurs formations plus tard
-                depuis la page <em>Formations</em>.
+                Le référentiel pourra être rattaché à une ou plusieurs formations plus tard depuis
+                la page <em>Formations</em>.
               </p>
             )}
           </div>
@@ -463,7 +454,8 @@ function AperçuStats({ apercu }: { apercu: AperçuOk }) {
       {avertissements.length > 0 && (
         <details className="text-xs">
           <summary className="cursor-pointer text-amber-800">
-            ⚠ {avertissements.length} avertissement{avertissements.length > 1 ? 's' : ''} non bloquant
+            ⚠ {avertissements.length} avertissement{avertissements.length > 1 ? 's' : ''} non
+            bloquant
             {avertissements.length > 1 ? 's' : ''}
           </summary>
           <ul className="mt-1 space-y-0.5 pl-4 text-amber-800">

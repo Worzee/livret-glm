@@ -36,15 +36,21 @@ const ligne = (
 });
 
 describe('calculerStatsParBloc', () => {
-  it("retourne 100% non-évalué quand aucune saisie ni synthèse", () => {
+  it('retourne 100% non-évalué quand aucune saisie ni synthèse', () => {
     const stats = calculerStatsParBloc(referentiel, [], new Map());
     expect(stats).toHaveLength(2);
-    expect(stats[0].entreprise).toEqual({ maitrise: 0, partiel: 0, nonMaitrise: 0, nonEvalue: 3, total: 3 });
+    expect(stats[0].entreprise).toEqual({
+      maitrise: 0,
+      partiel: 0,
+      nonMaitrise: 0,
+      nonEvalue: 3,
+      total: 3,
+    });
     expect(stats[1].entreprise.total).toBe(1);
     expect(stats[1].entreprise.nonEvalue).toBe(1);
   });
 
-  it("compte correctement les niveaux (saisie manuelle)", () => {
+  it('compte correctement les niveaux (saisie manuelle)', () => {
     const lignes = [
       ligne('c1', 'maitrise', 'maitrise'),
       ligne('c2', 'partiel', 'maitrise'),
@@ -67,7 +73,7 @@ describe('calculerStatsParBloc', () => {
     });
   });
 
-  it("hérite de la synthèse quand la saisie manuelle est null", () => {
+  it('hérite de la synthèse quand la saisie manuelle est null', () => {
     const synthese = new Map([
       ['c1', { acquisEntreprise: 'partiel' as const, acquisCentre: 'maitrise' as const }],
     ]);
@@ -77,7 +83,7 @@ describe('calculerStatsParBloc', () => {
     expect(stats[0].centre.maitrise).toBe(1);
   });
 
-  it("la saisie manuelle prime sur la synthèse", () => {
+  it('la saisie manuelle prime sur la synthèse', () => {
     const synthese = new Map([
       ['c1', { acquisEntreprise: 'partiel' as const, acquisCentre: 'partiel' as const }],
     ]);
@@ -89,13 +95,13 @@ describe('calculerStatsParBloc', () => {
 });
 
 describe('pourcent', () => {
-  it("calcule un pourcentage entier arrondi", () => {
+  it('calcule un pourcentage entier arrondi', () => {
     expect(pourcent(1, 3)).toBe(33);
     expect(pourcent(2, 3)).toBe(67);
     expect(pourcent(3, 3)).toBe(100);
   });
 
-  it("retourne 0 si le total est 0", () => {
+  it('retourne 0 si le total est 0', () => {
     expect(pourcent(0, 0)).toBe(0);
   });
 });

@@ -1,15 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import {
-  Building2,
-  ExternalLink,
-  Lock,
-  MapPin,
-  Pencil,
-  Plus,
-  Save,
-  Trash2,
-  X,
-} from 'lucide-react';
+import { Building2, ExternalLink, Lock, MapPin, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 import type { Etablissement, Role } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useEtablissementsStore } from '@/store/useEtablissementsStore';
@@ -38,9 +28,7 @@ export function GestionEtablissements() {
 
   const [modaleOuverte, setModaleOuverte] = useState(false);
   const [enEdition, setEnEdition] = useState<Etablissement | undefined>(undefined);
-  const [confirmationSuppression, setConfirmationSuppression] = useState<string | null>(
-    null,
-  );
+  const [confirmationSuppression, setConfirmationSuppression] = useState<string | null>(null);
 
   useEffect(() => {
     if (!confirmationSuppression) return;
@@ -51,10 +39,7 @@ export function GestionEtablissements() {
   const peutGerer = peutEditer(roleActif, 'admin.etablissements.gerer');
 
   const etablissements = useMemo(
-    () =>
-      Object.values(etablissementsMap).sort((a, b) =>
-        a.nom.localeCompare(b.nom, 'fr-FR'),
-      ),
+    () => Object.values(etablissementsMap).sort((a, b) => a.nom.localeCompare(b.nom, 'fr-FR')),
     [etablissementsMap],
   );
 
@@ -92,8 +77,8 @@ export function GestionEtablissements() {
             <h1 className="text-2xl font-semibold">Gestion des établissements</h1>
           </div>
           <p className="text-muted-foreground">
-            Lieux de formation du GRETA. Chaque établissement peut porter une URL Pronote
-            qui sera proposée aux utilisateur·rice·s rattaché·e·s via une formation.
+            Lieux de formation du GRETA. Chaque établissement peut porter une URL Pronote qui sera
+            proposée aux utilisateur·rice·s rattaché·e·s via une formation.
           </p>
           <p className="text-xs text-muted-foreground">
             <strong>{etablissements.length}</strong> établissement
@@ -136,10 +121,7 @@ export function GestionEtablissements() {
                     <h3 className="font-semibold">{e.nom}</h3>
                     {(e.adresse || e.ville) && (
                       <p className="mt-0.5 text-xs text-muted-foreground inline-flex items-start gap-1">
-                        <MapPin
-                          className="h-3 w-3 shrink-0 mt-0.5"
-                          aria-hidden="true"
-                        />
+                        <MapPin className="h-3 w-3 shrink-0 mt-0.5" aria-hidden="true" />
                         <span>
                           {[e.adresse, [e.codePostal, e.ville].filter(Boolean).join(' ')]
                             .filter(Boolean)
@@ -176,9 +158,7 @@ export function GestionEtablissements() {
                       )}
                     >
                       <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                      {enConfirmation && (
-                        <span className="text-xs font-medium">Confirmer</span>
-                      )}
+                      {enConfirmation && <span className="text-xs font-medium">Confirmer</span>}
                     </button>
                   </div>
                 </header>
@@ -241,10 +221,7 @@ interface ModaleEtablissementProps {
   ouvert: boolean;
   etablissement?: Etablissement;
   onAnnuler: () => void;
-  onValider: (
-    valeurs: Omit<Etablissement, 'id'>,
-    existant?: Etablissement,
-  ) => void;
+  onValider: (valeurs: Omit<Etablissement, 'id'>, existant?: Etablissement) => void;
 }
 
 function ModaleEtablissement({
@@ -290,8 +267,7 @@ function ModaleEtablissement({
     tentative && nomClean.length < 3
       ? "Le nom de l'établissement doit faire au moins 3 caractères."
       : '';
-  const erreurUrl =
-    tentative && !urlOk ? "L'URL doit commencer par http:// ou https://." : '';
+  const erreurUrl = tentative && !urlOk ? "L'URL doit commencer par http:// ou https://." : '';
 
   function valider() {
     setTentative(true);
@@ -313,7 +289,7 @@ function ModaleEtablissement({
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
-      aria-label={enEdition ? 'Modifier l\'établissement' : 'Nouvel établissement'}
+      aria-label={enEdition ? "Modifier l'établissement" : 'Nouvel établissement'}
     >
       <button
         type="button"
@@ -424,9 +400,8 @@ function ModaleEtablissement({
               </p>
             ) : (
               <p className="text-xs text-muted-foreground">
-                Optionnel. Renseignez l'URL du portail Pronote du lieu — elle sera
-                proposée aux utilisateur·rice·s rattaché·e·s à une formation de cet
-                établissement.
+                Optionnel. Renseignez l'URL du portail Pronote du lieu — elle sera proposée aux
+                utilisateur·rice·s rattaché·e·s à une formation de cet établissement.
               </p>
             )}
           </div>
@@ -461,13 +436,10 @@ function AccesRefuse({ roleActif }: { roleActif: Role }) {
       <div className="flex items-start gap-3">
         <Lock className="h-5 w-5 shrink-0 text-amber-700 mt-0.5" aria-hidden="true" />
         <div>
-          <h1 className="text-lg font-medium text-amber-900">
-            Accès réservé à l'administration
-          </h1>
+          <h1 className="text-lg font-medium text-amber-900">Accès réservé à l'administration</h1>
           <p className="mt-2 text-sm text-amber-900/80">
-            Vous êtes actuellement connecté·e en tant que{' '}
-            <strong>{libelleRole(roleActif)}</strong>. La gestion des établissements
-            est réservée au rôle <strong>Administrateur·rice</strong>.
+            Vous êtes actuellement connecté·e en tant que <strong>{libelleRole(roleActif)}</strong>.
+            La gestion des établissements est réservée au rôle <strong>Administrateur·rice</strong>.
           </p>
         </div>
       </div>

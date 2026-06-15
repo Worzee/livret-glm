@@ -58,10 +58,7 @@ function u8ToArrayBuffer(u8: Uint8Array): ArrayBuffer {
   return ab;
 }
 
-function creerXlsxMini(
-  sharedStrings: string[],
-  lignesIndex: Array<number[]>,
-): ArrayBuffer {
+function creerXlsxMini(sharedStrings: string[], lignesIndex: Array<number[]>): ArrayBuffer {
   const sst =
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
     `<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">` +
@@ -174,7 +171,7 @@ describe('estXlsxBuffer', () => {
     expect(estXlsxBuffer(u8ToArrayBuffer(archive))).toBe(true);
   });
 
-  it("retourne false sur un buffer texte simple (CSV par exemple)", () => {
+  it('retourne false sur un buffer texte simple (CSV par exemple)', () => {
     const csv = new TextEncoder().encode('BLOC;COMPETENCE\nA;1\n');
     expect(estXlsxBuffer(csv.buffer as ArrayBuffer)).toBe(false);
   });

@@ -7,10 +7,7 @@ import { cn } from '@/lib/utils';
  * Référence : cahier des charges v1.3, sections 5.3 et 14.4.
  */
 
-const CONFIG: Record<
-  EtatFiche,
-  { libelle: string; classes: string; Icon: typeof CheckCircle2 }
-> = {
+const CONFIG: Record<EtatFiche, { libelle: string; classes: string; Icon: typeof CheckCircle2 }> = {
   brouillon: {
     libelle: 'Brouillon',
     classes: 'bg-slate-100 text-slate-700 border-slate-200',

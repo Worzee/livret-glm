@@ -49,19 +49,19 @@ describe('ficheEstVide', () => {
     expect(ficheEstVide(ficheVide())).toBe(true);
   });
 
-  it("retourne false dès que la zone GRETA formateur est renseignée", () => {
+  it('retourne false dès que la zone GRETA formateur est renseignée', () => {
     const f = ficheVide();
     f.suiviGretaCfa = { formateur: 'Contenus de la période.' };
     expect(ficheEstVide(f)).toBe(false);
   });
 
-  it("retourne false dès que la zone GRETA apprenti est renseignée", () => {
+  it('retourne false dès que la zone GRETA apprenti est renseignée', () => {
     const f = ficheVide();
     f.suiviGretaCfa = { apprenti: "Ce que j'ai appris au CFA." };
     expect(ficheEstVide(f)).toBe(false);
   });
 
-  it("ignore les chaînes ne contenant que des espaces", () => {
+  it('ignore les chaînes ne contenant que des espaces', () => {
     const f = ficheVide();
     f.suiviGretaCfa = { apprenti: '   ', formateur: '\n\t' };
     expect(ficheEstVide(f)).toBe(true);
@@ -81,17 +81,17 @@ describe('ficheEstVide', () => {
 });
 
 describe('deduireEtat (R15, R16)', () => {
-  it("R16 : une fiche vide reste en brouillon", () => {
+  it('R16 : une fiche vide reste en brouillon', () => {
     expect(deduireEtat(ficheVide())).toBe('brouillon');
   });
 
-  it("R16 : une fiche avec données passe en en-cours", () => {
+  it('R16 : une fiche avec données passe en en-cours', () => {
     const f = ficheVide();
     f.observations.apprenti = 'X';
     expect(deduireEtat(f)).toBe('en-cours');
   });
 
-  it("R15 : 1 ou 2 signatures = en-cours", () => {
+  it('R15 : 1 ou 2 signatures = en-cours', () => {
     const f1 = ficheVide();
     f1.signatures = sig(true, false, false);
     expect(deduireEtat(f1)).toBe('en-cours');
@@ -101,13 +101,13 @@ describe('deduireEtat (R15, R16)', () => {
     expect(deduireEtat(f2)).toBe('en-cours');
   });
 
-  it("R15 : 3 signatures = signee", () => {
+  it('R15 : 3 signatures = signee', () => {
     const f = ficheVide();
     f.signatures = sig(true, true, true);
     expect(deduireEtat(f)).toBe('signee');
   });
 
-  it("R17 : verrouillee reste verrouillee (priorité)", () => {
+  it('R17 : verrouillee reste verrouillee (priorité)', () => {
     const f = ficheVide();
     f.etat = 'verrouillee';
     f.signatures = sig(true, true, true);
@@ -122,7 +122,7 @@ describe('fichePeutEtreVerrouilleeAuto (R17)', () => {
     expect(fichePeutEtreVerrouilleeAuto(f)).toBe(false);
   });
 
-  it("retourne false moins de 15 jours après la dernière signature", () => {
+  it('retourne false moins de 15 jours après la dernière signature', () => {
     const f = ficheVide();
     f.etat = 'signee';
     f.signatures = sig(true, true, true); // toutes signées au 2026-04-01
@@ -147,35 +147,35 @@ describe('peutEncoreEditerFiche (R21 — non régression de signature)', () => {
     expect(peutEncoreEditerFiche(f, 'formateur')).toBe(true);
   });
 
-  it("autorise tous les rôles sur une fiche en cours non signée", () => {
+  it('autorise tous les rôles sur une fiche en cours non signée', () => {
     const f = { ...ficheVide(), etat: 'en-cours' as const };
     expect(peutEncoreEditerFiche(f, 'apprenti')).toBe(true);
     expect(peutEncoreEditerFiche(f, 'maitre')).toBe(true);
     expect(peutEncoreEditerFiche(f, 'formateur')).toBe(true);
   });
 
-  it("bloque uniquement le rôle qui a déjà signé", () => {
+  it('bloque uniquement le rôle qui a déjà signé', () => {
     const f = { ...ficheVide(), signatures: sig(true, false, false), etat: 'en-cours' as const };
     expect(peutEncoreEditerFiche(f, 'apprenti')).toBe(false);
     expect(peutEncoreEditerFiche(f, 'maitre')).toBe(true);
     expect(peutEncoreEditerFiche(f, 'formateur')).toBe(true);
   });
 
-  it("bloque tous les rôles signés (cas 2 sur 3)", () => {
+  it('bloque tous les rôles signés (cas 2 sur 3)', () => {
     const f = { ...ficheVide(), signatures: sig(true, true, false), etat: 'en-cours' as const };
     expect(peutEncoreEditerFiche(f, 'apprenti')).toBe(false);
     expect(peutEncoreEditerFiche(f, 'maitre')).toBe(false);
     expect(peutEncoreEditerFiche(f, 'formateur')).toBe(true);
   });
 
-  it("bloque tous les rôles quand la fiche est signée (3 sur 3)", () => {
+  it('bloque tous les rôles quand la fiche est signée (3 sur 3)', () => {
     const f = { ...ficheVide(), signatures: sig(true, true, true), etat: 'signee' as const };
     expect(peutEncoreEditerFiche(f, 'apprenti')).toBe(false);
     expect(peutEncoreEditerFiche(f, 'maitre')).toBe(false);
     expect(peutEncoreEditerFiche(f, 'formateur')).toBe(false);
   });
 
-  it("bloque tous les rôles quand la fiche est verrouillée, même si signature absente", () => {
+  it('bloque tous les rôles quand la fiche est verrouillée, même si signature absente', () => {
     // Cas théorique : verrouillage manuel sur une fiche partiellement signée.
     const f = { ...ficheVide(), etat: 'verrouillee' as const };
     expect(peutEncoreEditerFiche(f, 'apprenti')).toBe(false);

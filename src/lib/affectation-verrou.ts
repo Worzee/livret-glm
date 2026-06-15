@@ -52,7 +52,8 @@ export function evaluerVerrouAffectation(
   if (Object.values(livret.entretiens).some((e) => e !== null)) {
     return {
       verrouille: true,
-      raison: "Entretien tripartite initialisé — modifier l'affectation invaliderait l'engagement formel.",
+      raison:
+        "Entretien tripartite initialisé — modifier l'affectation invaliderait l'engagement formel.",
     };
   }
 

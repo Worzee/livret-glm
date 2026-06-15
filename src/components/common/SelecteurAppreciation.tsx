@@ -70,7 +70,9 @@ export function SelecteurAppreciation({
   if (!editable) {
     if (!valeur) {
       return (
-        <span className={cn('inline-flex items-center gap-1 text-xs text-muted-foreground', className)}>
+        <span
+          className={cn('inline-flex items-center gap-1 text-xs text-muted-foreground', className)}
+        >
           <CircleDashed className="h-3.5 w-3.5" aria-hidden="true" />
           Non renseigné
         </span>

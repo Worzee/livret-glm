@@ -57,8 +57,7 @@ export function ZoneObservation({ livretId, fiche }: ZoneObservationProps) {
         {ROLES_AVEC_OBSERVATION.map(({ role, ressource, bordure, Icon, classeRole }) => {
           // R21 : une observation devient en lecture seule dès que le rôle a signé,
           // pour ne pas modifier ce qui a été signé. Réactivable uniquement via R10.
-          const editable =
-            peutEditer(roleActif, ressource) && peutEncoreEditerFiche(fiche, role);
+          const editable = peutEditer(roleActif, ressource) && peutEncoreEditerFiche(fiche, role);
           const dejaSigne = fiche.signatures[role].signe;
           const valeur = fiche.observations[role] ?? '';
           return (
@@ -70,7 +69,9 @@ export function ZoneObservation({ livretId, fiche }: ZoneObservationProps) {
               )}
             >
               <header className="flex items-center justify-between">
-                <span className={cn('inline-flex items-center gap-1.5 text-sm font-medium', classeRole)}>
+                <span
+                  className={cn('inline-flex items-center gap-1.5 text-sm font-medium', classeRole)}
+                >
                   <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                   {libelleRole(role)}
                 </span>

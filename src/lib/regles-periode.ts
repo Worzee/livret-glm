@@ -94,8 +94,7 @@ export function verifierCreationPeriode(
       const partiesManquantes: string[] = [];
       if (!derniere.signatures.apprenti.signe) partiesManquantes.push('apprenti·e');
       if (!derniere.signatures.maitre.signe) partiesManquantes.push('maître / tuteur');
-      if (!derniere.signatures.formateur.signe)
-        partiesManquantes.push('formateur·rice référent·e');
+      if (!derniere.signatures.formateur.signe) partiesManquantes.push('formateur·rice référent·e');
 
       if (partiesManquantes.length > 0) {
         avertissements.push(

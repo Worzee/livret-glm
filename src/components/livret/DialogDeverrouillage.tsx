@@ -113,9 +113,8 @@ export function DialogDeverrouillage({
         <div className="space-y-3 p-4">
           <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
             <strong>Attention.</strong> Le déverrouillage invalide les{' '}
-            <strong>trois signatures</strong> de la fiche (apprenti·e, maître,
-            formateur). La fiche repassera en état <em>en cours</em> et devra être
-            re-signée par chaque partie.
+            <strong>trois signatures</strong> de la fiche (apprenti·e, maître, formateur). La fiche
+            repassera en état <em>en cours</em> et devra être re-signée par chaque partie.
           </div>
 
           <label htmlFor={motifId} className="text-sm font-medium">
@@ -137,7 +136,9 @@ export function DialogDeverrouillage({
             <span>
               Minimum {LONGUEUR_MIN_MOTIF} caractères, maximum {LONGUEUR_MAX_MOTIF}.
             </span>
-            <span aria-live="polite">{longueur} caractère{longueur > 1 ? 's' : ''}</span>
+            <span aria-live="polite">
+              {longueur} caractère{longueur > 1 ? 's' : ''}
+            </span>
           </div>
           {afficherErreur && (
             <p id={erreurId} role="alert" className="text-sm text-red-700">

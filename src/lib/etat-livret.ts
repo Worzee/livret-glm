@@ -55,9 +55,7 @@ export function calculerResumeLivret(
   // est conservé pour audit mais le badge pédagogique doit disparaître.
   const desaccordEnCours = fiches.some(
     (f) =>
-      f.historiqueDeverrouillages.length > 0 &&
-      f.etat !== 'signee' &&
-      f.etat !== 'verrouillee',
+      f.historiqueDeverrouillages.length > 0 && f.etat !== 'signee' && f.etat !== 'verrouillee',
   );
 
   // Refonte mai 2026 (chantier #2) : R7 et le cas pédagogique « entretien

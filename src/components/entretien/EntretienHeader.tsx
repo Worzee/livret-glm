@@ -1,16 +1,8 @@
-import type {
-  Apprenti,
-  EntretienTripartite,
-  Formation,
-  NumeroEntretien,
-} from '@/types';
+import type { Apprenti, EntretienTripartite, Formation, NumeroEntretien } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { peutEditer } from '@/lib/droits';
-import {
-  formatriceSophieDubois,
-  maitreKarimBenali,
-} from '@/fixtures/utilisateurs';
+import { formatriceSophieDubois, maitreKarimBenali } from '@/fixtures/utilisateurs';
 
 /**
  * En-tête pré-rempli de l'entretien tripartite (CDC §5.2).
@@ -41,8 +33,7 @@ export function EntretienHeader({
 
   // La date relève de la conduite de l'entretien (formateur référent) —
   // ressource dédiée depuis l'ouverture d'`organisation-suivi` au coordo.
-  const editableDate =
-    peutEditer(roleActif, 'entretien.gestion') && !ficheVerrouillee;
+  const editableDate = peutEditer(roleActif, 'entretien.gestion') && !ficheVerrouillee;
 
   return (
     <section className="rounded-lg border border-border bg-card p-4">
@@ -81,7 +72,9 @@ export function EntretienHeader({
                 className="rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             ) : (
-              <span className={entretien.dateEntretien ? 'font-medium' : 'italic text-muted-foreground'}>
+              <span
+                className={entretien.dateEntretien ? 'font-medium' : 'italic text-muted-foreground'}
+              >
                 {entretien.dateEntretien
                   ? new Date(entretien.dateEntretien).toLocaleDateString('fr-FR')
                   : 'Non renseignée'}

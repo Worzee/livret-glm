@@ -22,7 +22,7 @@ export const referentielCapCuisine: Referentiel = {
           code: 'C1.1',
           libelle: 'Réceptionner et stocker la marchandise',
           description:
-            "Contrôler la conformité des livraisons, ranger selon les règles HACCP et la rotation des stocks.",
+            'Contrôler la conformité des livraisons, ranger selon les règles HACCP et la rotation des stocks.',
         },
         {
           id: 'c1-2',
@@ -47,7 +47,7 @@ export const referentielCapCuisine: Referentiel = {
           id: 'c2-1',
           code: 'C2.1',
           libelle: 'Maîtriser les techniques culinaires de base',
-          description: "Cuissons, sauces, taillages, fonds, jus.",
+          description: 'Cuissons, sauces, taillages, fonds, jus.',
         },
         {
           id: 'c2-2',

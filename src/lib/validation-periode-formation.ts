@@ -125,10 +125,7 @@ export function evaluerVerrouPeriode(
  * `periodeFormationId` quand présent, sinon via `numeroPeriode` (compat
  * fixtures héritées qui n'ont pas l'id de période).
  */
-export function fichePointePeriode(
-  fiche: FicheSuiviPeriode,
-  periode: PeriodeFormation,
-): boolean {
+export function fichePointePeriode(fiche: FicheSuiviPeriode, periode: PeriodeFormation): boolean {
   if (fiche.periodeFormationId) return fiche.periodeFormationId === periode.id;
   return fiche.numeroPeriode === periode.numero;
 }
@@ -141,9 +138,7 @@ export function fichePointePeriode(
  * Renumérote les périodes de 1 à N en préservant l'ordre chronologique
  * (par `dateDebut`). Utilisé après suppression d'une période.
  */
-export function renumeroterPeriodes(
-  periodes: ReadonlyArray<PeriodeFormation>,
-): PeriodeFormation[] {
+export function renumeroterPeriodes(periodes: ReadonlyArray<PeriodeFormation>): PeriodeFormation[] {
   return [...periodes]
     .sort((a, b) => a.dateDebut.localeCompare(b.dateDebut))
     .map((p, idx) => ({ ...p, numero: idx + 1 }));

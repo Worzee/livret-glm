@@ -47,12 +47,7 @@ const SAISIE_VIDE: SaisieFormation = {
 // Suggestions de niveaux courants pour le datalist (saisie libre conservée).
 const NIVEAUX_SUGGERES = ['CAP', 'BAC PRO', 'BTS', 'BP', 'MC', 'TP'];
 
-export function ModaleFormation({
-  ouvert,
-  formation,
-  onAnnuler,
-  onValide,
-}: ModaleFormationProps) {
+export function ModaleFormation({ ouvert, formation, onAnnuler, onValide }: ModaleFormationProps) {
   const ajouter = useFormationsStore((s) => s.ajouterFormation);
   const modifier = useFormationsStore((s) => s.modifierFormation);
   const referentiels = useReferentielsStore((s) => s.referentiels);
@@ -67,10 +62,7 @@ export function ModaleFormation({
   );
 
   const etablissementsDisponibles = useMemo(
-    () =>
-      Object.values(etablissements).sort((a, b) =>
-        a.nom.localeCompare(b.nom, 'fr-FR'),
-      ),
+    () => Object.values(etablissements).sort((a, b) => a.nom.localeCompare(b.nom, 'fr-FR')),
     [etablissements],
   );
 
@@ -149,10 +141,7 @@ export function ModaleFormation({
       >
         <div className="sticky top-0 flex items-start justify-between gap-3 border-b border-border bg-card p-4">
           <div className="flex items-start gap-3">
-            <GraduationCap
-              className="h-5 w-5 shrink-0 texte-couleur-role"
-              aria-hidden="true"
-            />
+            <GraduationCap className="h-5 w-5 shrink-0 texte-couleur-role" aria-hidden="true" />
             <div>
               <h2 id={titreId} className="text-lg font-semibold">
                 {titre}
@@ -257,8 +246,8 @@ export function ModaleFormation({
                 <p className="flex items-start gap-1.5 text-xs text-amber-700">
                   <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" aria-hidden="true" />
                   <span>
-                    Aucun établissement n'a encore été créé. Demandez à l'administrateur·rice
-                    d'en ajouter depuis la page <em>Administration → Établissements</em>.
+                    Aucun établissement n'a encore été créé. Demandez à l'administrateur·rice d'en
+                    ajouter depuis la page <em>Administration → Établissements</em>.
                   </span>
                 </p>
               )}
@@ -368,9 +357,7 @@ function Champ({
           ))}
         </datalist>
       )}
-      {hint && !erreur && !avertissement && (
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      )}
+      {hint && !erreur && !avertissement && <p className="text-xs text-muted-foreground">{hint}</p>}
       {erreur && (
         <p id={messageId} role="alert" className="text-xs text-red-700">
           {erreur}

@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  type SaisieStaff,
-  validerSaisieStaff,
-} from './validation-utilisateur-staff';
+import { type SaisieStaff, validerSaisieStaff } from './validation-utilisateur-staff';
 
 const STAFF_VALIDE: SaisieStaff = {
   prenom: 'Hélène',
@@ -49,20 +46,14 @@ describe('validerSaisieStaff', () => {
   });
 
   it('refuse un maître si seule la fonction est renseignée (entreprise manquante)', () => {
-    const r = validerSaisieStaff(
-      { ...STAFF_VALIDE, fonction: 'Chef de cuisine' },
-      true,
-    );
+    const r = validerSaisieStaff({ ...STAFF_VALIDE, fonction: 'Chef de cuisine' }, true);
     expect(r.ok).toBe(false);
     expect(r.erreurs.entreprise).toBeDefined();
     expect(r.erreurs.fonction).toBeUndefined();
   });
 
   it("refuse un maître si seule l'entreprise est renseignée (fonction manquante)", () => {
-    const r = validerSaisieStaff(
-      { ...STAFF_VALIDE, entreprise: 'Le Gourmet' },
-      true,
-    );
+    const r = validerSaisieStaff({ ...STAFF_VALIDE, entreprise: 'Le Gourmet' }, true);
     expect(r.ok).toBe(false);
     expect(r.erreurs.fonction).toBeDefined();
     expect(r.erreurs.entreprise).toBeUndefined();

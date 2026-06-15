@@ -28,10 +28,7 @@ interface EtablissementsStore {
   /** Crée un établissement. L'id est auto-généré. */
   ajouterEtablissement: (input: Omit<Etablissement, 'id'>) => Etablissement;
   /** Met à jour les champs d'un établissement existant. */
-  modifierEtablissement: (
-    id: string,
-    patch: Partial<Omit<Etablissement, 'id'>>,
-  ) => void;
+  modifierEtablissement: (id: string, patch: Partial<Omit<Etablissement, 'id'>>) => void;
   /**
    * Supprime un établissement. Bloquée si au moins une formation y est
    * rattachée (cohérence référentielle).

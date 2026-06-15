@@ -34,7 +34,10 @@ export function FicheSuiviPeriodes() {
           d'alternance en entreprise.
         </p>
         <p className="text-xs text-muted-foreground">
-          Apprenti·e : <strong>{apprenti.prenom} {apprenti.nom}</strong>
+          Apprenti·e :{' '}
+          <strong>
+            {apprenti.prenom} {apprenti.nom}
+          </strong>
         </p>
       </header>
 
@@ -44,23 +47,20 @@ export function FicheSuiviPeriodes() {
       >
         <Info className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
         <p>
-          Le calendrier des périodes (nombre, titre, dates) est défini au niveau de la
-          formation par le coordinateur·rice ou l'administrateur·rice. Tous les apprenti·e·s
-          de la promotion partagent ce même planning. Les contenus pédagogiques (compétences,
-          observations, signatures) restent propres à chaque livret.
+          Le calendrier des périodes (nombre, titre, dates) est défini au niveau de la formation par
+          le coordinateur·rice ou l'administrateur·rice. Tous les apprenti·e·s de la promotion
+          partagent ce même planning. Les contenus pédagogiques (compétences, observations,
+          signatures) restent propres à chaque livret.
         </p>
       </div>
 
       {fiches.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center">
-          <FolderOpen
-            className="mx-auto mb-3 h-8 w-8 text-muted-foreground"
-            aria-hidden="true"
-          />
+          <FolderOpen className="mx-auto mb-3 h-8 w-8 text-muted-foreground" aria-hidden="true" />
           <h2 className="text-base font-medium">Aucune période planifiée</h2>
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-            La formation de cet·te apprenti·e n'a pas encore de planning de périodes.
-            Le coordinateur·rice peut le définir depuis <em>Administration → Formations</em>.
+            La formation de cet·te apprenti·e n'a pas encore de planning de périodes. Le
+            coordinateur·rice peut le définir depuis <em>Administration → Formations</em>.
           </p>
         </div>
       ) : (
@@ -80,7 +80,10 @@ export function FicheSuiviPeriodes() {
                   to={`/livret/fiches-suivi/${f.id}`}
                   className="carte-survol-role flex items-center gap-4 rounded-lg border p-4"
                 >
-                  <CalendarRange className="texte-couleur-role h-6 w-6 shrink-0" aria-hidden="true" />
+                  <CalendarRange
+                    className="texte-couleur-role h-6 w-6 shrink-0"
+                    aria-hidden="true"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="font-semibold">{libelleFichePeriode(f)}</h2>
@@ -94,10 +97,7 @@ export function FicheSuiviPeriodes() {
                       signatures
                     </p>
                   </div>
-                  <ChevronRight
-                    className="h-5 w-5 text-muted-foreground"
-                    aria-hidden="true"
-                  />
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
                 </Link>
               </li>
             );

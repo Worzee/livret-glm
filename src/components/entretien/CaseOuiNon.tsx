@@ -14,17 +14,13 @@ interface CaseOuiNonProps {
   className?: string;
 }
 
-export function CaseOuiNon({
-  editable,
-  valeur,
-  onChange,
-  ariaLabel,
-  className,
-}: CaseOuiNonProps) {
+export function CaseOuiNon({ editable, valeur, onChange, ariaLabel, className }: CaseOuiNonProps) {
   if (!editable) {
     if (valeur === null) {
       return (
-        <span className={cn('inline-flex items-center gap-1 text-xs text-muted-foreground', className)}>
+        <span
+          className={cn('inline-flex items-center gap-1 text-xs text-muted-foreground', className)}
+        >
           <CircleDashed className="h-3.5 w-3.5" aria-hidden="true" />
           Non renseigné
         </span>

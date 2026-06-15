@@ -42,11 +42,7 @@ describe('validerSaisieFichePeriode', () => {
   });
 
   it('valide une saisie avec un titre', () => {
-    const r = validerSaisieFichePeriode(
-      { ...SAISIE_VALIDE, titre: 'Stage automne' },
-      [],
-      true,
-    );
+    const r = validerSaisieFichePeriode({ ...SAISIE_VALIDE, titre: 'Stage automne' }, [], true);
     expect(r.ok).toBe(true);
   });
 
@@ -135,12 +131,8 @@ describe('validerSaisieFichePeriode', () => {
     expect(r.erreurs.dateDebut).toMatch(/chevauche/i);
   });
 
-  it("avertit si le titre est très long sans bloquer", () => {
-    const r = validerSaisieFichePeriode(
-      { ...SAISIE_VALIDE, titre: 'A'.repeat(80) },
-      [],
-      true,
-    );
+  it('avertit si le titre est très long sans bloquer', () => {
+    const r = validerSaisieFichePeriode({ ...SAISIE_VALIDE, titre: 'A'.repeat(80) }, [], true);
     expect(r.ok).toBe(true);
     expect(r.avertissements.titre).toBeDefined();
   });
@@ -152,15 +144,13 @@ describe('peutSupprimerFichePeriode', () => {
     expect(r.peut).toBe(true);
   });
 
-  it("refuse si la fiche est verrouillée (R22 ou suppression manuelle)", () => {
-    const r = peutSupprimerFichePeriode(
-      fiche(1, '2025-09-01', '2025-12-15', 'verrouillee'),
-    );
+  it('refuse si la fiche est verrouillée (R22 ou suppression manuelle)', () => {
+    const r = peutSupprimerFichePeriode(fiche(1, '2025-09-01', '2025-12-15', 'verrouillee'));
     expect(r.peut).toBe(false);
     expect(r.raison).toMatch(/verrouillée/i);
   });
 
-  it("refuse si au moins une signature est posée (préserve la chaîne de confiance)", () => {
+  it('refuse si au moins une signature est posée (préserve la chaîne de confiance)', () => {
     const f = fiche(1, '2025-09-01', '2025-12-15', 'en-cours');
     f.signatures.apprenti = { signe: true, dateSignature: '2025-12-20' };
     const r = peutSupprimerFichePeriode(f);
@@ -175,9 +165,9 @@ describe('libelleFichePeriode', () => {
     expect(libelleFichePeriode({ ...fiche(2, '2025-09-01', '2025-12-15'), titre: '' })).toBe(
       'Période 2',
     );
-    expect(
-      libelleFichePeriode({ ...fiche(3, '2025-09-01', '2025-12-15'), titre: '   ' }),
-    ).toBe('Période 3');
+    expect(libelleFichePeriode({ ...fiche(3, '2025-09-01', '2025-12-15'), titre: '   ' })).toBe(
+      'Période 3',
+    );
   });
 
   it('retourne « Période N — <titre> » quand le titre est rempli', () => {

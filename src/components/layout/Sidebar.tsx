@@ -62,14 +62,54 @@ const LIENS_LIVRET: LienItem[] = [
  * accéder aux formations ou affectations.
  */
 const LIENS_ADMIN: Array<LienItem & { ressource: Ressource }> = [
-  { to: '/admin/utilisateurs', label: 'Utilisateurs', Icon: Users, ressource: 'admin.utilisateurs.creer-apprenti' },
-  { to: '/admin/import-utilisateurs', label: 'Import Excel', Icon: FileSpreadsheet, ressource: 'admin.utilisateurs.import-xlsx' },
-  { to: '/admin/formations', label: 'Formations', Icon: GraduationCap, ressource: 'admin.formations.creer' },
-  { to: '/admin/affectations', label: 'Affectations', Icon: Link2, ressource: 'admin.affectations.gerer' },
-  { to: '/admin/referentiels', label: 'Référentiels', Icon: Library, ressource: 'admin.referentiels.gerer' },
-  { to: '/admin/banque-questions', label: 'Banque de questions', Icon: ListChecks, ressource: 'admin.banque-questions.gerer' },
-  { to: '/admin/etablissements', label: 'Établissements', Icon: Building2, ressource: 'admin.etablissements.gerer' },
-  { to: '/admin/attitudes', label: 'Attitudes', Icon: Activity, ressource: 'admin.attitudes.gerer' },
+  {
+    to: '/admin/utilisateurs',
+    label: 'Utilisateurs',
+    Icon: Users,
+    ressource: 'admin.utilisateurs.creer-apprenti',
+  },
+  {
+    to: '/admin/import-utilisateurs',
+    label: 'Import Excel',
+    Icon: FileSpreadsheet,
+    ressource: 'admin.utilisateurs.import-xlsx',
+  },
+  {
+    to: '/admin/formations',
+    label: 'Formations',
+    Icon: GraduationCap,
+    ressource: 'admin.formations.creer',
+  },
+  {
+    to: '/admin/affectations',
+    label: 'Affectations',
+    Icon: Link2,
+    ressource: 'admin.affectations.gerer',
+  },
+  {
+    to: '/admin/referentiels',
+    label: 'Référentiels',
+    Icon: Library,
+    ressource: 'admin.referentiels.gerer',
+  },
+  {
+    to: '/admin/banque-questions',
+    label: 'Banque de questions',
+    Icon: ListChecks,
+    ressource: 'admin.banque-questions.gerer',
+  },
+  {
+    to: '/admin/etablissements',
+    label: 'Établissements',
+    Icon: Building2,
+    ressource: 'admin.etablissements.gerer',
+  },
+  {
+    to: '/admin/attitudes',
+    label: 'Attitudes',
+    Icon: Activity,
+    ressource: 'admin.attitudes.gerer',
+  },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────

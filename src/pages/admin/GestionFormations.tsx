@@ -182,9 +182,7 @@ export function GestionFormations() {
                         data-testid={`planning-${f.id}`}
                       >
                         <CalendarRange className="h-3.5 w-3.5" aria-hidden="true" />
-                        <span className="hidden sm:inline">
-                          Planning ({f.periodes.length})
-                        </span>
+                        <span className="hidden sm:inline">Planning ({f.periodes.length})</span>
                       </button>
                     )}
                     {editable && (
@@ -217,9 +215,7 @@ export function GestionFormations() {
                         )}
                       >
                         <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                        {enConfirmation && (
-                          <span className="text-xs font-medium">Confirmer</span>
-                        )}
+                        {enConfirmation && <span className="text-xs font-medium">Confirmer</span>}
                       </button>
                     )}
                   </div>
@@ -313,7 +309,7 @@ export function GestionFormations() {
         // `key` distincte par mode → force un remount frais à chaque
         // ouverture (création / édition d'une formation donnée). Évite la
         // persistance d'un state local entre deux ouvertures consécutives.
-        key={modaleOuverte ? formationEnEdition?.id ?? 'creation' : 'fermee'}
+        key={modaleOuverte ? (formationEnEdition?.id ?? 'creation') : 'fermee'}
         ouvert={modaleOuverte}
         formation={formationEnEdition}
         onAnnuler={() => {
@@ -340,13 +336,11 @@ function AccesRefuse({ roleActif }: { roleActif: Role }) {
       <div className="flex items-start gap-3">
         <Lock className="h-5 w-5 shrink-0 text-amber-700 mt-0.5" aria-hidden="true" />
         <div>
-          <h1 className="text-lg font-medium text-amber-900">
-            Accès réservé à l'administration
-          </h1>
+          <h1 className="text-lg font-medium text-amber-900">Accès réservé à l'administration</h1>
           <p className="mt-2 text-sm text-amber-900/80">
             Vous êtes actuellement connecté·e en tant que <strong>{libelleRole(roleActif)}</strong>.
-            La gestion des formations est réservée aux rôles{' '}
-            <strong>Coordinateur·rice</strong> et <strong>Administrateur·rice</strong>.
+            La gestion des formations est réservée aux rôles <strong>Coordinateur·rice</strong> et{' '}
+            <strong>Administrateur·rice</strong>.
           </p>
         </div>
       </div>

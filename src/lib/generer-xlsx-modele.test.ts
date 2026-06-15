@@ -51,18 +51,14 @@ describe('genererXlsx', () => {
   it('échappe correctement les caractères XML spéciaux dans les valeurs', () => {
     const lignes = roundTrip({
       entetes: ['Champ'],
-      exemples: [
-        ['A & B'],
-        ['<balise>'],
-        ['"guillemets" et \'apostrophes\''],
-      ],
+      exemples: [['A & B'], ['<balise>'], ['"guillemets" et \'apostrophes\'']],
     });
     expect(lignes[1]?.[0]).toBe('A & B');
     expect(lignes[2]?.[0]).toBe('<balise>');
     expect(lignes[3]?.[0]).toBe('"guillemets" et \'apostrophes\'');
   });
 
-  it("préserve les espaces de tête / de fin dans les cellules", () => {
+  it('préserve les espaces de tête / de fin dans les cellules', () => {
     const lignes = roundTrip({
       entetes: ['Texte'],
       exemples: [['  espacé  ']],
@@ -97,7 +93,7 @@ describe('isoEnSerialExcel', () => {
     expect(isoEnSerialExcel('2025-09-02')).toBe(45902);
   });
 
-  it("retourne null pour une chaîne non ISO", () => {
+  it('retourne null pour une chaîne non ISO', () => {
     expect(isoEnSerialExcel('20/01/1988')).toBeNull();
     expect(isoEnSerialExcel('')).toBeNull();
     expect(isoEnSerialExcel('hello')).toBeNull();
@@ -105,7 +101,7 @@ describe('isoEnSerialExcel', () => {
 });
 
 describe('genererXlsx avec colonnesDate', () => {
-  it("écrit les cellules date en numérique (parser retourne le serial brut)", () => {
+  it('écrit les cellules date en numérique (parser retourne le serial brut)', () => {
     // Quand la cellule a un format date Excel (s="1"), le parser-xlsx
     // existant retourne la valeur numérique brute (le serial), pas une
     // chaîne ISO. C'est l'appelant qui re-convertit (cf. import-utilisateurs).
@@ -122,7 +118,7 @@ describe('genererXlsx avec colonnesDate', () => {
     expect(lignes[1][1]).toBe('45902');
   });
 
-  it("garde les en-têtes en texte même pour les colonnes date", () => {
+  it('garde les en-têtes en texte même pour les colonnes date', () => {
     const bytes = genererXlsx({
       entetes: ['Date de naissance'],
       exemples: [['2007-04-15']],

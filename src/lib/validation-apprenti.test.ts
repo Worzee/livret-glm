@@ -42,9 +42,7 @@ describe('validerSaisieApprenti', () => {
     expect(
       validerSaisieApprenti({ ...VALIDE, contratDebut: '' }).erreurs.contratDebut,
     ).toBeDefined();
-    expect(
-      validerSaisieApprenti({ ...VALIDE, contratFin: '' }).erreurs.contratFin,
-    ).toBeDefined();
+    expect(validerSaisieApprenti({ ...VALIDE, contratFin: '' }).erreurs.contratFin).toBeDefined();
   });
 
   it('refuse une fin de contrat antérieure ou égale au début', () => {
@@ -66,7 +64,7 @@ describe('validerSaisieApprenti', () => {
     expect(r.erreurs.dateNaissance).toContain('au moins 15 ans');
   });
 
-  it("avertit (sans bloquer) pour un âge supérieur à 29 ans — dérogations RQTH/sportif/etc.", () => {
+  it('avertit (sans bloquer) pour un âge supérieur à 29 ans — dérogations RQTH/sportif/etc.', () => {
     const r = validerSaisieApprenti({
       ...VALIDE,
       dateNaissance: '1988-01-20', // 37 ans en 2025-09
@@ -85,7 +83,7 @@ describe('validerSaisieApprenti', () => {
     expect(r.avertissements.dateNaissance).toBeUndefined();
   });
 
-  it("exige les 4 affectations à la création (formation, maître, formateur, entreprise)", () => {
+  it('exige les 4 affectations à la création (formation, maître, formateur, entreprise)', () => {
     const sansAffectation: SaisieApprenti = {
       ...VALIDE,
       formationId: '',

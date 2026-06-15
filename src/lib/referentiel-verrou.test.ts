@@ -13,7 +13,7 @@ const formation = (id: string, referentielId: string): Formation => ({
   lieuId: 'eta-test',
   periodes: [],
   nombreEntretiens: 2,
-      questionsRetirees: [],
+  questionsRetirees: [],
 });
 
 describe('evaluerVerrouReferentiel', () => {
@@ -24,15 +24,13 @@ describe('evaluerVerrouReferentiel', () => {
   });
 
   it('verrouille la suppression si au moins 1 formation est rattachée', () => {
-    const r = evaluerVerrouReferentiel('ref-cap-cuisine', [
-      formation('f-1', 'ref-cap-cuisine'),
-    ]);
+    const r = evaluerVerrouReferentiel('ref-cap-cuisine', [formation('f-1', 'ref-cap-cuisine')]);
     expect(r.verrouille).toBe(true);
     expect(r.nbFormationsRattachees).toBe(1);
     expect(r.raison).toMatch(/1 formation/i);
   });
 
-  it("compte uniquement les formations rattachées au référentiel demandé", () => {
+  it('compte uniquement les formations rattachées au référentiel demandé', () => {
     const r = evaluerVerrouReferentiel('ref-cap-cuisine', [
       formation('f-1', 'ref-cap-cuisine'),
       formation('f-2', 'ref-cap-cuisine'),

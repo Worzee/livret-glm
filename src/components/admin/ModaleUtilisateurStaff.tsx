@@ -2,10 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { HardHat, ShieldCheck, UserCog, X } from 'lucide-react';
 import type { Coordo, Formateur, Maitre } from '@/types';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
-import {
-  type SaisieStaff,
-  validerSaisieStaff,
-} from '@/lib/validation-utilisateur-staff';
+import { type SaisieStaff, validerSaisieStaff } from '@/lib/validation-utilisateur-staff';
 import { libelleRole } from '@/lib/droits';
 import { cn } from '@/lib/utils';
 
@@ -210,8 +207,8 @@ export function ModaleUtilisateurStaff({
                 {titre}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Identité du compte. L'affectation (apprenti·e·s, promo, formations)
-                se gère dans la page <em>Affectations</em>.
+                Identité du compte. L'affectation (apprenti·e·s, promo, formations) se gère dans la
+                page <em>Affectations</em>.
               </p>
             </div>
           </div>
@@ -292,7 +289,9 @@ export function ModaleUtilisateurStaff({
             type="submit"
             className="inline-flex items-center gap-1.5 rounded-md bouton-plein-couleur-role px-4 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            {utilisateur ? 'Enregistrer les modifications' : `Créer ${libelleRole(role).toLowerCase()}`}
+            {utilisateur
+              ? 'Enregistrer les modifications'
+              : `Créer ${libelleRole(role).toLowerCase()}`}
           </button>
           <button
             type="button"

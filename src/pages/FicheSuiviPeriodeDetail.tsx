@@ -49,7 +49,10 @@ export function FicheSuiviPeriodeDetail() {
   return (
     <div className="space-y-6">
       <nav aria-label="Fil d'Ariane" className="text-xs text-muted-foreground">
-        <Link to="/livret/fiches-suivi" className="hover:text-foreground inline-flex items-center gap-1">
+        <Link
+          to="/livret/fiches-suivi"
+          className="hover:text-foreground inline-flex items-center gap-1"
+        >
           <ArrowLeft className="h-3 w-3" aria-hidden="true" />
           Toutes les fiches de suivi
         </Link>
@@ -116,28 +119,21 @@ export function FicheSuiviPeriodeDetail() {
           >
             <History className="h-4 w-4 text-amber-700" aria-hidden="true" />
             Historique des déverrouillages
-            <span className="ml-auto text-xs font-normal text-amber-800">
-              R10 · traçabilité
-            </span>
+            <span className="ml-auto text-xs font-normal text-amber-800">R10 · traçabilité</span>
           </h2>
           <ul className="space-y-2 text-sm">
-            {[...fiche.historiqueDeverrouillages]
-              .reverse()
-              .map((entree) => (
-                <li
-                  key={entree.id}
-                  className="rounded-md border border-amber-200 bg-white p-3"
-                >
-                  <p className="text-xs text-amber-900/80">
-                    {new Date(entree.dateIso).toLocaleString('fr-FR', {
-                      dateStyle: 'long',
-                      timeStyle: 'short',
-                    })}{' '}
-                    — {entree.auteurNom} ({libelleRole(entree.auteurRole)})
-                  </p>
-                  <p className="mt-1 text-amber-950">{entree.motif}</p>
-                </li>
-              ))}
+            {[...fiche.historiqueDeverrouillages].reverse().map((entree) => (
+              <li key={entree.id} className="rounded-md border border-amber-200 bg-white p-3">
+                <p className="text-xs text-amber-900/80">
+                  {new Date(entree.dateIso).toLocaleString('fr-FR', {
+                    dateStyle: 'long',
+                    timeStyle: 'short',
+                  })}{' '}
+                  — {entree.auteurNom} ({libelleRole(entree.auteurRole)})
+                </p>
+                <p className="mt-1 text-amber-950">{entree.motif}</p>
+              </li>
+            ))}
           </ul>
         </section>
       )}

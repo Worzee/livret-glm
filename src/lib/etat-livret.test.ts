@@ -40,7 +40,11 @@ describe('calculerResumeLivret — cas pédagogique', () => {
   });
 
   it('Théo (bon élève) : 3 fiches verrouillées → "toutes-signees"', () => {
-    const r = calculerResumeLivret(apprentiTheoDubois, getLivret(apprentiTheoDubois.id), MAINTENANT);
+    const r = calculerResumeLivret(
+      apprentiTheoDubois,
+      getLivret(apprentiTheoDubois.id),
+      MAINTENANT,
+    );
     expect(r.cas).toBe('toutes-signees');
     expect(r.nbFiches).toBe(3);
     expect(r.nbFichesSignees).toBe(3);
@@ -61,7 +65,11 @@ describe('calculerResumeLivret — cas pédagogique', () => {
   });
 
   it('Minh (démarrage) : entretien signé, aucune fiche → "demarrage"', () => {
-    const r = calculerResumeLivret(apprentiMinhNguyen, getLivret(apprentiMinhNguyen.id), MAINTENANT);
+    const r = calculerResumeLivret(
+      apprentiMinhNguyen,
+      getLivret(apprentiMinhNguyen.id),
+      MAINTENANT,
+    );
     expect(r.cas).toBe('demarrage');
     expect(r.entretienComplet).toBe(true);
     expect(r.alerteR7).toBe(false);
@@ -159,7 +167,7 @@ function ficheVierge(numero: number): FicheSuiviPeriode {
 }
 
 describe('calculerResumeLivret — transitions de cas', () => {
-  it("démarrage → en-cours après création de la 1ère fiche", () => {
+  it('démarrage → en-cours après création de la 1ère fiche', () => {
     const livretMinh = getLivret(apprentiMinhNguyen.id);
     expect(calculerResumeLivret(apprentiMinhNguyen, livretMinh, MAINTENANT).cas).toBe('demarrage');
 
@@ -170,7 +178,7 @@ describe('calculerResumeLivret — transitions de cas', () => {
     expect(r.nbFichesSignees).toBe(0);
   });
 
-  it("en-cours → toutes-signees après signature de la dernière fiche", () => {
+  it('en-cours → toutes-signees après signature de la dernière fiche', () => {
     const livretLea = getLivret(apprentiLeaMartin.id);
     expect(calculerResumeLivret(apprentiLeaMartin, livretLea, MAINTENANT).cas).toBe('en-cours');
 
@@ -194,7 +202,9 @@ describe('calculerResumeLivret — transitions de cas', () => {
 
   it("toutes-signees → en-cours après création d'une nouvelle fiche en brouillon", () => {
     const livretTheo = getLivret(apprentiTheoDubois.id);
-    expect(calculerResumeLivret(apprentiTheoDubois, livretTheo, MAINTENANT).cas).toBe('toutes-signees');
+    expect(calculerResumeLivret(apprentiTheoDubois, livretTheo, MAINTENANT).cas).toBe(
+      'toutes-signees',
+    );
 
     const livretAvecP4: Livret = {
       ...livretTheo,
@@ -205,9 +215,11 @@ describe('calculerResumeLivret — transitions de cas', () => {
     expect(r.nbFiches).toBe(livretTheo.fichesSuivi.length + 1);
   });
 
-  it("toutes-signees → desaccord après déverrouillage R10 sur la dernière fiche", () => {
+  it('toutes-signees → desaccord après déverrouillage R10 sur la dernière fiche', () => {
     const livretTheo = getLivret(apprentiTheoDubois.id);
-    expect(calculerResumeLivret(apprentiTheoDubois, livretTheo, MAINTENANT).cas).toBe('toutes-signees');
+    expect(calculerResumeLivret(apprentiTheoDubois, livretTheo, MAINTENANT).cas).toBe(
+      'toutes-signees',
+    );
 
     const dernierIdx = livretTheo.fichesSuivi.length - 1;
     const livretDeverrouille: Livret = {
@@ -229,7 +241,7 @@ describe('calculerResumeLivret — transitions de cas', () => {
                   auteurId: 'u-formateur-test',
                   auteurNom: 'Sophie DUBOIS',
                   auteurRole: 'formateur' as const,
-                  motif: "Test de transition vers desaccord (motif suffisamment long).",
+                  motif: 'Test de transition vers desaccord (motif suffisamment long).',
                 },
               ],
             }

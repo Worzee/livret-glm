@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type {
-  Apprenti,
-  Coordo,
-  Etablissement,
-  Formateur,
-  Formation,
-  Maitre,
-} from '@/types';
+import type { Apprenti, Coordo, Etablissement, Formateur, Formation, Maitre } from '@/types';
 import { etablissementsAccessibles } from './etablissements-accessibles';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -32,7 +25,7 @@ const form1: Formation = {
   lieuId: eta1.id,
   periodes: [],
   nombreEntretiens: 2,
-      questionsRetirees: [],
+  questionsRetirees: [],
 };
 const form2: Formation = {
   id: 'f-2',
@@ -45,7 +38,7 @@ const form2: Formation = {
   lieuId: eta2.id,
   periodes: [],
   nombreEntretiens: 2,
-      questionsRetirees: [],
+  questionsRetirees: [],
 };
 
 const app1: Apprenti = {
@@ -111,7 +104,7 @@ describe('etablissementsAccessibles', () => {
     expect(r.map((e) => e.id)).toEqual([eta1.id, eta2.id, etaSansFormation.id]);
   });
 
-  it('apprenti·e : voit uniquement l\'établissement de sa formation', () => {
+  it("apprenti·e : voit uniquement l'établissement de sa formation", () => {
     const r = etablissementsAccessibles({
       ...baseCtx,
       role: 'apprenti',
@@ -120,7 +113,7 @@ describe('etablissementsAccessibles', () => {
     expect(r.map((e) => e.id)).toEqual([eta1.id]);
   });
 
-  it("maître : voit les établissements des formations de ses apprenti·e·s (déduplication)", () => {
+  it('maître : voit les établissements des formations de ses apprenti·e·s (déduplication)', () => {
     const r = etablissementsAccessibles({
       ...baseCtx,
       role: 'maitre',
@@ -129,7 +122,7 @@ describe('etablissementsAccessibles', () => {
     expect(r.map((e) => e.id)).toEqual([eta1.id]);
   });
 
-  it('formateur : voit les établissements des promos qu\'il/elle encadre', () => {
+  it("formateur : voit les établissements des promos qu'il/elle encadre", () => {
     const r = etablissementsAccessibles({
       ...baseCtx,
       role: 'formateur',

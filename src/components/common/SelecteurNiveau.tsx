@@ -100,7 +100,12 @@ export function SelecteurNiveau({
   if (!editable) {
     if (valeur === null) {
       return (
-        <span className={cn('inline-flex items-center gap-1.5 text-xs text-muted-foreground', className)}>
+        <span
+          className={cn(
+            'inline-flex items-center gap-1.5 text-xs text-muted-foreground',
+            className,
+          )}
+        >
           <Minus className="h-3.5 w-3.5" aria-hidden="true" />
           Non renseigné
         </span>

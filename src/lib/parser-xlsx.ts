@@ -92,8 +92,7 @@ function extraireCellules(xml: string, sharedStrings: string[]): string[] {
   const ligne: string[] = [];
   // Cellule auto-fermante : <c r="A1"/>  → vide
   // Cellule pleine    : <c r="A1" [t="s"]><v>0</v></c>
-  const cellRegex =
-    /<c\b\s+r="([A-Z]+)\d+"(?:\s+[^/>]*?)?(?:\/>|>([\s\S]*?)<\/c>)/g;
+  const cellRegex = /<c\b\s+r="([A-Z]+)\d+"(?:\s+[^/>]*?)?(?:\/>|>([\s\S]*?)<\/c>)/g;
   for (const m of xml.matchAll(cellRegex)) {
     const ref = m[1];
     const inner = m[2];

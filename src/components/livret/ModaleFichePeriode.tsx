@@ -2,10 +2,7 @@ import { useEffect, useId, useState } from 'react';
 import { CalendarRange, X } from 'lucide-react';
 import type { FicheSuiviPeriode } from '@/types';
 import { useLivretStore } from '@/store/useLivretStore';
-import {
-  type SaisieFichePeriode,
-  validerSaisieFichePeriode,
-} from '@/lib/validation-fiche-periode';
+import { type SaisieFichePeriode, validerSaisieFichePeriode } from '@/lib/validation-fiche-periode';
 import { cn } from '@/lib/utils';
 
 /**
@@ -133,7 +130,7 @@ export function ModaleFichePeriode({
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {fiche
-                  ? 'Titre et dates — les autres champs s\'éditent depuis la fiche.'
+                  ? "Titre et dates — les autres champs s'éditent depuis la fiche."
                   : 'Le numéro est attribué automatiquement.'}
               </p>
             </div>
@@ -255,9 +252,7 @@ function Champ({
           !erreur && !avertissement && 'border-input',
         )}
       />
-      {hint && !erreur && !avertissement && (
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      )}
+      {hint && !erreur && !avertissement && <p className="text-xs text-muted-foreground">{hint}</p>}
       {erreur && (
         <p id={messageId} role="alert" className="text-xs text-red-700">
           {erreur}

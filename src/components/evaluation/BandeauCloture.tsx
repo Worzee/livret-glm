@@ -4,11 +4,7 @@ import type { Livret } from '@/types';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useUserStore } from '@/store/useUserStore';
 import { peutEditer, libelleRole } from '@/lib/droits';
-import {
-  estCloture,
-  motifBlocageCloture,
-  peutCloturer,
-} from '@/lib/cloture-livret';
+import { estCloture, motifBlocageCloture, peutCloturer } from '@/lib/cloture-livret';
 
 /**
  * Bandeau de clôture du livret (R22).
@@ -50,8 +46,8 @@ export function BandeauCloture({ livret }: BandeauClotureProps) {
             <p className="font-medium text-blue-900">Ce livret est clôturé.</p>
             <p className="text-sm text-blue-900/80">
               Clôturé le <strong>{dateLisible}</strong> par{' '}
-              <strong>{livret.cloture.auteurNom}</strong> ({libelleRole(livret.cloture.auteurRole)}).
-              Les grilles d'évaluation finales sont en lecture seule.
+              <strong>{livret.cloture.auteurNom}</strong> ({libelleRole(livret.cloture.auteurRole)}
+              ). Les grilles d'évaluation finales sont en lecture seule.
             </p>
           </div>
         </div>
@@ -107,9 +103,7 @@ export function BandeauCloture({ livret }: BandeauClotureProps) {
         <Lock className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
         <div className="space-y-1">
           <p className="font-medium">Clôture du livret indisponible</p>
-          <p className="text-sm text-muted-foreground">
-            {motifBlocageCloture(livret)}
-          </p>
+          <p className="text-sm text-muted-foreground">{motifBlocageCloture(livret)}</p>
         </div>
       </section>
     );
@@ -128,9 +122,9 @@ export function BandeauCloture({ livret }: BandeauClotureProps) {
             Toutes les fiches de période sont verrouillées.
           </p>
           <p className="text-sm text-emerald-900/80">
-            Vous pouvez clôturer le livret. Les grilles d'évaluation finales passeront
-            en lecture seule. Cette action est traçable et réversible (réouverture
-            possible par le formateur référent).
+            Vous pouvez clôturer le livret. Les grilles d'évaluation finales passeront en lecture
+            seule. Cette action est traçable et réversible (réouverture possible par le formateur
+            référent).
           </p>
         </div>
       </div>

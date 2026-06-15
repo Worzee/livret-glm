@@ -1,12 +1,4 @@
-import type {
-  Apprenti,
-  Coordo,
-  Etablissement,
-  Formateur,
-  Formation,
-  Maitre,
-  Role,
-} from '@/types';
+import type { Apprenti, Coordo, Etablissement, Formateur, Formation, Maitre, Role } from '@/types';
 
 /**
  * Filtrage des établissements visibles côté `/livret/pronote` selon le rôle
@@ -42,8 +34,16 @@ interface Contexte {
 }
 
 export function etablissementsAccessibles(ctx: Contexte): Etablissement[] {
-  const { role, utilisateurId, formations, apprentis, maitres, formateurs, coordos, etablissements } =
-    ctx;
+  const {
+    role,
+    utilisateurId,
+    formations,
+    apprentis,
+    maitres,
+    formateurs,
+    coordos,
+    etablissements,
+  } = ctx;
 
   // Admin : tout.
   if (role === 'admin') {

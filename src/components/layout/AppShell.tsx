@@ -88,9 +88,7 @@ export function AppShell() {
                   <span className="text-xs">({libelleRole(roleActif)})</span>
                 </span>
               </div>
-              {trio && (
-                <TrioContextuel trio={trio} testid="header-trio-contextuel" />
-              )}
+              {trio && <TrioContextuel trio={trio} testid="header-trio-contextuel" />}
             </div>
             <RoleSwitcher />
           </div>
@@ -102,10 +100,7 @@ export function AppShell() {
         {trio && (
           <div className="lg:hidden border-t border-border/60 bg-card/60">
             <div className="container py-1.5">
-              <TrioContextuel
-                trio={trio}
-                testid="header-trio-contextuel-mobile"
-              />
+              <TrioContextuel trio={trio} testid="header-trio-contextuel-mobile" />
             </div>
           </div>
         )}
@@ -150,38 +145,29 @@ interface TrioContextuelProps {
 }
 
 function TrioContextuel({ trio, testid }: TrioContextuelProps) {
-  const fmt = (p?: { prenom: string; nom: string }) =>
-    p ? `${p.prenom} ${p.nom}` : '—';
+  const fmt = (p?: { prenom: string; nom: string }) => (p ? `${p.prenom} ${p.nom}` : '—');
   // `flex-wrap` permet le wrap gracieux sur mobile (Pixel 5 = 393px) ; sur
   // desktop tout tient sur une ligne.
   return (
-    <div
-      className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs"
-      data-testid={testid}
-    >
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" data-testid={testid}>
       <span className="inline-flex items-center gap-1" title="Apprenti·e">
-        <GraduationCap
-          className="h-3.5 w-3.5 shrink-0 text-role-apprenti"
-          aria-hidden="true"
-        />
+        <GraduationCap className="h-3.5 w-3.5 shrink-0 text-role-apprenti" aria-hidden="true" />
         <span className="sr-only">Apprenti·e :</span>
         <strong className="font-medium text-foreground">{fmt(trio.apprenti)}</strong>
       </span>
-      <span aria-hidden="true" className="text-muted-foreground/40">·</span>
+      <span aria-hidden="true" className="text-muted-foreground/40">
+        ·
+      </span>
       <span className="inline-flex items-center gap-1" title="Maître / Tuteur">
-        <HardHat
-          className="h-3.5 w-3.5 shrink-0 text-role-maitre"
-          aria-hidden="true"
-        />
+        <HardHat className="h-3.5 w-3.5 shrink-0 text-role-maitre" aria-hidden="true" />
         <span className="sr-only">Maître / Tuteur :</span>
         <strong className="font-medium text-foreground">{fmt(trio.maitre)}</strong>
       </span>
-      <span aria-hidden="true" className="text-muted-foreground/40">·</span>
+      <span aria-hidden="true" className="text-muted-foreground/40">
+        ·
+      </span>
       <span className="inline-flex items-center gap-1" title="Formateur référent">
-        <UserCog
-          className="h-3.5 w-3.5 shrink-0 text-role-formateur"
-          aria-hidden="true"
-        />
+        <UserCog className="h-3.5 w-3.5 shrink-0 text-role-formateur" aria-hidden="true" />
         <span className="sr-only">Formateur référent :</span>
         <strong className="font-medium text-foreground">{fmt(trio.formateur)}</strong>
       </span>

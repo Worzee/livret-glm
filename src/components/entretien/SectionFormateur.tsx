@@ -27,19 +27,39 @@ interface SectionFormateurProps {
   entretien: EntretienTripartite;
 }
 
-const DEMARCHES: Array<{ cle: keyof Omit<DemarchesAdministratives, 'remarques'>; libelle: string }> = [
+const DEMARCHES: Array<{
+  cle: keyof Omit<DemarchesAdministratives, 'remarques'>;
+  libelle: string;
+}> = [
   { cle: 'contratSigne', libelle: 'Contrat signé' },
   { cle: 'visiteMedicale', libelle: 'Visite médicale effectuée' },
   { cle: 'permisConduire', libelle: 'Permis de conduire' },
   { cle: 'voiture', libelle: 'Véhicule personnel' },
 ];
 
-const CONDITIONS: Array<{ cle: keyof ConditionsPratiques; libelle: string; placeholder: string }> = [
-  { cle: 'hebergementCentre', libelle: 'Hébergement pendant les périodes au CFA', placeholder: 'Domicile, internat, location…' },
-  { cle: 'hebergementEntreprise', libelle: 'Hébergement pendant les périodes en entreprise', placeholder: 'Domicile, hébergement temporaire…' },
-  { cle: 'transportCentre', libelle: 'Transport vers le CFA', placeholder: 'Métro, bus, voiture…' },
-  { cle: 'transportEntreprise', libelle: "Transport vers l'entreprise", placeholder: 'Métro, bus, voiture…' },
-];
+const CONDITIONS: Array<{ cle: keyof ConditionsPratiques; libelle: string; placeholder: string }> =
+  [
+    {
+      cle: 'hebergementCentre',
+      libelle: 'Hébergement pendant les périodes au CFA',
+      placeholder: 'Domicile, internat, location…',
+    },
+    {
+      cle: 'hebergementEntreprise',
+      libelle: 'Hébergement pendant les périodes en entreprise',
+      placeholder: 'Domicile, hébergement temporaire…',
+    },
+    {
+      cle: 'transportCentre',
+      libelle: 'Transport vers le CFA',
+      placeholder: 'Métro, bus, voiture…',
+    },
+    {
+      cle: 'transportEntreprise',
+      libelle: "Transport vers l'entreprise",
+      placeholder: 'Métro, bus, voiture…',
+    },
+  ];
 
 const AIDES: Array<{ cle: keyof Omit<AidesDemandees, 'autres'>; libelle: string }> = [
   { cle: 'logement', libelle: 'Aide au logement' },
@@ -64,14 +84,9 @@ export function SectionFormateur({ livretId, numero, entretien }: SectionFormate
   return (
     <section className="rounded-lg border border-border border-l-4 border-l-role-formateur bg-card p-4 space-y-5">
       <header className="flex items-start gap-2">
-        <UserCog
-          className="mt-1 h-5 w-5 shrink-0 text-role-formateur"
-          aria-hidden="true"
-        />
+        <UserCog className="mt-1 h-5 w-5 shrink-0 text-role-formateur" aria-hidden="true" />
         <div>
-          <h2 className="text-lg font-medium text-role-formateur">
-            Formateur référent
-          </h2>
+          <h2 className="text-lg font-medium text-role-formateur">Formateur référent</h2>
           <p className="text-xs text-muted-foreground">
             Réservé au formateur référent. Verrouillé après votre signature.
           </p>

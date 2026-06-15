@@ -14,7 +14,7 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('decoderTexteCsv', () => {
-  it("décode un buffer UTF-8 valide", () => {
+  it('décode un buffer UTF-8 valide', () => {
     const enc = new TextEncoder();
     const buf = enc.encode('Compétence;Niveau').buffer;
     const r = decoderTexteCsv(buf);
@@ -36,15 +36,15 @@ describe('decoderTexteCsv', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('detecterSeparateur', () => {
-  it("détecte le point-virgule comme séparateur dominant", () => {
+  it('détecte le point-virgule comme séparateur dominant', () => {
     expect(detecterSeparateur('a;b;c\nd;e;f')).toBe(';');
   });
 
-  it("détecte la virgule", () => {
+  it('détecte la virgule', () => {
     expect(detecterSeparateur('a,b,c\nd,e,f')).toBe(',');
   });
 
-  it("détecte la tabulation", () => {
+  it('détecte la tabulation', () => {
     expect(detecterSeparateur('a\tb\tc\nd\te\tf')).toBe('\t');
   });
 });
@@ -54,7 +54,7 @@ describe('detecterSeparateur', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('parserCsv', () => {
-  it("parse un CSV simple avec point-virgule", () => {
+  it('parse un CSV simple avec point-virgule', () => {
     const r = parserCsv('a;b;c\n1;2;3');
     expect(r).toEqual([
       ['a', 'b', 'c'],
@@ -62,7 +62,7 @@ describe('parserCsv', () => {
     ]);
   });
 
-  it("ignore les lignes vides", () => {
+  it('ignore les lignes vides', () => {
     const r = parserCsv('a;b\n\n\nc;d');
     expect(r).toEqual([
       ['a', 'b'],
@@ -70,7 +70,7 @@ describe('parserCsv', () => {
     ]);
   });
 
-  it("respecte les guillemets contenant le séparateur", () => {
+  it('respecte les guillemets contenant le séparateur', () => {
     const r = parserCsv('"a;a";b\nc;"d;d"');
     expect(r).toEqual([
       ['a;a', 'b'],
@@ -78,12 +78,12 @@ describe('parserCsv', () => {
     ]);
   });
 
-  it("retire le BOM UTF-8 en tête de fichier", () => {
+  it('retire le BOM UTF-8 en tête de fichier', () => {
     const r = parserCsv('﻿a;b\n1;2');
     expect(r[0]).toEqual(['a', 'b']);
   });
 
-  it("trime les espaces autour des champs", () => {
+  it('trime les espaces autour des champs', () => {
     const r = parserCsv('  a  ;  b  \n c ; d ');
     expect(r).toEqual([
       ['a', 'b'],
@@ -97,7 +97,7 @@ describe('parserCsv', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('detecterNiveauxColonnes', () => {
-  it("détecte 2 colonnes quand chaque ligne en a 2", () => {
+  it('détecte 2 colonnes quand chaque ligne en a 2', () => {
     const lignes = [
       ['Bloc', 'Compétence'],
       ['BC01', 'Compétence A'],
@@ -106,7 +106,7 @@ describe('detecterNiveauxColonnes', () => {
     expect(detecterNiveauxColonnes(lignes)).toBe(2);
   });
 
-  it("détecte 3 colonnes quand chaque ligne en a 3", () => {
+  it('détecte 3 colonnes quand chaque ligne en a 3', () => {
     const lignes = [
       ['Domaine', 'Compétence', 'Sous-compétence'],
       ['A1.1', 'CO', 'Reconnaître…'],
@@ -115,7 +115,7 @@ describe('detecterNiveauxColonnes', () => {
     expect(detecterNiveauxColonnes(lignes)).toBe(3);
   });
 
-  it("retourne 2 sur un fichier vide ou minimal", () => {
+  it('retourne 2 sur un fichier vide ou minimal', () => {
     expect(detecterNiveauxColonnes([])).toBe(2);
     expect(detecterNiveauxColonnes([['en-tête']])).toBe(2);
   });
@@ -126,19 +126,14 @@ describe('detecterNiveauxColonnes', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('construireReferentiel — 2 colonnes', () => {
-  it("agrège les compétences par bloc", () => {
+  it('agrège les compétences par bloc', () => {
     const lignes = [
       ['Bloc', 'Compétence'],
       ['BC01', 'Réceptionner'],
       ['BC01', 'Préparer son poste'],
       ['BC02', 'Maîtriser les techniques'],
     ];
-    const r = construireReferentiel(
-      lignes,
-      { nomFormation: 'CAP Test' },
-      'utf-8',
-      ';',
-    );
+    const r = construireReferentiel(lignes, { nomFormation: 'CAP Test' }, 'utf-8', ';');
     expect(r.referentiel.blocs).toHaveLength(2);
     expect(r.referentiel.blocs[0].code).toBe('BC01');
     expect(r.referentiel.blocs[0].competences).toHaveLength(2);
@@ -149,17 +144,12 @@ describe('construireReferentiel — 2 colonnes', () => {
     expect(r.stats.nbSousFamilles).toBe(0);
   });
 
-  it("ne crée pas de sousFamille en mode 2 colonnes", () => {
+  it('ne crée pas de sousFamille en mode 2 colonnes', () => {
     const lignes = [
       ['Bloc', 'Compétence'],
       ['BC01', 'Réceptionner'],
     ];
-    const r = construireReferentiel(
-      lignes,
-      { nomFormation: 'X' },
-      'utf-8',
-      ';',
-    );
+    const r = construireReferentiel(lignes, { nomFormation: 'X' }, 'utf-8', ';');
     expect(r.referentiel.blocs[0].competences[0].sousFamille).toBeUndefined();
   });
 });
@@ -169,19 +159,14 @@ describe('construireReferentiel — 2 colonnes', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('construireReferentiel — 3 colonnes (cas CECRL)', () => {
-  it("popule sousFamille depuis la 2ème colonne", () => {
+  it('popule sousFamille depuis la 2ème colonne', () => {
     const lignes = [
       ['Domaine', 'Compétence', 'Sous-compétence'],
       ['A1.1', 'Compréhension orale', 'Reconnaître des mots…'],
       ['A1.1', 'Compréhension orale', 'Comprendre des consignes…'],
       ['A1.1', 'Compréhension écrite', 'Reconnaître des mots familiers'],
     ];
-    const r = construireReferentiel(
-      lignes,
-      { nomFormation: 'CECRL Test' },
-      'utf-8',
-      ';',
-    );
+    const r = construireReferentiel(lignes, { nomFormation: 'CECRL Test' }, 'utf-8', ';');
     expect(r.referentiel.niveauxColonnes).toBe(3);
     expect(r.referentiel.blocs).toHaveLength(1);
     const bloc = r.referentiel.blocs[0];
@@ -193,19 +178,14 @@ describe('construireReferentiel — 3 colonnes (cas CECRL)', () => {
     expect(r.stats.nbSousFamilles).toBe(2);
   });
 
-  it("génère des codes et ids uniques par compétence", () => {
+  it('génère des codes et ids uniques par compétence', () => {
     const lignes = [
       ['Domaine', 'Compétence', 'Sous-compétence'],
       ['A1.1', 'CO', 'Sous A'],
       ['A1.1', 'CO', 'Sous B'],
       ['A1.1', 'CE', 'Sous C'],
     ];
-    const r = construireReferentiel(
-      lignes,
-      { nomFormation: 'X' },
-      'utf-8',
-      ';',
-    );
+    const r = construireReferentiel(lignes, { nomFormation: 'X' }, 'utf-8', ';');
     const ids = r.referentiel.blocs[0].competences.map((c) => c.id);
     expect(new Set(ids).size).toBe(ids.length); // tous uniques
     expect(ids[0]).toBe('bloc-a1-1-c1');
@@ -218,53 +198,39 @@ describe('construireReferentiel — 3 colonnes (cas CECRL)', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('construireReferentiel — robustesse', () => {
-  it("ignore les lignes sans code de bloc avec un avertissement", () => {
+  it('ignore les lignes sans code de bloc avec un avertissement', () => {
     const lignes = [
       ['Bloc', 'Compétence'],
       ['', 'Sans bloc'],
       ['BC01', 'OK'],
     ];
-    const r = construireReferentiel(
-      lignes,
-      { nomFormation: 'X' },
-      'utf-8',
-      ';',
-    );
+    const r = construireReferentiel(lignes, { nomFormation: 'X' }, 'utf-8', ';');
     expect(r.referentiel.blocs).toHaveLength(1);
     expect(r.avertissements.length).toBeGreaterThan(0);
     expect(r.avertissements[0]).toContain('code de bloc');
   });
 
-  it("ignore les lignes sans libellé de compétence", () => {
+  it('ignore les lignes sans libellé de compétence', () => {
     const lignes = [
       ['Bloc', 'Compétence'],
       ['BC01', ''],
       ['BC01', 'OK'],
     ];
-    const r = construireReferentiel(
-      lignes,
-      { nomFormation: 'X' },
-      'utf-8',
-      ';',
-    );
+    const r = construireReferentiel(lignes, { nomFormation: 'X' }, 'utf-8', ';');
     expect(r.referentiel.blocs[0].competences).toHaveLength(1);
     expect(r.avertissements.some((a) => a.includes('libellé'))).toBe(true);
   });
 
-  it("lance une erreur si aucune compétence valide", () => {
+  it('lance une erreur si aucune compétence valide', () => {
     const lignes = [
       ['Bloc', 'Compétence'],
       ['', ''],
     ];
-    expect(() =>
-      construireReferentiel(lignes, { nomFormation: 'X' }, 'utf-8', ';'),
-    ).toThrow();
+    expect(() => construireReferentiel(lignes, { nomFormation: 'X' }, 'utf-8', ';')).toThrow();
   });
 
-  it("lance une erreur sur un fichier complètement vide", () => {
-    expect(() =>
-      construireReferentiel([], { nomFormation: 'X' }, 'utf-8', ';'),
-    ).toThrow();
+  it('lance une erreur sur un fichier complètement vide', () => {
+    expect(() => construireReferentiel([], { nomFormation: 'X' }, 'utf-8', ';')).toThrow();
   });
 });
 
@@ -298,13 +264,13 @@ describe('importerReferentielDepuisTexte', () => {
 });
 
 describe('importerReferentielDepuisBuffer — encodage CP1252', () => {
-  it("décode un CSV en Windows-1252 (cas Excel FR)", () => {
+  it('décode un CSV en Windows-1252 (cas Excel FR)', () => {
     // Construit un buffer CP1252 à la main
     const csvCp1252 = new Uint8Array([
       // "Domaine;Compétence;Sous-compétence\n"
-      0x44, 0x6f, 0x6d, 0x61, 0x69, 0x6e, 0x65, 0x3b,
-      0x43, 0x6f, 0x6d, 0x70, 0xe9, 0x74, 0x65, 0x6e, 0x63, 0x65, 0x3b,
-      0x53, 0x6f, 0x75, 0x73, 0x2d, 0x63, 0x6f, 0x6d, 0x70, 0xe9, 0x74, 0x65, 0x6e, 0x63, 0x65, 0x0a,
+      0x44, 0x6f, 0x6d, 0x61, 0x69, 0x6e, 0x65, 0x3b, 0x43, 0x6f, 0x6d, 0x70, 0xe9, 0x74, 0x65,
+      0x6e, 0x63, 0x65, 0x3b, 0x53, 0x6f, 0x75, 0x73, 0x2d, 0x63, 0x6f, 0x6d, 0x70, 0xe9, 0x74,
+      0x65, 0x6e, 0x63, 0x65, 0x0a,
       // "A1;CO;Hello\n"
       0x41, 0x31, 0x3b, 0x43, 0x4f, 0x3b, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x0a,
     ]).buffer;

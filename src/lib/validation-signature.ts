@@ -25,17 +25,14 @@ export interface ResultatValidation {
 /**
  * Vérifie que tous les pré-requis de R20 sont remplis pour qu'un rôle signe.
  */
-export function validerSignature(
-  fiche: FicheSuiviPeriode,
-  role: Role,
-): ResultatValidation {
+export function validerSignature(fiche: FicheSuiviPeriode, role: Role): ResultatValidation {
   const raisons: string[] = [];
 
   // Coordo et admin ne signent pas en leur nom propre. Les boutons de signature
   // d'un admin doivent être appelés avec le rôle métier ciblé (apprenti, maître
   // ou formateur), pas avec 'admin' lui-même.
   if (role === 'coordo') {
-    raisons.push("Le rôle Coordinateur·rice ne signe pas les fiches de période.");
+    raisons.push('Le rôle Coordinateur·rice ne signe pas les fiches de période.');
     return { peutSigner: false, raisons };
   }
   if (role === 'admin') {
@@ -51,10 +48,10 @@ export function validerSignature(
         (l) => l.retourApprenti && l.retourApprenti.trim().length > 0,
       );
       if (!auMoinsUnRetour) {
-        raisons.push("Renseignez au moins un retour dans la colonne « Retour apprenti·e ».");
+        raisons.push('Renseignez au moins un retour dans la colonne « Retour apprenti·e ».');
       }
       if (!fiche.observations.apprenti || fiche.observations.apprenti.trim().length === 0) {
-        raisons.push('La zone d\'observation apprenti·e est vide.');
+        raisons.push("La zone d'observation apprenti·e est vide.");
       }
       break;
     }
@@ -68,11 +65,11 @@ export function validerSignature(
       );
       if (!auMoinsUneAbordee) {
         raisons.push(
-          "Évaluez au moins une compétence abordée dans la colonne « Évaluation entreprise » (autre que « Non fait »).",
+          'Évaluez au moins une compétence abordée dans la colonne « Évaluation entreprise » (autre que « Non fait »).',
         );
       }
       if (!fiche.observations.maitre || fiche.observations.maitre.trim().length === 0) {
-        raisons.push('La zone d\'observation maître d\'apprentissage est vide.');
+        raisons.push("La zone d'observation maître d'apprentissage est vide.");
       }
       break;
     }
@@ -81,7 +78,7 @@ export function validerSignature(
       const champFormateur = fiche.suiviGretaCfa.formateur?.trim() ?? '';
       if (champFormateur.length === 0) {
         raisons.push(
-          "Renseignez la zone « Suivi de la formation au GRETA CFA — Formateur référent ».",
+          'Renseignez la zone « Suivi de la formation au GRETA CFA — Formateur référent ».',
         );
       }
       // Symétrie avec la règle maître : `'non-fait'` ne suffit pas — le
@@ -92,11 +89,11 @@ export function validerSignature(
       );
       if (!auMoinsUneAbordee) {
         raisons.push(
-          "Évaluez au moins une compétence abordée dans la colonne « Évaluation GRETA CFA » (autre que « Non fait »).",
+          'Évaluez au moins une compétence abordée dans la colonne « Évaluation GRETA CFA » (autre que « Non fait »).',
         );
       }
       if (!fiche.observations.formateur || fiche.observations.formateur.trim().length === 0) {
-        raisons.push('La zone d\'observation formateur référent est vide.');
+        raisons.push("La zone d'observation formateur référent est vide.");
       }
       break;
     }

@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  type SaisieFormation,
-  validerSaisieFormation,
-} from './validation-formation';
+import { type SaisieFormation, validerSaisieFormation } from './validation-formation';
 
 const FORMATION_VALIDE: SaisieFormation = {
   intitule: 'CAP Cuisine',
@@ -37,9 +34,7 @@ describe('validerSaisieFormation', () => {
   });
 
   it("exige l'année non vide", () => {
-    expect(
-      validerSaisieFormation({ ...FORMATION_VALIDE, annee: '' }).erreurs.annee,
-    ).toBeDefined();
+    expect(validerSaisieFormation({ ...FORMATION_VALIDE, annee: '' }).erreurs.annee).toBeDefined();
   });
 
   it("avertit sans bloquer si l'année n'est pas au format YYYY-YYYY", () => {
@@ -77,7 +72,7 @@ describe('validerSaisieFormation', () => {
     expect(r.erreurs.lieuId).toMatch(/lieu de formation/i);
   });
 
-  it('rejette un lieuId composé uniquement d\'espaces', () => {
+  it("rejette un lieuId composé uniquement d'espaces", () => {
     const r = validerSaisieFormation({ ...FORMATION_VALIDE, lieuId: '   ' });
     expect(r.ok).toBe(false);
     expect(r.erreurs.lieuId).toBeDefined();

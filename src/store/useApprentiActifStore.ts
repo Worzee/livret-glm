@@ -5,10 +5,7 @@ import type { Apprenti, Livret } from '@/types';
 import { apprentiLeaMartin } from '@/fixtures/utilisateurs';
 import { useLivretStore } from './useLivretStore';
 import { useUserStore } from './useUserStore';
-import {
-  getApprentiByIdFromStore,
-  useUtilisateursStore,
-} from './useUtilisateursStore';
+import { getApprentiByIdFromStore, useUtilisateursStore } from './useUtilisateursStore';
 
 /**
  * Store de l'apprenti·e affiché·e dans les pages livret.

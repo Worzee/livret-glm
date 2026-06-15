@@ -66,8 +66,7 @@ export function PronoteWeb() {
           <h1 className="text-2xl font-semibold">Pronote WEB</h1>
         </div>
         <p className="text-muted-foreground">
-          Accès direct aux portails Pronote des établissements GRETA auxquels vous êtes
-          rattaché·e.
+          Accès direct aux portails Pronote des établissements GRETA auxquels vous êtes rattaché·e.
         </p>
       </header>
 
@@ -78,28 +77,24 @@ export function PronoteWeb() {
           <div className="space-y-2 text-sm">
             <h2 className="font-medium text-foreground">À propos de Pronote</h2>
             <p>
-              Pronote est l'outil de communication et de suivi pédagogique utilisé par
-              le GRETA Lyon Métropole. Chaque établissement dispose de son propre
-              portail Pronote ; vous y retrouvez emploi du temps, notes, messagerie,
-              vie scolaire, etc.
+              Pronote est l'outil de communication et de suivi pédagogique utilisé par le GRETA Lyon
+              Métropole. Chaque établissement dispose de son propre portail Pronote ; vous y
+              retrouvez emploi du temps, notes, messagerie, vie scolaire, etc.
             </p>
             <p>
-              <strong>Identifiants propres à chacun·e :</strong> chaque utilisateur·rice
-              dispose de ses propres identifiants Pronote, à utiliser directement sur
-              le portail. Le livret d'apprentissage ne stocke aucun mot de passe et ne
-              récupère aucune donnée Pronote — il vous redirige simplement.
+              <strong>Identifiants propres à chacun·e :</strong> chaque utilisateur·rice dispose de
+              ses propres identifiants Pronote, à utiliser directement sur le portail. Le livret
+              d'apprentissage ne stocke aucun mot de passe et ne récupère aucune donnée Pronote — il
+              vous redirige simplement.
             </p>
           </div>
         </div>
 
         <div className="flex items-start gap-3 rounded-md bg-secondary/40 p-3 text-xs">
-          <Shield
-            className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5"
-            aria-hidden="true"
-          />
+          <Shield className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" aria-hidden="true" />
           <p className="text-muted-foreground">
-            <strong>Sécurité.</strong> Les liens ci-dessous ouvrent Pronote dans un
-            nouvel onglet. Vous restez maître·sse de vos identifiants à tout moment.
+            <strong>Sécurité.</strong> Les liens ci-dessous ouvrent Pronote dans un nouvel onglet.
+            Vous restez maître·sse de vos identifiants à tout moment.
           </p>
         </div>
       </section>

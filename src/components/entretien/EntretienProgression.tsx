@@ -27,11 +27,7 @@ export function EntretienProgression({ entretien }: EntretienProgressionProps) {
           label="Apprenti·e"
           classeBarre="bg-role-apprenti"
         />
-        <BarreProgression
-          valeur={p.parRole.maitre}
-          label="Maître"
-          classeBarre="bg-role-maitre"
-        />
+        <BarreProgression valeur={p.parRole.maitre} label="Maître" classeBarre="bg-role-maitre" />
         <BarreProgression
           valeur={p.parRole.formateur}
           label="Formateur"

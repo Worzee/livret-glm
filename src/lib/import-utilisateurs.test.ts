@@ -43,7 +43,7 @@ describe('importerDepuisXlsx — Apprenti·e', () => {
     expect(r.erreurs.some((e) => e.colonne === 'Prénom')).toBe(true);
   });
 
-  it("refuse un email mal formé", () => {
+  it('refuse un email mal formé', () => {
     const r = importerLignes('apprenti', [
       ['Léa', 'Martin', 'pas-un-email', '2007-04-15', '2025-09-02', '2027-09-01'],
     ]);
@@ -51,7 +51,7 @@ describe('importerDepuisXlsx — Apprenti·e', () => {
     expect(r.erreurs.some((e) => e.colonne === 'Email')).toBe(true);
   });
 
-  it("refuse une date de naissance hors format ISO", () => {
+  it('refuse une date de naissance hors format ISO', () => {
     const r = importerLignes('apprenti', [
       ['Léa', 'Martin', 'lea@demo.fr', '15/04/2007', '2025-09-02', '2027-09-01'],
     ]);
@@ -67,7 +67,7 @@ describe('importerDepuisXlsx — Apprenti·e', () => {
     expect(r.erreurs.some((e) => /invalide/.test(e.message))).toBe(true);
   });
 
-  it("refuse une fin de contrat antérieure au début (R2)", () => {
+  it('refuse une fin de contrat antérieure au début (R2)', () => {
     const r = importerLignes('apprenti', [
       ['Léa', 'Martin', 'lea@demo.fr', '2007-04-15', '2025-09-02', '2024-09-01'],
     ]);
@@ -75,7 +75,7 @@ describe('importerDepuisXlsx — Apprenti·e', () => {
     expect(r.erreurs.some((e) => e.colonne === 'Fin de contrat')).toBe(true);
   });
 
-  it("refuse un email déjà présent dans le store (doublon)", () => {
+  it('refuse un email déjà présent dans le store (doublon)', () => {
     const r = importerLignes(
       'apprenti',
       [['Léa', 'Martin', 'lea@demo.fr', '2007-04-15', '2025-09-02', '2027-09-01']],
@@ -85,7 +85,7 @@ describe('importerDepuisXlsx — Apprenti·e', () => {
     expect(r.erreurs.some((e) => /déjà utilisé/.test(e.message))).toBe(true);
   });
 
-  it("refuse 2 lignes du même fichier avec le même email", () => {
+  it('refuse 2 lignes du même fichier avec le même email', () => {
     const r = importerLignes('apprenti', [
       ['Léa', 'Martin', 'lea@demo.fr', '2007-04-15', '2025-09-02', '2027-09-01'],
       ['Théo', 'Dubois', 'lea@demo.fr', '2006-11-23', '2025-09-02', '2027-09-01'],
@@ -114,7 +114,7 @@ describe('importerDepuisXlsx — Apprenti·e', () => {
   });
 });
 
-describe('importerDepuisXlsx — Maître d\'apprentissage', () => {
+describe("importerDepuisXlsx — Maître d'apprentissage", () => {
   it('accepte un maître avec entreprise + fonction', () => {
     const r = importerLignes('maitre', [
       ['Karim', 'Benali', 'karim@demo.fr', 'Le Gourmet', 'Chef de cuisine'],
@@ -128,7 +128,7 @@ describe('importerDepuisXlsx — Maître d\'apprentissage', () => {
     });
   });
 
-  it("refuse un maître sans entreprise", () => {
+  it('refuse un maître sans entreprise', () => {
     const r = importerLignes('maitre', [
       ['Karim', 'Benali', 'karim@demo.fr', '', 'Chef de cuisine'],
     ]);
@@ -136,20 +136,16 @@ describe('importerDepuisXlsx — Maître d\'apprentissage', () => {
     expect(r.erreurs.some((e) => e.colonne === 'Entreprise')).toBe(true);
   });
 
-  it("refuse un maître sans fonction", () => {
-    const r = importerLignes('maitre', [
-      ['Karim', 'Benali', 'karim@demo.fr', 'Le Gourmet', ''],
-    ]);
+  it('refuse un maître sans fonction', () => {
+    const r = importerLignes('maitre', [['Karim', 'Benali', 'karim@demo.fr', 'Le Gourmet', '']]);
     expect(r.ok).toBe(false);
     expect(r.erreurs.some((e) => e.colonne === 'Fonction')).toBe(true);
   });
 });
 
 describe('importerDepuisXlsx — Formateur·rice', () => {
-  it("accepte un formateur avec juste identité + email", () => {
-    const r = importerLignes('formateur', [
-      ['Sophie', 'Dubois', 'sophie@demo.fr'],
-    ]);
+  it('accepte un formateur avec juste identité + email', () => {
+    const r = importerLignes('formateur', [['Sophie', 'Dubois', 'sophie@demo.fr']]);
     expect(r.ok).toBe(true);
     expect(r.lignes[0]).toEqual({
       prenom: 'Sophie',
@@ -169,7 +165,7 @@ describe('normaliserDate', () => {
     expect(normaliserDate('45902')).toBe('2025-09-02');
   });
 
-  it("convertit le serial 25569 (1970-01-01, date pivot Unix)", () => {
+  it('convertit le serial 25569 (1970-01-01, date pivot Unix)', () => {
     expect(normaliserDate('25569')).toBe('1970-01-01');
   });
 
@@ -178,23 +174,21 @@ describe('normaliserDate', () => {
     expect(normaliserDate('1')).toBe('1'); // 1900-01-01 — trop ancien, ambigu
   });
 
-  it("retourne tel quel un texte non reconnu (la validation finale rejettera)", () => {
+  it('retourne tel quel un texte non reconnu (la validation finale rejettera)', () => {
     expect(normaliserDate('20/01/1988')).toBe('20/01/1988');
     expect(normaliserDate('')).toBe('');
   });
 });
 
-describe("importerDepuisXlsx — Apprenti·e via cellules date Excel", () => {
-  it("accepte un fichier généré par le modèle (cellules date au format Excel)", () => {
+describe('importerDepuisXlsx — Apprenti·e via cellules date Excel', () => {
+  it('accepte un fichier généré par le modèle (cellules date au format Excel)', () => {
     // On regénère le modèle apprenti avec colonnesDate puis on lui injecte
     // une ligne de données. Le parser retourne les dates en serial, et
     // normaliserDate doit re-convertir avant validation. Bout-en-bout.
     const bytes = genererXlsx({
       entetes: MODELES.apprenti.entetes,
       colonnesDate: MODELES.apprenti.colonnesDate,
-      exemples: [
-        ['Alban', 'RENOIR', 'alban@demo.fr', '2007-04-15', '2025-09-02', '2027-09-01'],
-      ],
+      exemples: [['Alban', 'RENOIR', 'alban@demo.fr', '2007-04-15', '2025-09-02', '2027-09-01']],
     });
     const ab = new ArrayBuffer(bytes.byteLength);
     new Uint8Array(ab).set(bytes);

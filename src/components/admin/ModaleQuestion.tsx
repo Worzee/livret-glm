@@ -18,10 +18,7 @@ import { cn } from '@/lib/utils';
  * cocher) — la modale ne les touche pas pour ne pas écraser la configuration
  * du coordo lors d'une simple correction de libellé.
  */
-export type SaisieQuestion = Pick<
-  QuestionBanque,
-  'libelle' | 'cible' | 'type' | 'placeholder'
->;
+export type SaisieQuestion = Pick<QuestionBanque, 'libelle' | 'cible' | 'type' | 'placeholder'>;
 
 interface ModaleQuestionProps {
   ouvert: boolean;
@@ -42,16 +39,11 @@ const TYPES: Array<{ valeur: TypeQuestion; libelle: string; description: string 
 ];
 
 const CIBLES: Array<{ valeur: CibleQuestion; libelle: string }> = [
-  { valeur: 'apprenti', libelle: "Apprenti·e" },
+  { valeur: 'apprenti', libelle: 'Apprenti·e' },
   { valeur: 'maitre', libelle: 'Maître / Tuteur' },
 ];
 
-export function ModaleQuestion({
-  ouvert,
-  question,
-  onAnnuler,
-  onValider,
-}: ModaleQuestionProps) {
+export function ModaleQuestion({ ouvert, question, onAnnuler, onValider }: ModaleQuestionProps) {
   const titreId = useId();
   const enEdition = !!question;
 
@@ -84,9 +76,7 @@ export function ModaleQuestion({
 
   const libelleClean = libelle.trim();
   const erreurLibelle =
-    tentative && libelleClean.length < 5
-      ? 'Le libellé doit faire au moins 5 caractères.'
-      : '';
+    tentative && libelleClean.length < 5 ? 'Le libellé doit faire au moins 5 caractères.' : '';
 
   function valider() {
     setTentative(true);

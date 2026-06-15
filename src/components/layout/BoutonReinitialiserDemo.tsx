@@ -57,7 +57,11 @@ export function BoutonReinitialiserDemo() {
   }
 
   return (
-    <span role="group" aria-label="Confirmer la réinitialisation" className="inline-flex items-center gap-1.5">
+    <span
+      role="group"
+      aria-label="Confirmer la réinitialisation"
+      className="inline-flex items-center gap-1.5"
+    >
       <span className="text-xs text-muted-foreground">Effacer toutes les saisies&nbsp;?</span>
       <button
         type="button"

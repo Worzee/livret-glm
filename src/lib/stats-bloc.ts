@@ -60,7 +60,10 @@ function statsVides(): StatsNiveau {
 export function calculerStatsParBloc(
   referentiel: Referentiel,
   lignes: LigneEvaluationFinaleCompetence[],
-  synthese: Map<string, { acquisEntreprise: NiveauMaitrise | null; acquisCentre: NiveauMaitrise | null }>,
+  synthese: Map<
+    string,
+    { acquisEntreprise: NiveauMaitrise | null; acquisCentre: NiveauMaitrise | null }
+  >,
 ): StatsBloc[] {
   const lignesParId = new Map(lignes.map((l) => [l.competenceId, l]));
 

@@ -119,7 +119,10 @@ export function GestionReferentiels() {
                 <header className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h3 className="font-semibold flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 shrink-0 texte-couleur-role" aria-hidden="true" />
+                      <BookOpen
+                        className="h-4 w-4 shrink-0 texte-couleur-role"
+                        aria-hidden="true"
+                      />
                       <span className="truncate">{r.formation}</span>
                     </h3>
                     <p className="text-xs text-muted-foreground mt-0.5">
@@ -218,13 +221,7 @@ function libelleSource(source: NonNullable<Referentiel['source']>): string {
   }
 }
 
-function Statistique({
-  Icon,
-  label,
-}: {
-  Icon: typeof Library;
-  label: string;
-}) {
+function Statistique({ Icon, label }: { Icon: typeof Library; label: string }) {
   return (
     <div className="flex items-center gap-2 text-xs">
       <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -289,9 +286,7 @@ function BlocDetail({ bloc }: BlocDetailProps) {
         {bloc.competences.map((c) => (
           <li key={c.id} className="text-xs">
             <strong className="font-medium">{c.code}</strong>{' '}
-            {c.sousFamille && (
-              <span className="text-muted-foreground">[{c.sousFamille}]</span>
-            )}{' '}
+            {c.sousFamille && <span className="text-muted-foreground">[{c.sousFamille}]</span>}{' '}
             {c.libelle}
           </li>
         ))}
@@ -306,17 +301,14 @@ function AccesRefuse({ roleActif }: { roleActif: Role }) {
       <div className="flex items-start gap-3">
         <Lock className="h-5 w-5 shrink-0 text-amber-700 mt-0.5" aria-hidden="true" />
         <div>
-          <h1 className="text-lg font-medium text-amber-900">
-            Accès réservé à l'administration
-          </h1>
+          <h1 className="text-lg font-medium text-amber-900">Accès réservé à l'administration</h1>
           <p className="mt-2 text-sm text-amber-900/80">
             Vous êtes actuellement connecté·e en tant que <strong>{libelleRole(roleActif)}</strong>.
-            La gestion des référentiels est réservée aux rôles{' '}
-            <strong>Coordinateur·rice</strong> et <strong>Administrateur·rice</strong>.
+            La gestion des référentiels est réservée aux rôles <strong>Coordinateur·rice</strong> et{' '}
+            <strong>Administrateur·rice</strong>.
           </p>
         </div>
       </div>
     </div>
   );
 }
-

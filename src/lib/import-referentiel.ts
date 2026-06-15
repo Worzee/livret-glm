@@ -62,7 +62,10 @@ export function detecterSeparateur(texte: string): ';' | ',' | '\t' {
   const candidats: Array<';' | ',' | '\t'> = [';', ',', '\t'];
   let meilleur: { sep: ';' | ',' | '\t'; score: number } = { sep: ';', score: -1 };
   for (const sep of candidats) {
-    const total = lignes.reduce((s, l) => s + (l.match(new RegExp(`\\${sep}`, 'g'))?.length ?? 0), 0);
+    const total = lignes.reduce(
+      (s, l) => s + (l.match(new RegExp(`\\${sep}`, 'g'))?.length ?? 0),
+      0,
+    );
     if (total > meilleur.score) meilleur = { sep, score: total };
   }
   return meilleur.sep;

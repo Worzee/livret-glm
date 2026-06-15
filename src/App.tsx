@@ -28,7 +28,10 @@ export function App() {
         <Route index element={<TableauDeBord />} />
 
         {/* Le routage par livret précis sera affiné quand on aura plusieurs apprenti·e·s */}
-        <Route path="livret/:apprentiId" element={<Navigate to="/livret/organisation-suivi" replace />} />
+        <Route
+          path="livret/:apprentiId"
+          element={<Navigate to="/livret/organisation-suivi" replace />}
+        />
 
         <Route path="livret/organisation-suivi" element={<OrganisationSuivi />} />
         <Route path="livret/entretien/:numero" element={<EntretienTripartite />} />

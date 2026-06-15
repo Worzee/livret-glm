@@ -21,7 +21,7 @@ describe('validerSaisieImportReferentiel', () => {
   });
 
   // Workflow étendu mai 2026 : la formation peut être rattachée plus tard.
-  it("accepte une saisie sans formation si un nom libre est fourni", () => {
+  it('accepte une saisie sans formation si un nom libre est fourni', () => {
     const r = validerSaisieImportReferentiel({
       formationId: '',
       nomReferentielLibre: 'Référentiel Boulangerie 2026',
@@ -43,7 +43,7 @@ describe('validerSaisieImportReferentiel', () => {
     expect(r.erreurs.nomReferentielLibre).toBeDefined();
   });
 
-  it("rejette un nom libre trop court (< 3 caractères) sans formation", () => {
+  it('rejette un nom libre trop court (< 3 caractères) sans formation', () => {
     const r = validerSaisieImportReferentiel({
       ...SAISIE_VALIDE,
       formationId: '',
@@ -53,7 +53,7 @@ describe('validerSaisieImportReferentiel', () => {
     expect(r.erreurs.nomReferentielLibre).toMatch(/3 caractères/);
   });
 
-  it("ignore le nom libre si une formation est choisie (le libellé est auto-généré)", () => {
+  it('ignore le nom libre si une formation est choisie (le libellé est auto-généré)', () => {
     // Si formation présente, nomReferentielLibre est ignoré : pas d'erreur, pas
     // d'avertissement. La modale doit cacher le champ dans ce cas.
     const r = validerSaisieImportReferentiel({
@@ -64,7 +64,7 @@ describe('validerSaisieImportReferentiel', () => {
     expect(r.erreurs.nomReferentielLibre).toBeUndefined();
   });
 
-  it("exige une source de données (fichier OU texte non vide)", () => {
+  it('exige une source de données (fichier OU texte non vide)', () => {
     // Source = fichier mais pas de fichier sélectionné
     expect(
       validerSaisieImportReferentiel({
@@ -85,7 +85,7 @@ describe('validerSaisieImportReferentiel', () => {
     ).toBeDefined();
   });
 
-  it("accepte source=texte si seulement le contenu CSV est rempli", () => {
+  it('accepte source=texte si seulement le contenu CSV est rempli', () => {
     const r = validerSaisieImportReferentiel({
       formationId: 'f-x',
       source: 'texte',
@@ -95,7 +95,7 @@ describe('validerSaisieImportReferentiel', () => {
     expect(r.ok).toBe(true);
   });
 
-  it("accepte source=fichier si seulement nomFichier est défini (le buffer est tenu côté UI)", () => {
+  it('accepte source=fichier si seulement nomFichier est défini (le buffer est tenu côté UI)', () => {
     const r = validerSaisieImportReferentiel({
       formationId: 'f-x',
       source: 'fichier',
@@ -118,10 +118,10 @@ describe('genererNomReferentiel', () => {
     lieuId: 'eta-test',
     periodes: [],
     nombreEntretiens: 2,
-      questionsRetirees: [],
+    questionsRetirees: [],
   });
 
-  it("compose le libellé `Referentiel_<intitulé>_<YYYY-MM-DD>`", () => {
+  it('compose le libellé `Referentiel_<intitulé>_<YYYY-MM-DD>`', () => {
     const dateImport = new Date('2026-05-09T12:00:00Z');
     expect(genererNomReferentiel(formation('CAP Cuisine'), dateImport)).toBe(
       'Referentiel_CAP Cuisine_2026-05-09',
@@ -140,8 +140,6 @@ describe('genererNomReferentiel', () => {
     const yyyy = aujourdhui.getFullYear();
     const mm = String(aujourdhui.getMonth() + 1).padStart(2, '0');
     const dd = String(aujourdhui.getDate()).padStart(2, '0');
-    expect(genererNomReferentiel(formation('X'))).toBe(
-      `Referentiel_X_${yyyy}-${mm}-${dd}`,
-    );
+    expect(genererNomReferentiel(formation('X'))).toBe(`Referentiel_X_${yyyy}-${mm}-${dd}`);
   });
 });

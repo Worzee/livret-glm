@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { LONGUEUR_MIN_MOTIF, LONGUEUR_MAX_MOTIF, validerMotifDeverrouillage } from './deverrouillage-fiche';
+import {
+  LONGUEUR_MIN_MOTIF,
+  LONGUEUR_MAX_MOTIF,
+  validerMotifDeverrouillage,
+} from './deverrouillage-fiche';
 
 describe('validerMotifDeverrouillage (R10)', () => {
   it('refuse une chaîne vide', () => {
@@ -45,7 +49,7 @@ describe('validerMotifDeverrouillage (R10)', () => {
     expect(r.ok).toBe(true);
   });
 
-  it("ignore les espaces de bordure pour la longueur", () => {
+  it('ignore les espaces de bordure pour la longueur', () => {
     // '  Bug.  ' -> trim -> 'Bug.' (4 chars) < min : refusé
     const r = validerMotifDeverrouillage('  Bug.  ');
     expect(r.ok).toBe(false);

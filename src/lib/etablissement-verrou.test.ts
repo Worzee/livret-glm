@@ -13,7 +13,7 @@ const formation = (id: string, lieuId: string): Formation => ({
   lieuId,
   periodes: [],
   nombreEntretiens: 2,
-      questionsRetirees: [],
+  questionsRetirees: [],
 });
 
 describe('evaluerVerrouEtablissement', () => {
@@ -42,7 +42,7 @@ describe('evaluerVerrouEtablissement', () => {
     expect(r.raison).toMatch(/^2 formations rattachées/);
   });
 
-  it("retourne 0 quand la liste de formations est vide", () => {
+  it('retourne 0 quand la liste de formations est vide', () => {
     const r = evaluerVerrouEtablissement('eta-1', []);
     expect(r).toEqual({ verrouille: false, nbFormationsRattachees: 0 });
   });
