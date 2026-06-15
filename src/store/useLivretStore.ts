@@ -97,7 +97,10 @@ import { useUtilisateursStore } from './useUtilisateursStore';
 //   v16 — 13 juin 2026 : la sélection des compétences abordées en entreprise
 //        démarre avec TOUTES les compétences activées (au lieu de vierge) ;
 //        le maître / tuteur seul décoche. Reset pour recharger les fixtures.
-const VERSION_SCHEMA = 16;
+//   v17 — 15 juin 2026 : harmonisation du planning — tous les livrets de la
+//        promo héritent des 3 périodes de la formation (Minh 0→3, Sofia 1→3,
+//        Aya 2→3, en brouillon vierge). Reset pour recharger les fixtures.
+const VERSION_SCHEMA = 17;
 
 interface LivretStore {
   livrets: Record<string, Livret>;

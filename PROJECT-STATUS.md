@@ -1,6 +1,6 @@
 # État du projet — Livret d'apprentissage GRETA Lyon Métropole
 
-**Dernière mise à jour** : 2026-06-13 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites, motifs par rôle + séquencement, attitudes professionnelles par entretien + catalogue admin, confirmation avant écrasement d'une évaluation héritée, second maître / tuteur par apprenti·e, tri par année de formation sur le tableau de bord, **signature manuscrite tactile**, **répartition des apprenti·e·s entre coordos**, **questions de l'entretien gérées par formation**, **compétences activées par défaut + maître seul**)
+**Dernière mise à jour** : 2026-06-15 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites, motifs par rôle + séquencement, attitudes professionnelles par entretien + catalogue admin, confirmation avant écrasement d'une évaluation héritée, second maître / tuteur par apprenti·e, tri par année de formation sur le tableau de bord, **signature manuscrite tactile**, **répartition des apprenti·e·s entre coordos**, **questions de l'entretien gérées par formation**, **compétences activées par défaut + maître seul**, **bascule de périmètre coordo depuis l'administration**, **harmonisation du planning des périodes sur toute la promo**)
 **Version applicative** : 0.1.0
 **Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3) **livrée + 4 vagues post-livraison**
 **Pilote métier** : Guillaume FERRERI
@@ -11,7 +11,7 @@
 
 ### État global
 
-L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 5 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026 + retours coordonnateurs juin 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **515 tests unitaires + 157 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
+L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 5 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026 + retours coordonnateurs juin 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **515 tests unitaires + 158 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
 
 ### Ce qui est livré
 
@@ -47,7 +47,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | Aperçu général et démarrage                                     | [`README.md`](README.md)                                                                                  |
 | Modules livrés et périmètre fonctionnel                         | §4                                                                                                        |
 | Règles métier R1 → R24                                          | §5                                                                                                        |
-| État des tests (515 unit + 157 E2E)                             | §6                                                                                                        |
+| État des tests (515 unit + 158 E2E)                             | §6                                                                                                        |
 | Architecture des fichiers                                       | §7                                                                                                        |
 | Reste à faire                                                   | §8                                                                                                        |
 | Limites connues                                                 | §9                                                                                                        |
@@ -70,7 +70,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | **Accès**             | Basic Auth `demo` / _(mdp partagé hors-canal)_                                                   |
 | **Dépôt source**      | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
 | **Tests unitaires**   | **515 / 515 ✓** (Vitest, 34 fichiers de test)                                                    |
-| **Tests E2E**         | **157 / 157 ✓** (Playwright — 145 desktop + 12 mobile Pixel 5, 22 specs)                         |
+| **Tests E2E**         | **158 / 158 ✓** (Playwright — 146 desktop + 12 mobile Pixel 5, 22 specs)                         |
 | **Bundle JS gzippé**  | 148 KB (cible CDC §19.1 : < 500 KB → marge × 3,4)                                                |
 | **Bundle CSS gzippé** | 6,5 KB (cible : < 50 KB → marge × 7)                                                             |
 | **Chunk PDF lazy**    | 493 KB (chargé uniquement au clic « Exporter »)                                                  |
@@ -433,6 +433,7 @@ Cinq chantiers fonctionnels structurants livrés en cascade (ordre risque croiss
 - Page « Période en Entreprise » repassée en lecture seule sur le planning + bandeau d'info renvoyant vers `/admin/formations`
 - 3 ressources matrice retirées : `fiche.creer-periode` / `fiche.modifier-periode` / `fiche.supprimer-periode` (gestion calendaire = `admin.formations.modifier`)
 - Bump `useFormationsStore` v2 → v3 ; fixtures (Léa, Théo, Sofia, Minh, Aya, Luca) réécrites pour pointer vers les 3 périodes de la formation `f-cap-cuisine-2025`
+- **Suivi 15 juin 2026 — harmonisation** : à la livraison de ce chantier, seuls certains livrets de démo avaient les 3 périodes matérialisées (Minh 0, Sofia 1, Aya 2) — reliquat de l'ancien modèle « fiches par livret ». Désormais **tous** les livrets de la promo héritent des 3 périodes (Minh/Sofia/Aya complétés en brouillon vierge), conformément au modèle. Helper `creerFichePeriodeVierge` extrait de `creerLivretVierge` et réutilisé par les fixtures ; le cas pédagogique « démarrage » redéfini (« aucune fiche **entamée** » au lieu de « 0 fiche », sinon il devenait inatteignable) ; bump `livret-donnees` v16 → v17 (reset)
 
 #### Chantier #2 — 2 entretiens tripartites via événement organisation suivi
 
@@ -528,7 +529,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 
 ---
 
-## 6. Tests (515 unitaires + 157 E2E)
+## 6. Tests (515 unitaires + 158 E2E)
 
 ### Tests unitaires Vitest (34 fichiers de test)
 
@@ -573,7 +574,7 @@ _Les modules `creation-livret.ts`, `couleurs-role.ts` et `utils.ts` sont couvert
 
 ### Tests E2E Playwright (22 specs)
 
-157 tests (145 desktop + 12 mobile). Ajouts de juin 2026 : 3 scénarios « affectation des questions par le coordo », 5 scénarios « jusqu'à 4 entretiens », 3 scénarios « événements gérés par coordo/admin + liseré par rôle », 2 scénarios « motifs par rôle + séquencement », 4 scénarios « attitudes professionnelles » (`attitudes.spec.ts`), 1 scénario « confirmation avant écrasement d'un héritage ». Quelques specs ont été adaptés aux refontes :
+158 tests (146 desktop + 12 mobile). Ajouts de juin 2026 : 3 scénarios « affectation des questions par le coordo », 5 scénarios « jusqu'à 4 entretiens », 3 scénarios « événements gérés par coordo/admin + liseré par rôle », 2 scénarios « motifs par rôle + séquencement », 4 scénarios « attitudes professionnelles » (`attitudes.spec.ts`), 1 scénario « confirmation avant écrasement d'un héritage », 1 scénario « bascule de périmètre coordo depuis la page Affectations ». Quelques specs ont été adaptés aux refontes :
 
 - `fiches-periodes.spec.ts` : 8 tests réécrits pour le nouveau flow planning au niveau formation
 - `sprint3-droits-entretien.spec.ts` : route `/livret/entretien/1`

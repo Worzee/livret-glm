@@ -102,7 +102,7 @@ test('les badges de cas démonstratifs sont visibles sur le tableau de bord', as
       .getByText(/Désaccord en cours/i),
   ).toBeVisible();
 
-  // Minh : aucune fiche → "Démarrage"
+  // Minh : 3 périodes héritées mais toutes vierges → "Démarrage"
   await expect(
     page.getByRole('button', { name: /Ouvrir le livret de Minh NGUYEN/i }).getByText(/Démarrage/i),
   ).toBeVisible();
@@ -134,8 +134,8 @@ test('contexte « apprenti·e actif·ve » survit aux changements de page', asyn
   await page.getByRole('link', { name: /Période en Entreprise/i }).click();
   await expect(page.getByRole('link', { name: /Période 1/i })).toBeVisible();
   await expect(page.getByRole('link', { name: /Période 2/i })).toBeVisible();
-  // Période 3 n'existe pas pour Aya (livret avec 2 fiches uniquement).
-  await expect(page.getByRole('link', { name: /Période 3/i })).toHaveCount(0);
+  // Aya a désormais les 3 périodes du planning (P3 héritée, encore vierge).
+  await expect(page.getByRole('link', { name: /Période 3/i })).toBeVisible();
 
   // Détail période 2 — l'historique R10 doit être visible.
   await page.getByRole('link', { name: /Période 2/i }).click();
@@ -143,10 +143,16 @@ test('contexte « apprenti·e actif·ve » survit aux changements de page', asyn
   await expect(page.getByText(/Désaccord exprimé par l'apprenti/i)).toBeVisible();
 });
 
-test('Minh (cas démarrage) : page Fiches affiche un état vide', async ({ page }) => {
+test('Minh (cas démarrage) : les 3 périodes héritées sont affichées (brouillon)', async ({
+  page,
+}) => {
   await page.getByRole('button', { name: /Ouvrir le livret de Minh NGUYEN/i }).click();
   await page.getByRole('link', { name: /Période en Entreprise/i }).click();
-  await expect(page.getByText(/Aucune période planifiée/i)).toBeVisible();
+  // Plus d'état vide : Minh hérite des 3 périodes du planning de la formation.
+  await expect(page.getByText(/Aucune période planifiée/i)).toHaveCount(0);
+  await expect(page.getByRole('link', { name: /Période 1/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Période 2/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Période 3/i })).toBeVisible();
 });
 
 test("Sofia (cas alerte R7) : la page Entretien affiche le bandeau d'alerte", async ({ page }) => {

@@ -1,5 +1,22 @@
-import type { Apprenti, Livret } from '@/types';
+import type { Apprenti, FicheSuiviPeriode, Livret } from '@/types';
 import { calculerAlerteR7 } from './regles-entretien';
+
+/**
+ * Une fiche est « non entamée » tant qu'elle reste en brouillon, sans aucune
+ * compétence de suivi entreprise renseignée ni aucune signature. Sert à
+ * détecter un livret « en démarrage » : depuis que le planning des périodes
+ * est matérialisé dès la création du livret (chantier #1 — mai 2026), un
+ * livret tout juste démarré n'a plus 0 fiche mais des fiches toutes vierges.
+ */
+function ficheNonEntamee(f: FicheSuiviPeriode): boolean {
+  return (
+    f.etat === 'brouillon' &&
+    f.suiviEntreprise.length === 0 &&
+    !f.signatures.apprenti.signe &&
+    !f.signatures.maitre.signe &&
+    !f.signatures.formateur.signe
+  );
+}
 
 /**
  * Synthétise l'état d'un livret en un résumé compact pour le tableau de bord.
@@ -34,7 +51,7 @@ export type CasPedagogique =
   | 'cloture' // R22 — livret figé
   | 'alerte-r7' // entretien manquant > 60 j
   | 'desaccord' // fiche déverrouillée R10 et pas encore re-signée (désaccord actif)
-  | 'demarrage' // pas encore de fiche
+  | 'demarrage' // livret tout juste démarré : aucune fiche encore entamée
   | 'toutes-signees' // toutes les fiches signées ou verrouillées
   | 'en-cours'; // cas standard mi-parcours
 
@@ -50,6 +67,10 @@ export function calculerResumeLivret(
     (f) => f.etat === 'signee' || f.etat === 'verrouillee',
   ).length;
   const aDeverrouillage = fiches.some((f) => f.historiqueDeverrouillages.length > 0);
+  // « Démarrage » : aucune fiche, ou toutes les fiches héritées du planning
+  // sont encore vierges (cf. ficheNonEntamee) — `nbFiches === 0` ne suffit
+  // plus depuis que les périodes sont matérialisées dès la création.
+  const enDemarrage = nbFiches === 0 || fiches.every(ficheNonEntamee);
   // « Désaccord en cours » = il y a eu un déverrouillage R10 ET la fiche
   // correspondante n'a pas encore été re-signée. Une fois re-signée, l'historique
   // est conservé pour audit mais le badge pédagogique doit disparaître.
@@ -78,7 +99,7 @@ export function calculerResumeLivret(
   if (cloture) cas = 'cloture';
   else if (alerteR7) cas = 'alerte-r7';
   else if (desaccordEnCours) cas = 'desaccord';
-  else if (nbFiches === 0) cas = 'demarrage';
+  else if (enDemarrage) cas = 'demarrage';
   else if (nbFiches > 0 && nbFichesSignees === nbFiches) cas = 'toutes-signees';
 
   return {

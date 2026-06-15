@@ -64,7 +64,7 @@ describe('calculerResumeLivret — cas pédagogique', () => {
     expect(r.entretienComplet).toBe(false);
   });
 
-  it('Minh (démarrage) : entretien signé, aucune fiche → "demarrage"', () => {
+  it('Minh (démarrage) : entretien signé, 3 périodes héritées mais vierges → "demarrage"', () => {
     const r = calculerResumeLivret(
       apprentiMinhNguyen,
       getLivret(apprentiMinhNguyen.id),
@@ -73,7 +73,10 @@ describe('calculerResumeLivret — cas pédagogique', () => {
     expect(r.cas).toBe('demarrage');
     expect(r.entretienComplet).toBe(true);
     expect(r.alerteR7).toBe(false);
-    expect(r.nbFiches).toBe(0);
+    // Chantier #1 : les 3 périodes de la formation sont matérialisées dès la
+    // création, mais toutes vierges → le cas reste « démarrage ».
+    expect(r.nbFiches).toBe(3);
+    expect(r.nbFichesSignees).toBe(0);
   });
 
   it('Aya (désaccord) : fiche déverrouillée encore en-cours → "desaccord"', () => {
@@ -106,9 +109,9 @@ describe('calculerResumeLivret — cas pédagogique', () => {
     const r = calculerResumeLivret(apprentiAyaKouame, livretResolu, MAINTENANT);
     expect(r.cas).not.toBe('desaccord');
     // L'historique R10 reste pour audit, mais le badge "Désaccord en cours"
-    // doit disparaître. Avec 2/2 fiches signées + entretien complet, on tombe
-    // sur "toutes-signees".
-    expect(r.cas).toBe('toutes-signees');
+    // doit disparaître. P1 verrouillée + P2 re-signée = 2/3 signées (P3 héritée
+    // du planning est encore vierge) → on retombe sur le cas standard "en-cours".
+    expect(r.cas).toBe('en-cours');
     expect(r.aDeverrouillage).toBe(true); // historique conservé, cf. JSDoc
   });
 
@@ -167,14 +170,37 @@ function ficheVierge(numero: number): FicheSuiviPeriode {
 }
 
 describe('calculerResumeLivret — transitions de cas', () => {
-  it('démarrage → en-cours après création de la 1ère fiche', () => {
+  it("démarrage → en-cours dès qu'une fiche est entamée", () => {
     const livretMinh = getLivret(apprentiMinhNguyen.id);
+    // Minh : 3 périodes héritées mais toutes vierges → "demarrage".
     expect(calculerResumeLivret(apprentiMinhNguyen, livretMinh, MAINTENANT).cas).toBe('demarrage');
 
-    const livretAvecFiche: Livret = { ...livretMinh, fichesSuivi: [ficheVierge(1)] };
-    const r = calculerResumeLivret(apprentiMinhNguyen, livretAvecFiche, MAINTENANT);
+    // On « entame » la première fiche (ajout d'une compétence de suivi
+    // entreprise) → le livret quitte le démarrage pour le cas standard.
+    // Ajouter une fiche encore vierge ne suffirait plus (toutes vierges =
+    // démarrage), d'où l'ajout de contenu.
+    const [p1, ...reste] = livretMinh.fichesSuivi;
+    const livretEntame: Livret = {
+      ...livretMinh,
+      fichesSuivi: [
+        {
+          ...p1,
+          suiviEntreprise: [
+            {
+              id: 'se-minh-1-1',
+              competenceId: 'c1-1',
+              evaluationGreta: null,
+              evaluationEntreprise: null,
+              retourApprenti: '',
+            },
+          ],
+        },
+        ...reste,
+      ],
+    };
+    const r = calculerResumeLivret(apprentiMinhNguyen, livretEntame, MAINTENANT);
     expect(r.cas).toBe('en-cours');
-    expect(r.nbFiches).toBe(1);
+    expect(r.nbFiches).toBe(3);
     expect(r.nbFichesSignees).toBe(0);
   });
 

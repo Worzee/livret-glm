@@ -3,6 +3,40 @@ import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
 import { creerSelectionInitiale } from './selection-competences-entreprise';
 
 /**
+ * Matérialise une fiche de suivi **vierge** (brouillon, sans contenu
+ * pédagogique ni signature) à partir d'une période du planning de la
+ * formation. Réutilisé par `creerLivretVierge` (création d'un livret) et par
+ * les fixtures de démonstration pour compléter une promo dont tous les
+ * livrets partagent le même planning.
+ *
+ * @param periode  Période parente définie sur la formation.
+ * @param idFiche  Id voulu pour la fiche (doit être unique dans le livret).
+ */
+export function creerFichePeriodeVierge(
+  periode: PeriodeFormation,
+  idFiche: string,
+): FicheSuiviPeriode {
+  return {
+    id: idFiche,
+    numeroPeriode: periode.numero,
+    titre: periode.titre,
+    periodeFormationId: periode.id,
+    dateDebut: periode.dateDebut,
+    dateFin: periode.dateFin,
+    suiviGretaCfa: {},
+    suiviEntreprise: [],
+    observations: {},
+    signatures: {
+      apprenti: { signe: false },
+      maitre: { signe: false },
+      formateur: { signe: false },
+    },
+    etat: 'brouillon',
+    historiqueDeverrouillages: [],
+  };
+}
+
+/**
  * Crée un livret vierge pour un·e apprenti·e fraîchement créé·e.
  * Référence : cahier des charges v1.3, sections 7.3 et 24.
  *
@@ -56,26 +90,7 @@ export function creerLivretVierge(
     // événement dans l'organisation du suivi (motifs
     // `entretien-tripartite-{1..N}`, N = Formation.nombreEntretiens).
     entretiens: { 1: null, 2: null, 3: null, 4: null },
-    fichesSuivi: planning.map(
-      (p): FicheSuiviPeriode => ({
-        id: `fp-${livretId}-${p.id}`,
-        numeroPeriode: p.numero,
-        titre: p.titre,
-        periodeFormationId: p.id,
-        dateDebut: p.dateDebut,
-        dateFin: p.dateFin,
-        suiviGretaCfa: {},
-        suiviEntreprise: [],
-        observations: {},
-        signatures: {
-          apprenti: { signe: false },
-          maitre: { signe: false },
-          formateur: { signe: false },
-        },
-        etat: 'brouillon',
-        historiqueDeverrouillages: [],
-      }),
-    ),
+    fichesSuivi: planning.map((p) => creerFichePeriodeVierge(p, `fp-${livretId}-${p.id}`)),
     evaluationFinaleCompetences: {
       lignes: lignesCompetences,
       modifieLe: iso,

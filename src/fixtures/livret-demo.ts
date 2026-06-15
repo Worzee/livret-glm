@@ -18,7 +18,9 @@ import {
   formatriceSophieDubois,
 } from './utilisateurs';
 import { referentielCapCuisine } from './referentiel-cap-cuisine';
+import { periodesCapCuisine } from './formations';
 import { QUESTIONS_BANQUE_INITIALE, idsQuestionsActives } from '@/lib/questions-entretien';
+import { creerFichePeriodeVierge } from '@/lib/creation-livret';
 
 // Snapshot des entretiens de démo (13 juin 2026) : la formation CAP Cuisine
 // ne retire aucune question → toutes les questions de la banque sont actives
@@ -35,7 +37,7 @@ const QUESTIONS_E1_OBLIGATOIRES = [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAI
  *   - Léa MARTIN     : cas principal (entretien complet, 2 fiches signées, 1 en cours)
  *   - Théo DUBOIS    : « bon élève » — toutes fiches signées et verrouillées
  *   - Sofia PEREIRA  : « alerte R7 » — entretien non initié → bandeau visible
- *   - Minh NGUYEN    : « démarrage » — entretien signé, aucune fiche
+ *   - Minh NGUYEN    : « démarrage » — entretien signé, 3 périodes héritées mais vierges
  *   - Aya KOUAMÉ     : « désaccord » — fiche déverrouillée avec motif (R10)
  *   - Luca BIANCHI   : « mi-parcours standard »
  */
@@ -752,14 +754,21 @@ const livretSofia: Livret = {
     modifiePar: formatriceSophieDubois.id,
   },
   entretiens: { 1: null, 2: null, 3: null, 4: null },
-  fichesSuivi: [sofiaPeriode1],
+  // P1 entamée (brouillon) ; P2 et P3 héritées du planning mais encore vierges.
+  fichesSuivi: [
+    sofiaPeriode1,
+    creerFichePeriodeVierge(periodesCapCuisine[1], 'fp-sofia-2'),
+    creerFichePeriodeVierge(periodesCapCuisine[2], 'fp-sofia-3'),
+  ],
   modifieLe: '2025-12-15T11:00:00.000Z',
 };
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Livret 4 : Minh NGUYEN — « démarrage »
-// Entretien tripartite signé récemment, AUCUNE fiche de période créée.
-// Cas réaliste pour un apprenti·e fraîchement démarré·e en cours d'année.
+// Entretien tripartite signé récemment ; les 3 périodes du planning de la
+// formation sont héritées mais encore VIERGES (brouillon, aucune compétence
+// ni signature). Cas réaliste d'un·e apprenti·e fraîchement démarré·e en
+// cours d'année qui n'a pas encore rempli ses fiches de période.
 // ═════════════════════════════════════════════════════════════════════════════
 
 const entretienMinh: EntretienTripartite = {
@@ -863,7 +872,9 @@ const livretMinh: Livret = {
     modifiePar: formatriceSophieDubois.id,
   },
   entretiens: { 1: entretienMinh, 2: null, 3: null, 4: null },
-  fichesSuivi: [],
+  // Périodes héritées du planning de la formation (chantier #1) — encore
+  // vierges : Minh vient de démarrer et n'a rempli aucune fiche.
+  fichesSuivi: periodesCapCuisine.map((p) => creerFichePeriodeVierge(p, `fp-minh-${p.numero}`)),
   // Attitudes retenues à l'E1 (13 juin 2026) — a9 pas encore évaluée.
   attitudesSelectionnees: ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a9'],
   selectionCompetencesEntreprise: selectionValideeDemo(
@@ -1001,7 +1012,12 @@ const livretAya: Livret = {
     3: null,
     4: null,
   },
-  fichesSuivi: [ayaPeriode1, ayaPeriode2],
+  // P1 verrouillée, P2 déverrouillée (R10) ; P3 héritée du planning, vierge.
+  fichesSuivi: [
+    ayaPeriode1,
+    ayaPeriode2,
+    creerFichePeriodeVierge(periodesCapCuisine[2], 'fp-aya-3'),
+  ],
   // Attitudes retenues à l'E1 (13 juin 2026) — a9 pas encore évaluée.
   attitudesSelectionnees: ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a9'],
   selectionCompetencesEntreprise: selectionValideeDemo(
