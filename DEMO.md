@@ -43,7 +43,9 @@ Référence : cahier des charges v1.3, section 25.
 > - **Signature manuscrite tactile** : « Signer » ouvre désormais une zone de dessin (doigt / souris)
 >   avant confirmation — le tracé apparaît dans la carte de signature et le PDF.
 > - **Répartition par coordo** : chaque coordo ne voit que ses apprenti·e·s (Martine LEFÈVRE ↔
->   Bernard PETIT) ; l'admin voit tout et répartit. Sélecteur de coordo actif au tableau de bord.
+>   Bernard PETIT) ; l'admin voit tout et répartit. Sélecteur de coordo actif au tableau de bord
+>   **et** sur les pages gestion des affectations / des utilisateurs (bascule de périmètre sans
+>   repasser par l'accueil).
 > - **Tri / filtre par année de formation** au tableau de bord.
 >
 > Le **bandeau « MAQUETTE DE DÉMONSTRATION » a été retiré** (cf. §3, 00:00). Une **réécriture

@@ -1,13 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Briefcase,
-  CalendarRange,
-  ChevronRight,
-  ClipboardList,
-  GraduationCap,
-  Search,
-} from 'lucide-react';
+import { Briefcase, CalendarRange, ChevronRight, GraduationCap, Search } from 'lucide-react';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useApprentiActifStore } from '@/store/useApprentiActifStore';
@@ -23,6 +16,7 @@ import {
 } from '@/lib/apprentis-accessibles';
 import { calculerResumeLivret, classesBadgeCas, libelleCas } from '@/lib/etat-livret';
 import { cn } from '@/lib/utils';
+import { SelecteurCoordoActif } from '@/components/common/SelecteurCoordoActif';
 
 /**
  * Tableau de bord — point d'entrée par rôle.
@@ -43,13 +37,10 @@ export function TableauDeBord() {
   const utilisateurActif = useUserStore((s) => s.utilisateurActif);
   const maitreActifId = useUserStore((s) => s.maitreActifId);
   const setMaitreActif = useUserStore((s) => s.setMaitreActif);
-  const coordoActifId = useUserStore((s) => s.coordoActifId);
-  const setCoordoActif = useUserStore((s) => s.setCoordoActif);
   const livrets = useLivretStore((s) => s.livrets);
   const setApprentiActif = useApprentiActifStore((s) => s.setApprentiActif);
   const apprentis = useUtilisateursStore((s) => s.apprentis);
   const maitres = useUtilisateursStore((s) => s.maitres);
-  const coordos = useUtilisateursStore((s) => s.coordos);
   const formations = useFormationsStore((s) => s.formations);
   const navigate = useNavigate();
   const [requete, setRequete] = useState('');
@@ -66,7 +57,6 @@ export function TableauDeBord() {
     [utilisateurActif, apprentis, formations],
   );
   const maitresList = useMemo(() => Object.values(maitres), [maitres]);
-  const coordosList = useMemo(() => Object.values(coordos), [coordos]);
   const annees = useMemo(
     () => anneesFormationsDisponibles(apprentisVisibles, formations),
     [apprentisVisibles, formations],
@@ -141,48 +131,10 @@ export function TableauDeBord() {
         </fieldset>
       )}
 
-      {/* Sélecteur de coordo — visible uniquement en rôle coordo (juin 2026).
-          Chaque coordo ne voit que les apprenti·e·s que l'admin lui a
-          affecté·e·s (Apprenti.coordoId) — la bascule démontre les périmètres. */}
-      {roleActif === 'coordo' && coordosList.length > 1 && (
-        <fieldset className="rounded-lg border border-role-coordo/40 bg-role-coordo/5 p-3">
-          <legend className="flex items-center gap-1.5 px-1.5 text-xs font-medium text-role-coordo">
-            <ClipboardList className="h-3.5 w-3.5" aria-hidden="true" />
-            Coordinateur·rice actif·ve
-          </legend>
-          <div className="flex flex-wrap gap-2">
-            {coordosList.map((c) => {
-              const actif = c.id === coordoActifId;
-              const nbApprentis = Object.values(apprentis).filter(
-                (a) => a.coordoId === c.id,
-              ).length;
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setCoordoActif(c.id)}
-                  aria-pressed={actif}
-                  className={cn(
-                    'inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    actif
-                      ? 'border-role-coordo bg-role-coordo text-white'
-                      : 'border-input bg-background hover:bg-secondary',
-                  )}
-                >
-                  <span className="font-medium">
-                    {c.prenom} {c.nom}
-                  </span>
-                  <span
-                    className={cn('text-xs', actif ? 'text-white/85' : 'text-muted-foreground')}
-                  >
-                    · {nbApprentis} apprenti·e·s
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
-      )}
+      {/* Sélecteur de coordo — composant partagé (tableau de bord + pages
+          d'administration filtrées par périmètre). Visible uniquement en rôle
+          coordo, il démontre que chaque coordo ne voit que ses apprenti·e·s. */}
+      <SelecteurCoordoActif />
 
       {apprentisVisibles.length > 1 && (
         <div className="flex flex-wrap items-center gap-3">

@@ -314,10 +314,10 @@ Le catalogue n'est plus évalué en entier : **les attitudes à évaluer se choi
 - **Modèle** : `Apprenti.coordoId` optionnel — affecté par l'**admin seul** (nouvelle colonne « Coordinateur·rice » dans `/admin/affectations`, en lecture seule pour le coordo). Hors verrou d'affectation : la répartition est administrative, elle ne touche aucune donnée pédagogique. Un·e apprenti·e sans coordo n'est visible que de l'admin
 - **Filtre partout** : tableau de bord, gestion des utilisateurs et gestion des affectations — les listes d'apprenti·e·s du coordo sont restreintes à son périmètre (`apprentisAccessibles` bascule de `Coordo.formationIds` vers `coordoId` ; `formationIds` reste utilisé pour l'accès Pronote/établissements)
 - **Création** : un coordo qui crée un·e apprenti·e se l'affecte automatiquement ; l'admin choisit via un champ dédié de la modale (« — Aucun·e — » possible)
-- **Sélecteur de coordo actif** sur le tableau de bord (rôle coordo, pattern du sélecteur de maître) : bascule Martine LEFÈVRE ↔ Bernard PETIT pour démontrer les périmètres
+- **Sélecteur de coordo actif** (composant partagé `SelecteurCoordoActif`, rôle coordo, pattern du sélecteur de maître) : bascule Martine LEFÈVRE ↔ Bernard PETIT pour démontrer les périmètres. Présent sur le **tableau de bord** mais aussi sur les pages **gestion des affectations** et **gestion des utilisateurs** — on peut donc changer de périmètre sans repasser par l'accueil (retour coordo : « je ne pouvais pas changer de coordo depuis la page Affectations »)
 - Fixtures : 2ᵉ coordo **Bernard PETIT** — Martine suit Le Gourmet (Léa, Théo, Sofia), Bernard la Brasserie du Rhône (Minh, Aya, Luca)
 - Bump `livret-utilisateurs` v3 → v4 (reset)
-- +2 tests unitaires, +1 scénario E2E (répartition par l'admin → périmètres respectifs) et 4 tests E2E adaptés
+- +2 tests unitaires, +2 scénarios E2E (répartition par l'admin → périmètres respectifs ; bascule de périmètre directement depuis la page Affectations) et 4 tests E2E adaptés
 
 #### Signature manuscrite tactile (12 juin 2026 — CDC v1.5 §14.C, volet maquette)
 

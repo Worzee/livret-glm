@@ -172,6 +172,27 @@ test("l'admin répartit les apprenti·e·s entre coordos — chaque coordo voit 
   ).toBeVisible();
 });
 
+test('le coordo bascule de périmètre directement depuis la page Affectations (juin 2026)', async ({
+  page,
+}) => {
+  // Reproduit le signalement « même en changeant de coordo actif·ve, je vois
+  // toujours les mêmes 3 apprenti·e·s sur la page Affectations ». Le sélecteur
+  // de périmètre était cantonné au tableau de bord : impossible de basculer
+  // sans quitter la page. Il est désormais présent ici aussi.
+  await selectRole(page, 'Coordinateur·rice');
+  await page.goto('/admin/affectations');
+
+  // Périmètre par défaut (Martine) : Léa, Théo, Sofia.
+  await expect(page.locator('tbody tr')).toHaveCount(3);
+  await expect(page.locator('tbody tr', { hasText: 'Léa MARTIN' })).toBeVisible();
+
+  // Bascule sur Bernard sans quitter la page → son périmètre (Minh, Aya, Luca).
+  await page.getByRole('button', { name: /Bernard PETIT/i }).click();
+  await expect(page.locator('tbody tr')).toHaveCount(3);
+  await expect(page.locator('tbody tr', { hasText: 'Minh NGUYEN' })).toBeVisible();
+  await expect(page.locator('tbody tr', { hasText: 'Léa MARTIN' })).toHaveCount(0);
+});
+
 test("affecter un second maître ouvre l'accès au livret (double tutorat — juin 2026)", async ({
   page,
 }) => {

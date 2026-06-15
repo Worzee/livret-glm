@@ -20,6 +20,7 @@ import { apprentisAccessibles, filtrerApprentis } from '@/lib/apprentis-accessib
 import { evaluerVerrouAffectation } from '@/lib/affectation-verrou';
 import { ModaleApprenti } from '@/components/admin/ModaleApprenti';
 import { ModaleUtilisateurStaff, type RoleStaff } from '@/components/admin/ModaleUtilisateurStaff';
+import { SelecteurCoordoActif } from '@/components/common/SelecteurCoordoActif';
 import { cn } from '@/lib/utils';
 
 /**
@@ -287,6 +288,10 @@ export function GestionUtilisateurs() {
           )}
         </div>
       </header>
+
+      {/* Bascule de périmètre (démo) : en rôle coordo, change le coordo dont
+          on voit les apprenti·e·s. */}
+      <SelecteurCoordoActif />
 
       {/* Filtres */}
       <div className="flex flex-wrap items-center gap-3">

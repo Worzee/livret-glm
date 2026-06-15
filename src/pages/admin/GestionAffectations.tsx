@@ -23,6 +23,7 @@ import {
   trierApprentis,
 } from '@/lib/apprentis-accessibles';
 import { evaluerVerrouAffectation } from '@/lib/affectation-verrou';
+import { SelecteurCoordoActif } from '@/components/common/SelecteurCoordoActif';
 import { cn } from '@/lib/utils';
 
 /**
@@ -106,6 +107,10 @@ export function GestionAffectations() {
           modifications sont enregistrées immédiatement.
         </p>
       </header>
+
+      {/* Bascule de périmètre (démo) : en rôle coordo, change le coordo dont
+          on voit les apprenti·e·s — sans devoir repasser par le tableau de bord. */}
+      <SelecteurCoordoActif />
 
       {nbVerrouilles > 0 && (
         <div className="bandeau-info-couleur-role rounded-md border p-3 text-sm">
