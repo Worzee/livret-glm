@@ -17,6 +17,7 @@ import { BandeauAlerteR7 } from '@/components/entretien/BandeauAlerteR7';
 import { SectionApprenti } from '@/components/entretien/SectionApprenti';
 import { SectionMaitre } from '@/components/entretien/SectionMaitre';
 import { SectionFormateur } from '@/components/entretien/SectionFormateur';
+import { SectionTrameEntretien1 } from '@/components/entretien/SectionTrameEntretien1';
 import { SectionSelectionCompetences } from '@/components/entretien/SectionSelectionCompetences';
 import { SectionSelectionAttitudes } from '@/components/entretien/SectionSelectionAttitudes';
 import { BlocSignaturesEntretien } from '@/components/entretien/BlocSignaturesEntretien';
@@ -162,7 +163,9 @@ export function EntretienTripartite() {
         ficheVerrouillee={ficheVerrouillee}
       />
 
-      <EntretienProgression entretien={entretien} />
+      {/* La barre de progression repose sur les questions apprenti/maître ;
+          E1 utilise la trame (récap d'alertes dédié) → masquée pour E1. */}
+      {!isE1 && <EntretienProgression entretien={entretien} />}
 
       {/* La section « Sélection des compétences abordées en entreprise » est
           réservée à l'Entretien 1 (CDC v1.5 §12 — décision conjointe initiale
@@ -182,9 +185,23 @@ export function EntretienTripartite() {
           évaluées à chaque entretien ; figé à la 3ᵉ signature de E1. */}
       {isE1 && <SectionSelectionAttitudes livret={livret} />}
 
-      <SectionApprenti livretId={livret.id} numero={numero} entretien={entretien} />
-      <SectionMaitre livretId={livret.id} numero={numero} entretien={entretien} />
-      <SectionFormateur livretId={livret.id} numero={numero} entretien={entretien} />
+      {/* E1 (« première visite ») : trame officielle GRETA (rubriques
+          thématiques + grille enrichie + récap des alertes). Les entretiens
+          2 à 4 conservent les sections apprenti / maître / formateur. */}
+      {isE1 ? (
+        <SectionTrameEntretien1
+          livretId={livret.id}
+          numero={numero}
+          entretien={entretien}
+          entretienVerrouille={ficheVerrouillee}
+        />
+      ) : (
+        <>
+          <SectionApprenti livretId={livret.id} numero={numero} entretien={entretien} />
+          <SectionMaitre livretId={livret.id} numero={numero} entretien={entretien} />
+          <SectionFormateur livretId={livret.id} numero={numero} entretien={entretien} />
+        </>
+      )}
 
       <BlocSignaturesEntretien
         livretId={livret.id}

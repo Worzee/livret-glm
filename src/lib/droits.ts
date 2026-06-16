@@ -59,6 +59,19 @@ export type Ressource =
   | 'entretien.signature-maitre'
   | 'entretien.signature-formateur'
   /**
+   * Saisie de la **trame officielle de l'entretien 1** (« première visite »,
+   * refonte GRETA juin 2026) : questions conjointes par rubriques + grille
+   * d'appréciation + commentaires. Co-saisie pendant l'entretien par le
+   * formateur référent et le maître / tuteur ; l'apprenti·e consulte.
+   */
+  | 'entretien.trame'
+  /**
+   * Signature du représentant légal (apprenti·e mineur·e) à l'entretien 1 —
+   * apposée par le formateur référent qui conduit l'entretien (le représentant
+   * légal n'est pas un rôle de l'application). Optionnelle, hors décompte R9.
+   */
+  | 'entretien.signature-representant-legal'
+  /**
    * Sélection des compétences abordées en entreprise — toutes activées par
    * défaut, le **maître / tuteur seul** décoche celles non abordées
    * (13 juin 2026). Validée à la 3ᵉ signature de l'entretien (W1, cf. CDC
@@ -160,6 +173,10 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'entretien.signature-apprenti': ['apprenti'],
   'entretien.signature-maitre': ['maitre'],
   'entretien.signature-formateur': ['formateur'],
+  // Trame officielle de l'entretien 1 : co-saisie formateur + maître (juin 2026)
+  'entretien.trame': ['formateur', 'maitre'],
+  // Signature du représentant légal (E1) : apposée par le formateur référent
+  'entretien.signature-representant-legal': ['formateur'],
   'entretien.selection-competences-entreprise': ['maitre'],
 
   // Fiche de suivi

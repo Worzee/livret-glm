@@ -204,7 +204,9 @@ export function validerSignatureEntretien(
         if (typeof v === 'string') return v.trim().length > 0;
         return typeof v === 'boolean';
       });
-      if (!auMoinsUneReponse) {
+      // Pas d'exigence quand l'apprenti·e n'a aucune question propre :
+      // entretien 1 (trame conjointe — juin 2026) ou formation sans question.
+      if (ids.length > 0 && !auMoinsUneReponse) {
         raisons.push('Renseignez au moins une réponse à vos questions.');
       }
       for (const q of questionsObligatoiresSansReponse(entretien, 'apprenti', banque)) {
@@ -245,14 +247,20 @@ export function validerSignatureEntretien(
     }
 
     case 'formateur': {
-      const d = entretien.demarchesAdministratives;
-      const renseigne =
-        d.contratSigne !== null ||
-        d.visiteMedicale !== null ||
-        d.permisConduire !== null ||
-        d.voiture !== null;
-      if (!renseigne) {
-        raisons.push('Renseignez au moins une démarche administrative (oui/non).');
+      // E1 (« première visite », trame officielle GRETA) : les démarches
+      // administratives ont été retirées → aucune exigence côté formateur pour
+      // signer. Les entretiens 2 à 4 conservent la règle historique.
+      const estE1 = entretien.reponsesTrame !== undefined;
+      if (!estE1) {
+        const d = entretien.demarchesAdministratives;
+        const renseigne =
+          d.contratSigne !== null ||
+          d.visiteMedicale !== null ||
+          d.permisConduire !== null ||
+          d.voiture !== null;
+        if (!renseigne) {
+          raisons.push('Renseignez au moins une démarche administrative (oui/non).');
+        }
       }
       break;
     }

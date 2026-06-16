@@ -1,9 +1,9 @@
-import { CheckCircle2, GraduationCap, HardHat, Lock, UserCog } from 'lucide-react';
+import { CheckCircle2, GraduationCap, HardHat, Lock, UserCog, Users } from 'lucide-react';
 import type { EntretienTripartite, NumeroEntretien, Role } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
-import { libelleRole } from '@/lib/droits';
+import { libelleRole, peutEditer } from '@/lib/droits';
 import { validerSignatureEntretien } from '@/lib/regles-entretien';
 import { BoutonSigner } from '@/components/common/BoutonSigner';
 import { cn } from '@/lib/utils';
@@ -169,6 +169,65 @@ export function BlocSignaturesEntretien({
           );
         })}
       </div>
+
+      {/* Représentant légal (E1 uniquement) — 4e signataire facultatif, apposé
+          par le formateur référent (apprenti·e mineur·e). Hors décompte R9. */}
+      {numero === 1 &&
+        (() => {
+          const sig = entretien.signatures.representantLegal;
+          const peutSigner =
+            peutEditer(roleActif, 'entretien.signature-representant-legal') && !ficheVerrouillee;
+          return (
+            <article className="rounded-lg border border-l-4 border-border border-l-muted-foreground/40 bg-card p-4 space-y-3 sm:max-w-sm">
+              <header className="flex items-center gap-2">
+                <Users className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <span className="text-sm font-medium">Représentant légal</span>
+                <span className="text-xs text-muted-foreground">
+                  (facultatif — apprenti·e mineur·e)
+                </span>
+              </header>
+              {sig?.signe ? (
+                <div className="space-y-1">
+                  {sig.trace && (
+                    <img
+                      src={sig.trace}
+                      alt="Signature manuscrite — représentant légal"
+                      className="h-14 max-w-full rounded border border-border bg-white object-contain"
+                    />
+                  )}
+                  <div className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
+                    <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                    Signé
+                  </div>
+                  {sig.dateSignature && (
+                    <p className="text-xs text-muted-foreground">
+                      le{' '}
+                      <time dateTime={sig.dateSignature}>
+                        {new Date(sig.dateSignature).toLocaleString('fr-FR', {
+                          dateStyle: 'short',
+                          timeStyle: 'short',
+                        })}
+                      </time>
+                    </p>
+                  )}
+                </div>
+              ) : peutSigner ? (
+                <BoutonSigner
+                  role="formateur"
+                  nomCourt="le représentant légal"
+                  libelleEngagement="Représentant légal de l'apprenti·e"
+                  disabled={false}
+                  onConfirmer={(trace) => signer(livretId, numero, 'representantLegal', trace)}
+                />
+              ) : (
+                <p className="text-xs italic text-muted-foreground">
+                  Signature facultative — apposée par le formateur référent si le représentant légal
+                  est présent.
+                </p>
+              )}
+            </article>
+          );
+        })()}
     </section>
   );
 }

@@ -252,6 +252,14 @@ export interface SignaturesTripartite {
   apprenti: SignaturePartie;
   maitre: SignaturePartie;
   formateur: SignaturePartie;
+  /**
+   * Représentant légal de l'apprenti·e (mineur·e) — 4e signataire **optionnel**,
+   * participe « en cas de besoin » (trame officielle de l'entretien 1, juin
+   * 2026). N'entre PAS dans le décompte des 3 signatures obligatoires (R9,
+   * séquencement des périodes…). `undefined` pour les fiches de période et les
+   * entretiens 2 à 4.
+   */
+  representantLegal?: SignaturePartie;
 }
 
 /**
@@ -458,6 +466,13 @@ export interface EntretienTripartite {
   /** Réponses indexées par `questionId` (cf. `ReponsesEntretien`). */
   reponsesApprenti: ReponsesEntretien;
   reponsesMaitre: ReponsesEntretien;
+  /**
+   * Réponses à la trame officielle de l'**entretien 1** (« première visite »,
+   * refonte GRETA juin 2026), indexées par id de question de
+   * `TRAME_ENTRETIEN_1`. Spécifique à E1 ; les entretiens 2 à 4 continuent
+   * d'utiliser `reponsesApprenti` / `reponsesMaitre`. `undefined` hors E1.
+   */
+  reponsesTrame?: ReponsesEntretien;
   appreciationMaitre: AppreciationMaitre;
   demarchesAdministratives: DemarchesAdministratives;
   conditionsPratiques: ConditionsPratiques;

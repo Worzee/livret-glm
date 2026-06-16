@@ -13,6 +13,7 @@ import type {
   NumeroEntretien,
   QuestionBanque,
   Referentiel,
+  SignaturePartie,
   SignaturesTripartite,
 } from '@/types';
 import { NUMEROS_ENTRETIEN } from '@/types';
@@ -20,6 +21,7 @@ import { libelleRole } from '@/lib/droits';
 import { synthetiserCompetences, valeurEffective } from '@/lib/synthese-evaluation';
 import { calculerStatsParBloc } from '@/lib/stats-bloc';
 import { libelleEvenement, libelleModalite, modaliteEffective } from '@/lib/organisation-suivi';
+import { TRAME_ENTRETIEN_1, pointsAlerteTrameE1 } from '@/lib/trame-entretien-1';
 import { attitudesRetenues } from '@/lib/selection-attitudes';
 import { COULEURS, styles } from './styles';
 import {
@@ -331,7 +333,7 @@ function CarteSignature({
   nom,
 }: {
   role: 'apprenti' | 'maitre' | 'formateur';
-  signature: SignaturesTripartite[keyof SignaturesTripartite];
+  signature: SignaturePartie;
   nom: string;
 }) {
   const styleRole =
@@ -579,6 +581,11 @@ export function PageEntretien({
   const cp = entretien.conditionsPratiques;
   const ai = entretien.aidesDemandees;
   const c = entretien.commentaires;
+  // E1 (« première visite ») : trame officielle GRETA (rubriques + alertes) au
+  // lieu des questions apprenti/maître + démarches/conditions/aides.
+  const estE1 = entretien.reponsesTrame !== undefined;
+  const alertesE1 = estE1 ? pointsAlerteTrameE1(entretien.reponsesTrame) : [];
+  const sigRL = entretien.signatures.representantLegal;
 
   /** Restitue chaque question sélectionnée + sa réponse (texte ou oui/non). */
   const renduQuestions = (
@@ -622,15 +629,59 @@ export function PageEntretien({
           valeur={entretien.dateEntretien ? formaterDateLongue(entretien.dateEntretien) : undefined}
         />
 
-        <Text style={styles.h2}>Apprenti·e</Text>
-        {renduQuestions(
-          entretien.questionsApprentiSelectionnees,
-          entretien.reponsesApprenti,
-          'apprenti',
-        )}
+        {estE1 ? (
+          <>
+            {TRAME_ENTRETIEN_1.map((rubrique) => (
+              <View key={rubrique.id}>
+                <Text style={styles.h2}>{rubrique.titre}</Text>
+                {rubrique.questions.map((q) => {
+                  const v = entretien.reponsesTrame?.[q.id];
+                  return q.type === 'oui-non' ? (
+                    <Champ
+                      key={q.id}
+                      label={q.libelle}
+                      valeur={libelleOuiNon(typeof v === 'boolean' ? v : null)}
+                    />
+                  ) : (
+                    <ParagrapheLibre
+                      key={q.id}
+                      titre={q.libelle}
+                      valeur={typeof v === 'string' ? v : ''}
+                    />
+                  );
+                })}
+              </View>
+            ))}
+            {alertesE1.length > 0 && (
+              <View style={[styles.encart, { marginTop: 6 }]}>
+                <Text style={styles.encartTitre}>
+                  Points d'alerte ({alertesE1.length}) — action du GRETA CFA (DDF / coordonnateur)
+                </Text>
+                {alertesE1.map((q) => (
+                  <Text key={q.id} style={{ fontSize: 9, marginTop: 2 }}>
+                    • {q.libelle}
+                  </Text>
+                ))}
+              </View>
+            )}
+          </>
+        ) : (
+          <>
+            <Text style={styles.h2}>Apprenti·e</Text>
+            {renduQuestions(
+              entretien.questionsApprentiSelectionnees,
+              entretien.reponsesApprenti,
+              'apprenti',
+            )}
 
-        <Text style={styles.h2}>Maître / Tuteur</Text>
-        {renduQuestions(entretien.questionsMaitreSelectionnees, entretien.reponsesMaitre, 'maitre')}
+            <Text style={styles.h2}>Maître / Tuteur</Text>
+            {renduQuestions(
+              entretien.questionsMaitreSelectionnees,
+              entretien.reponsesMaitre,
+              'maitre',
+            )}
+          </>
+        )}
 
         <Text style={styles.h3}>Appréciations (maître)</Text>
         <Champ label="Ponctualité" valeur={libelleAppreciation(ap.ponctualite)} />
@@ -654,29 +705,41 @@ export function PageEntretien({
           />
         ))}
 
-        <Text style={styles.h2}>Démarches administratives</Text>
-        <Champ label="Contrat signé" valeur={libelleOuiNon(da.contratSigne)} />
-        <Champ label="Visite médicale" valeur={libelleOuiNon(da.visiteMedicale)} />
-        <Champ label="Permis de conduire" valeur={libelleOuiNon(da.permisConduire)} />
-        <Champ label="Voiture" valeur={libelleOuiNon(da.voiture)} />
-        {da.remarques && <ParagrapheLibre titre="Remarques" valeur={da.remarques} />}
+        {/* Démarches / conditions / aides : entretiens 2 à 4 uniquement
+            (retirées de la trame officielle E1). */}
+        {!estE1 && (
+          <>
+            <Text style={styles.h2}>Démarches administratives</Text>
+            <Champ label="Contrat signé" valeur={libelleOuiNon(da.contratSigne)} />
+            <Champ label="Visite médicale" valeur={libelleOuiNon(da.visiteMedicale)} />
+            <Champ label="Permis de conduire" valeur={libelleOuiNon(da.permisConduire)} />
+            <Champ label="Voiture" valeur={libelleOuiNon(da.voiture)} />
+            {da.remarques && <ParagrapheLibre titre="Remarques" valeur={da.remarques} />}
 
-        <Text style={styles.h2}>Conditions pratiques</Text>
-        <Champ label="Hébergement (centre)" valeur={cp.hebergementCentre} />
-        <Champ label="Hébergement (entreprise)" valeur={cp.hebergementEntreprise} />
-        <Champ label="Transport (centre)" valeur={cp.transportCentre} />
-        <Champ label="Transport (entreprise)" valeur={cp.transportEntreprise} />
+            <Text style={styles.h2}>Conditions pratiques</Text>
+            <Champ label="Hébergement (centre)" valeur={cp.hebergementCentre} />
+            <Champ label="Hébergement (entreprise)" valeur={cp.hebergementEntreprise} />
+            <Champ label="Transport (centre)" valeur={cp.transportCentre} />
+            <Champ label="Transport (entreprise)" valeur={cp.transportEntreprise} />
 
-        <Text style={styles.h2}>Aides demandées</Text>
-        <Champ label="Logement" valeur={libelleOuiNon(ai.logement)} />
-        <Champ label="Premier équipement" valeur={libelleOuiNon(ai.premierEquipement)} />
-        <Champ label="Permis" valeur={libelleOuiNon(ai.permis)} />
-        {ai.autres && <ParagrapheLibre titre="Autres aides" valeur={ai.autres} />}
+            <Text style={styles.h2}>Aides demandées</Text>
+            <Champ label="Logement" valeur={libelleOuiNon(ai.logement)} />
+            <Champ label="Premier équipement" valeur={libelleOuiNon(ai.premierEquipement)} />
+            <Champ label="Permis" valeur={libelleOuiNon(ai.permis)} />
+            {ai.autres && <ParagrapheLibre titre="Autres aides" valeur={ai.autres} />}
+          </>
+        )}
 
         <Text style={styles.h2}>Commentaires</Text>
-        <ParagrapheLibre titre="Apprenti·e" valeur={c.apprenti} />
-        <ParagrapheLibre titre="Maître" valeur={c.maitre} />
-        <ParagrapheLibre titre="Formateur" valeur={c.formateur} />
+        {estE1 ? (
+          <ParagrapheLibre titre="Synthèse de l'entretien" valeur={c.formateur} />
+        ) : (
+          <>
+            <ParagrapheLibre titre="Apprenti·e" valeur={c.apprenti} />
+            <ParagrapheLibre titre="Maître" valeur={c.maitre} />
+            <ParagrapheLibre titre="Formateur" valeur={c.formateur} />
+          </>
+        )}
 
         <Text style={styles.h2}>Signatures</Text>
         <BlocSignaturesPdf
@@ -685,6 +748,11 @@ export function PageEntretien({
           maitre={maitre}
           formateur={formateur}
         />
+        {estE1 && sigRL?.signe && (
+          <Text style={{ fontSize: 9, marginTop: 4 }}>
+            Représentant légal — signé le {formaterDateHeure(sigRL.dateSignature)}
+          </Text>
+        )}
       </View>
     </Page>
   );

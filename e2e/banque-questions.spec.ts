@@ -92,18 +92,31 @@ test('le coordo retire une question pour la formation — absente du futur entre
   await expect(page.getByText(/Quelles sont vos motivations pour cette formation/i)).toBeVisible();
 });
 
-test('le formateur ne compose plus les questions (aucun bouton de sélection)', async ({ page }) => {
-  await page.goto('/livret/entretien/1');
+test('le formateur ne compose plus les questions, présentes à E2 (aucun bouton de sélection)', async ({
+  page,
+}) => {
+  // 16 juin 2026 : E1 utilise la trame officielle ; les questions de la banque
+  // concernent les entretiens 2 à 4. E2 de Léa peut être initialisé (E1 signé).
+  await page.goto('/livret/entretien/2');
+  await page.getByTestId('init-entretien-2').click();
   await expect(page.getByTestId('apprenti-choisir-questions')).toHaveCount(0);
   await expect(page.getByTestId('maitre-choisir-questions')).toHaveCount(0);
   // Les questions imposées sont bien affichées (lecture / réponse).
   await expect(page.getByText(/Quelles sont vos motivations pour cette formation/i)).toBeVisible();
 });
 
-test('les réponses indexées par questionId sont préservées entre les rendus', async ({ page }) => {
-  await page.goto('/livret/entretien/1');
-  // La fixture Léa contient une réponse pré-saisie pour `q-app-motivations`.
-  await expect(
-    page.getByText('Devenir cuisinière dans la restauration traditionnelle', { exact: false }),
-  ).toBeVisible();
+test('les réponses indexées par questionId sont préservées entre les rendus (E2)', async ({
+  page,
+}) => {
+  // E1 utilise la trame ; les questions/réponses de la banque concernent E2-E4.
+  await page.goto('/livret/entretien/2');
+  await page.getByTestId('init-entretien-2').click();
+  await selectRole(page, 'Apprenti·e');
+  await page.goto('/livret/entretien/2');
+  const champ = page.getByLabel(/Quelles sont vos motivations pour cette formation/i);
+  await champ.fill('Projet de cuisine traditionnelle.');
+  await page.reload();
+  await expect(page.getByLabel(/Quelles sont vos motivations pour cette formation/i)).toHaveValue(
+    'Projet de cuisine traditionnelle.',
+  );
 });

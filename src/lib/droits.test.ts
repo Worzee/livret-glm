@@ -46,6 +46,18 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('apprenti', 'entretien.signature-apprenti')).toBe(true);
     });
 
+    it('trame E1 : co-saisie formateur + maître ; signature représentant légal au formateur (juin 2026)', () => {
+      expect(peutEditer('formateur', 'entretien.trame')).toBe(true);
+      expect(peutEditer('maitre', 'entretien.trame')).toBe(true);
+      expect(peutEditer('apprenti', 'entretien.trame')).toBe(false);
+      expect(peutEditer('coordo', 'entretien.trame')).toBe(false);
+      expect(peutEditer('admin', 'entretien.trame')).toBe(false);
+
+      expect(peutEditer('formateur', 'entretien.signature-representant-legal')).toBe(true);
+      expect(peutEditer('maitre', 'entretien.signature-representant-legal')).toBe(false);
+      expect(peutEditer('coordo', 'entretien.signature-representant-legal')).toBe(false);
+    });
+
     it('maître édite ses questions, son appréciation, son commentaire et sa signature', () => {
       expect(peutEditer('maitre', 'entretien.questions-maitre')).toBe(true);
       expect(peutEditer('maitre', 'entretien.appreciation-maitre')).toBe(true);
@@ -251,6 +263,8 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
         'grille-competences.centre',
         'entretien.attitudes',
         'entretien.attitudes-selection',
+        'entretien.trame',
+        'entretien.signature-representant-legal',
         // `export-pdf` retiré le 16 juin 2026 : ouvert au coordo / admin (sortie
         // documentaire, pas de contenu pédagogique) — cf. test dédié plus haut.
         'cloturer-livret',

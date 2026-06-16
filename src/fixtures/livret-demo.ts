@@ -21,6 +21,7 @@ import { referentielCapCuisine } from './referentiel-cap-cuisine';
 import { periodesCapCuisine } from './formations';
 import { QUESTIONS_BANQUE_INITIALE, idsQuestionsActives } from '@/lib/questions-entretien';
 import { creerFichePeriodeVierge } from '@/lib/creation-livret';
+import { questionsTrameE1 } from '@/lib/trame-entretien-1';
 
 // Snapshot des entretiens de démo (13 juin 2026) : la formation CAP Cuisine
 // ne retire aucune question → toutes les questions de la banque sont actives
@@ -192,6 +193,34 @@ function livretVierge(apprenti: Apprenti, livretId: string): Livret {
   };
 }
 
+/** Textes de démonstration pour les questions « texte » de la trame E1. */
+const TEXTES_TRAME_E1_DEMO: Record<string, string> = {
+  'e1-integ-accueil':
+    "Accueil chaleureux : l'apprenti·e a été présenté·e à l'équipe dès son arrivée.",
+  'e1-integ-presentation':
+    'Visite des locaux, présentation du poste, des missions et des consignes de sécurité.',
+  'e1-accomp-echanges':
+    'Point hebdomadaire le lundi ; consignes orales complétées par une fiche de tâches.',
+  'e1-adeq-activites': 'Mise en place, taillage des légumes, aide à la production du service.',
+  'e1-adeq-difficultes':
+    "Rapidité d'exécution encore à consolider — point de vigilance à travailler en centre.",
+};
+
+/**
+ * Réponses de démonstration à la trame de l'entretien 1 : toutes les oui/non à
+ * « Oui » sauf les ids passés dans `idsNon` (qui déclenchent un point d'alerte),
+ * et des textes courts réalistes.
+ */
+function reponsesTrameDemo(idsNon: ReadonlyArray<string> = []): Record<string, string | boolean> {
+  const non = new Set(idsNon);
+  const out: Record<string, string | boolean> = {};
+  for (const q of questionsTrameE1()) {
+    if (q.type === 'oui-non') out[q.id] = !non.has(q.id);
+    else out[q.id] = TEXTES_TRAME_E1_DEMO[q.id] ?? '';
+  }
+  return out;
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 // Livret 1 : Léa MARTIN — cas principal (CDC §24.5)
 // État au 09/05/2026 :
@@ -203,6 +232,9 @@ function livretVierge(apprenti: Apprenti, livretId: string): Livret {
 
 const entretienLea: EntretienTripartite = {
   dateEntretien: '2025-10-28',
+  // Trame officielle E1 (juin 2026) — 2 points d'alerte pour la démo :
+  // absences non signalées selon les procédures + difficulté de logement.
+  reponsesTrame: reponsesTrameDemo(['e1-org-absences', 'e1-diff-logement']),
   questionsApprentiSelectionnees: [...QUESTIONS_E1_APPRENTI],
   questionsMaitreSelectionnees: [...QUESTIONS_E1_MAITRE],
   questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],
@@ -510,6 +542,7 @@ const livretLea: Livret = {
 
 const entretienTheo: EntretienTripartite = {
   dateEntretien: '2025-10-15',
+  reponsesTrame: reponsesTrameDemo(),
   questionsApprentiSelectionnees: [...QUESTIONS_E1_APPRENTI],
   questionsMaitreSelectionnees: [...QUESTIONS_E1_MAITRE],
   questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],
@@ -777,6 +810,7 @@ const livretSofia: Livret = {
 
 const entretienMinh: EntretienTripartite = {
   dateEntretien: '2026-04-20',
+  reponsesTrame: reponsesTrameDemo(),
   questionsApprentiSelectionnees: [...QUESTIONS_E1_APPRENTI],
   questionsMaitreSelectionnees: [...QUESTIONS_E1_MAITRE],
   questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],
@@ -1040,6 +1074,7 @@ const livretAya: Livret = {
 
 const entretienLuca: EntretienTripartite = {
   dateEntretien: '2025-10-30',
+  reponsesTrame: reponsesTrameDemo(),
   questionsApprentiSelectionnees: [...QUESTIONS_E1_APPRENTI],
   questionsMaitreSelectionnees: [...QUESTIONS_E1_MAITRE],
   questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],

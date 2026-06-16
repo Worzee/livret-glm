@@ -103,7 +103,10 @@ import { useUtilisateursStore } from './useUtilisateursStore';
 //   v18 — 15 juin 2026 : modalité présentiel/distanciel des entretiens
 //        tripartites sur les fiches de suivi (E1 présentiel imposé, E2..E4 au
 //        choix) — `EvenementOrganisationSuivi.modalite`. Reset (fixtures).
-const VERSION_SCHEMA = 18;
+//   v19 — 16 juin 2026 : refonte de l'entretien tripartite 1 (« première
+//        visite ») sur la trame officielle GRETA — `reponsesTrame` +
+//        `signatures.representantLegal`. Reset pour recharger les fixtures.
+const VERSION_SCHEMA = 19;
 
 interface LivretStore {
   livrets: Record<string, Livret>;
@@ -221,6 +224,16 @@ interface LivretStore {
     questionId: string,
     valeur: ValeurReponseEntretien,
   ) => void;
+  /**
+   * Met à jour une réponse à la **trame officielle de l'entretien 1** (juin
+   * 2026), indexée par id de question de `TRAME_ENTRETIEN_1`.
+   */
+  setReponseTrameEntretien: (
+    livretId: string,
+    numero: NumeroEntretien,
+    questionId: string,
+    valeur: ValeurReponseEntretien,
+  ) => void;
   setAppreciationMaitre: (
     livretId: string,
     numero: NumeroEntretien,
@@ -247,11 +260,15 @@ interface LivretStore {
     role: 'apprenti' | 'maitre' | 'formateur',
     valeur: string,
   ) => void;
-  /** `trace` : signature manuscrite (PNG data-URL — juin 2026, §14.C). */
+  /**
+   * `trace` : signature manuscrite (PNG data-URL — juin 2026, §14.C).
+   * `representantLegal` (E1 uniquement) est un signataire optionnel hors
+   * décompte des 3 signatures obligatoires.
+   */
   signerEntretien: (
     livretId: string,
     numero: NumeroEntretien,
-    role: 'apprenti' | 'maitre' | 'formateur',
+    role: 'apprenti' | 'maitre' | 'formateur' | 'representantLegal',
     trace?: string,
   ) => void;
 
@@ -381,13 +398,18 @@ function entretienVierge(
   numero: NumeroEntretien,
   questionsRetirees: ReadonlyArray<string> = [],
 ): EntretienTripartite {
-  void numero; // toutes les questions actives sont identiques pour chaque entretien (13 juin 2026)
   const banque = Object.values(useBanqueQuestionsStore.getState().questions);
   // 13 juin 2026 : snapshot des questions ACTIVES de la formation (toutes
   // sauf celles retirées). Toutes sont imposées ET obligatoires — le
   // formateur n'a plus la main sur la composition.
-  const apprenti = idsQuestionsActives(banque, questionsRetirees, 'apprenti');
-  const maitre = idsQuestionsActives(banque, questionsRetirees, 'maitre');
+  // E1 (« première visite ») : trame officielle GRETA figée (réponses dédiées)
+  // + 4e signataire optionnel (représentant légal). Les questions de la banque
+  // ne s'appliquent plus à E1 (la trame les remplace) — listes vidées pour ne
+  // pas bloquer la signature (R20). Les entretiens 2 à 4 conservent le modèle
+  // questions apprenti/maître.
+  const estE1 = numero === 1;
+  const apprenti = estE1 ? [] : idsQuestionsActives(banque, questionsRetirees, 'apprenti');
+  const maitre = estE1 ? [] : idsQuestionsActives(banque, questionsRetirees, 'maitre');
   return {
     questionsApprentiSelectionnees: apprenti,
     questionsMaitreSelectionnees: maitre,
@@ -396,6 +418,7 @@ function entretienVierge(
     evaluationsAttitudes: {},
     reponsesApprenti: {},
     reponsesMaitre: {},
+    ...(estE1 ? { reponsesTrame: {} } : {}),
     appreciationMaitre: {},
     demarchesAdministratives: {
       contratSigne: null,
@@ -410,6 +433,7 @@ function entretienVierge(
       apprenti: { signe: false },
       maitre: { signe: false },
       formateur: { signe: false },
+      ...(estE1 ? { representantLegal: { signe: false } } : {}),
     },
   };
 }
@@ -677,6 +701,17 @@ export const useLivretStore = create<LivretStore>()(
             return ecrireEntretien(l, numero, {
               ...e,
               [champ]: { ...e[champ], [questionId]: valeur },
+            });
+          }),
+        ),
+
+      setReponseTrameEntretien: (livretId, numero, questionId, valeur) =>
+        set((s) =>
+          muterLivret(s, livretId, (l) => {
+            const e = lireEntretien(l, numero) ?? entretienVierge(numero);
+            return ecrireEntretien(l, numero, {
+              ...e,
+              reponsesTrame: { ...(e.reponsesTrame ?? {}), [questionId]: valeur },
             });
           }),
         ),
