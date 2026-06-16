@@ -115,3 +115,45 @@ function formaterListeFr(items: string[]): string {
   if (items.length === 2) return `${items[0]} et ${items[1]}`;
   return `${items.slice(0, -1).join(', ')} et ${items[items.length - 1]}`;
 }
+
+/**
+ * Une fiche de période est-elle signée par les **3 parties** (apprenti·e +
+ * maître / tuteur + formateur·rice référent·e) ? Critère du séquencement
+ * d'affichage des périodes (16 juin 2026). On se base sur les signatures
+ * elles-mêmes : un déverrouillage R10 invalide les signatures et masque donc
+ * à nouveau les périodes suivantes — comportement voulu.
+ */
+export function periodeSigneeTroisParties(fiche: FicheSuiviPeriode): boolean {
+  const s = fiche.signatures;
+  return s.apprenti.signe && s.maitre.signe && s.formateur.signe;
+}
+
+/**
+ * Séquencement d'affichage des périodes (16 juin 2026) : une période n'est
+ * visible que tant que **la période précédente a été signée par les 3
+ * parties**. La première période est toujours visible. Concrètement, on
+ * parcourt les périodes dans l'ordre chronologique et on s'arrête à la
+ * première période non signée (incluse).
+ *
+ * Exemple : 3 périodes en brouillon → seule la période 1 est visible ; dès
+ * qu'elle est signée par les 3 parties, la période 2 apparaît, etc.
+ */
+export function periodesVisibles(fiches: FicheSuiviPeriode[]): FicheSuiviPeriode[] {
+  const triees = [...fiches].sort((a, b) => a.numeroPeriode - b.numeroPeriode);
+  const visibles: FicheSuiviPeriode[] = [];
+  for (const f of triees) {
+    visibles.push(f);
+    if (!periodeSigneeTroisParties(f)) break;
+  }
+  return visibles;
+}
+
+/** Indique si une période précise est accessible (cf. `periodesVisibles`). */
+export function estPeriodeVisible(fiches: FicheSuiviPeriode[], ficheId: string): boolean {
+  return periodesVisibles(fiches).some((f) => f.id === ficheId);
+}
+
+/** Nombre de périodes encore masquées (à venir) — pour l'information à l'écran. */
+export function nbPeriodesMasquees(fiches: FicheSuiviPeriode[]): number {
+  return Math.max(0, fiches.length - periodesVisibles(fiches).length);
+}

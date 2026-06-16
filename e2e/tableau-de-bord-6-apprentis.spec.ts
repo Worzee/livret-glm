@@ -134,8 +134,9 @@ test('contexte « apprenti·e actif·ve » survit aux changements de page', asyn
   await page.getByRole('link', { name: /Période en Entreprise/i }).click();
   await expect(page.getByRole('link', { name: /Période 1/i })).toBeVisible();
   await expect(page.getByRole('link', { name: /Période 2/i })).toBeVisible();
-  // Aya a désormais les 3 périodes du planning (P3 héritée, encore vierge).
-  await expect(page.getByRole('link', { name: /Période 3/i })).toBeVisible();
+  // Séquencement (16 juin 2026) : P1 signée 3/3 → P2 visible, mais P2 est
+  // déverrouillée (signatures invalidées R10) → P3 reste masquée.
+  await expect(page.getByRole('link', { name: /Période 3/i })).toHaveCount(0);
 
   // Détail période 2 — l'historique R10 doit être visible.
   await page.getByRole('link', { name: /Période 2/i }).click();
@@ -143,16 +144,33 @@ test('contexte « apprenti·e actif·ve » survit aux changements de page', asyn
   await expect(page.getByText(/Désaccord exprimé par l'apprenti/i)).toBeVisible();
 });
 
-test('Minh (cas démarrage) : les 3 périodes héritées sont affichées (brouillon)', async ({
+test('Minh (cas démarrage) : seule la période 1 est visible, les suivantes masquées (séquencement)', async ({
   page,
 }) => {
   await page.getByRole('button', { name: /Ouvrir le livret de Minh NGUYEN/i }).click();
   await page.getByRole('link', { name: /Période en Entreprise/i }).click();
-  // Plus d'état vide : Minh hérite des 3 périodes du planning de la formation.
+  // Plus d'état vide : Minh hérite des 3 périodes du planning de la formation…
   await expect(page.getByText(/Aucune période planifiée/i)).toHaveCount(0);
+  // …mais le séquencement (16 juin 2026) ne dévoile que la période en cours :
+  // P1 est en brouillon (non signée) → P2 et P3 restent masquées.
   await expect(page.getByRole('link', { name: /Période 1/i })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Période 2/i })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Période 3/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Période 2/i })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: /Période 3/i })).toHaveCount(0);
+  // Un message annonce les périodes encore masquées.
+  await expect(page.getByText(/restent masquées/i)).toBeVisible();
+});
+
+test('accès direct à une période masquée : page « Période non accessible » (séquencement)', async ({
+  page,
+}) => {
+  // Minh : P1 en brouillon → la période 2 (fp-minh-2) est masquée. L'accès par
+  // URL directe est gardé côté détail.
+  await page.getByRole('button', { name: /Ouvrir le livret de Minh NGUYEN/i }).click();
+  await page.goto('/livret/fiches-suivi/fp-minh-2');
+  await expect(page.getByRole('heading', { name: /Période non accessible/i })).toBeVisible();
+  // La période 1 (visible), elle, s'ouvre normalement.
+  await page.goto('/livret/fiches-suivi/fp-minh-1');
+  await expect(page.getByRole('heading', { name: /Période en Entreprise n° 1|Période 1/i })).toBeVisible();
 });
 
 test("Sofia (cas alerte R7) : la page Entretien affiche le bandeau d'alerte", async ({ page }) => {

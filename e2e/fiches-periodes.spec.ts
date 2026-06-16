@@ -54,14 +54,14 @@ test("le coordo ajoute une nouvelle période et la voit apparaître dans le livr
   // accessible, d'où le .last() pour éviter la violation strict mode)
   await modale.getByRole('button', { name: /^Fermer$/i }).last().click();
   await page.goto('/');
+  // Théo a ses 3 périodes signées et verrouillées → avec le séquencement
+  // (16 juin 2026), la P4 héritée du planning via cascade est immédiatement
+  // visible (toutes les périodes précédentes sont signées par les 3 parties).
   await page
-    .getByRole('button', { name: /Ouvrir le livret de Léa MARTIN/i })
+    .getByRole('button', { name: /Ouvrir le livret de Théo DUBOIS/i })
     .click();
   await page.goto('/livret/fiches-suivi');
-  // Léa avait 3 fiches dans la fixture, la P4 vient d'apparaître via cascade
-  await expect(
-    page.locator('li', { hasText: /Période 4 — Période bilan/i }),
-  ).toBeVisible();
+  await expect(page.locator('li', { hasText: /Période 4 — Période bilan/i })).toBeVisible();
 });
 
 test("le formateur référent ne peut PAS gérer le planning des périodes", async ({ page }) => {

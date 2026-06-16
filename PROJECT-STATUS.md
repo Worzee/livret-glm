@@ -11,7 +11,7 @@
 
 ### État global
 
-L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 5 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026 + retours coordonnateurs juin 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **530 tests unitaires + 166 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
+L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 5 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026 + retours coordonnateurs juin 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **539 tests unitaires + 167 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
 
 ### Ce qui est livré
 
@@ -47,7 +47,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | Aperçu général et démarrage                                     | [`README.md`](README.md)                                                                                  |
 | Modules livrés et périmètre fonctionnel                         | §4                                                                                                        |
 | Règles métier R1 → R24                                          | §5                                                                                                        |
-| État des tests (530 unit + 166 E2E)                             | §6                                                                                                        |
+| État des tests (539 unit + 167 E2E)                             | §6                                                                                                        |
 | Architecture des fichiers                                       | §7                                                                                                        |
 | Reste à faire                                                   | §8                                                                                                        |
 | Limites connues                                                 | §9                                                                                                        |
@@ -69,8 +69,8 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | **URL publique**      | https://livret-glm.duckdns.org                                                                   |
 | **Accès**             | Basic Auth `demo` / _(mdp partagé hors-canal)_                                                   |
 | **Dépôt source**      | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
-| **Tests unitaires**   | **530 / 530 ✓** (Vitest, 34 fichiers de test)                                                    |
-| **Tests E2E**         | **166 / 166 ✓** (Playwright — 154 desktop + 12 mobile Pixel 5, 23 specs)                         |
+| **Tests unitaires**   | **539 / 539 ✓** (Vitest, 34 fichiers de test)                                                    |
+| **Tests E2E**         | **167 / 167 ✓** (Playwright — 155 desktop + 12 mobile Pixel 5, 23 specs)                         |
 | **Bundle JS gzippé**  | 148 KB (cible CDC §19.1 : < 500 KB → marge × 3,4)                                                |
 | **Bundle CSS gzippé** | 6,5 KB (cible : < 50 KB → marge × 7)                                                             |
 | **Chunk PDF lazy**    | 493 KB (chargé uniquement au clic « Exporter »)                                                  |
@@ -227,6 +227,14 @@ Pour les formations de 2 ans, le livret peut désormais porter jusqu'à **4 entr
 - Plomberie mutualisée dans un hook `useDonneesLivretPdf` (identité, formation, référentiel, établissement, banque de questions, attitudes), réutilisé par les 3 pages
 - **Droits** : `export-pdf` étendu de `formateur` à **`formateur` + `coordo` + `admin`** (sortie documentaire, pas de contenu pédagogique) — apprenti·e et maître exclus. Vaut aussi pour l'export du livret complet existant
 - Aucun changement de schéma de données (pas de reset) ; +5 scénarios E2E (`export-pdf.spec.ts`), tests de droits adaptés
+
+#### Séquencement de visibilité des périodes (16 juin 2026 — retours coordonnateurs pédagogiques)
+
+- Une période en entreprise n'est **visible que tant que la période précédente a été signée par les 3 parties** (apprenti·e + maître / tuteur + formateur·rice). La première période est toujours visible ; les suivantes apparaissent au fur et à mesure des signatures
+- Helpers purs dans `regles-periode` : `periodeSigneeTroisParties`, `periodesVisibles`, `estPeriodeVisible`, `nbPeriodesMasquees`
+- Page liste « Période en Entreprise » : n'affiche que les périodes visibles + un encart annonçant les périodes encore masquées (sans dévoiler leur contenu). Page détail : accès par URL directe gardé (écran « Période non accessible »)
+- Un déverrouillage R10 (qui invalide les signatures) **re-masque** les périodes suivantes — comportement voulu
+- Aucun changement de schéma (pas de reset) ; +9 tests unitaires (`regles-periode`), +1 scénario E2E (accès direct bloqué) + 3 specs adaptées (Minh : seule P1 visible ; Aya : P3 masquée ; cascade planning vérifiée sur Théo, toutes périodes signées)
 
 #### Répartition des motifs par rôle + séquencement des entretiens (12 juin 2026 — retours coordonnateurs pédagogiques)
 
@@ -539,7 +547,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 
 ---
 
-## 6. Tests (530 unitaires + 166 E2E)
+## 6. Tests (539 unitaires + 167 E2E)
 
 ### Tests unitaires Vitest (34 fichiers de test)
 
@@ -549,7 +557,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 | `lib/selection-attitudes.test.ts`              | 9      | Choix des attitudes à l'E1 : verrou 3ᵉ signature + toggle + filtre catalogue (13 juin 2026)                                                                         |
 | `lib/transitions-fiche.test.ts`                | 22     | R15/R16/R17/R21 + adaptation suivi GRETA texte                                                                                                                      |
 | `lib/validation-signature.test.ts`             | 18     | R18/R20 — refonte chantier #3                                                                                                                                       |
-| `lib/regles-periode.test.ts`                   | 18     | R11/R12/R13/R14                                                                                                                                                     |
+| `lib/regles-periode.test.ts`                   | 27     | R11/R12/R13/R14 + **séquencement de visibilité des périodes (16 juin 2026)**                                                                                        |
 | `lib/regles-entretien.test.ts`                 | 30     | R6/R7/R8/R9 (E1..E4) + R20 questions obligatoires + ≥ 1 attitude (maître) + séquencement `peutInitialiserEntretien` (juin 2026)                                     |
 | `lib/attitudes.test.ts`                        | 10     | Catalogue par défaut (16 attitudes + descriptions) + `attitudeEstUtilisee` + `auMoinsUneAttitudeEvaluee` (juin 2026)                                                |
 | `lib/nombre-entretiens.test.ts`                | 12     | Bornes 1-4 + verrou de réduction + numéros disponibles (juin 2026)                                                                                                  |
@@ -584,7 +592,7 @@ _Les modules `creation-livret.ts`, `couleurs-role.ts` et `utils.ts` sont couvert
 
 ### Tests E2E Playwright (23 specs)
 
-166 tests (154 desktop + 12 mobile). Ajouts de juin 2026 : 3 scénarios « affectation des questions par le coordo », 5 scénarios « jusqu'à 4 entretiens », 3 scénarios « événements gérés par coordo/admin + liseré par rôle », 2 scénarios « motifs par rôle + séquencement », 4 scénarios « attitudes professionnelles » (`attitudes.spec.ts`), 1 scénario « confirmation avant écrasement d'un héritage », 1 scénario « bascule de périmètre coordo depuis la page Affectations », 2 scénarios « modalité présentiel/distanciel + verrou de la fiche de suivi par signature », 1 scénario « suppression d'un événement réservée au coordo/admin », 5 scénarios « exports PDF par période / entretien / fiches de suivi » (`export-pdf.spec.ts` — boutons par rôle + téléchargements non vides). Quelques specs ont été adaptés aux refontes :
+167 tests (155 desktop + 12 mobile). Ajouts de juin 2026 : 3 scénarios « affectation des questions par le coordo », 5 scénarios « jusqu'à 4 entretiens », 3 scénarios « événements gérés par coordo/admin + liseré par rôle », 2 scénarios « motifs par rôle + séquencement », 4 scénarios « attitudes professionnelles » (`attitudes.spec.ts`), 1 scénario « confirmation avant écrasement d'un héritage », 1 scénario « bascule de périmètre coordo depuis la page Affectations », 2 scénarios « modalité présentiel/distanciel + verrou de la fiche de suivi par signature », 1 scénario « suppression d'un événement réservée au coordo/admin », 5 scénarios « exports PDF par période / entretien / fiches de suivi » (`export-pdf.spec.ts` — boutons par rôle + téléchargements non vides), 1 scénario « séquencement de visibilité des périodes » (accès direct à une période masquée bloqué). Quelques specs ont été adaptés aux refontes :
 
 - `fiches-periodes.spec.ts` : 8 tests réécrits pour le nouveau flow planning au niveau formation
 - `sprint3-droits-entretien.spec.ts` : route `/livret/entretien/1`

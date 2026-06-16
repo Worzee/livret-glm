@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { FicheSuiviPeriode } from '@/types';
-import { verifierCreationPeriode, verifierDatesPeriode } from './regles-periode';
+import {
+  estPeriodeVisible,
+  nbPeriodesMasquees,
+  periodeSigneeTroisParties,
+  periodesVisibles,
+  verifierCreationPeriode,
+  verifierDatesPeriode,
+} from './regles-periode';
 
 const fiche = (
   num: number,
@@ -160,5 +167,75 @@ describe('verifierCreationPeriode (R13 bloquant + R14 avertissement)', () => {
     expect(r.ok).toBe(false);
     expect(r.raisons[0]).toContain('entretien tripartite');
     expect(r.avertissements).toEqual([]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Séquencement de visibilité des périodes (16 juin 2026)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Fiche de période avec un nombre de signatures contrôlé (0 à 3). */
+const ficheSignatures = (num: number, nbSignatures: number): FicheSuiviPeriode => ({
+  ...fiche(num, '2025-09-01', '2025-12-01', 'brouillon'),
+  signatures: {
+    apprenti: { signe: nbSignatures >= 1 },
+    maitre: { signe: nbSignatures >= 2 },
+    formateur: { signe: nbSignatures >= 3 },
+  },
+});
+
+describe('periodeSigneeTroisParties', () => {
+  it('vrai uniquement quand les 3 parties ont signé', () => {
+    expect(periodeSigneeTroisParties(ficheSignatures(1, 3))).toBe(true);
+    expect(periodeSigneeTroisParties(ficheSignatures(1, 2))).toBe(false);
+    expect(periodeSigneeTroisParties(ficheSignatures(1, 0))).toBe(false);
+  });
+});
+
+describe('periodesVisibles (séquencement)', () => {
+  it("seule la première période est visible tant qu'elle n'est pas signée", () => {
+    const fiches = [ficheSignatures(1, 0), ficheSignatures(2, 0), ficheSignatures(3, 0)];
+    expect(periodesVisibles(fiches).map((f) => f.numeroPeriode)).toEqual([1]);
+  });
+
+  it('la période suivante apparaît dès que la précédente est signée 3/3', () => {
+    const fiches = [ficheSignatures(1, 3), ficheSignatures(2, 0), ficheSignatures(3, 0)];
+    expect(periodesVisibles(fiches).map((f) => f.numeroPeriode)).toEqual([1, 2]);
+  });
+
+  it('toutes les périodes sont visibles quand toutes les précédentes sont signées', () => {
+    const fiches = [ficheSignatures(1, 3), ficheSignatures(2, 3), ficheSignatures(3, 0)];
+    expect(periodesVisibles(fiches).map((f) => f.numeroPeriode)).toEqual([1, 2, 3]);
+  });
+
+  it('une signature partielle (2/3) ne débloque pas la suivante', () => {
+    const fiches = [ficheSignatures(1, 2), ficheSignatures(2, 0)];
+    expect(periodesVisibles(fiches).map((f) => f.numeroPeriode)).toEqual([1]);
+  });
+
+  it('trie les périodes par numéro avant de séquencer', () => {
+    const fiches = [ficheSignatures(3, 0), ficheSignatures(1, 3), ficheSignatures(2, 0)];
+    expect(periodesVisibles(fiches).map((f) => f.numeroPeriode)).toEqual([1, 2]);
+  });
+
+  it('liste vide → aucune période visible', () => {
+    expect(periodesVisibles([])).toEqual([]);
+  });
+});
+
+describe('estPeriodeVisible / nbPeriodesMasquees', () => {
+  const fiches = [ficheSignatures(1, 3), ficheSignatures(2, 0), ficheSignatures(3, 0)];
+
+  it('estPeriodeVisible reflète le séquencement', () => {
+    expect(estPeriodeVisible(fiches, 'fp-1')).toBe(true);
+    expect(estPeriodeVisible(fiches, 'fp-2')).toBe(true);
+    expect(estPeriodeVisible(fiches, 'fp-3')).toBe(false);
+    expect(estPeriodeVisible(fiches, 'inexistant')).toBe(false);
+  });
+
+  it('nbPeriodesMasquees compte les périodes à venir', () => {
+    expect(nbPeriodesMasquees(fiches)).toBe(1); // P3 masquée
+    expect(nbPeriodesMasquees([ficheSignatures(1, 0)])).toBe(0); // P1 seule, visible
+    expect(nbPeriodesMasquees([ficheSignatures(1, 3), ficheSignatures(2, 3)])).toBe(0);
   });
 });

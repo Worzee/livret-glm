@@ -6,6 +6,7 @@ import { useUserStore } from '@/store/useUserStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { peutEditer, libelleRole } from '@/lib/droits';
 import { libelleFichePeriode } from '@/lib/validation-fiche-periode';
+import { estPeriodeVisible } from '@/lib/regles-periode';
 import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelectionne';
 import { BadgeEtatFiche } from '@/components/common/BadgeEtatFiche';
 import { SuiviGretaCfa } from '@/components/livret/SuiviGretaCfa';
@@ -44,6 +45,33 @@ export function FicheSuiviPeriodeDetail() {
   const { livret } = ctx;
   const fiche = livret.fichesSuivi.find((f) => f.id === ficheId);
   if (!fiche) return <NotFound />;
+
+  // Séquencement (16 juin 2026) : la période n'est accessible que si la
+  // précédente est signée par les 3 parties — garde l'accès par URL directe.
+  if (!estPeriodeVisible(livret.fichesSuivi, fiche.id)) {
+    return (
+      <div className="space-y-6">
+        <nav aria-label="Fil d'Ariane" className="text-xs text-muted-foreground">
+          <Link
+            to="/livret/fiches-suivi"
+            className="hover:text-foreground inline-flex items-center gap-1"
+          >
+            <ArrowLeft className="h-3 w-3" aria-hidden="true" />
+            Toutes les fiches de suivi
+          </Link>
+        </nav>
+        <div className="space-y-3 rounded-lg border border-dashed border-border bg-card p-8 text-center">
+          <Lock className="mx-auto h-10 w-10 text-muted-foreground" aria-hidden="true" />
+          <h1 className="text-lg font-medium">Période non accessible</h1>
+          <p className="mx-auto max-w-md text-sm text-muted-foreground">
+            La période {fiche.numeroPeriode} n'est pas encore accessible : la période précédente
+            doit d'abord être signée par les trois parties (apprenti·e, maître / tuteur et
+            formateur·rice référent·e).
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const peutVerrouiller = peutEditer(roleActif, 'fiche.deverrouiller');
   const debut = new Date(fiche.dateDebut).toLocaleDateString('fr-FR');

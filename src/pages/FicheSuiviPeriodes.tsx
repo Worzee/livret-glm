@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
-import { CalendarRange, ChevronRight, FolderOpen, Info } from 'lucide-react';
+import { CalendarRange, ChevronRight, FolderOpen, Info, Lock } from 'lucide-react';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { libelleFichePeriode } from '@/lib/validation-fiche-periode';
+import { nbPeriodesMasquees, periodesVisibles } from '@/lib/regles-periode';
 import { BadgeEtatFiche } from '@/components/common/BadgeEtatFiche';
 import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelectionne';
 
@@ -23,7 +24,10 @@ export function FicheSuiviPeriodes() {
   if (!ctx) return <AucunApprentiSelectionne />;
   const { apprenti, livret } = ctx;
 
-  const fiches = [...livret.fichesSuivi].sort((a, b) => a.numeroPeriode - b.numeroPeriode);
+  // Séquencement (16 juin 2026) : une période n'est visible que tant que la
+  // précédente a été signée par les 3 parties — les suivantes restent masquées.
+  const fiches = periodesVisibles(livret.fichesSuivi);
+  const nbMasquees = nbPeriodesMasquees(livret.fichesSuivi);
 
   return (
     <div className="space-y-6">
@@ -103,6 +107,21 @@ export function FicheSuiviPeriodes() {
             );
           })}
         </ul>
+      )}
+
+      {/* Séquencement : on annonce les périodes encore masquées sans dévoiler
+          leur contenu — elles apparaîtront une fois la période courante signée. */}
+      {nbMasquees > 0 && (
+        <div className="flex items-start gap-2 rounded-lg border border-dashed border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+          <Lock className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
+          <p>
+            {nbMasquees === 1
+              ? '1 période ultérieure est planifiée mais reste masquée'
+              : `${nbMasquees} périodes ultérieures sont planifiées mais restent masquées`}{' '}
+            : elles s'afficheront au fur et à mesure, dès que la période en cours aura été signée
+            par les 3 parties.
+          </p>
+        </div>
       )}
     </div>
   );
