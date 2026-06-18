@@ -28,11 +28,11 @@ export type Ressource =
   | 'organisation-suivi.supprimer'
   // Entretien tripartite (CDC §5.2)
   /**
-   * Gestion de l'entretien par le formateur référent : initialisation
-   * (bouton « Initialiser l'entretien ») et date de l'entretien. Séparée
-   * d'`organisation-suivi` depuis l'ouverture de celle-ci au coordo (juin
-   * 2026) : conduire un entretien reste un acte pédagogique, le coordo n'y
-   * a pas accès.
+   * Gestion de l'entretien : initialisation (bouton « Initialiser
+   * l'entretien ») et date de l'entretien. Ouverte au formateur référent
+   * ainsi qu'au coordo et à l'admin (18 juin 2026 — la coordination peut
+   * amorcer un entretien quand le formateur tarde). La conduite pédagogique
+   * (saisie des sections, signatures) reste réservée aux rôles métier.
    */
   | 'entretien.gestion'
   /**
@@ -164,8 +164,9 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'organisation-suivi.supprimer': ['coordo', 'admin'],
 
   // Entretien tripartite — questions/zones par rôle propriétaire
-  // Initialisation + date de l'entretien : formateur uniquement
-  'entretien.gestion': ['formateur'],
+  // Initialisation + date de l'entretien : formateur + coordo + admin
+  // (18 juin 2026 — la coordination peut amorcer un entretien).
+  'entretien.gestion': ['formateur', 'coordo', 'admin'],
   'entretien.attitudes': ['maitre'],
   'entretien.attitudes-selection': ['maitre', 'formateur'],
   'entretien.questions-apprenti': ['apprenti'],
@@ -257,6 +258,17 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
  */
 export function peutEditer(role: Role, ressource: Ressource): boolean {
   return MATRICE[ressource].includes(role);
+}
+
+/**
+ * Le coordo et l'admin (gouvernance) ne sont pas soumis au séquencement de
+ * signature des périodes : ils peuvent consulter toutes les fiches de période
+ * (entreprise et centre) même si la précédente n'est pas encore signée. C'est
+ * un droit de supervision — l'édition du contenu pédagogique reste gardée par
+ * la matrice ci-dessus (le coordo n'édite ni n'évalue les fiches).
+ */
+export function peutContournerSequencement(role: Role): boolean {
+  return role === 'coordo' || role === 'admin';
 }
 
 /**

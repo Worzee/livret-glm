@@ -5,7 +5,7 @@ import type { LieuFiche } from '@/types';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
-import { peutEditer, libelleRole } from '@/lib/droits';
+import { peutEditer, libelleRole, peutContournerSequencement } from '@/lib/droits';
 import { libelleFichePeriode } from '@/lib/validation-fiche-periode';
 import { estPeriodeVisible } from '@/lib/regles-periode';
 import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelectionne';
@@ -56,8 +56,9 @@ export function FicheSuiviPeriodeDetail({ lieu = 'entreprise' }: FicheSuiviPerio
   const partiesCourt = estCentre ? 'les deux parties' : 'les trois parties';
 
   // Séquencement (16 juin 2026) : la période n'est accessible que si la
-  // précédente est signée par toutes les parties — garde l'accès par URL directe.
-  if (!estPeriodeVisible(toutesFiches, fiche.id, lieu)) {
+  // précédente est signée par toutes les parties — garde l'accès par URL
+  // directe. Le coordo / admin (supervision) y accèdent toujours (18 juin 2026).
+  if (!estPeriodeVisible(toutesFiches, fiche.id, lieu, peutContournerSequencement(roleActif))) {
     return (
       <div className="space-y-6">
         <nav aria-label="Fil d'Ariane" className="text-xs text-muted-foreground">

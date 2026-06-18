@@ -231,7 +231,7 @@ test("l'admin peut aussi gérer les événements de suivi (juin 2026)", async ({
   );
 });
 
-test('le coordo ne peut PAS initialiser un entretien (acte pédagogique du formateur)', async ({
+test('le coordo peut initialiser un entretien (18 juin 2026 — amorçage par la coordination)', async ({
   page,
 }) => {
   await selectRole(page, 'Coordinateur·rice');
@@ -239,7 +239,14 @@ test('le coordo ne peut PAS initialiser un entretien (acte pédagogique du forma
   await page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }).click();
   await page.goto('/livret/entretien/1');
   await expect(page.getByText(/n'a pas encore été initialisé/i)).toBeVisible();
-  await expect(page.getByTestId('init-entretien-1')).toHaveCount(0);
+  // Le bouton d'initialisation est désormais visible ET actif pour le coordo
+  // (E1 toujours initialisable — pas de séquencement à respecter).
+  const boutonInit = page.getByTestId('init-entretien-1');
+  await expect(boutonInit).toBeVisible();
+  await expect(boutonInit).toBeEnabled();
+  await boutonInit.click();
+  // L'entretien est initialisé : l'écran « pas encore initialisé » disparaît.
+  await expect(page.getByText(/n'a pas encore été initialisé/i)).toHaveCount(0);
 });
 
 test('persistance après reload : un nouvel événement survit', async ({ page }) => {

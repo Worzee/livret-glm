@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { CalendarRange, ChevronRight, FolderOpen, Info, Lock } from 'lucide-react';
 import type { LieuFiche } from '@/types';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
+import { useUserStore } from '@/store/useUserStore';
+import { peutContournerSequencement } from '@/lib/droits';
 import { libelleFichePeriode } from '@/lib/validation-fiche-periode';
 import { nbPeriodesMasquees, periodesVisibles } from '@/lib/regles-periode';
 import { nombreSignatures, SIGNATAIRES_PAR_LIEU } from '@/lib/transitions-fiche';
@@ -27,6 +29,7 @@ interface FicheSuiviPeriodesProps {
 
 export function FicheSuiviPeriodes({ lieu = 'entreprise' }: FicheSuiviPeriodesProps) {
   const ctx = useApprentiActif();
+  const roleActif = useUserStore((s) => s.roleActif);
   if (!ctx) return <AucunApprentiSelectionne />;
   const { apprenti, livret } = ctx;
 
@@ -36,9 +39,11 @@ export function FicheSuiviPeriodes({ lieu = 'entreprise' }: FicheSuiviPeriodesPr
   const totalSignatures = SIGNATAIRES_PAR_LIEU[lieu].length;
 
   // Séquencement (16 juin 2026) : une période n'est visible que tant que la
-  // précédente a été signée par toutes les parties attendues du lieu.
-  const fiches = periodesVisibles(toutesFiches, lieu);
-  const nbMasquees = nbPeriodesMasquees(toutesFiches, lieu);
+  // précédente a été signée par toutes les parties attendues du lieu. Le coordo
+  // et l'admin (supervision) voient toutes les périodes (18 juin 2026).
+  const voirTout = peutContournerSequencement(roleActif);
+  const fiches = periodesVisibles(toutesFiches, lieu, voirTout);
+  const nbMasquees = nbPeriodesMasquees(toutesFiches, lieu, voirTout);
 
   const titre = estCentre ? 'Période en Centre' : 'Période en Entreprise';
   const description = estCentre

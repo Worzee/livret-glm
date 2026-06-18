@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { libelleRole, peutEditer, rolesAutorises, type Ressource } from './droits';
+import {
+  libelleRole,
+  peutContournerSequencement,
+  peutEditer,
+  rolesAutorises,
+  type Ressource,
+} from './droits';
 import type { Role } from '@/types';
 
 const ROLES_METIER: Role[] = ['apprenti', 'maitre', 'formateur', 'coordo'];
@@ -31,9 +37,11 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('maitre', 'organisation-suivi.supprimer')).toBe(false);
     });
 
-    it("la gestion de l'entretien (initialisation, date) reste au formateur seul", () => {
+    it("la gestion de l'entretien (initialisation, date) est ouverte au formateur, coordo et admin (18 juin 2026)", () => {
       expect(peutEditer('formateur', 'entretien.gestion')).toBe(true);
-      expect(peutEditer('coordo', 'entretien.gestion')).toBe(false);
+      expect(peutEditer('coordo', 'entretien.gestion')).toBe(true);
+      expect(peutEditer('admin', 'entretien.gestion')).toBe(true);
+      // L'apprenti·e et le maître ne gèrent pas l'initialisation.
       expect(peutEditer('apprenti', 'entretien.gestion')).toBe(false);
       expect(peutEditer('maitre', 'entretien.gestion')).toBe(false);
     });
@@ -221,11 +229,10 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
   describe('Cohérence transverse', () => {
     it('chaque ressource du livret est éditable par exactement 1 rôle métier (hors admin)', () => {
       // `organisation-suivi` sortie de la liste depuis juin 2026 (gestion
-      // partagée formateur + coordo) — remplacée ici par `entretien.gestion`.
-      // `export-pdf` sortie le 16 juin 2026 : devenue multi-rôle (formateur +
-      // coordo + admin), elle n'est plus « éditable par un seul rôle métier ».
+      // partagée formateur + coordo). `export-pdf` sortie le 16 juin 2026 et
+      // `entretien.gestion` le 18 juin 2026 : devenues multi-rôle (formateur +
+      // coordo + admin), elles ne sont plus « éditables par un seul rôle ».
       const RESSOURCES_LIVRET: Ressource[] = [
-        'entretien.gestion',
         'entretien.questions-apprenti',
         'entretien.questions-maitre',
         'fiche.evaluation-entreprise',
@@ -241,10 +248,11 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
     it("ni le coordo ni l'admin n'ont de droits sur le contenu pédagogique du livret", () => {
       // `organisation-suivi` sortie de la liste depuis juin 2026 : la gestion
       // des événements est calendaire/organisationnelle (ouverte au coordo),
-      // pas pédagogique. La conduite de l'entretien (`entretien.gestion`)
-      // reste pédagogique et figure dans la liste.
+      // pas pédagogique. `entretien.gestion` (initialisation) l'a rejointe le
+      // 18 juin 2026 : ouverte au coordo / admin (amorçage), elle n'est plus
+      // dans la liste « réservée aux rôles métier ». La conduite de l'entretien
+      // (questions, signatures) reste pédagogique et y figure.
       const RESSOURCES_PEDAGOGIQUES: Ressource[] = [
-        'entretien.gestion',
         'entretien.questions-apprenti',
         'entretien.questions-maitre',
         'entretien.appreciation-maitre',
@@ -283,6 +291,16 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
         expect(peutEditer('admin', r)).toBe(false);
       });
     });
+  });
+});
+
+describe('peutContournerSequencement (supervision coordo/admin, 18 juin 2026)', () => {
+  it('seuls le coordo et l’admin contournent le séquencement des périodes', () => {
+    expect(peutContournerSequencement('coordo')).toBe(true);
+    expect(peutContournerSequencement('admin')).toBe(true);
+    expect(peutContournerSequencement('formateur')).toBe(false);
+    expect(peutContournerSequencement('maitre')).toBe(false);
+    expect(peutContournerSequencement('apprenti')).toBe(false);
   });
 });
 

@@ -159,8 +159,12 @@ export function periodeSigneeTroisParties(fiche: FicheSuiviPeriode): boolean {
 export function periodesVisibles(
   fiches: FicheSuiviPeriode[],
   lieu: LieuFiche = 'entreprise',
+  voirTout = false,
 ): FicheSuiviPeriode[] {
   const triees = [...fiches].sort((a, b) => a.numeroPeriode - b.numeroPeriode);
+  // Coordo / admin (supervision) : aucun masquage, toutes les périodes visibles
+  // même si une précédente n'est pas signée (cf. `peutContournerSequencement`).
+  if (voirTout) return triees;
   const visibles: FicheSuiviPeriode[] = [];
   for (const f of triees) {
     visibles.push(f);
@@ -174,14 +178,16 @@ export function estPeriodeVisible(
   fiches: FicheSuiviPeriode[],
   ficheId: string,
   lieu: LieuFiche = 'entreprise',
+  voirTout = false,
 ): boolean {
-  return periodesVisibles(fiches, lieu).some((f) => f.id === ficheId);
+  return periodesVisibles(fiches, lieu, voirTout).some((f) => f.id === ficheId);
 }
 
 /** Nombre de périodes encore masquées (à venir) — pour l'information à l'écran. */
 export function nbPeriodesMasquees(
   fiches: FicheSuiviPeriode[],
   lieu: LieuFiche = 'entreprise',
+  voirTout = false,
 ): number {
-  return Math.max(0, fiches.length - periodesVisibles(fiches, lieu).length);
+  return Math.max(0, fiches.length - periodesVisibles(fiches, lieu, voirTout).length);
 }

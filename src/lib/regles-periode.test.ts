@@ -283,3 +283,33 @@ describe('séquencement centre (apprenti·e + formateur, 17 juin 2026)', () => {
     expect(nbPeriodesMasquees(fiches, 'centre')).toBe(0);
   });
 });
+
+describe('contournement du séquencement (voirTout — coordo/admin, 18 juin 2026)', () => {
+  const fiches = [ficheSignatures(1, 0), ficheSignatures(2, 0), ficheSignatures(3, 0)];
+
+  it('periodesVisibles(voirTout) retourne toutes les périodes malgré les non-signées', () => {
+    expect(periodesVisibles(fiches, 'entreprise', true).map((f) => f.numeroPeriode)).toEqual([
+      1, 2, 3,
+    ]);
+    // Sans contournement, seule la première reste visible.
+    expect(periodesVisibles(fiches, 'entreprise', false).map((f) => f.numeroPeriode)).toEqual([1]);
+  });
+
+  it('estPeriodeVisible(voirTout) rend accessible une période normalement masquée', () => {
+    expect(estPeriodeVisible(fiches, 'fp-3', 'entreprise', true)).toBe(true);
+    expect(estPeriodeVisible(fiches, 'fp-3', 'entreprise', false)).toBe(false);
+  });
+
+  it('nbPeriodesMasquees(voirTout) vaut 0', () => {
+    expect(nbPeriodesMasquees(fiches, 'entreprise', true)).toBe(0);
+    expect(nbPeriodesMasquees(fiches, 'entreprise', false)).toBe(2);
+  });
+
+  it('contourne aussi le séquencement au centre', () => {
+    const fichesCentre = [ficheSignatures(1, 0), ficheSignatures(2, 0)];
+    expect(periodesVisibles(fichesCentre, 'centre', true).map((f) => f.numeroPeriode)).toEqual([
+      1, 2,
+    ]);
+    expect(periodesVisibles(fichesCentre, 'centre', false).map((f) => f.numeroPeriode)).toEqual([1]);
+  });
+});

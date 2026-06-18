@@ -61,8 +61,9 @@ export function EntretienTripartite() {
   // nombre d'entretiens est défini par le coordo au niveau formation).
   if (numero > formation.nombreEntretiens) return <NotFound />;
   const entretien = livret.entretiens[numero];
-  // L'initialisation reste un acte pédagogique du formateur référent —
-  // ressource dédiée depuis l'ouverture d'`organisation-suivi` au coordo.
+  // Initialisation ouverte au formateur référent, au coordo et à l'admin
+  // (18 juin 2026 — la coordination peut amorcer un entretien). Le séquencement
+  // (entretien précédent signé) reste appliqué à tous via peutInitialiserEntretien.
   const peutInitialiser = peutEditer(roleActif, 'entretien.gestion');
 
   const titre = `Entretien tripartite n° ${numero}`;
