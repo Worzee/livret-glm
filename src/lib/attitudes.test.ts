@@ -33,8 +33,8 @@ function entretien(
 }
 
 describe('ATTITUDES_INITIALES', () => {
-  it('contient 16 attitudes avec ids uniques, libellés et descriptions (catalogue enrichi juin 2026)', () => {
-    expect(ATTITUDES_INITIALES).toHaveLength(16);
+  it('contient 12 attitudes avec ids uniques, libellés et descriptions (a1..a4 retirées le 18 juin 2026)', () => {
+    expect(ATTITUDES_INITIALES).toHaveLength(12);
     const ids = new Set<string>();
     for (const a of ATTITUDES_INITIALES) {
       expect(a.id).toMatch(/^a\d+$/);
@@ -46,14 +46,15 @@ describe('ATTITUDES_INITIALES', () => {
     }
   });
 
-  it('les 6 attitudes historiques (a1..a6) gardent leurs ids et libellés — référencées par les fixtures', () => {
+  it('a1..a4 sont retirées (doublon avec l’appréciation maître) ; les ids restants sont stables', () => {
     const parId = new Map(ATTITUDES_INITIALES.map((a) => [a.id, a.libelle]));
-    expect(parId.get('a1')).toBe('Ponctualité et assiduité');
-    expect(parId.get('a2')).toBe('Respect des consignes et de la hiérarchie');
-    expect(parId.get('a3')).toBe('Qualité du travail fourni');
-    expect(parId.get('a4')).toBe("Intégration dans l'équipe");
+    for (const id of ['a1', 'a2', 'a3', 'a4']) {
+      expect(parId.has(id)).toBe(false);
+    }
+    // Attitudes encore référencées par les fixtures de démo : id + libellé stables.
     expect(parId.get('a5')).toBe("Prise d'initiative et autonomie");
     expect(parId.get('a6')).toBe('Communication professionnelle');
+    expect(parId.get('a9')).toBe('Motivation et implication');
   });
 
   it('les libellés sont neutres : pas de référence à un domaine particulier', () => {

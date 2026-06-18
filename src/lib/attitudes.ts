@@ -17,32 +17,16 @@ import type { AttitudeProfessionnelle, EntretienTripartite } from '@/types';
 /**
  * Catalogue par défaut — savoir-être transversaux de l'apprentissage,
  * formulations génériques valables pour toute spécialité (enrichi à la
- * demande du pilote, juin 2026). a1..a6 = les 6 attitudes historiques du
- * référentiel (ids stables — référencées par les fixtures de démo) ;
- * a7..a16 = extension. L'admin élague ou complète librement depuis
- * `/admin/attitudes`.
+ * demande du pilote, juin 2026).
+ *
+ * 18 juin 2026 : a1..a4 (ponctualité, respect des consignes, qualité du
+ * travail, intégration) retirées — elles doublonnaient les 4 critères de
+ * l'appréciation du maître / tuteur (« Synthèse de la période »), évalués par
+ * défaut à chaque entretien tripartite. Les ids restants (a5..a16) sont
+ * conservés stables (référencés par les fixtures de démo). L'admin élague ou
+ * complète librement depuis `/admin/attitudes`.
  */
 export const ATTITUDES_INITIALES: ReadonlyArray<AttitudeProfessionnelle> = [
-  {
-    id: 'a1',
-    libelle: 'Ponctualité et assiduité',
-    description: "Arrive à l'heure, prévient en cas d'absence ou de retard.",
-  },
-  {
-    id: 'a2',
-    libelle: 'Respect des consignes et de la hiérarchie',
-    description: 'Applique les consignes données et respecte les rôles de chacun.',
-  },
-  {
-    id: 'a3',
-    libelle: 'Qualité du travail fourni',
-    description: 'Produit un travail soigné, conforme à ce qui est demandé.',
-  },
-  {
-    id: 'a4',
-    libelle: "Intégration dans l'équipe",
-    description: 'Trouve sa place dans le collectif et coopère avec ses collègues.',
-  },
   {
     id: 'a5',
     libelle: "Prise d'initiative et autonomie",

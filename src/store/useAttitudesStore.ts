@@ -44,7 +44,10 @@ interface AttitudesStore {
 //      de compétences pour devenir un catalogue global géré par l'admin.
 // v2 — catalogue par défaut enrichi de 6 à 16 attitudes (+ descriptions) à
 //      la demande du pilote (13 juin 2026) — reset pour recharger.
-const VERSION_SCHEMA = 2;
+// v3 — 18 juin 2026 : a1..a4 retirées (doublon avec les 4 critères de
+//      l'appréciation maître, évalués par défaut à chaque entretien) →
+//      12 attitudes. Reset pour recharger le catalogue.
+const VERSION_SCHEMA = 3;
 
 function etatInitial(): Pick<AttitudesStore, 'attitudes'> {
   return {

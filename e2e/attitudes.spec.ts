@@ -24,11 +24,12 @@ test("seul l'admin accède au catalogue des attitudes", async ({ page }) => {
     page.getByRole('heading', { name: /Accès réservé à l'administration/i }),
   ).toBeVisible();
 
-  // L'admin voit le catalogue pré-rempli (16 attitudes — enrichi juin 2026).
+  // L'admin voit le catalogue pré-rempli (12 attitudes — a1..a4 retirées le
+  // 18 juin 2026 car redondantes avec les critères de l'appréciation maître).
   await selectRole(page, 'Admin');
   await page.goto('/admin/attitudes');
   await expect(page.getByRole('heading', { name: /Attitudes professionnelles/i })).toBeVisible();
-  await expect(page.locator('tr[data-testid^="attitude-row-"]')).toHaveCount(16);
+  await expect(page.locator('tr[data-testid^="attitude-row-"]')).toHaveCount(12);
 });
 
 test("l'admin peut créer puis modifier une attitude", async ({ page }) => {
@@ -40,7 +41,7 @@ test("l'admin peut créer puis modifier une attitude", async ({ page }) => {
   await page.getByTestId('attitude-libelle').fill('Respect des règles de sécurité');
   await page.getByTestId('attitude-valider').click();
   await expect(page.getByText('Respect des règles de sécurité')).toBeVisible();
-  await expect(page.locator('tr[data-testid^="attitude-row-"]')).toHaveCount(17);
+  await expect(page.locator('tr[data-testid^="attitude-row-"]')).toHaveCount(13);
 
   // Modification.
   const ligne = page.locator('tr', { hasText: 'Respect des règles de sécurité' });
@@ -54,10 +55,10 @@ test('suppression : libre pour une attitude non utilisée, bloquée sinon', asyn
   await selectRole(page, 'Admin');
   await page.goto('/admin/attitudes');
 
-  // a1 est évaluée dans les entretiens des fixtures → suppression bloquée.
-  const ligneA1 = page.locator('[data-testid="attitude-row-a1"]');
-  await expect(ligneA1.getByRole('button', { name: /Supprimer l'attitude/i })).toBeDisabled();
-  await expect(ligneA1.getByText(/Évaluée ou retenue dans au moins un livret/i)).toBeVisible();
+  // a5 est évaluée dans les entretiens des fixtures → suppression bloquée.
+  const ligneA5 = page.locator('[data-testid="attitude-row-a5"]');
+  await expect(ligneA5.getByRole('button', { name: /Supprimer l'attitude/i })).toBeDisabled();
+  await expect(ligneA5.getByText(/Évaluée ou retenue dans au moins un livret/i)).toBeVisible();
 
   // a9 est RETENUE (choix E1 des fixtures) sans être évaluée → bloquée aussi
   // (13 juin 2026 : une attitude référencée par un livret est protégée).
@@ -86,19 +87,19 @@ test("le choix des attitudes se fait à l'E1 et filtre la grille du maître (13 
   // La section de choix apparaît, vide au départ.
   const section = page.getByTestId('selection-attitudes');
   await expect(section).toBeVisible();
-  await expect(section.getByText(/0 attitude retenue sur 16/i)).toBeVisible();
+  await expect(section.getByText(/0 attitude retenue sur 12/i)).toBeVisible();
 
   // Le formateur retient 2 attitudes (choix partagé maître + formateur).
-  await page.getByTestId('selection-attitude-a1').check();
+  await page.getByTestId('selection-attitude-a5').check();
   await page.getByTestId('selection-attitude-a9').check();
-  await expect(section.getByText(/2 attitudes retenues sur 16/i)).toBeVisible();
+  await expect(section.getByText(/2 attitudes retenues sur 12/i)).toBeVisible();
 
   // Côté maître : la grille d'évaluation ne montre QUE les 2 retenues.
   await selectRole(page, 'Maître / Tuteur');
   const grille = page.getByTestId('attitudes-entretien');
   await expect(grille.getByRole('radiogroup')).toHaveCount(2);
   await expect(
-    grille.getByRole('radiogroup', { name: 'Attitude — Ponctualité et assiduité' }),
+    grille.getByRole('radiogroup', { name: "Attitude — Prise d'initiative et autonomie" }),
   ).toBeVisible();
 });
 
@@ -107,7 +108,7 @@ test("le choix est figé dès que l'E1 est signé par les 3 parties", async ({ p
   await page.goto('/livret/entretien/1');
   const section = page.getByTestId('selection-attitudes');
   await expect(section.getByText(/Choix figé/i)).toBeVisible();
-  await expect(page.getByTestId('selection-attitude-a1')).toBeDisabled();
+  await expect(page.getByTestId('selection-attitude-a5')).toBeDisabled();
 });
 
 test("le maître évalue les attitudes dans l'entretien — R20 bloque la signature sans évaluation", async ({
@@ -130,7 +131,7 @@ test("le maître évalue les attitudes dans l'entretien — R20 bloque la signat
 
   // 3. Évalue une attitude → la raison disparaît.
   await page
-    .getByRole('radiogroup', { name: 'Attitude — Ponctualité et assiduité' })
+    .getByRole('radiogroup', { name: "Attitude — Prise d'initiative et autonomie" })
     .getByRole('radio', { name: '+', exact: true })
     .click();
   await expect(page.getByText(/Évaluez au moins une attitude professionnelle/i)).toHaveCount(0);

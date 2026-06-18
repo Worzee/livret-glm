@@ -110,7 +110,10 @@ import { useUtilisateursStore } from './useUtilisateursStore';
 //   v20 — 17 juin 2026 : périodes en centre de formation —
 //        `Livret.fichesSuiviCentre` (miroir de `fichesSuivi`, signées par
 //        l'apprenti·e + le formateur). Reset pour recharger les fixtures.
-const VERSION_SCHEMA = 20;
+//   v21 — 18 juin 2026 : attitudes a1..a4 retirées du catalogue (doublon avec
+//        l'appréciation maître) — fixtures `attitudesSelectionnees` et
+//        `evaluationsAttitudes` mises à jour. Reset pour recharger.
+const VERSION_SCHEMA = 21;
 
 interface LivretStore {
   livrets: Record<string, Livret>;
