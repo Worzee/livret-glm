@@ -140,7 +140,11 @@ export type Ressource =
   | 'admin.affectations.gerer'
   /** Importer / supprimer / éditer les référentiels de compétences. */
   | 'admin.referentiels.gerer'
-  /** CRUD sur la banque de questions de l'entretien tripartite. */
+  /**
+   * CRUD sur la banque de questions de l'entretien tripartite. Admin
+   * uniquement (18 juin 2026) — le coordo retire des questions par formation
+   * (modale Planning) mais ne gère plus le catalogue global.
+   */
   | 'admin.banque-questions.gerer'
   /** CRUD sur les établissements (lieux de formation, URL Pronote). */
   | 'admin.etablissements.gerer'
@@ -237,7 +241,7 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'admin.formations.supprimer': ['coordo', 'admin'],
   'admin.affectations.gerer': ['coordo', 'admin'],
   'admin.referentiels.gerer': ['coordo', 'admin'],
-  'admin.banque-questions.gerer': ['coordo', 'admin'],
+  'admin.banque-questions.gerer': ['admin'], // admin uniquement (18 juin 2026)
   'admin.etablissements.gerer': ['admin'], // admin uniquement
   'admin.attitudes.gerer': ['admin'], // admin uniquement
 };

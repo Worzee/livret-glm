@@ -13,9 +13,10 @@ import { cn } from '@/lib/utils';
  * Page d'administration — banque de questions de l'entretien tripartite.
  * Référence : refonte mai 2026.
  *
- * Réservée aux rôles `coordo` et `admin` (matrice §6 — `admin.banque-questions.gerer`).
- * Permet d'ajouter, modifier et supprimer des questions. La suppression est
- * bloquée si la question est encore référencée par au moins un entretien.
+ * Réservée au rôle `admin` (matrice §6 — `admin.banque-questions.gerer`,
+ * 18 juin 2026 : le coordo n'y a plus accès). Permet d'ajouter, modifier et
+ * supprimer des questions. La suppression est bloquée si la question est
+ * encore référencée par au moins un entretien.
  */
 
 export function GestionBanqueQuestions() {

@@ -4,8 +4,9 @@ import { resetState, selectRole } from './helpers';
 /**
  * Banque de questions de l'entretien tripartite — refonte 13 juin 2026.
  *
- * - La banque est un **pur catalogue** (coordo + admin) : libellé, cible,
- *   type. Plus de colonnes d'affectation E1..E4 ni « obligatoire ».
+ * - La banque est un **pur catalogue** (admin uniquement depuis le 18 juin
+ *   2026) : libellé, cible, type. Plus de colonnes d'affectation E1..E4 ni
+ *   « obligatoire ».
  * - Par défaut, TOUTE question est posée et obligatoire dans tous les
  *   entretiens. Le coordo **retire** les questions non pertinentes
  *   **par formation** (modale Planning).
@@ -16,15 +17,25 @@ test.beforeEach(async ({ page }) => {
   await resetState(page);
 });
 
-test('le formateur référent ne voit pas le lien « Banque de questions »', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.getByRole('link', { name: /Banque de questions/i })).toHaveCount(0);
-});
-
-test('le coordo voit la banque comme un pur catalogue (11 questions, sans affectation)', async ({
+test('ni le formateur ni le coordo ne voient le lien « Banque de questions » (admin only)', async ({
   page,
 }) => {
+  // Formateur (rôle par défaut) : pas de lien.
+  await page.goto('/');
+  await expect(page.getByRole('link', { name: /Banque de questions/i })).toHaveCount(0);
+  // Coordo : plus d'accès depuis le 18 juin 2026 — lien absent + écran réservé.
   await selectRole(page, 'Coordinateur·rice');
+  await expect(page.getByRole('link', { name: /Banque de questions/i })).toHaveCount(0);
+  await page.goto('/admin/banque-questions');
+  await expect(
+    page.getByRole('heading', { name: /Accès réservé à l'administration/i }),
+  ).toBeVisible();
+});
+
+test("l'admin voit la banque comme un pur catalogue (11 questions, sans affectation)", async ({
+  page,
+}) => {
+  await selectRole(page, 'Admin');
   await page.goto('/admin/banque-questions');
   await expect(page.getByRole('heading', { name: /Banque de questions/i })).toBeVisible();
   // 7 questions apprenti + 4 questions maître = 11 lignes.
@@ -35,7 +46,7 @@ test('le coordo voit la banque comme un pur catalogue (11 questions, sans affect
 });
 
 test("ajout d'une nouvelle question apprenti·e (texte long)", async ({ page }) => {
-  await selectRole(page, 'Coordinateur·rice');
+  await selectRole(page, 'Admin');
   await page.goto('/admin/banque-questions');
 
   await page.getByTestId('banque-q-nouveau').click();
@@ -54,7 +65,7 @@ test("ajout d'une nouvelle question apprenti·e (texte long)", async ({ page }) 
 });
 
 test('suppression bloquée si la question est utilisée par un entretien', async ({ page }) => {
-  await selectRole(page, 'Coordinateur·rice');
+  await selectRole(page, 'Admin');
   await page.goto('/admin/banque-questions');
 
   // Les questions par défaut sont toutes référencées par les entretiens des

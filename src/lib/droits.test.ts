@@ -369,6 +369,14 @@ describe('Administration — droits du rôle coordo', () => {
     expect(peutEditer('maitre', 'admin.affectations.gerer')).toBe(false);
     expect(peutEditer('formateur', 'admin.affectations.gerer')).toBe(false);
   });
+
+  it('la banque de questions est réservée à l’admin (le coordo en est exclu, 18 juin 2026)', () => {
+    expect(peutEditer('admin', 'admin.banque-questions.gerer')).toBe(true);
+    expect(peutEditer('coordo', 'admin.banque-questions.gerer')).toBe(false);
+    expect(peutEditer('formateur', 'admin.banque-questions.gerer')).toBe(false);
+    expect(peutEditer('maitre', 'admin.banque-questions.gerer')).toBe(false);
+    expect(peutEditer('apprenti', 'admin.banque-questions.gerer')).toBe(false);
+  });
 });
 
 describe('rolesAutorises', () => {

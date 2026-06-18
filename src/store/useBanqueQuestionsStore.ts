@@ -8,8 +8,9 @@ import { useLivretStore } from './useLivretStore';
  * Store de la banque de questions de l'entretien tripartite.
  * Référence : refonte mai 2026.
  *
- * CRUD réservé aux rôles `coordo` et `admin` (matrice §6 — ressource
- * `admin.banque-questions.gerer`). Depuis le 13 juin 2026, la banque est un
+ * CRUD réservé au rôle `admin` (matrice §6 — ressource
+ * `admin.banque-questions.gerer` ; 18 juin 2026 : le coordo n'y a plus accès).
+ * Depuis le 13 juin 2026, la banque est un
  * **pur catalogue** (libellé, cible, type) : l'affectation des questions est
  * gérée par formation (`Formation.questionsRetirees`), plus sur la question.
  *
