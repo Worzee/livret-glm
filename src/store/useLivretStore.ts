@@ -187,6 +187,14 @@ interface LivretStore {
   setEtatFiche: (livretId: string, ficheId: string, etat: EtatFiche, lieu?: LieuFiche) => void;
 
   /**
+   * Active/désactive le forçage de l'affichage des périodes d'un lieu pour ce
+   * livret (18 juin 2026). Quand `true`, **toutes** les périodes du lieu sont
+   * visibles par **tous les rôles** malgré le séquencement. Réservé au coordo /
+   * admin (validation des droits côté UI — `peutContournerSequencement`).
+   */
+  setAffichagePeriodesForce: (livretId: string, lieu: LieuFiche, force: boolean) => void;
+
+  /**
    * Crée une nouvelle fiche de suivi par période. Le numéro est auto-attribué
    * (max(numeroPeriode existants) + 1). La validation R11/R12/R13 est faite
    * côté UI via `validerSaisieFichePeriode`.
@@ -603,6 +611,14 @@ export const useLivretStore = create<LivretStore>()(
 
       setEtatFiche: (livretId, ficheId, etat, lieu = 'entreprise') =>
         set((s) => muterFiche(s, livretId, ficheId, lieu, (f) => ({ ...f, etat }))),
+
+      setAffichagePeriodesForce: (livretId, lieu, force) =>
+        set((s) =>
+          muterLivret(s, livretId, (l) => ({
+            ...l,
+            affichagePeriodesForce: { ...l.affichagePeriodesForce, [lieu]: force },
+          })),
+        ),
 
       ajouterFichePeriode: (livretId, input) => {
         const id = `fp-${crypto.randomUUID().slice(0, 8)}`;

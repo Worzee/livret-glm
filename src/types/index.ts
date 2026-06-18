@@ -505,6 +505,18 @@ export type EtatFiche = 'brouillon' | 'en-cours' | 'signee' | 'verrouillee';
 export type LieuFiche = 'entreprise' | 'centre';
 
 /**
+ * Forçage de l'affichage des périodes par la coordination (18 juin 2026).
+ * Quand un lieu est à `true`, **toutes** les périodes de ce lieu sont visibles
+ * par **tous les rôles** (apprenti·e, tuteur, formateur), court-circuitant le
+ * séquencement de signature. Décidé par le coordo / admin au cas par cas
+ * (retard de signature, etc.). Absent / `false` : séquencement normal.
+ */
+export interface AffichagePeriodesForce {
+  entreprise?: boolean;
+  centre?: boolean;
+}
+
+/**
  * Suivi de la formation au GRETA CFA pour une période donnée.
  *
  * Refonte mai 2026 : ancien tableau `LigneSuiviGreta[]` remplacé par 2 zones
@@ -705,6 +717,11 @@ export interface Livret {
    * apprenti·e (le maître / tuteur n'est pas concerné par le centre).
    */
   fichesSuiviCentre: FicheSuiviPeriode[];
+  /**
+   * Forçage de l'affichage des périodes par la coordination (18 juin 2026) —
+   * cf. `AffichagePeriodesForce`. Optionnel : absent = séquencement normal.
+   */
+  affichagePeriodesForce?: AffichagePeriodesForce;
   evaluationFinaleCompetences: EvaluationFinaleCompetences;
   /** Sélection des compétences abordées en entreprise (cf. SelectionCompetencesEntreprise). */
   selectionCompetencesEntreprise: SelectionCompetencesEntreprise;

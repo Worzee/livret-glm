@@ -1,12 +1,14 @@
 import { Link } from 'react-router-dom';
-import { CalendarRange, ChevronRight, FolderOpen, Info, Lock } from 'lucide-react';
+import { CalendarRange, ChevronRight, Eye, EyeOff, FolderOpen, Info, Lock } from 'lucide-react';
 import type { LieuFiche } from '@/types';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { useUserStore } from '@/store/useUserStore';
+import { useLivretStore } from '@/store/useLivretStore';
 import { peutContournerSequencement } from '@/lib/droits';
 import { libelleFichePeriode } from '@/lib/validation-fiche-periode';
 import { nbPeriodesMasquees, periodesVisibles } from '@/lib/regles-periode';
 import { nombreSignatures, SIGNATAIRES_PAR_LIEU } from '@/lib/transitions-fiche';
+import { cn } from '@/lib/utils';
 import { BadgeEtatFiche } from '@/components/common/BadgeEtatFiche';
 import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelectionne';
 
@@ -30,6 +32,7 @@ interface FicheSuiviPeriodesProps {
 export function FicheSuiviPeriodes({ lieu = 'entreprise' }: FicheSuiviPeriodesProps) {
   const ctx = useApprentiActif();
   const roleActif = useUserStore((s) => s.roleActif);
+  const setAffichageForce = useLivretStore((s) => s.setAffichagePeriodesForce);
   if (!ctx) return <AucunApprentiSelectionne />;
   const { apprenti, livret } = ctx;
 
@@ -39,9 +42,12 @@ export function FicheSuiviPeriodes({ lieu = 'entreprise' }: FicheSuiviPeriodesPr
   const totalSignatures = SIGNATAIRES_PAR_LIEU[lieu].length;
 
   // Séquencement (16 juin 2026) : une période n'est visible que tant que la
-  // précédente a été signée par toutes les parties attendues du lieu. Le coordo
-  // et l'admin (supervision) voient toutes les périodes (18 juin 2026).
-  const voirTout = peutContournerSequencement(roleActif);
+  // précédente a été signée. Le coordo / admin (supervision) voient toujours
+  // tout ; et s'ils ont *forcé* l'affichage, toutes les périodes deviennent
+  // visibles pour TOUS les rôles (18 juin 2026).
+  const peutForcer = peutContournerSequencement(roleActif);
+  const affichageForce = livret.affichagePeriodesForce?.[lieu] ?? false;
+  const voirTout = peutForcer || affichageForce;
   const fiches = periodesVisibles(toutesFiches, lieu, voirTout);
   const nbMasquees = nbPeriodesMasquees(toutesFiches, lieu, voirTout);
 
@@ -78,6 +84,57 @@ export function FicheSuiviPeriodes({ lieu = 'entreprise' }: FicheSuiviPeriodesPr
           signatures) restent propres à chaque livret.
         </p>
       </div>
+
+      {/* Forçage de l'affichage par la coordination (18 juin 2026). */}
+      {peutForcer && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-3">
+          <div className="flex items-start gap-2 text-sm">
+            <Eye className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <p>
+              <strong>Forcer l'affichage de toutes les périodes</strong> pour tous les rôles
+              (apprenti·e, tuteur, formateur), même celles masquées tant que la précédente n'est pas
+              signée.
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={affichageForce}
+            onClick={() => setAffichageForce(livret.id, lieu, !affichageForce)}
+            className={cn(
+              'inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              affichageForce
+                ? 'border-role-coordo bg-role-coordo text-white hover:opacity-90'
+                : 'border-input bg-background hover:bg-secondary',
+            )}
+          >
+            {affichageForce ? (
+              <>
+                <Eye className="h-4 w-4" aria-hidden="true" /> Affichage forcé
+              </>
+            ) : (
+              <>
+                <EyeOff className="h-4 w-4" aria-hidden="true" /> Affichage normal
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Information pour les autres rôles quand l'affichage est forcé. */}
+      {!peutForcer && affichageForce && (
+        <div
+          role="note"
+          className="flex items-start gap-2 rounded-lg border border-role-coordo/30 bg-role-coordo/5 p-3 text-xs text-role-coordo"
+        >
+          <Eye className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <p>
+            L'affichage de toutes les périodes a été activé par la coordination : les périodes
+            habituellement masquées tant que la précédente n'est pas signée sont ici toutes
+            visibles.
+          </p>
+        </div>
+      )}
 
       {fiches.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center">

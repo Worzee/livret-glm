@@ -270,6 +270,10 @@ export function peutEditer(role: Role, ressource: Ressource): boolean {
  * (entreprise et centre) même si la précédente n'est pas encore signée. C'est
  * un droit de supervision — l'édition du contenu pédagogique reste gardée par
  * la matrice ci-dessus (le coordo n'édite ni n'évalue les fiches).
+ *
+ * Ils peuvent en outre **forcer** l'affichage de toutes les périodes d'un lieu
+ * pour **tous les rôles** (apprenti·e, tuteur, formateur) via le drapeau
+ * `Livret.affichagePeriodesForce` (18 juin 2026).
  */
 export function peutContournerSequencement(role: Role): boolean {
   return role === 'coordo' || role === 'admin';

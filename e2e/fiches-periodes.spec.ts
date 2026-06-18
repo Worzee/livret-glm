@@ -143,3 +143,25 @@ test("rejet de saisie : chevauchement avec une période existante (R12)", async 
   await modale.getByTestId('planning-fin').fill('2026-02-15');
   await expect(modale.getByText(/chevauchent/i)).toBeVisible();
 });
+
+test("le coordo force l'affichage des périodes — visible par l'apprenti·e (18 juin 2026)", async ({
+  page,
+}) => {
+  // Sofia : P1 en brouillon (non signée) → P2 et P3 masquées par défaut.
+  await selectRole(page, 'Coordinateur·rice');
+  await page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }).click();
+  await page.goto('/livret/fiches-suivi');
+
+  // Le coordo voit l'interrupteur de forçage et l'active.
+  const toggle = page.getByRole('switch');
+  await expect(toggle).toBeVisible();
+  await toggle.click();
+  await expect(page.getByRole('switch', { name: /Affichage forcé/i })).toBeVisible();
+
+  // Côté apprenti·e (Sofia, incarné·e) : bandeau d'info + période normalement
+  // masquée (Période 2) désormais visibles.
+  await selectRole(page, 'Apprenti·e');
+  await page.goto('/livret/fiches-suivi');
+  await expect(page.getByText(/activé par la coordination/i)).toBeVisible();
+  await expect(page.locator('li').filter({ hasText: /Période 2/i })).toBeVisible();
+});
