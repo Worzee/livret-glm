@@ -805,10 +805,9 @@ export function PageFiche({
         ) : (
           <View style={styles.tableau}>
             <View style={[styles.tableauLigne, styles.tableauEnTete]}>
-              <Text style={[styles.tableauCellule, { width: '34%' }]}>Compétence</Text>
-              <Text style={[styles.tableauCellule, { width: '16%' }]}>Évaluation entreprise</Text>
-              <Text style={[styles.tableauCellule, { width: '16%' }]}>Évaluation centre</Text>
-              <Text style={[styles.tableauCelluleDerniere, { width: '34%' }]}>
+              <Text style={[styles.tableauCellule, { width: '40%' }]}>Compétence</Text>
+              <Text style={[styles.tableauCellule, { width: '25%' }]}>Évaluation entreprise</Text>
+              <Text style={[styles.tableauCelluleDerniere, { width: '35%' }]}>
                 Retour {apprenti.prenom}
               </Text>
             </View>
@@ -827,14 +826,11 @@ export function PageFiche({
                   }
                   wrap={false}
                 >
-                  <Text style={[styles.tableauCellule, { width: '34%' }]}>{libelleC}</Text>
-                  <Text style={[styles.tableauCellule, { width: '16%' }]}>
+                  <Text style={[styles.tableauCellule, { width: '40%' }]}>{libelleC}</Text>
+                  <Text style={[styles.tableauCellule, { width: '25%' }]}>
                     {libelleNiveau(l.evaluationEntreprise)}
                   </Text>
-                  <Text style={[styles.tableauCellule, { width: '16%' }]}>
-                    {libelleNiveau(l.evaluationGreta)}
-                  </Text>
-                  <Text style={[styles.tableauCelluleDerniere, { width: '34%' }]}>
+                  <Text style={[styles.tableauCelluleDerniere, { width: '35%' }]}>
                     {l.retourApprenti || '—'}
                   </Text>
                 </View>

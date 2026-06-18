@@ -82,8 +82,9 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
   // R21 : chaque colonne se ferme dès que le rôle propriétaire a signé,
   // pour que la signature ne porte pas sur des contenus modifiés a posteriori.
   // Réouvrable uniquement via un déverrouillage R10.
-  const peutEditerGreta =
-    peutEditer(roleActif, 'fiche.evaluation-greta') && peutEncoreEditerFiche(fiche, 'formateur');
+  // L'évaluation « GRETA CFA » ne se saisit plus sur les fiches de période
+  // (17 juin 2026) : pendant le stage, seuls le tuteur (entreprise) et
+  // l'apprenti·e (retour) renseignent. Le centre évalue à l'évaluation finale.
   const peutEditerEntreprise =
     peutEditer(roleActif, 'fiche.evaluation-entreprise') && peutEncoreEditerFiche(fiche, 'maitre');
   const peutEditerRetour =
@@ -146,8 +147,7 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
         <table className="w-full text-sm">
           <thead className="bg-secondary/50 text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
-              <th className="px-3 py-2 text-left w-1/4">Activité (compétence)</th>
-              <th className="px-3 py-2 text-left">Évaluation GRETA CFA</th>
+              <th className="px-3 py-2 text-left w-1/3">Activité (compétence)</th>
               <th className="px-3 py-2 text-left">Évaluation entreprise</th>
               <th className="px-3 py-2 text-left w-1/3">Retour apprenti·e</th>
               {peutAjouterLigne && <th className="w-10"></th>}
@@ -157,7 +157,7 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
             {fiche.suiviEntreprise.length === 0 && (
               <tr>
                 <td
-                  colSpan={peutAjouterLigne ? 5 : 4}
+                  colSpan={peutAjouterLigne ? 4 : 3}
                   className="px-3 py-6 text-center text-sm italic text-muted-foreground"
                 >
                   Aucune compétence travaillée pour cette période.
@@ -169,13 +169,9 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
                 key={l.id}
                 ligne={l}
                 competencesParId={competencesParId}
-                peutEditerGreta={peutEditerGreta}
                 peutEditerEntreprise={peutEditerEntreprise}
                 peutEditerRetour={peutEditerRetour}
                 peutSupprimer={peutAjouterLigne}
-                onChangeGreta={(v) =>
-                  setEval(livretId, fiche.id, l.id, { type: 'evaluationGreta', valeur: v })
-                }
                 onChangeEntreprise={(v) =>
                   setEval(livretId, fiche.id, l.id, { type: 'evaluationEntreprise', valeur: v })
                 }
@@ -201,13 +197,9 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
             key={l.id}
             ligne={l}
             competencesParId={competencesParId}
-            peutEditerGreta={peutEditerGreta}
             peutEditerEntreprise={peutEditerEntreprise}
             peutEditerRetour={peutEditerRetour}
             peutSupprimer={peutAjouterLigne}
-            onChangeGreta={(v) =>
-              setEval(livretId, fiche.id, l.id, { type: 'evaluationGreta', valeur: v })
-            }
             onChangeEntreprise={(v) =>
               setEval(livretId, fiche.id, l.id, { type: 'evaluationEntreprise', valeur: v })
             }
@@ -229,11 +221,9 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
 interface CelluleProps {
   ligne: LigneSuiviEntreprise;
   competencesParId: ReadonlyMap<string, Competence>;
-  peutEditerGreta: boolean;
   peutEditerEntreprise: boolean;
   peutEditerRetour: boolean;
   peutSupprimer: boolean;
-  onChangeGreta: (v: LigneSuiviEntreprise['evaluationGreta']) => void;
   onChangeEntreprise: (v: LigneSuiviEntreprise['evaluationEntreprise']) => void;
   onChangeRetour: (v: string) => void;
   onSupprimer: () => void;
@@ -259,15 +249,6 @@ function LigneTableau(props: CelluleProps) {
       <td className="px-3 py-3">
         <div className="font-medium text-sm">{code}</div>
         <div className="text-xs text-muted-foreground">{libelle}</div>
-      </td>
-      <td className="px-3 py-3 border-l-2 border-l-role-formateur/20">
-        <SelecteurNiveau
-          editable={props.peutEditerGreta}
-          mode="entreprise"
-          valeur={ligne.evaluationGreta}
-          onChange={(v) => props.onChangeGreta(v as LigneSuiviEntreprise['evaluationGreta'])}
-          ariaLabel={`Évaluation GRETA pour ${code}`}
-        />
       </td>
       <td className="px-3 py-3 border-l-2 border-l-role-maitre/20">
         <SelecteurNiveau
@@ -321,7 +302,6 @@ function CarteCompetence(props: CelluleProps) {
           <div className="text-xs text-muted-foreground">{libelle}</div>
         </div>
         <div className="flex items-center gap-1">
-          <Pastille valeur={ligne.evaluationGreta} title="GRETA" />
           <Pastille valeur={ligne.evaluationEntreprise} title="Entreprise" />
           <Pastille
             valeur={ligne.retourApprenti ? 'rempli' : 'vide'}
@@ -330,17 +310,6 @@ function CarteCompetence(props: CelluleProps) {
           />
         </div>
       </header>
-
-      <div className="space-y-2 border-l-2 border-l-role-formateur/30 pl-3">
-        <span className="text-xs font-medium text-role-formateur">🎓 GRETA CFA</span>
-        <SelecteurNiveau
-          editable={props.peutEditerGreta}
-          mode="entreprise"
-          valeur={ligne.evaluationGreta}
-          onChange={(v) => props.onChangeGreta(v as LigneSuiviEntreprise['evaluationGreta'])}
-          ariaLabel={`Évaluation GRETA pour ${code}`}
-        />
-      </div>
 
       <div className="space-y-2 border-l-2 border-l-role-maitre/30 pl-3">
         <span className="text-xs font-medium text-role-maitre">🏭 Entreprise</span>

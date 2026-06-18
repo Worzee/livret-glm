@@ -158,3 +158,18 @@ test("l'apprenti·e ne peut toujours pas ajouter de compétence à la fiche", as
     .click();
   await expect(page.getByLabel(/Ajouter une compétence à la fiche/i)).toHaveCount(0);
 });
+
+test('la fiche de période n’affiche plus la colonne « Évaluation GRETA CFA » (17 juin 2026)', async ({
+  page,
+}) => {
+  // Léa P3 contient des compétences → le tableau de suivi s'affiche.
+  await page.goto('/livret/fiches-suivi');
+  await page
+    .getByRole('link', { name: /Période 3/i })
+    .first()
+    .click();
+  // L'évaluation centre/GRETA a disparu de la fiche ; restent entreprise + retour.
+  await expect(page.getByText('Évaluation GRETA CFA')).toHaveCount(0);
+  await expect(page.getByText('Évaluation entreprise').first()).toBeVisible();
+  await expect(page.getByText(/Retour apprenti·e/i).first()).toBeVisible();
+});
