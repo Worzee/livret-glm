@@ -72,11 +72,14 @@ test('filtre par année de formation sur le tableau de bord (juin 2026)', async 
   await expect(page.getByLabel(/Filtrer par année de formation/i)).toBeVisible();
 });
 
-test('apprenti·e ne voit que son propre livret (R3)', async ({ page }) => {
+test('apprenti·e voit son récapitulatif personnel (R3)', async ({ page }) => {
   await selectRole(page, 'Apprenti·e');
-  const liens = page.getByRole('button', { name: /Ouvrir le livret de/i });
-  await expect(liens).toHaveCount(1);
-  await expect(page.getByRole('button', { name: /Ouvrir le livret de Léa MARTIN/i })).toBeVisible();
+  // Le tableau de bord générique (liste de sélection) est remplacé par le
+  // récapitulatif personnel — un seul livret, le sien (Léa par défaut).
+  await expect(page.getByRole('heading', { name: /Mon livret d.apprentissage/i })).toBeVisible();
+  await expect(page.getByText(/Bonjour Léa/i)).toBeVisible();
+  // Plus de carte de sélection « Ouvrir le livret de … ».
+  await expect(page.getByRole('button', { name: /Ouvrir le livret de/i })).toHaveCount(0);
 });
 
 test('le filtre par nom restreint la liste (insensible aux accents)', async ({ page }) => {
@@ -248,12 +251,10 @@ test("le rôle apprenti·e suit l'apprenti·e actif·ve sélectionné·e", async
       .getByText(/Théo DUBOIS/i),
   ).toBeVisible();
 
-  // 3. Sur le tableau de bord, l'apprenti·e voit toujours UN seul livret (R3),
-  //    et c'est celui de Théo (pas Léa).
+  // 3. Sur le tableau de bord, le récapitulatif personnel est celui de Théo
+  //    (pas Léa) — l'apprenti·e suit l'utilisateur·rice incarné·e.
   await page.goto('/');
-  const liens = page.getByRole('button', { name: /Ouvrir le livret de/i });
-  await expect(liens).toHaveCount(1);
-  await expect(
-    page.getByRole('button', { name: /Ouvrir le livret de Théo DUBOIS/i }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Mon livret d.apprentissage/i })).toBeVisible();
+  await expect(page.getByText(/Bonjour Théo/i)).toBeVisible();
+  await expect(page.getByRole('button', { name: /Ouvrir le livret de/i })).toHaveCount(0);
 });

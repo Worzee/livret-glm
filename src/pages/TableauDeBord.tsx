@@ -17,6 +17,7 @@ import {
 import { calculerResumeLivret, classesBadgeCas, libelleCas } from '@/lib/etat-livret';
 import { cn } from '@/lib/utils';
 import { SelecteurCoordoActif } from '@/components/common/SelecteurCoordoActif';
+import { TableauBordApprenti } from '@/components/dashboard/TableauBordApprenti';
 
 /**
  * Tableau de bord — point d'entrée par rôle.
@@ -73,6 +74,17 @@ export function TableauDeBord() {
   function ouvrirLivret(apprentiId: string) {
     setApprentiActif(apprentiId);
     navigate('/livret/organisation-suivi');
+  }
+
+  // Rôle apprenti·e : un seul livret (le sien) → récapitulatif personnel
+  // détaillé (formation, échéances, progression) au lieu de la liste de
+  // sélection, qui n'a pas de sens pour un·e apprenti·e seul·e sur son espace.
+  if (roleActif === 'apprenti' && apprentisVisibles.length === 1) {
+    const apprentiSeul = apprentisVisibles[0];
+    const livretSeul = Object.values(livrets).find((l) => l.apprentiId === apprentiSeul.id);
+    if (livretSeul) {
+      return <TableauBordApprenti apprenti={apprentiSeul} livret={livretSeul} />;
+    }
   }
 
   const ariaLabelChamp = 'Filtrer par nom ou prénom';
