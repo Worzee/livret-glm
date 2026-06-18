@@ -1,4 +1,12 @@
-import type { FicheSuiviPeriode } from '@/types';
+import type { FicheSuiviPeriode, LieuFiche } from '@/types';
+import { nombreSignatures, SIGNATAIRES_PAR_LIEU } from './transitions-fiche';
+
+/** Libellés des signataires pour les messages d'avertissement (R14). */
+const LIBELLE_PARTIE: Record<'apprenti' | 'maitre' | 'formateur', string> = {
+  apprenti: 'apprenti·e',
+  maitre: 'maître / tuteur',
+  formateur: 'formateur·rice référent·e',
+};
 
 /**
  * Règles métier des fiches de suivi par période.
@@ -76,6 +84,7 @@ export function verifierDatesPeriode(
 export function verifierCreationPeriode(
   fichesExistantes: FicheSuiviPeriode[],
   entretienExiste: boolean,
+  lieu: LieuFiche = 'entreprise',
 ): ResultatVerification {
   const raisons: string[] = [];
   const avertissements: string[] = [];
@@ -91,10 +100,11 @@ export function verifierCreationPeriode(
     const triees = [...fichesExistantes].sort((a, b) => a.numeroPeriode - b.numeroPeriode);
     const derniere = triees[triees.length - 1];
     if (derniere.etat !== 'signee' && derniere.etat !== 'verrouillee') {
-      const partiesManquantes: string[] = [];
-      if (!derniere.signatures.apprenti.signe) partiesManquantes.push('apprenti·e');
-      if (!derniere.signatures.maitre.signe) partiesManquantes.push('maître / tuteur');
-      if (!derniere.signatures.formateur.signe) partiesManquantes.push('formateur·rice référent·e');
+      // Parties manquantes selon le lieu (entreprise : 3 ; centre : apprenti·e
+      // + formateur).
+      const partiesManquantes = SIGNATAIRES_PAR_LIEU[lieu]
+        .filter((role) => !derniere.signatures[role].signe)
+        .map((role) => LIBELLE_PARTIE[role]);
 
       if (partiesManquantes.length > 0) {
         avertissements.push(
@@ -117,43 +127,61 @@ function formaterListeFr(items: string[]): string {
 }
 
 /**
- * Une fiche de période est-elle signée par les **3 parties** (apprenti·e +
- * maître / tuteur + formateur·rice référent·e) ? Critère du séquencement
- * d'affichage des périodes (16 juin 2026). On se base sur les signatures
- * elles-mêmes : un déverrouillage R10 invalide les signatures et masque donc
- * à nouveau les périodes suivantes — comportement voulu.
+ * Une fiche de période est-elle signée par **toutes les parties attendues du
+ * lieu** ? Critère du séquencement d'affichage des périodes (16 juin 2026).
+ * Entreprise : apprenti·e + maître / tuteur + formateur·rice référent·e.
+ * Centre de formation (17 juin 2026) : apprenti·e + formateur·rice. On se base
+ * sur les signatures elles-mêmes : un déverrouillage R10 les invalide et
+ * masque donc à nouveau les périodes suivantes — comportement voulu.
+ */
+export function periodeSignee(fiche: FicheSuiviPeriode, lieu: LieuFiche = 'entreprise'): boolean {
+  return nombreSignatures(fiche.signatures, lieu) === SIGNATAIRES_PAR_LIEU[lieu].length;
+}
+
+/**
+ * @deprecated Alias rétro-compatible de `periodeSignee(fiche, 'entreprise')`
+ * (signature par les 3 parties). Conservé pour les appels historiques.
  */
 export function periodeSigneeTroisParties(fiche: FicheSuiviPeriode): boolean {
-  const s = fiche.signatures;
-  return s.apprenti.signe && s.maitre.signe && s.formateur.signe;
+  return periodeSignee(fiche, 'entreprise');
 }
 
 /**
  * Séquencement d'affichage des périodes (16 juin 2026) : une période n'est
- * visible que tant que **la période précédente a été signée par les 3
- * parties**. La première période est toujours visible. Concrètement, on
- * parcourt les périodes dans l'ordre chronologique et on s'arrête à la
- * première période non signée (incluse).
+ * visible que tant que **la période précédente a été signée par toutes les
+ * parties attendues du lieu**. La première période est toujours visible.
+ * Concrètement, on parcourt les périodes dans l'ordre chronologique et on
+ * s'arrête à la première période non signée (incluse).
  *
  * Exemple : 3 périodes en brouillon → seule la période 1 est visible ; dès
- * qu'elle est signée par les 3 parties, la période 2 apparaît, etc.
+ * qu'elle est signée, la période 2 apparaît, etc.
  */
-export function periodesVisibles(fiches: FicheSuiviPeriode[]): FicheSuiviPeriode[] {
+export function periodesVisibles(
+  fiches: FicheSuiviPeriode[],
+  lieu: LieuFiche = 'entreprise',
+): FicheSuiviPeriode[] {
   const triees = [...fiches].sort((a, b) => a.numeroPeriode - b.numeroPeriode);
   const visibles: FicheSuiviPeriode[] = [];
   for (const f of triees) {
     visibles.push(f);
-    if (!periodeSigneeTroisParties(f)) break;
+    if (!periodeSignee(f, lieu)) break;
   }
   return visibles;
 }
 
 /** Indique si une période précise est accessible (cf. `periodesVisibles`). */
-export function estPeriodeVisible(fiches: FicheSuiviPeriode[], ficheId: string): boolean {
-  return periodesVisibles(fiches).some((f) => f.id === ficheId);
+export function estPeriodeVisible(
+  fiches: FicheSuiviPeriode[],
+  ficheId: string,
+  lieu: LieuFiche = 'entreprise',
+): boolean {
+  return periodesVisibles(fiches, lieu).some((f) => f.id === ficheId);
 }
 
 /** Nombre de périodes encore masquées (à venir) — pour l'information à l'écran. */
-export function nbPeriodesMasquees(fiches: FicheSuiviPeriode[]): number {
-  return Math.max(0, fiches.length - periodesVisibles(fiches).length);
+export function nbPeriodesMasquees(
+  fiches: FicheSuiviPeriode[],
+  lieu: LieuFiche = 'entreprise',
+): number {
+  return Math.max(0, fiches.length - periodesVisibles(fiches, lieu).length);
 }

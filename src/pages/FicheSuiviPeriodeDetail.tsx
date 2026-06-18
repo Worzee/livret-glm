@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, History, Lock, Unlock } from 'lucide-react';
+import type { LieuFiche } from '@/types';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
@@ -22,16 +23,16 @@ import { NotFound } from '@/pages/NotFound';
  * Page de détail d'une fiche de suivi par période.
  * Référence : cahier des charges v1.3, section 5.3.
  *
- * Composition :
- *   - en-tête (numéro, dates, état, fil d'Ariane)
- *   - SuiviGretaCfa
- *   - TableauTriColonnes (cœur de la co-édition)
- *   - ZoneObservation (3 zones)
- *   - BlocSignatures (3 signatures)
- *   - actions de verrouillage / déverrouillage R10 (formateur seul)
- *   - historique des déverrouillages (R10 traçabilité)
+ * Paramétrée par `lieu` (17 juin 2026) : entreprise (`fichesSuivi`, signatures
+ * 3 parties) ou centre de formation (`fichesSuiviCentre`, signatures
+ * apprenti·e + formateur). Les composants enfants reçoivent le lieu pour cibler
+ * la bonne collection et la bonne colonne d'évaluation.
  */
-export function FicheSuiviPeriodeDetail() {
+interface FicheSuiviPeriodeDetailProps {
+  lieu?: LieuFiche;
+}
+
+export function FicheSuiviPeriodeDetail({ lieu = 'entreprise' }: FicheSuiviPeriodeDetailProps) {
   const { ficheId } = useParams();
   const ctx = useApprentiActif();
   const setEtat = useLivretStore((s) => s.setEtatFiche);
@@ -43,19 +44,24 @@ export function FicheSuiviPeriodeDetail() {
 
   if (!ctx) return <AucunApprentiSelectionne />;
   const { livret } = ctx;
-  const fiche = livret.fichesSuivi.find((f) => f.id === ficheId);
+  const estCentre = lieu === 'centre';
+  const toutesFiches = estCentre ? livret.fichesSuiviCentre : livret.fichesSuivi;
+  const basePath = estCentre ? '/livret/fiches-suivi-centre' : '/livret/fiches-suivi';
+  const fiche = toutesFiches.find((f) => f.id === ficheId);
   if (!fiche) return <NotFound />;
 
+  const partiesPhrase = estCentre
+    ? "l'apprenti·e et le formateur·rice référent·e"
+    : 'apprenti·e, maître / tuteur et formateur·rice référent·e';
+  const partiesCourt = estCentre ? 'les deux parties' : 'les trois parties';
+
   // Séquencement (16 juin 2026) : la période n'est accessible que si la
-  // précédente est signée par les 3 parties — garde l'accès par URL directe.
-  if (!estPeriodeVisible(livret.fichesSuivi, fiche.id)) {
+  // précédente est signée par toutes les parties — garde l'accès par URL directe.
+  if (!estPeriodeVisible(toutesFiches, fiche.id, lieu)) {
     return (
       <div className="space-y-6">
         <nav aria-label="Fil d'Ariane" className="text-xs text-muted-foreground">
-          <Link
-            to="/livret/fiches-suivi"
-            className="hover:text-foreground inline-flex items-center gap-1"
-          >
+          <Link to={basePath} className="hover:text-foreground inline-flex items-center gap-1">
             <ArrowLeft className="h-3 w-3" aria-hidden="true" />
             Toutes les fiches de suivi
           </Link>
@@ -65,8 +71,7 @@ export function FicheSuiviPeriodeDetail() {
           <h1 className="text-lg font-medium">Période non accessible</h1>
           <p className="mx-auto max-w-md text-sm text-muted-foreground">
             La période {fiche.numeroPeriode} n'est pas encore accessible : la période précédente
-            doit d'abord être signée par les trois parties (apprenti·e, maître / tuteur et
-            formateur·rice référent·e).
+            doit d'abord être signée par {partiesPhrase}.
           </p>
         </div>
       </div>
@@ -80,10 +85,7 @@ export function FicheSuiviPeriodeDetail() {
   return (
     <div className="space-y-6">
       <nav aria-label="Fil d'Ariane" className="text-xs text-muted-foreground">
-        <Link
-          to="/livret/fiches-suivi"
-          className="hover:text-foreground inline-flex items-center gap-1"
-        >
+        <Link to={basePath} className="hover:text-foreground inline-flex items-center gap-1">
           <ArrowLeft className="h-3 w-3" aria-hidden="true" />
           Toutes les fiches de suivi
         </Link>
@@ -99,10 +101,11 @@ export function FicheSuiviPeriodeDetail() {
             Du {debut} au {fin}
           </p>
         </div>
+        {/* Export PDF de la période (variante selon le lieu). */}
         {donneesPdf && (
           <BoutonExportPdf
             {...donneesPdf}
-            variante={{ type: 'periode', ficheId: fiche.id }}
+            variante={{ type: estCentre ? 'periode-centre' : 'periode', ficheId: fiche.id }}
             label="Exporter cette période"
           />
         )}
@@ -112,12 +115,12 @@ export function FicheSuiviPeriodeDetail() {
       {peutVerrouiller && fiche.etat === 'signee' && (
         <div className="bandeau-info-couleur-role flex items-center justify-between gap-4 rounded-md border p-3">
           <p className="text-sm">
-            La fiche est <strong>signée</strong> par les trois parties. Vous pouvez la verrouiller
-            pour archiver la période.
+            La fiche est <strong>signée</strong> par {partiesCourt}. Vous pouvez la verrouiller pour
+            archiver la période.
           </p>
           <button
             type="button"
-            onClick={() => setEtat(livret.id, fiche.id, 'verrouillee')}
+            onClick={() => setEtat(livret.id, fiche.id, 'verrouillee', lieu)}
             className="inline-flex items-center gap-1.5 rounded-md bg-[hsl(var(--ring))] px-3 py-1.5 text-sm font-medium text-white hover:opacity-90"
           >
             <Lock className="h-4 w-4" aria-hidden="true" />
@@ -128,8 +131,8 @@ export function FicheSuiviPeriodeDetail() {
       {peutVerrouiller && fiche.etat === 'verrouillee' && (
         <div className="flex items-center justify-between gap-4 rounded-md border border-amber-200 bg-amber-50 p-3">
           <p className="text-sm text-amber-900">
-            La fiche est <strong>verrouillée</strong>. Le déverrouillage invalide les trois
-            signatures et requiert un motif tracé (R10).
+            La fiche est <strong>verrouillée</strong>. Le déverrouillage invalide les signatures et
+            requiert un motif tracé (R10).
           </p>
           <button
             type="button"
@@ -142,10 +145,10 @@ export function FicheSuiviPeriodeDetail() {
         </div>
       )}
 
-      <SuiviGretaCfa livretId={livret.id} fiche={fiche} />
-      <TableauTriColonnes livretId={livret.id} fiche={fiche} />
-      <ZoneObservation livretId={livret.id} fiche={fiche} />
-      <BlocSignatures livretId={livret.id} fiche={fiche} />
+      <SuiviGretaCfa livretId={livret.id} fiche={fiche} lieu={lieu} />
+      <TableauTriColonnes livretId={livret.id} fiche={fiche} lieu={lieu} />
+      <ZoneObservation livretId={livret.id} fiche={fiche} lieu={lieu} />
+      <BlocSignatures livretId={livret.id} fiche={fiche} lieu={lieu} />
 
       {/* Historique des déverrouillages (R10 — traçabilité) */}
       {fiche.historiqueDeverrouillages.length > 0 && (
@@ -190,6 +193,7 @@ export function FicheSuiviPeriodeDetail() {
             `${utilisateurActif.prenom} ${utilisateurActif.nom}`,
             roleActif,
             motif,
+            lieu,
           );
           setDialogOuvert(false);
         }}

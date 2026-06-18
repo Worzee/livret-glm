@@ -36,6 +36,28 @@ export const periodesCapCuisine: PeriodeFormation[] = [
   },
 ];
 
+/**
+ * Planning des 2 périodes en CENTRE de formation (17 juin 2026) — regroupements
+ * au CFA, distincts des périodes en entreprise. Les compétences y sont
+ * évaluées par le formateur référent.
+ */
+export const periodesCentreCapCuisine: PeriodeFormation[] = [
+  {
+    id: 'pf-cap-cuisine-2025-c1',
+    numero: 1,
+    titre: "Regroupement d'automne",
+    dateDebut: '2025-10-06',
+    dateFin: '2025-10-17',
+  },
+  {
+    id: 'pf-cap-cuisine-2025-c2',
+    numero: 2,
+    titre: "Regroupement d'hiver",
+    dateDebut: '2026-01-19',
+    dateFin: '2026-01-30',
+  },
+];
+
 export const formationCapCuisine: Formation = {
   id: 'f-cap-cuisine-2025',
   intitule: 'CAP Cuisine',
@@ -46,6 +68,7 @@ export const formationCapCuisine: Formation = {
   dateFin: '2027-09-01',
   lieuId: etablissementSiteDiderot.id,
   periodes: periodesCapCuisine,
+  periodesCentre: periodesCentreCapCuisine,
   // Retours coordos juin 2026 : nombre d'entretiens tripartites (1 à 4).
   // Le CAP Cuisine reste au défaut historique de 2.
   nombreEntretiens: 2,

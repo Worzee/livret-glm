@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { FicheSuiviPeriode, Formation, NumeroEntretien, PeriodeFormation } from '@/types';
+import type {
+  FicheSuiviPeriode,
+  Formation,
+  LieuFiche,
+  NumeroEntretien,
+  PeriodeFormation,
+} from '@/types';
 import { formationsDemo } from '@/fixtures/formations';
 import { useUtilisateursStore } from './useUtilisateursStore';
 import { useLivretStore } from './useLivretStore';
@@ -49,7 +55,10 @@ interface FormationsStore {
    * @returns la formation créée (avec id auto-généré).
    */
   ajouterFormation: (
-    input: Omit<Formation, 'id' | 'periodes' | 'nombreEntretiens' | 'questionsRetirees'>,
+    input: Omit<
+      Formation,
+      'id' | 'periodes' | 'periodesCentre' | 'nombreEntretiens' | 'questionsRetirees'
+    >,
   ) => Formation;
   /** Met à jour les champs d'une formation existante (hors `periodes`). */
   modifierFormation: (id: string, patch: Partial<Omit<Formation, 'id' | 'periodes'>>) => void;
@@ -61,12 +70,20 @@ interface FormationsStore {
   supprimerFormation: (id: string) => boolean;
 
   // ── Planning des périodes (refonte mai 2026 — chantier #1) ──────────
+  // Convention `lieu` (17 juin 2026) : les 3 mutations de planning prennent en
+  // dernier paramètre un `lieu?: LieuFiche` (défaut `'entreprise'`). Il cible
+  // le planning (`periodes` vs `periodesCentre`) et la cascade vers la bonne
+  // collection de fiches (`fichesSuivi` vs `fichesSuiviCentre`).
   /**
    * Ajoute une période au planning d'une formation et propage la création
    * d'une fiche correspondante dans **tous les livrets** de la promo.
    * Validation R11/R12 effectuée — retourne `{ ok: false }` si conflit.
    */
-  ajouterPeriode: (formationId: string, saisie: SaisiePeriode) => ResultatMutationPeriode;
+  ajouterPeriode: (
+    formationId: string,
+    saisie: SaisiePeriode,
+    lieu?: LieuFiche,
+  ) => ResultatMutationPeriode;
   /**
    * Modifie une période existante (titre, dates) et propage les nouvelles
    * valeurs dans toutes les fiches correspondantes. Refus si au moins une
@@ -76,13 +93,18 @@ interface FormationsStore {
     formationId: string,
     periodeId: string,
     saisie: SaisiePeriode,
+    lieu?: LieuFiche,
   ) => ResultatMutationPeriode;
   /**
    * Supprime une période et toutes les fiches correspondantes dans tous
    * les livrets de la promo. Refus si au moins une fiche est signée ou
    * verrouillée. Renumérote ensuite les périodes restantes (1..N).
    */
-  supprimerPeriode: (formationId: string, periodeId: string) => ResultatMutationPeriode;
+  supprimerPeriode: (
+    formationId: string,
+    periodeId: string,
+    lieu?: LieuFiche,
+  ) => ResultatMutationPeriode;
 
   /**
    * Définit le nombre d'entretiens tripartites de la formation (1 à 4 —
@@ -117,7 +139,10 @@ interface FormationsStore {
 //        dans la modale Planning.
 //   v5 — 13 juin 2026 : `Formation.questionsRetirees` (ids des questions de
 //        l'entretien écartées pour la formation ; tout le reste = obligatoire).
-const VERSION_SCHEMA = 5;
+//   v6 — 17 juin 2026 : `Formation.periodesCentre` (planning des périodes en
+//        centre de formation, miroir de `periodes`, cascade vers
+//        `Livret.fichesSuiviCentre`). Reset aux fixtures.
+const VERSION_SCHEMA = 6;
 
 function etatInitial(): Pick<FormationsStore, 'formations'> {
   return { formations: { ...formationsDemo } };
@@ -133,6 +158,7 @@ export const useFormationsStore = create<FormationsStore>()(
         const formation: Formation = {
           id,
           periodes: [],
+          periodesCentre: [],
           nombreEntretiens: NOMBRE_ENTRETIENS_DEFAUT,
           questionsRetirees: [],
           ...input,
@@ -165,10 +191,12 @@ export const useFormationsStore = create<FormationsStore>()(
       },
 
       // ── Planning des périodes ────────────────────────────────────────
-      ajouterPeriode: (formationId, saisie) => {
+      ajouterPeriode: (formationId, saisie, lieu = 'entreprise') => {
         const formation = get().formations[formationId];
         if (!formation) return { ok: false, raison: 'Formation introuvable.' };
-        const validation = validerSaisiePeriode(saisie, formation.periodes);
+        const cle = lieu === 'centre' ? 'periodesCentre' : 'periodes';
+        const existantes = formation[cle];
+        const validation = validerSaisiePeriode(saisie, existantes);
         if (!validation.ok) {
           const premier = Object.values(validation.erreurs)[0] ?? 'Saisie invalide.';
           return { ok: false, raison: premier };
@@ -176,40 +204,42 @@ export const useFormationsStore = create<FormationsStore>()(
         const id = `pf-${crypto.randomUUID().slice(0, 8)}`;
         const periodeBrute: PeriodeFormation = {
           id,
-          numero: formation.periodes.length + 1,
+          numero: existantes.length + 1,
           titre: saisie.titre?.trim() || undefined,
           dateDebut: saisie.dateDebut,
           dateFin: saisie.dateFin,
         };
-        const periodes = renumeroterPeriodes([...formation.periodes, periodeBrute]);
+        const periodes = renumeroterPeriodes([...existantes, periodeBrute]);
         set((s) => ({
           formations: {
             ...s.formations,
-            [formationId]: { ...formation, periodes },
+            [formationId]: { ...formation, [cle]: periodes },
           },
         }));
-        propagerCreationFiche(formationId, periodes.find((p) => p.id === id)!);
+        propagerCreationFiche(formationId, periodes.find((p) => p.id === id)!, lieu);
         return { ok: true };
       },
 
-      modifierPeriode: (formationId, periodeId, saisie) => {
+      modifierPeriode: (formationId, periodeId, saisie, lieu = 'entreprise') => {
         const formation = get().formations[formationId];
         if (!formation) return { ok: false, raison: 'Formation introuvable.' };
-        const cible = formation.periodes.find((p) => p.id === periodeId);
+        const cle = lieu === 'centre' ? 'periodesCentre' : 'periodes';
+        const existantes = formation[cle];
+        const cible = existantes.find((p) => p.id === periodeId);
         if (!cible) return { ok: false, raison: 'Période introuvable.' };
         // Verrou : refus si une fiche correspondante est signée ou verrouillée.
         const livrets = Object.values(useLivretStore.getState().livrets).filter((l) =>
           apprentiAppartientPromo(l.apprentiId, formationId),
         );
-        const verrou = evaluerVerrouPeriode(cible, livrets, 'modification');
+        const verrou = evaluerVerrouPeriode(cible, livrets, 'modification', lieu);
         if (!verrou.peut) return { ok: false, raison: verrou.raison };
         // Validation des nouvelles dates (en court-circuitant la période éditée).
-        const validation = validerSaisiePeriode(saisie, formation.periodes, periodeId);
+        const validation = validerSaisiePeriode(saisie, existantes, periodeId);
         if (!validation.ok) {
           const premier = Object.values(validation.erreurs)[0] ?? 'Saisie invalide.';
           return { ok: false, raison: premier };
         }
-        const periodesMaj = formation.periodes.map((p) =>
+        const periodesMaj = existantes.map((p) =>
           p.id === periodeId
             ? {
                 ...p,
@@ -223,37 +253,39 @@ export const useFormationsStore = create<FormationsStore>()(
         set((s) => ({
           formations: {
             ...s.formations,
-            [formationId]: { ...formation, periodes },
+            [formationId]: { ...formation, [cle]: periodes },
           },
         }));
         const nouvelle = periodes.find((p) => p.id === periodeId)!;
-        propagerModificationFiche(formationId, nouvelle);
+        propagerModificationFiche(formationId, nouvelle, lieu);
         return { ok: true };
       },
 
-      supprimerPeriode: (formationId, periodeId) => {
+      supprimerPeriode: (formationId, periodeId, lieu = 'entreprise') => {
         const formation = get().formations[formationId];
         if (!formation) return { ok: false, raison: 'Formation introuvable.' };
-        const cible = formation.periodes.find((p) => p.id === periodeId);
+        const cle = lieu === 'centre' ? 'periodesCentre' : 'periodes';
+        const existantes = formation[cle];
+        const cible = existantes.find((p) => p.id === periodeId);
         if (!cible) return { ok: false, raison: 'Période introuvable.' };
         const livrets = Object.values(useLivretStore.getState().livrets).filter((l) =>
           apprentiAppartientPromo(l.apprentiId, formationId),
         );
-        const verrou = evaluerVerrouPeriode(cible, livrets, 'suppression');
+        const verrou = evaluerVerrouPeriode(cible, livrets, 'suppression', lieu);
         if (!verrou.peut) return { ok: false, raison: verrou.raison };
-        const periodes = renumeroterPeriodes(formation.periodes.filter((p) => p.id !== periodeId));
+        const periodes = renumeroterPeriodes(existantes.filter((p) => p.id !== periodeId));
         set((s) => ({
           formations: {
             ...s.formations,
-            [formationId]: { ...formation, periodes },
+            [formationId]: { ...formation, [cle]: periodes },
           },
         }));
-        propagerSuppressionFiche(formationId, periodeId);
+        propagerSuppressionFiche(formationId, periodeId, lieu);
         // La cascade « modifier » sur les périodes renumérotées garantit que
         // les fiches restantes voient leur numéro mis à jour (cohérent avec
         // le nouveau planning).
         for (const p of periodes) {
-          propagerModificationFiche(formationId, p);
+          propagerModificationFiche(formationId, p, lieu);
         }
         return { ok: true };
       },
@@ -324,16 +356,22 @@ function apprentiAppartientPromo(apprentiId: string, formationId: string): boole
   return apprenti?.formationId === formationId;
 }
 
-/** Crée une fiche vierge pour chaque livret de la promo. */
-function propagerCreationFiche(formationId: string, periode: PeriodeFormation): void {
+/** Crée une fiche vierge pour chaque livret de la promo (collection selon lieu). */
+function propagerCreationFiche(
+  formationId: string,
+  periode: PeriodeFormation,
+  lieu: LieuFiche = 'entreprise',
+): void {
+  const cle = lieu === 'centre' ? 'fichesSuiviCentre' : 'fichesSuivi';
+  const prefixe = lieu === 'centre' ? 'fc' : 'fp';
   useLivretStore.setState((state) => {
     const livretsMaj = { ...state.livrets };
     for (const livret of Object.values(state.livrets)) {
       if (!apprentiAppartientPromo(livret.apprentiId, formationId)) continue;
       // Idempotence : si la fiche existe déjà (par exemple après reset), no-op.
-      if (livret.fichesSuivi.some((f) => f.periodeFormationId === periode.id)) continue;
+      if (livret[cle].some((f) => f.periodeFormationId === periode.id)) continue;
       const nouvelle: FicheSuiviPeriode = {
-        id: `fp-${livret.id}-${periode.id}`,
+        id: `${prefixe}-${livret.id}-${periode.id}`,
         numeroPeriode: periode.numero,
         titre: periode.titre,
         periodeFormationId: periode.id,
@@ -352,7 +390,7 @@ function propagerCreationFiche(formationId: string, periode: PeriodeFormation): 
       };
       livretsMaj[livret.id] = {
         ...livret,
-        fichesSuivi: [...livret.fichesSuivi, nouvelle],
+        [cle]: [...livret[cle], nouvelle],
         modifieLe: new Date().toISOString(),
       };
     }
@@ -361,12 +399,17 @@ function propagerCreationFiche(formationId: string, periode: PeriodeFormation): 
 }
 
 /** Met à jour le numéro, le titre et les dates de la fiche correspondante. */
-function propagerModificationFiche(formationId: string, periode: PeriodeFormation): void {
+function propagerModificationFiche(
+  formationId: string,
+  periode: PeriodeFormation,
+  lieu: LieuFiche = 'entreprise',
+): void {
+  const cle = lieu === 'centre' ? 'fichesSuiviCentre' : 'fichesSuivi';
   useLivretStore.setState((state) => {
     const livretsMaj = { ...state.livrets };
     for (const livret of Object.values(state.livrets)) {
       if (!apprentiAppartientPromo(livret.apprentiId, formationId)) continue;
-      const fichesMaj = livret.fichesSuivi.map((f) =>
+      const fichesMaj = livret[cle].map((f) =>
         f.periodeFormationId === periode.id
           ? {
               ...f,
@@ -379,7 +422,7 @@ function propagerModificationFiche(formationId: string, periode: PeriodeFormatio
       );
       livretsMaj[livret.id] = {
         ...livret,
-        fichesSuivi: fichesMaj,
+        [cle]: fichesMaj,
         modifieLe: new Date().toISOString(),
       };
     }
@@ -388,14 +431,19 @@ function propagerModificationFiche(formationId: string, periode: PeriodeFormatio
 }
 
 /** Retire la fiche correspondante de tous les livrets de la promo. */
-function propagerSuppressionFiche(formationId: string, periodeId: string): void {
+function propagerSuppressionFiche(
+  formationId: string,
+  periodeId: string,
+  lieu: LieuFiche = 'entreprise',
+): void {
+  const cle = lieu === 'centre' ? 'fichesSuiviCentre' : 'fichesSuivi';
   useLivretStore.setState((state) => {
     const livretsMaj = { ...state.livrets };
     for (const livret of Object.values(state.livrets)) {
       if (!apprentiAppartientPromo(livret.apprentiId, formationId)) continue;
       livretsMaj[livret.id] = {
         ...livret,
-        fichesSuivi: livret.fichesSuivi.filter((f) => f.periodeFormationId !== periodeId),
+        [cle]: livret[cle].filter((f) => f.periodeFormationId !== periodeId),
         modifieLe: new Date().toISOString(),
       };
     }

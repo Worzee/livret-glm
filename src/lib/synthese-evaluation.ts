@@ -21,19 +21,22 @@ export interface SyntheseCompetenceEntree {
  * Synthèse de l'évaluation finale à partir des fiches de suivi par période.
  * Référence : cahier des charges v1.3, section 5.4.
  *
- * Pour chaque compétence du référentiel, on parcourt les fiches dans l'ordre
- * chronologique et on retient la DERNIÈRE évaluation non-nulle (last-write-wins).
+ * Deux sources distinctes depuis le 17 juin 2026 (périodes en centre) :
+ * - `acquisEntreprise` <-- dernière `evaluationEntreprise` non-nulle des
+ *   **fiches entreprise** (`Livret.fichesSuivi`, évaluées par le tuteur) ;
+ * - `acquisCentre` <-- dernière `evaluationGreta` non-nulle des **fiches
+ *   centre** (`Livret.fichesSuiviCentre`, évaluées par le formateur référent).
  *
- * - colonne `acquisCentre` <-- dernière `evaluationGreta` non-nulle
- * - colonne `acquisEntreprise` <-- dernière `evaluationEntreprise` non-nulle
- *   (la valeur 'non-fait' est ignorée, considérée comme "pas encore une évaluation
- *   finale d'acquis")
+ * Pour chaque source, on parcourt les fiches dans l'ordre chronologique et on
+ * retient la DERNIÈRE évaluation non-nulle (last-write-wins). La valeur
+ * 'non-fait' est ignorée (compétence non abordée — pas un acquis).
  *
- * Cette fonction NE mute PAS le livret : elle retourne une suggestion qui sera
- * affichée à côté des saisies manuelles (héritage transparent).
+ * Cette fonction NE mute PAS le livret : elle retourne une suggestion affichée
+ * à côté des saisies manuelles (héritage transparent).
  */
 export function synthetiserCompetences(
-  fiches: FicheSuiviPeriode[],
+  fichesEntreprise: FicheSuiviPeriode[],
+  fichesCentre: FicheSuiviPeriode[],
   referentiel: Referentiel,
 ): Map<string, SyntheseCompetenceEntree> {
   const synthese = new Map<string, SyntheseCompetenceEntree>();
@@ -45,23 +48,28 @@ export function synthetiserCompetences(
     }
   }
 
-  // Parcourir les fiches dans l'ordre chronologique
-  const fichesTriees = [...fiches].sort((a, b) => a.numeroPeriode - b.numeroPeriode);
-  for (const fiche of fichesTriees) {
+  // Entreprise : dernière `evaluationEntreprise` non-nulle (last-write-wins).
+  for (const fiche of [...fichesEntreprise].sort((a, b) => a.numeroPeriode - b.numeroPeriode)) {
     for (const ligne of fiche.suiviEntreprise) {
       if (!ligne.competenceId) continue;
       const cible = synthese.get(ligne.competenceId);
       if (!cible) continue;
-      // Centre : on ignore 'non-fait' (compétence non abordée — pas une éval
-      // utilisable, symétrique à l'entreprise).
-      if (ligne.evaluationGreta !== null && ligne.evaluationGreta !== 'non-fait') {
-        cible.acquisCentre = ligne.evaluationGreta;
-        cible.periodeCentre = fiche.numeroPeriode;
-      }
-      // Entreprise : on ignore 'non-fait' (pas encore évalué)
       if (ligne.evaluationEntreprise !== null && ligne.evaluationEntreprise !== 'non-fait') {
         cible.acquisEntreprise = ligne.evaluationEntreprise;
         cible.periodeEntreprise = fiche.numeroPeriode;
+      }
+    }
+  }
+
+  // Centre : dernière `evaluationGreta` non-nulle (last-write-wins).
+  for (const fiche of [...fichesCentre].sort((a, b) => a.numeroPeriode - b.numeroPeriode)) {
+    for (const ligne of fiche.suiviEntreprise) {
+      if (!ligne.competenceId) continue;
+      const cible = synthese.get(ligne.competenceId);
+      if (!cible) continue;
+      if (ligne.evaluationGreta !== null && ligne.evaluationGreta !== 'non-fait') {
+        cible.acquisCentre = ligne.evaluationGreta;
+        cible.periodeCentre = fiche.numeroPeriode;
       }
     }
   }

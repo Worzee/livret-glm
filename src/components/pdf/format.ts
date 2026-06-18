@@ -132,6 +132,16 @@ export function nomFichierPeriode(
   return `periode-${numeroPeriode}-${suffixeApprenti(nom, prenom, dateIso)}.pdf`;
 }
 
+/** Nom de fichier pour l'export d'une seule période en centre (17 juin 2026). */
+export function nomFichierPeriodeCentre(
+  nom: string,
+  prenom: string,
+  numeroPeriode: number,
+  dateIso?: string,
+): string {
+  return `periode-centre-${numeroPeriode}-${suffixeApprenti(nom, prenom, dateIso)}.pdf`;
+}
+
 /** Nom de fichier pour l'export d'un seul entretien tripartite (16 juin 2026). */
 export function nomFichierEntretien(
   nom: string,

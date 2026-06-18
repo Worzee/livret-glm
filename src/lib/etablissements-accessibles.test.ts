@@ -24,6 +24,7 @@ const form1: Formation = {
   dateFin: '2027-09-01',
   lieuId: eta1.id,
   periodes: [],
+  periodesCentre: [],
   nombreEntretiens: 2,
   questionsRetirees: [],
 };
@@ -37,6 +38,7 @@ const form2: Formation = {
   dateFin: '2027-09-01',
   lieuId: eta2.id,
   periodes: [],
+  periodesCentre: [],
   nombreEntretiens: 2,
   questionsRetirees: [],
 };

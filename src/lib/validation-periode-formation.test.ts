@@ -96,6 +96,7 @@ function livretAvec(...fiches: FicheSuiviPeriode[]): Livret {
     organisationSuivi: { evenements: [], modifieLe: '', modifiePar: '' },
     entretiens: { 1: null, 2: null, 3: null, 4: null },
     fichesSuivi: fiches,
+    fichesSuiviCentre: [],
     evaluationFinaleCompetences: { lignes: [], modifieLe: '' },
     attitudesSelectionnees: [],
     selectionCompetencesEntreprise: {
@@ -149,6 +150,32 @@ describe('evaluerVerrouPeriode', () => {
   it("ne compte pas les fiches d'autres périodes", () => {
     const livrets = [livretAvec(ficheAvec('p2', 'signee'))];
     expect(evaluerVerrouPeriode(p, livrets, 'modification').peut).toBe(true);
+  });
+});
+
+describe('evaluerVerrouPeriode (centre, 17 juin 2026)', () => {
+  const p = periode('p1', 1, '2025-09-02', '2025-12-20');
+  const livretAvecCentre = (...fiches: FicheSuiviPeriode[]): Livret => ({
+    ...livretAvec(),
+    fichesSuivi: [],
+    fichesSuiviCentre: fiches,
+  });
+
+  it('inspecte les fiches CENTRE et non les fiches entreprise', () => {
+    // Une fiche entreprise signée ne verrouille pas le planning centre.
+    const livretEntreprise = livretAvec(ficheAvec('p1', 'signee'));
+    expect(evaluerVerrouPeriode(p, [livretEntreprise], 'modification', 'centre').peut).toBe(true);
+
+    // Une fiche centre signée verrouille bien le planning centre.
+    const livretCentre = livretAvecCentre(ficheAvec('p1', 'signee'));
+    const r = evaluerVerrouPeriode(p, [livretCentre], 'modification', 'centre');
+    expect(r.peut).toBe(false);
+    expect(r.apprentisImpactes).toBe(1);
+  });
+
+  it('symétrie : une fiche centre signée ne verrouille pas le planning entreprise', () => {
+    const livretCentre = livretAvecCentre(ficheAvec('p1', 'signee'));
+    expect(evaluerVerrouPeriode(p, [livretCentre], 'modification').peut).toBe(true);
   });
 });
 

@@ -1,5 +1,5 @@
 import { CheckCircle2, GraduationCap, HardHat, UserCog } from 'lucide-react';
-import type { FicheSuiviPeriode, Role } from '@/types';
+import type { FicheSuiviPeriode, LieuFiche, Role } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { libelleRole } from '@/lib/droits';
@@ -22,6 +22,8 @@ import { cn } from '@/lib/utils';
 interface BlocSignaturesProps {
   livretId: string;
   fiche: FicheSuiviPeriode;
+  /** Lieu de la fiche : au centre, seules 2 signatures (apprenti·e + formateur). */
+  lieu?: LieuFiche;
 }
 
 const SIGNATAIRES: Array<{
@@ -58,24 +60,30 @@ const SIGNATAIRES: Array<{
   },
 ];
 
-export function BlocSignatures({ livretId, fiche }: BlocSignaturesProps) {
+export function BlocSignatures({ livretId, fiche, lieu = 'entreprise' }: BlocSignaturesProps) {
   const roleActif = useUserStore((s) => s.roleActif);
   const utilisateurActif = useUserStore((s) => s.utilisateurActif);
   const signer = useLivretStore((s) => s.signer);
 
   const ficheVerrouillee = fiche.etat === 'verrouillee';
 
+  // Au centre, le maître / tuteur ne signe pas : 2 signataires (apprenti·e +
+  // formateur référent).
+  const signataires =
+    lieu === 'centre' ? SIGNATAIRES.filter((s) => s.role !== 'maitre') : SIGNATAIRES;
+  const texteParties = lieu === 'centre' ? 'les deux parties' : 'les trois parties';
+
   return (
     <section className="space-y-3">
       <header>
         <h3 className="text-lg font-medium">Signatures de fin de période</h3>
         <p className="text-xs text-muted-foreground">
-          Une fiche passe à l'état « signée » lorsque les trois parties ont apposé leur signature.
+          Une fiche passe à l'état « signée » lorsque {texteParties} ont apposé leur signature.
         </p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        {SIGNATAIRES.map(({ role, Icon, cleSig, classeBordure, classeIcone, classeTexte }) => {
+      <div className={cn('grid gap-3', lieu === 'centre' ? 'sm:grid-cols-2' : 'sm:grid-cols-3')}>
+        {signataires.map(({ role, Icon, cleSig, classeBordure, classeIcone, classeTexte }) => {
           const sig = fiche.signatures[cleSig];
           const estSonRole = roleActif === role;
           const validation = estSonRole && !ficheVerrouillee ? validerSignature(fiche, role) : null;
@@ -130,7 +138,7 @@ export function BlocSignatures({ livretId, fiche }: BlocSignaturesProps) {
                   libelleEngagement={`${libelleRole(role)} — ${utilisateurActif.prenom} ${utilisateurActif.nom}`}
                   disabled={!validation?.peutSigner}
                   raisonsBlocage={validation?.raisons}
-                  onConfirmer={(trace) => signer(livretId, fiche.id, role, trace)}
+                  onConfirmer={(trace) => signer(livretId, fiche.id, role, trace, lieu)}
                 />
               ) : (
                 <p className={cn('text-xs italic opacity-70', classeTexte)}>

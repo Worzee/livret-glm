@@ -65,6 +65,8 @@ export function creerLivretVierge(
   auteurId: string,
   planning: ReadonlyArray<PeriodeFormation> = [],
   maintenant: Date = new Date(),
+  /** Planning des périodes en centre de formation (17 juin 2026). */
+  planningCentre: ReadonlyArray<PeriodeFormation> = [],
 ): Livret {
   const iso = maintenant.toISOString();
   const lignesCompetences = referentielCapCuisine.blocs
@@ -91,6 +93,11 @@ export function creerLivretVierge(
     // `entretien-tripartite-{1..N}`, N = Formation.nombreEntretiens).
     entretiens: { 1: null, 2: null, 3: null, 4: null },
     fichesSuivi: planning.map((p) => creerFichePeriodeVierge(p, `fp-${livretId}-${p.id}`)),
+    // Périodes en centre (17 juin 2026) — héritées du planning centre de la
+    // formation. Préfixe d'id `fc-` (vs `fp-` pour l'entreprise).
+    fichesSuiviCentre: planningCentre.map((p) =>
+      creerFichePeriodeVierge(p, `fc-${livretId}-${p.id}`),
+    ),
     evaluationFinaleCompetences: {
       lignes: lignesCompetences,
       modifieLe: iso,

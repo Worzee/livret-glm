@@ -1,5 +1,5 @@
 import { GraduationCap, HardHat, UserCog } from 'lucide-react';
-import type { FicheSuiviPeriode, Role } from '@/types';
+import type { FicheSuiviPeriode, LieuFiche, Role } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { libelleRole, peutEditer, type Ressource } from '@/lib/droits';
@@ -14,6 +14,8 @@ import { cn } from '@/lib/utils';
 interface ZoneObservationProps {
   livretId: string;
   fiche: FicheSuiviPeriode;
+  /** Lieu de la fiche : au centre, pas d'observation maître / tuteur. */
+  lieu?: LieuFiche;
 }
 
 const ROLES_AVEC_OBSERVATION: Array<{
@@ -46,15 +48,22 @@ const ROLES_AVEC_OBSERVATION: Array<{
   },
 ];
 
-export function ZoneObservation({ livretId, fiche }: ZoneObservationProps) {
+export function ZoneObservation({ livretId, fiche, lieu = 'entreprise' }: ZoneObservationProps) {
   const roleActif = useUserStore((s) => s.roleActif);
   const setObservation = useLivretStore((s) => s.setObservation);
+
+  // Au centre, le maître / tuteur n'intervient pas : seules les zones
+  // apprenti·e et formateur référent sont affichées.
+  const roles =
+    lieu === 'centre'
+      ? ROLES_AVEC_OBSERVATION.filter((r) => r.role !== 'maitre')
+      : ROLES_AVEC_OBSERVATION;
 
   return (
     <section className="space-y-3">
       <h3 className="text-lg font-medium">Observations de fin de période</h3>
-      <div className="grid gap-3 md:grid-cols-3">
-        {ROLES_AVEC_OBSERVATION.map(({ role, ressource, bordure, Icon, classeRole }) => {
+      <div className={cn('grid gap-3', lieu === 'centre' ? 'md:grid-cols-2' : 'md:grid-cols-3')}>
+        {roles.map(({ role, ressource, bordure, Icon, classeRole }) => {
           // R21 : une observation devient en lecture seule dès que le rôle a signé,
           // pour ne pas modifier ce qui a été signé. Réactivable uniquement via R10.
           const editable = peutEditer(roleActif, ressource) && peutEncoreEditerFiche(fiche, role);
@@ -98,7 +107,7 @@ export function ZoneObservation({ livretId, fiche }: ZoneObservationProps) {
                 <textarea
                   rows={4}
                   value={valeur}
-                  onChange={(e) => setObservation(livretId, fiche.id, role, e.target.value)}
+                  onChange={(e) => setObservation(livretId, fiche.id, role, e.target.value, lieu)}
                   placeholder={`Observation du ${libelleRole(role).toLowerCase()}…`}
                   className="w-full resize-y rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />

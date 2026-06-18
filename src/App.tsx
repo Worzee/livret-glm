@@ -37,6 +37,11 @@ export function App() {
         <Route path="livret/entretien/:numero" element={<EntretienTripartite />} />
         <Route path="livret/fiches-suivi" element={<FicheSuiviPeriodes />} />
         <Route path="livret/fiches-suivi/:ficheId" element={<FicheSuiviPeriodeDetail />} />
+        <Route path="livret/fiches-suivi-centre" element={<FicheSuiviPeriodes lieu="centre" />} />
+        <Route
+          path="livret/fiches-suivi-centre/:ficheId"
+          element={<FicheSuiviPeriodeDetail lieu="centre" />}
+        />
         <Route path="livret/evaluation-finale" element={<EvaluationFinale />} />
         <Route path="livret/pronote" element={<PronoteWeb />} />
 

@@ -54,52 +54,57 @@ const fiche = (
 
 describe('synthetiserCompetences', () => {
   it('initialise toutes les compétences du référentiel à null', () => {
-    const s = synthetiserCompetences([], referentiel);
+    const s = synthetiserCompetences([], [], referentiel);
     expect(s.size).toBe(2);
     expect(s.get('c1')).toEqual({ acquisEntreprise: null, acquisCentre: null });
     expect(s.get('c2')).toEqual({ acquisEntreprise: null, acquisCentre: null });
   });
 
-  it('retient la dernière évaluation chronologique (last-write-wins)', () => {
+  it('retient la dernière évaluation chronologique (last-write-wins) côté entreprise', () => {
     const fiches: FicheSuiviPeriode[] = [
-      fiche(1, [
-        { competenceId: 'c1', evaluationGreta: 'partiel', evaluationEntreprise: 'partiel' },
-      ]),
-      fiche(2, [
-        { competenceId: 'c1', evaluationGreta: 'maitrise', evaluationEntreprise: 'maitrise' },
-      ]),
+      fiche(1, [{ competenceId: 'c1', evaluationEntreprise: 'partiel' }]),
+      fiche(2, [{ competenceId: 'c1', evaluationEntreprise: 'maitrise' }]),
     ];
-    const s = synthetiserCompetences(fiches, referentiel);
+    const s = synthetiserCompetences(fiches, [], referentiel);
     expect(s.get('c1')?.acquisEntreprise).toBe('maitrise');
+  });
+
+  it('retient la dernière évaluation chronologique (last-write-wins) côté centre', () => {
+    const fiches: FicheSuiviPeriode[] = [
+      fiche(1, [{ competenceId: 'c1', evaluationGreta: 'partiel' }]),
+      fiche(2, [{ competenceId: 'c1', evaluationGreta: 'maitrise' }]),
+    ];
+    const s = synthetiserCompetences([], fiches, referentiel);
     expect(s.get('c1')?.acquisCentre).toBe('maitrise');
   });
 
   it("retourne le numéro de la dernière période d'origine pour chaque côté", () => {
-    const fiches: FicheSuiviPeriode[] = [
-      fiche(1, [
-        { competenceId: 'c1', evaluationGreta: 'partiel', evaluationEntreprise: 'partiel' },
-      ]),
-      fiche(2, [{ competenceId: 'c1', evaluationGreta: 'maitrise' }]),
+    const fichesEntreprise: FicheSuiviPeriode[] = [
+      fiche(1, [{ competenceId: 'c1', evaluationEntreprise: 'partiel' }]),
       fiche(3, [{ competenceId: 'c1', evaluationEntreprise: 'maitrise' }]),
     ];
-    const s = synthetiserCompetences(fiches, referentiel);
-    expect(s.get('c1')?.periodeCentre).toBe(2); // dernière éval Greta : période 2
+    const fichesCentre: FicheSuiviPeriode[] = [
+      fiche(1, [{ competenceId: 'c1', evaluationGreta: 'partiel' }]),
+      fiche(2, [{ competenceId: 'c1', evaluationGreta: 'maitrise' }]),
+    ];
+    const s = synthetiserCompetences(fichesEntreprise, fichesCentre, referentiel);
+    expect(s.get('c1')?.periodeCentre).toBe(2); // dernière éval centre : période 2
     expect(s.get('c1')?.periodeEntreprise).toBe(3); // dernière éval entreprise : période 3
   });
 
   it("ne renseigne pas de période d'origine si aucune éval n'a eu lieu", () => {
-    const s = synthetiserCompetences([], referentiel);
+    const s = synthetiserCompetences([], [], referentiel);
     expect(s.get('c1')?.periodeCentre).toBeUndefined();
     expect(s.get('c1')?.periodeEntreprise).toBeUndefined();
   });
 
-  it('ignore les lignes ad-hoc (competenceId null)', () => {
+  it('ignore les lignes ad-hoc (competenceId null) des deux côtés', () => {
     const fiches: FicheSuiviPeriode[] = [
       fiche(1, [
         { competenceId: null, evaluationGreta: 'maitrise', evaluationEntreprise: 'maitrise' },
       ]),
     ];
-    const s = synthetiserCompetences(fiches, referentiel);
+    const s = synthetiserCompetences(fiches, fiches, referentiel);
     expect(s.get('c1')).toEqual({ acquisEntreprise: null, acquisCentre: null });
   });
 
@@ -108,7 +113,7 @@ describe('synthetiserCompetences', () => {
       fiche(1, [{ competenceId: 'c1', evaluationEntreprise: 'partiel' }]),
       fiche(2, [{ competenceId: 'c1', evaluationEntreprise: 'non-fait' }]),
     ];
-    const s = synthetiserCompetences(fiches, referentiel);
+    const s = synthetiserCompetences(fiches, [], referentiel);
     // La fiche 2 contient 'non-fait' mais on garde 'partiel' de la fiche 1
     expect(s.get('c1')?.acquisEntreprise).toBe('partiel');
   });
@@ -118,32 +123,47 @@ describe('synthetiserCompetences', () => {
       fiche(1, [{ competenceId: 'c1', evaluationGreta: 'partiel' }]),
       fiche(2, [{ competenceId: 'c1', evaluationGreta: 'non-fait' }]),
     ];
-    const s = synthetiserCompetences(fiches, referentiel);
+    const s = synthetiserCompetences([], fiches, referentiel);
     // La fiche 2 contient 'non-fait' mais on garde 'partiel' de la fiche 1
     expect(s.get('c1')?.acquisCentre).toBe('partiel');
     // La période d'origine reste la 1 (fiche 2 ignorée car 'non-fait')
     expect(s.get('c1')?.periodeCentre).toBe(1);
   });
 
-  it('traite indépendamment les colonnes greta et entreprise', () => {
-    const fiches: FicheSuiviPeriode[] = [
-      fiche(1, [{ competenceId: 'c1', evaluationGreta: 'maitrise', evaluationEntreprise: null }]),
-      fiche(2, [{ competenceId: 'c1', evaluationGreta: null, evaluationEntreprise: 'partiel' }]),
+  it('traite indépendamment les deux sources (entreprise vs centre)', () => {
+    const fichesEntreprise: FicheSuiviPeriode[] = [
+      fiche(2, [{ competenceId: 'c1', evaluationEntreprise: 'partiel' }]),
     ];
-    const s = synthetiserCompetences(fiches, referentiel);
+    const fichesCentre: FicheSuiviPeriode[] = [
+      fiche(1, [{ competenceId: 'c1', evaluationGreta: 'maitrise' }]),
+    ];
+    const s = synthetiserCompetences(fichesEntreprise, fichesCentre, referentiel);
     expect(s.get('c1')?.acquisEntreprise).toBe('partiel');
     expect(s.get('c1')?.acquisCentre).toBe('maitrise');
     expect(s.get('c1')?.periodeCentre).toBe(1);
     expect(s.get('c1')?.periodeEntreprise).toBe(2);
   });
 
+  it("n'alimente PAS l'acquis centre depuis les fiches entreprise (sources séparées, 17 juin 2026)", () => {
+    // Une `evaluationGreta` résiduelle sur une fiche ENTREPRISE ne doit plus
+    // remonter dans `acquisCentre` : seules les fiches centre comptent.
+    const fichesEntreprise: FicheSuiviPeriode[] = [
+      fiche(1, [
+        { competenceId: 'c1', evaluationEntreprise: 'maitrise', evaluationGreta: 'maitrise' },
+      ]),
+    ];
+    const s = synthetiserCompetences(fichesEntreprise, [], referentiel);
+    expect(s.get('c1')?.acquisEntreprise).toBe('maitrise');
+    expect(s.get('c1')?.acquisCentre).toBeNull();
+  });
+
   it('trie les fiches par numéro de période avant agrégation', () => {
-    // Fiches données dans le désordre — la 2 doit gagner
+    // Fiches centre données dans le désordre — la 2 doit gagner
     const fiches: FicheSuiviPeriode[] = [
       fiche(2, [{ competenceId: 'c1', evaluationGreta: 'maitrise' }]),
       fiche(1, [{ competenceId: 'c1', evaluationGreta: 'partiel' }]),
     ];
-    const s = synthetiserCompetences(fiches, referentiel);
+    const s = synthetiserCompetences([], fiches, referentiel);
     expect(s.get('c1')?.acquisCentre).toBe('maitrise');
   });
 });

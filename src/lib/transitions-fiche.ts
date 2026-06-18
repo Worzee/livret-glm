@@ -1,4 +1,19 @@
-import type { EtatFiche, FicheSuiviPeriode, SignaturesTripartite } from '@/types';
+import type { EtatFiche, FicheSuiviPeriode, LieuFiche, SignaturesTripartite } from '@/types';
+
+/**
+ * Signataires attendus d'une fiche selon le lieu. Entreprise : les 3 parties
+ * (apprenti·e + maître / tuteur + formateur référent). Centre de formation
+ * (17 juin 2026) : apprenti·e + formateur référent — le maître / tuteur
+ * n'intervient pas au CFA. Source de vérité du décompte des signatures et du
+ * critère « signée » par lieu.
+ */
+export const SIGNATAIRES_PAR_LIEU: Record<
+  LieuFiche,
+  ReadonlyArray<'apprenti' | 'maitre' | 'formateur'>
+> = {
+  entreprise: ['apprenti', 'maitre', 'formateur'],
+  centre: ['apprenti', 'formateur'],
+};
 
 /**
  * Machine à états des fiches de suivi par période.
@@ -16,14 +31,15 @@ import type { EtatFiche, FicheSuiviPeriode, SignaturesTripartite } from '@/types
 export const DUREE_VERROU_JOURS = 15;
 
 /**
- * Compte les signatures effectivement apposées.
+ * Compte les signatures effectivement apposées **parmi les signataires
+ * attendus du lieu** (cf. `SIGNATAIRES_PAR_LIEU`). Au centre, une éventuelle
+ * signature maître résiduelle n'est jamais comptée.
  */
-export function nombreSignatures(signatures: SignaturesTripartite): number {
-  let n = 0;
-  if (signatures.apprenti.signe) n++;
-  if (signatures.maitre.signe) n++;
-  if (signatures.formateur.signe) n++;
-  return n;
+export function nombreSignatures(
+  signatures: SignaturesTripartite,
+  lieu: LieuFiche = 'entreprise',
+): number {
+  return SIGNATAIRES_PAR_LIEU[lieu].filter((role) => signatures[role].signe).length;
 }
 
 /**
@@ -46,19 +62,20 @@ export function ficheEstVide(fiche: FicheSuiviPeriode): boolean {
  * Calcule l'état déduit d'une fiche en fonction de ses données et de ses signatures.
  *
  * - Si verrouillée (état figé par R10/R17) → on conserve `verrouillee`.
- * - Sinon, si 3 signatures : `signee`
+ * - Sinon, si toutes les signatures attendues du lieu sont apposées : `signee`
+ *   (entreprise : 3 parties ; centre : apprenti·e + formateur).
  * - Sinon, si la fiche a au moins une donnée saisie : `en-cours`
  * - Sinon : `brouillon`
  *
  * Cette fonction est appelée à chaque mutation pour recalculer l'état.
  * Elle n'écrit pas — elle retourne juste le nouvel état.
  */
-export function deduireEtat(fiche: FicheSuiviPeriode): EtatFiche {
+export function deduireEtat(fiche: FicheSuiviPeriode, lieu: LieuFiche = 'entreprise'): EtatFiche {
   // R17 (verrouillage manuel ou auto) prime sur tout
   if (fiche.etat === 'verrouillee') return 'verrouillee';
 
-  const signatures = nombreSignatures(fiche.signatures);
-  if (signatures === 3) return 'signee';
+  const signatures = nombreSignatures(fiche.signatures, lieu);
+  if (signatures === SIGNATAIRES_PAR_LIEU[lieu].length) return 'signee';
   if (signatures > 0) return 'en-cours';
   if (ficheEstVide(fiche)) return 'brouillon';
   return 'en-cours';
@@ -94,14 +111,14 @@ export function peutEncoreEditerFiche(
 export function fichePeutEtreVerrouilleeAuto(
   fiche: FicheSuiviPeriode,
   maintenant: Date = new Date(),
+  lieu: LieuFiche = 'entreprise',
 ): boolean {
   if (fiche.etat !== 'signee') return false;
-  // Date de la dernière signature = la plus récente des 3
-  const signatureDates = [
-    fiche.signatures.apprenti.dateSignature,
-    fiche.signatures.maitre.dateSignature,
-    fiche.signatures.formateur.dateSignature,
-  ].filter((d): d is string => Boolean(d));
+  // Date de la dernière signature = la plus récente parmi les signataires
+  // attendus du lieu (entreprise : 3 ; centre : apprenti·e + formateur).
+  const signatureDates = SIGNATAIRES_PAR_LIEU[lieu]
+    .map((role) => fiche.signatures[role].dateSignature)
+    .filter((d): d is string => Boolean(d));
   if (signatureDates.length === 0) return false;
   const derniereSignature = Math.max(...signatureDates.map((d) => Date.parse(d)));
   const ageMs = maintenant.getTime() - derniereSignature;

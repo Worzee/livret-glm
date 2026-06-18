@@ -126,7 +126,15 @@ export const useUtilisateursStore = create<UtilisateursStore>()(
           ? useFormationsStore.getState().formations[apprenti.formationId]
           : undefined;
         const planning = formation?.periodes ?? [];
-        const livret = creerLivretVierge(apprenti, `livret-${id}`, auteurId, planning);
+        const planningCentre = formation?.periodesCentre ?? [];
+        const livret = creerLivretVierge(
+          apprenti,
+          `livret-${id}`,
+          auteurId,
+          planning,
+          new Date(),
+          planningCentre,
+        );
         useLivretStore.setState((s) => ({
           livrets: { ...s.livrets, [livret.id]: livret },
           derniereModification: new Date().toISOString(),

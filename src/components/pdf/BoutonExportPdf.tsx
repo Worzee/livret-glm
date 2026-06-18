@@ -43,6 +43,7 @@ const SEUIL_PAGES_AVERTISSEMENT = 50;
 export type VarianteExportPdf =
   | { type: 'livret' }
   | { type: 'periode'; ficheId: string }
+  | { type: 'periode-centre'; ficheId: string }
   | { type: 'entretien'; numero: NumeroEntretien }
   | { type: 'fiches-suivi' };
 
@@ -79,12 +80,17 @@ export function BoutonExportPdf({
   if (!peutEditer(roleActif, 'export-pdf')) return null;
 
   // L'avertissement « livret volumineux » ne concerne que l'export complet ;
-  // les exports partiels font 1 à 2 pages.
-  const totalDeverrouillages = donnees.livret.fichesSuivi.reduce(
+  // les exports partiels font 1 à 2 pages. Les fiches centre (17 juin 2026)
+  // comptent aussi pour l'estimation du livret complet.
+  const toutesFiches = [
+    ...donnees.livret.fichesSuivi,
+    ...(donnees.livret.fichesSuiviCentre ?? []),
+  ];
+  const totalDeverrouillages = toutesFiches.reduce(
     (n, f) => n + f.historiqueDeverrouillages.length,
     0,
   );
-  const pagesEstimees = estimerNombrePages(donnees.livret.fichesSuivi.length, totalDeverrouillages);
+  const pagesEstimees = estimerNombrePages(toutesFiches.length, totalDeverrouillages);
   const livretVolumineux = variante.type === 'livret' && pagesEstimees > SEUIL_PAGES_AVERTISSEMENT;
 
   if (demande) {

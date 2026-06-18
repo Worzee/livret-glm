@@ -1,4 +1,4 @@
-import type { FicheSuiviPeriode, Livret, PeriodeFormation } from '@/types';
+import type { FicheSuiviPeriode, LieuFiche, Livret, PeriodeFormation } from '@/types';
 
 /**
  * Validation et verrous des périodes définies au niveau formation
@@ -100,9 +100,12 @@ export function evaluerVerrouPeriode(
   periode: PeriodeFormation,
   livrets: ReadonlyArray<Livret>,
   operation: 'modification' | 'suppression',
+  lieu: LieuFiche = 'entreprise',
 ): VerrouPeriode {
   const fichesImpactees = livrets.flatMap((l) =>
-    l.fichesSuivi.filter((f) => fichePointePeriode(f, periode)),
+    (lieu === 'centre' ? l.fichesSuiviCentre : l.fichesSuivi).filter((f) =>
+      fichePointePeriode(f, periode),
+    ),
   );
   const fichesFigees = fichesImpactees.filter(
     (f) => f.etat === 'signee' || f.etat === 'verrouillee',

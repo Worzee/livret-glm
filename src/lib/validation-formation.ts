@@ -17,7 +17,7 @@ import type { Formation } from '@/types';
  */
 export type SaisieFormation = Omit<
   Formation,
-  'id' | 'periodes' | 'nombreEntretiens' | 'questionsRetirees'
+  'id' | 'periodes' | 'periodesCentre' | 'nombreEntretiens' | 'questionsRetirees'
 >;
 
 export interface ErreursFormation {

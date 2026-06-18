@@ -3,6 +3,7 @@ import type { FicheSuiviPeriode } from '@/types';
 import {
   estPeriodeVisible,
   nbPeriodesMasquees,
+  periodeSignee,
   periodeSigneeTroisParties,
   periodesVisibles,
   verifierCreationPeriode,
@@ -237,5 +238,48 @@ describe('estPeriodeVisible / nbPeriodesMasquees', () => {
     expect(nbPeriodesMasquees(fiches)).toBe(1); // P3 masquée
     expect(nbPeriodesMasquees([ficheSignatures(1, 0)])).toBe(0); // P1 seule, visible
     expect(nbPeriodesMasquees([ficheSignatures(1, 3), ficheSignatures(2, 3)])).toBe(0);
+  });
+});
+
+describe('séquencement centre (apprenti·e + formateur, 17 juin 2026)', () => {
+  // Fiche centre : on contrôle directement les 2 signataires utiles (la
+  // factory `ficheSignatures` ne permet pas apprenti + formateur sans maître).
+  const ficheC = (num: number, apprenti: boolean, formateur: boolean): FicheSuiviPeriode => ({
+    ...fiche(num, '2025-09-01', '2025-12-01', 'brouillon'),
+    signatures: {
+      apprenti: { signe: apprenti },
+      maitre: { signe: false },
+      formateur: { signe: formateur },
+    },
+  });
+
+  it('periodeSignee(centre) vrai dès apprenti·e + formateur', () => {
+    expect(periodeSignee(ficheC(1, true, true), 'centre')).toBe(true);
+    expect(periodeSignee(ficheC(1, true, false), 'centre')).toBe(false);
+    expect(periodeSignee(ficheC(1, false, true), 'centre')).toBe(false);
+  });
+
+  it('une signature maître ne débloque pas la période en centre', () => {
+    const f: FicheSuiviPeriode = {
+      ...fiche(1, '2025-09-01', '2025-12-01', 'brouillon'),
+      signatures: {
+        apprenti: { signe: true },
+        maitre: { signe: true },
+        formateur: { signe: false },
+      },
+    };
+    expect(periodeSignee(f, 'centre')).toBe(false);
+  });
+
+  it('P2 masquée tant que P1 (centre) non signée 2/2', () => {
+    const fiches = [ficheC(1, true, false), ficheC(2, false, false)];
+    expect(periodesVisibles(fiches, 'centre').map((f) => f.numeroPeriode)).toEqual([1]);
+  });
+
+  it('P2 visible dès que P1 (centre) signée 2/2', () => {
+    const fiches = [ficheC(1, true, true), ficheC(2, false, false)];
+    expect(periodesVisibles(fiches, 'centre').map((f) => f.numeroPeriode)).toEqual([1, 2]);
+    expect(estPeriodeVisible(fiches, 'fp-2', 'centre')).toBe(true);
+    expect(nbPeriodesMasquees(fiches, 'centre')).toBe(0);
   });
 });

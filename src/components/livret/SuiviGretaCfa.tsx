@@ -1,4 +1,4 @@
-import type { FicheSuiviPeriode, Role } from '@/types';
+import type { FicheSuiviPeriode, LieuFiche, Role } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { peutEditer, type Ressource } from '@/lib/droits';
@@ -21,9 +21,11 @@ import { cn } from '@/lib/utils';
 interface SuiviGretaCfaProps {
   livretId: string;
   fiche: FicheSuiviPeriode;
+  /** Lieu de la fiche (cible la bonne collection au niveau du store). */
+  lieu?: LieuFiche;
 }
 
-export function SuiviGretaCfa({ livretId, fiche }: SuiviGretaCfaProps) {
+export function SuiviGretaCfa({ livretId, fiche, lieu = 'entreprise' }: SuiviGretaCfaProps) {
   return (
     <section className="space-y-3">
       <header>
@@ -37,6 +39,7 @@ export function SuiviGretaCfa({ livretId, fiche }: SuiviGretaCfaProps) {
         <ZoneRole
           livretId={livretId}
           fiche={fiche}
+          lieu={lieu}
           role="apprenti"
           ressource="fiche.suivi-greta-cfa-apprenti"
           titre="Apprenti·e"
@@ -47,6 +50,7 @@ export function SuiviGretaCfa({ livretId, fiche }: SuiviGretaCfaProps) {
         <ZoneRole
           livretId={livretId}
           fiche={fiche}
+          lieu={lieu}
           role="formateur"
           ressource="fiche.suivi-greta-cfa-formateur"
           titre="Formateur référent"
@@ -64,6 +68,7 @@ export function SuiviGretaCfa({ livretId, fiche }: SuiviGretaCfaProps) {
 interface ZoneRoleProps {
   livretId: string;
   fiche: FicheSuiviPeriode;
+  lieu: LieuFiche;
   role: Extract<Role, 'apprenti' | 'formateur'>;
   ressource: Ressource;
   titre: string;
@@ -75,6 +80,7 @@ interface ZoneRoleProps {
 function ZoneRole({
   livretId,
   fiche,
+  lieu,
   role,
   ressource,
   titre,
@@ -104,7 +110,7 @@ function ZoneRole({
           className="w-full resize-y rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           value={valeur}
           placeholder={placeholder}
-          onChange={(e) => setChamp(livretId, fiche.id, role, e.target.value)}
+          onChange={(e) => setChamp(livretId, fiche.id, role, e.target.value, lieu)}
         />
       ) : (
         <p

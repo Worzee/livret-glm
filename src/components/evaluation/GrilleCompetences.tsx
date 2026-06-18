@@ -72,8 +72,14 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
     !livretFige && peutEditer(roleActif, 'grille-competences.entreprise');
   const peutEditerCentre = !livretFige && peutEditer(roleActif, 'grille-competences.centre');
 
-  // Synthèse héritée des fiches (R23 — recalculée à chaque render)
-  const synthese = synthetiserCompetences(livret.fichesSuivi, referentiel);
+  // Synthèse héritée des fiches (R23 — recalculée à chaque render).
+  // Deux sources (17 juin 2026) : « acquis en entreprise » depuis les fiches
+  // entreprise, « acquis en centre » depuis les fiches centre.
+  const synthese = synthetiserCompetences(
+    livret.fichesSuivi,
+    livret.fichesSuiviCentre ?? [],
+    referentiel,
+  );
   const lignes = livret.evaluationFinaleCompetences.lignes;
   const stats = calculerStatsParBloc(referentiel, lignes, synthese);
   // Fallback défensif : un livret persisté avant le bump v7→v8 peut ne pas

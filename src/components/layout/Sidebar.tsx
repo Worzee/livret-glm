@@ -51,6 +51,7 @@ const LIENS_LIVRET: LienItem[] = [
   // après ce point (cf. NavContenu) — ils n'apparaissent que si l'événement
   // correspondant existe dans l'organisation du suivi.
   { to: '/livret/fiches-suivi', label: 'Période en Entreprise', Icon: Notebook },
+  { to: '/livret/fiches-suivi-centre', label: 'Période en Centre', Icon: GraduationCap },
   { to: '/livret/evaluation-finale', label: 'Évaluation finale', Icon: Target },
   { to: '/livret/pronote', label: 'Pronote WEB', Icon: ExternalLink },
 ];

@@ -99,6 +99,13 @@ export interface Formation {
    */
   periodes: PeriodeFormation[];
   /**
+   * Planning des **périodes en centre de formation** (17 juin 2026) — miroir
+   * de `periodes` (entreprise). Indépendant (dates, nombre). Chaque période
+   * génère une fiche dans `Livret.fichesSuiviCentre` ; les compétences y sont
+   * évaluées par le formateur référent (cf. `FicheSuiviPeriode`).
+   */
+  periodesCentre: PeriodeFormation[];
+  /**
    * Nombre d'entretiens tripartites de la formation (1 à 4, défaut 2 —
    * retours coordos juin 2026 : 4 pour les formations de 2 ans). Défini par
    * le coordo dans la modale Planning, au même endroit que les périodes.
@@ -484,6 +491,20 @@ export interface EntretienTripartite {
 export type EtatFiche = 'brouillon' | 'en-cours' | 'signee' | 'verrouillee';
 
 /**
+ * Lieu d'une fiche de suivi par période (17 juin 2026). Détermine la
+ * collection du livret (`fichesSuivi` vs `fichesSuiviCentre`), les signataires
+ * attendus (entreprise : apprenti·e + maître + formateur ; centre :
+ * apprenti·e + formateur) et la colonne d'évaluation éditée
+ * (`evaluationEntreprise` vs `evaluationGreta`).
+ *
+ * Convention transverse : les helpers de logique et les mutations du store
+ * prennent `lieu` en paramètre **optionnel, défaut `'entreprise'`** — les
+ * appels historiques (entreprise) restent inchangés ; le centre passe
+ * explicitement `'centre'`.
+ */
+export type LieuFiche = 'entreprise' | 'centre';
+
+/**
  * Suivi de la formation au GRETA CFA pour une période donnée.
  *
  * Refonte mai 2026 : ancien tableau `LigneSuiviGreta[]` remplacé par 2 zones
@@ -675,6 +696,15 @@ export interface Livret {
    */
   entretiens: Record<NumeroEntretien, EntretienTripartite | null>;
   fichesSuivi: FicheSuiviPeriode[];
+  /**
+   * Fiches des **périodes en centre de formation** (17 juin 2026) — miroir de
+   * `fichesSuivi` (entreprise), héritées du planning `Formation.periodesCentre`.
+   * Mêmes structure et règles (séquencement, déverrouillage) ; côté contenu,
+   * les compétences sont évaluées par le formateur (`evaluationGreta` de chaque
+   * ligne) et l'apprenti·e renseigne son retour. Signatures : formateur +
+   * apprenti·e (le maître / tuteur n'est pas concerné par le centre).
+   */
+  fichesSuiviCentre: FicheSuiviPeriode[];
   evaluationFinaleCompetences: EvaluationFinaleCompetences;
   /** Sélection des compétences abordées en entreprise (cf. SelectionCompetencesEntreprise). */
   selectionCompetencesEntreprise: SelectionCompetencesEntreprise;

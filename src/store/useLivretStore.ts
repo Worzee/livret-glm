@@ -10,6 +10,7 @@ import type {
   EtatFiche,
   EvenementOrganisationSuivi,
   FicheSuiviPeriode,
+  LieuFiche,
   LigneEvaluationFinaleCompetence,
   LigneSuiviEntreprise,
   Livret,
@@ -106,7 +107,10 @@ import { useUtilisateursStore } from './useUtilisateursStore';
 //   v19 — 16 juin 2026 : refonte de l'entretien tripartite 1 (« première
 //        visite ») sur la trame officielle GRETA — `reponsesTrame` +
 //        `signatures.representantLegal`. Reset pour recharger les fixtures.
-const VERSION_SCHEMA = 19;
+//   v20 — 17 juin 2026 : périodes en centre de formation —
+//        `Livret.fichesSuiviCentre` (miroir de `fichesSuivi`, signées par
+//        l'apprenti·e + le formateur). Reset pour recharger les fixtures.
+const VERSION_SCHEMA = 20;
 
 interface LivretStore {
   livrets: Record<string, Livret>;
@@ -115,9 +119,13 @@ interface LivretStore {
 
   // ── Lecture ──────────────────────────────────────────────────────────────
   getLivret: (livretId: string) => Livret | undefined;
-  getFiche: (livretId: string, ficheId: string) => FicheSuiviPeriode | undefined;
+  getFiche: (livretId: string, ficheId: string, lieu?: LieuFiche) => FicheSuiviPeriode | undefined;
 
   // ── Mutations sur les fiches de période ──────────────────────────────────
+  // Convention `lieu` (17 juin 2026) : chaque mutation de fiche prend en
+  // dernier paramètre un `lieu?: LieuFiche` (défaut `'entreprise'`). Il cible
+  // la collection (`fichesSuivi` vs `fichesSuiviCentre`) et le critère
+  // « signée » associé. Les appels historiques (entreprise) restent inchangés.
   /** Met à jour une cellule du tableau tri-colonnes pour une compétence donnée. */
   setEvaluationLigne: (
     livretId: string,
@@ -127,10 +135,17 @@ interface LivretStore {
       | { type: 'evaluationGreta'; valeur: NiveauMaitriseEntreprise | null }
       | { type: 'evaluationEntreprise'; valeur: NiveauMaitriseEntreprise | null }
       | { type: 'retourApprenti'; valeur: string },
+    lieu?: LieuFiche,
   ) => void;
 
   /** Met à jour la zone d'observation d'un rôle pour la fiche. */
-  setObservation: (livretId: string, ficheId: string, role: Role, valeur: string) => void;
+  setObservation: (
+    livretId: string,
+    ficheId: string,
+    role: Role,
+    valeur: string,
+    lieu?: LieuFiche,
+  ) => void;
 
   /**
    * Met à jour l'une des deux zones de texte du suivi GRETA CFA (apprenti·e ou
@@ -141,6 +156,7 @@ interface LivretStore {
     ficheId: string,
     champ: 'apprenti' | 'formateur',
     valeur: string,
+    lieu?: LieuFiche,
   ) => void;
 
   /** Ajoute une ligne au suivi entreprise (compétence du référentiel ou ad hoc). */
@@ -149,17 +165,23 @@ interface LivretStore {
     ficheId: string,
     competenceId: string | null,
     libelleLibre?: string,
+    lieu?: LieuFiche,
   ) => string;
 
   /** Supprime une ligne du suivi entreprise. */
-  supprimerLigneSuiviEntreprise: (livretId: string, ficheId: string, ligneId: string) => void;
+  supprimerLigneSuiviEntreprise: (
+    livretId: string,
+    ficheId: string,
+    ligneId: string,
+    lieu?: LieuFiche,
+  ) => void;
 
   /** Appose ou retire la signature d'un rôle. La validation R18/R20 est faite côté UI. */
   /** `trace` : signature manuscrite (PNG data-URL — juin 2026, §14.C). */
-  signer: (livretId: string, ficheId: string, role: Role, trace?: string) => void;
+  signer: (livretId: string, ficheId: string, role: Role, trace?: string, lieu?: LieuFiche) => void;
 
   /** Verrouille/déverrouille une fiche (formateur uniquement, validation côté UI). */
-  setEtatFiche: (livretId: string, ficheId: string, etat: EtatFiche) => void;
+  setEtatFiche: (livretId: string, ficheId: string, etat: EtatFiche, lieu?: LieuFiche) => void;
 
   /**
    * Crée une nouvelle fiche de suivi par période. Le numéro est auto-attribué
@@ -344,6 +366,7 @@ interface LivretStore {
     auteurNom: string,
     auteurRole: Role,
     motif: string,
+    lieu?: LieuFiche,
   ) => void;
 
   /** Réinitialise complètement les livrets aux fixtures (CDC §24.8). */
@@ -446,27 +469,32 @@ function muterFiche(
   store: LivretStore,
   livretId: string,
   ficheId: string,
+  lieu: LieuFiche,
   patch: (fiche: FicheSuiviPeriode) => FicheSuiviPeriode,
 ): Pick<LivretStore, 'livrets' | 'derniereModification'> {
   const livret = store.livrets[livretId];
   if (!livret) return { livrets: store.livrets, derniereModification: store.derniereModification };
-  const idx = livret.fichesSuivi.findIndex((f) => f.id === ficheId);
+  // Collection ciblée selon le lieu (entreprise → `fichesSuivi`, centre →
+  // `fichesSuiviCentre`).
+  const cle = lieu === 'centre' ? 'fichesSuiviCentre' : 'fichesSuivi';
+  const fiches = livret[cle];
+  const idx = fiches.findIndex((f) => f.id === ficheId);
   if (idx === -1)
     return { livrets: store.livrets, derniereModification: store.derniereModification };
 
-  const nouvelleFiche = patch(livret.fichesSuivi[idx]);
-  // Recalcul de l'état (R15/R16) — sauf si la fiche est verrouillée.
+  const nouvelleFiche = patch(fiches[idx]);
+  // Recalcul de l'état (R15/R16) selon le lieu — sauf si la fiche est verrouillée.
   const ficheAvecEtat: FicheSuiviPeriode = {
     ...nouvelleFiche,
-    etat: deduireEtat(nouvelleFiche),
+    etat: deduireEtat(nouvelleFiche, lieu),
   };
-  const fichesSuivi = [...livret.fichesSuivi];
-  fichesSuivi[idx] = ficheAvecEtat;
+  const fichesMaj = [...fiches];
+  fichesMaj[idx] = ficheAvecEtat;
   const maintenant = new Date().toISOString();
   return {
     livrets: {
       ...store.livrets,
-      [livretId]: { ...livret, fichesSuivi, modifieLe: maintenant },
+      [livretId]: { ...livret, [cle]: fichesMaj, modifieLe: maintenant },
     },
     derniereModification: maintenant,
   };
@@ -479,12 +507,14 @@ export const useLivretStore = create<LivretStore>()(
       derniereModification: null,
 
       getLivret: (id) => get().livrets[id],
-      getFiche: (livretId, ficheId) =>
-        get().livrets[livretId]?.fichesSuivi.find((f) => f.id === ficheId),
+      getFiche: (livretId, ficheId, lieu = 'entreprise') =>
+        get().livrets[livretId]?.[
+          lieu === 'centre' ? 'fichesSuiviCentre' : 'fichesSuivi'
+        ].find((f) => f.id === ficheId),
 
-      setEvaluationLigne: (livretId, ficheId, ligneId, champ) =>
+      setEvaluationLigne: (livretId, ficheId, ligneId, champ, lieu = 'entreprise') =>
         set((s) =>
-          muterFiche(s, livretId, ficheId, (f) => {
+          muterFiche(s, livretId, ficheId, lieu, (f) => {
             const ligneIdx = f.suiviEntreprise.findIndex((l) => l.id === ligneId);
             if (ligneIdx === -1) return f;
             const nouvelleLigne: LigneSuiviEntreprise = { ...f.suiviEntreprise[ligneIdx] };
@@ -498,9 +528,9 @@ export const useLivretStore = create<LivretStore>()(
           }),
         ),
 
-      setObservation: (livretId, ficheId, role, valeur) =>
+      setObservation: (livretId, ficheId, role, valeur, lieu = 'entreprise') =>
         set((s) =>
-          muterFiche(s, livretId, ficheId, (f) => {
+          muterFiche(s, livretId, ficheId, lieu, (f) => {
             // Ni coordo ni admin n'ont de zone observation propre dans la fiche.
             // L'admin écrit dans une des 3 zones via le slot du rôle ciblé,
             // pas via son propre rôle.
@@ -510,9 +540,9 @@ export const useLivretStore = create<LivretStore>()(
           }),
         ),
 
-      setSuiviGretaCfaChamp: (livretId, ficheId, champ, valeur) =>
+      setSuiviGretaCfaChamp: (livretId, ficheId, champ, valeur, lieu = 'entreprise') =>
         set((s) =>
-          muterFiche(s, livretId, ficheId, (f) => ({
+          muterFiche(s, livretId, ficheId, lieu, (f) => ({
             ...f,
             suiviGretaCfa: {
               ...f.suiviGretaCfa,
@@ -522,10 +552,10 @@ export const useLivretStore = create<LivretStore>()(
           })),
         ),
 
-      ajouterLigneSuiviEntreprise: (livretId, ficheId, competenceId, libelleLibre) => {
+      ajouterLigneSuiviEntreprise: (livretId, ficheId, competenceId, libelleLibre, lieu = 'entreprise') => {
         const nouvelId = `se-${crypto.randomUUID()}`;
         set((s) =>
-          muterFiche(s, livretId, ficheId, (f) => ({
+          muterFiche(s, livretId, ficheId, lieu, (f) => ({
             ...f,
             suiviEntreprise: [
               ...f.suiviEntreprise,
@@ -543,17 +573,17 @@ export const useLivretStore = create<LivretStore>()(
         return nouvelId;
       },
 
-      supprimerLigneSuiviEntreprise: (livretId, ficheId, ligneId) =>
+      supprimerLigneSuiviEntreprise: (livretId, ficheId, ligneId, lieu = 'entreprise') =>
         set((s) =>
-          muterFiche(s, livretId, ficheId, (f) => ({
+          muterFiche(s, livretId, ficheId, lieu, (f) => ({
             ...f,
             suiviEntreprise: f.suiviEntreprise.filter((l) => l.id !== ligneId),
           })),
         ),
 
-      signer: (livretId, ficheId, role, trace) =>
+      signer: (livretId, ficheId, role, trace, lieu = 'entreprise') =>
         set((s) =>
-          muterFiche(s, livretId, ficheId, (f) => {
+          muterFiche(s, livretId, ficheId, lieu, (f) => {
             // Ni coordo ni admin ne signent en leur nom propre.
             // Pour signer côté admin, l'UI appelle signer() avec le rôle
             // métier ciblé (apprenti/maitre/formateur), pas 'admin'.
@@ -568,8 +598,8 @@ export const useLivretStore = create<LivretStore>()(
           }),
         ),
 
-      setEtatFiche: (livretId, ficheId, etat) =>
-        set((s) => muterFiche(s, livretId, ficheId, (f) => ({ ...f, etat }))),
+      setEtatFiche: (livretId, ficheId, etat, lieu = 'entreprise') =>
+        set((s) => muterFiche(s, livretId, ficheId, lieu, (f) => ({ ...f, etat }))),
 
       ajouterFichePeriode: (livretId, input) => {
         const id = `fp-${crypto.randomUUID().slice(0, 8)}`;
@@ -601,7 +631,7 @@ export const useLivretStore = create<LivretStore>()(
 
       modifierFichePeriode: (livretId, ficheId, patch) =>
         set((s) =>
-          muterFiche(s, livretId, ficheId, (f) => ({
+          muterFiche(s, livretId, ficheId, 'entreprise', (f) => ({
             ...f,
             // Trim+vide → undefined pour garder le champ propre.
             titre: patch.titre === undefined ? f.titre : patch.titre.trim() || undefined,
@@ -933,9 +963,9 @@ export const useLivretStore = create<LivretStore>()(
         ),
 
       // ── Déverrouillage de fiche avec motif (R10) ──────────────────────────
-      deverrouillerFiche: (livretId, ficheId, auteurId, auteurNom, auteurRole, motif) =>
+      deverrouillerFiche: (livretId, ficheId, auteurId, auteurNom, auteurRole, motif, lieu = 'entreprise') =>
         set((s) =>
-          muterFiche(s, livretId, ficheId, (f) => {
+          muterFiche(s, livretId, ficheId, lieu, (f) => {
             const trace: EntreeDeverrouillage = {
               id: `dv-${crypto.randomUUID()}`,
               dateIso: new Date().toISOString(),

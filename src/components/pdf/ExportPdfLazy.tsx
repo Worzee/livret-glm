@@ -17,6 +17,7 @@ import {
   nomFichierFichesSuivi,
   nomFichierPdf,
   nomFichierPeriode,
+  nomFichierPeriodeCentre,
 } from './format';
 
 /**
@@ -69,6 +70,21 @@ export default function ExportPdfLazy({ variante, ...donnees }: ExportPdfLazyPro
       document = <PeriodePdf {...donnees} fiche={fiche} />;
       fileName = nomFichierPeriode(apprenti.nom, apprenti.prenom, fiche.numeroPeriode);
       ariaLabel = `Télécharger la période ${fiche.numeroPeriode} au format PDF`;
+      break;
+    }
+    case 'periode-centre': {
+      const fiche = livret.fichesSuiviCentre.find((f) => f.id === variante.ficheId);
+      // Garde : si la fiche a disparu entre le clic et le rendu, on retombe sur
+      // le livret complet plutôt que d'échouer.
+      if (!fiche) {
+        document = <LivretPdf {...donnees} />;
+        fileName = nomFichierPdf(apprenti.nom, apprenti.prenom);
+        ariaLabel = 'Télécharger le livret au format PDF';
+        break;
+      }
+      document = <PeriodePdf {...donnees} fiche={fiche} lieu="centre" />;
+      fileName = nomFichierPeriodeCentre(apprenti.nom, apprenti.prenom, fiche.numeroPeriode);
+      ariaLabel = `Télécharger la période en centre ${fiche.numeroPeriode} au format PDF`;
       break;
     }
     case 'entretien':

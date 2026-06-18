@@ -8,6 +8,7 @@ import type {
   FicheSuiviPeriode,
   Formateur,
   Formation,
+  LieuFiche,
   Livret,
   Maitre,
   NumeroEntretien,
@@ -144,6 +145,17 @@ export function LivretPdf({
           formateur={formateur}
         />
       ))}
+      {(livret.fichesSuiviCentre ?? []).map((fiche) => (
+        <PageFiche
+          key={fiche.id}
+          fiche={fiche}
+          referentiel={referentiel}
+          apprenti={apprenti}
+          maitre={maitre}
+          formateur={formateur}
+          lieu="centre"
+        />
+      ))}
       <PageEvaluationFinale
         livret={livret}
         referentiel={referentiel}
@@ -160,7 +172,7 @@ export function LivretPdf({
 // Mêmes données que `LivretPdf` (cf. `LivretPdfProps`).
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** PDF d'une seule période en entreprise : page de garde + la fiche ciblée. */
+/** PDF d'une seule période (entreprise ou centre) : page de garde + la fiche. */
 export function PeriodePdf({
   fiche,
   livret,
@@ -172,14 +184,16 @@ export function PeriodePdf({
   referentiel,
   etablissement,
   dateExport,
-}: LivretPdfProps & { fiche: FicheSuiviPeriode }) {
+  lieu = 'entreprise',
+}: LivretPdfProps & { fiche: FicheSuiviPeriode; lieu?: LieuFiche }) {
   const date = dateExport ?? new Date().toISOString();
   const nomComplet = `${apprenti.prenom} ${apprenti.nom}`;
+  const estCentre = lieu === 'centre';
   return (
     <Document
-      title={`Période ${fiche.numeroPeriode} — ${nomComplet}`}
+      title={`Période ${estCentre ? 'en centre ' : ''}${fiche.numeroPeriode} — ${nomComplet}`}
       author="GRETA Lyon Métropole"
-      subject={`Période en entreprise — ${formation.intitule}`}
+      subject={`Période en ${estCentre ? 'centre' : 'entreprise'} — ${formation.intitule}`}
       creator="Maquette Livret GRETA — étape 1"
     >
       <PageDeGarde
@@ -198,6 +212,7 @@ export function PeriodePdf({
         apprenti={apprenti}
         maitre={maitre}
         formateur={formateur}
+        lieu={lieu}
       />
     </Document>
   );
@@ -372,11 +387,14 @@ function BlocSignaturesPdf({
   apprenti,
   maitre,
   formateur,
+  lieu = 'entreprise',
 }: {
   signatures: SignaturesTripartite;
   apprenti: Apprenti;
   maitre: Maitre;
   formateur: Formateur;
+  /** Au centre, le maître / tuteur ne signe pas (apprenti·e + formateur). */
+  lieu?: LieuFiche;
 }) {
   return (
     <View style={styles.signaturesRangee} wrap={false}>
@@ -385,11 +403,13 @@ function BlocSignaturesPdf({
         signature={signatures.apprenti}
         nom={`${apprenti.prenom} ${apprenti.nom}`}
       />
-      <CarteSignature
-        role="maitre"
-        signature={signatures.maitre}
-        nom={`${maitre.prenom} ${maitre.nom}`}
-      />
+      {lieu !== 'centre' && (
+        <CarteSignature
+          role="maitre"
+          signature={signatures.maitre}
+          nom={`${maitre.prenom} ${maitre.nom}`}
+        />
+      )}
       <CarteSignature
         role="formateur"
         signature={signatures.formateur}
@@ -768,23 +788,28 @@ export function PageFiche({
   apprenti,
   maitre,
   formateur,
+  lieu = 'entreprise',
 }: {
   fiche: FicheSuiviPeriode;
   referentiel: Referentiel;
   apprenti: Apprenti;
   maitre: Maitre;
   formateur: Formateur;
+  lieu?: LieuFiche;
 }) {
   const competencesById = new Map(
     referentiel.blocs.flatMap((b) => b.competences.map((c) => [c.id, c])),
   );
+  const estCentre = lieu === 'centre';
 
   return (
     <Page size="A4" style={styles.page}>
       <PiedDePage dateExport={new Date().toISOString()} />
       <View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <Text style={styles.h1}>Période en Entreprise n° {fiche.numeroPeriode}</Text>
+          <Text style={styles.h1}>
+            {estCentre ? 'Période en Centre' : 'Période en Entreprise'} n° {fiche.numeroPeriode}
+          </Text>
           <Text style={[styles.badgeEtat, { backgroundColor: couleurEtatFiche(fiche.etat) }]}>
             {libelleEtatFiche(fiche.etat)}
           </Text>
@@ -806,7 +831,9 @@ export function PageFiche({
           <View style={styles.tableau}>
             <View style={[styles.tableauLigne, styles.tableauEnTete]}>
               <Text style={[styles.tableauCellule, { width: '40%' }]}>Compétence</Text>
-              <Text style={[styles.tableauCellule, { width: '25%' }]}>Évaluation entreprise</Text>
+              <Text style={[styles.tableauCellule, { width: '25%' }]}>
+                {estCentre ? 'Évaluation centre' : 'Évaluation entreprise'}
+              </Text>
               <Text style={[styles.tableauCelluleDerniere, { width: '35%' }]}>
                 Retour {apprenti.prenom}
               </Text>
@@ -828,7 +855,7 @@ export function PageFiche({
                 >
                   <Text style={[styles.tableauCellule, { width: '40%' }]}>{libelleC}</Text>
                   <Text style={[styles.tableauCellule, { width: '25%' }]}>
-                    {libelleNiveau(l.evaluationEntreprise)}
+                    {libelleNiveau(estCentre ? l.evaluationGreta : l.evaluationEntreprise)}
                   </Text>
                   <Text style={[styles.tableauCelluleDerniere, { width: '35%' }]}>
                     {l.retourApprenti || '—'}
@@ -839,10 +866,12 @@ export function PageFiche({
           </View>
         )}
 
-        {/* Observations */}
+        {/* Observations — au centre, pas de zone maître / tuteur. */}
         <Text style={styles.h2}>Observations</Text>
         <ParagrapheLibre titre="Apprenti·e" valeur={fiche.observations.apprenti} />
-        <ParagrapheLibre titre="Maître / Tuteur" valeur={fiche.observations.maitre} />
+        {!estCentre && (
+          <ParagrapheLibre titre="Maître / Tuteur" valeur={fiche.observations.maitre} />
+        )}
         <ParagrapheLibre titre="Formateur référent" valeur={fiche.observations.formateur} />
 
         {/* Signatures */}
@@ -852,6 +881,7 @@ export function PageFiche({
           apprenti={apprenti}
           maitre={maitre}
           formateur={formateur}
+          lieu={lieu}
         />
 
         {/* Historique de déverrouillages — si présent */}
@@ -890,7 +920,11 @@ function PageEvaluationFinale({
   /** Catalogue global des attitudes professionnelles (juin 2026). */
   attitudes: ReadonlyArray<AttitudeProfessionnelle>;
 }) {
-  const synthese = synthetiserCompetences(livret.fichesSuivi, referentiel);
+  const synthese = synthetiserCompetences(
+    livret.fichesSuivi,
+    livret.fichesSuiviCentre ?? [],
+    referentiel,
+  );
   const lignes = livret.evaluationFinaleCompetences.lignes;
   const stats = calculerStatsParBloc(referentiel, lignes, synthese);
 

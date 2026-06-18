@@ -29,10 +29,13 @@ test("le coordo accède au planning d'une formation depuis sa carte", async ({ p
   await expect(
     modale.getByRole('heading', { name: /Planning des périodes — CAP Cuisine/i }),
   ).toBeVisible();
-  // Les 3 périodes fixtures de la CAP Cuisine 2025-2026 sont affichées.
-  await expect(modale.getByText(/Période 1/i)).toBeVisible();
-  await expect(modale.getByText(/Période 2/i)).toBeVisible();
-  await expect(modale.getByText(/Période 3/i)).toBeVisible();
+  // Les 3 périodes entreprise fixtures de la CAP Cuisine 2025-2026 sont
+  // affichées (scopé à la section entreprise — la section centre a aussi des
+  // « Période 1 / 2 »).
+  const sectionEntreprise = modale.getByTestId('section-periodes-entreprise');
+  await expect(sectionEntreprise.getByText(/Période 1/i)).toBeVisible();
+  await expect(sectionEntreprise.getByText(/Période 2/i)).toBeVisible();
+  await expect(sectionEntreprise.getByText(/Période 3/i)).toBeVisible();
 });
 
 test("le coordo ajoute une nouvelle période et la voit apparaître dans le livret", async ({
@@ -92,8 +95,9 @@ test("la modification d'une période est refusée si une fiche est signée", asy
     .getByRole('button', { name: /Planning des périodes de CAP Cuisine/i })
     .click();
   const modale = page.getByRole('dialog');
-  // Léa a sa Période 1 signée et verrouillée → modification refusée
-  const lignePeriode1 = modale.locator('li').filter({ hasText: /Période 1/i });
+  // Léa a sa Période 1 (entreprise) signée et verrouillée → modification refusée
+  const sectionEntreprise = modale.getByTestId('section-periodes-entreprise');
+  const lignePeriode1 = sectionEntreprise.locator('li').filter({ hasText: /Période 1/i });
   const bouton = lignePeriode1.getByRole('button', { name: /^Modifier Période 1/i });
   await expect(bouton).toBeDisabled();
   // Le motif du verrou est affiché
@@ -107,7 +111,8 @@ test("la suppression d'une période est refusée si une fiche est signée", asyn
     .getByRole('button', { name: /Planning des périodes de CAP Cuisine/i })
     .click();
   const modale = page.getByRole('dialog');
-  const lignePeriode1 = modale.locator('li').filter({ hasText: /Période 1/i });
+  const sectionEntreprise = modale.getByTestId('section-periodes-entreprise');
+  const lignePeriode1 = sectionEntreprise.locator('li').filter({ hasText: /Période 1/i });
   const bouton = lignePeriode1.getByRole('button', { name: /^Supprimer Période 1/i });
   await expect(bouton).toBeDisabled();
 });

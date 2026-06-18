@@ -12,6 +12,7 @@ const formation = (id: string, referentielId: string): Formation => ({
   dateFin: '2026-08-31',
   lieuId: 'eta-test',
   periodes: [],
+  periodesCentre: [],
   nombreEntretiens: 2,
   questionsRetirees: [],
 });

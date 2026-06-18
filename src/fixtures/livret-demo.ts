@@ -18,7 +18,7 @@ import {
   formatriceSophieDubois,
 } from './utilisateurs';
 import { referentielCapCuisine } from './referentiel-cap-cuisine';
-import { periodesCapCuisine } from './formations';
+import { periodesCapCuisine, periodesCentreCapCuisine } from './formations';
 import { QUESTIONS_BANQUE_INITIALE, idsQuestionsActives } from '@/lib/questions-entretien';
 import { creerFichePeriodeVierge } from '@/lib/creation-livret';
 import { questionsTrameE1 } from '@/lib/trame-entretien-1';
@@ -178,6 +178,11 @@ function livretVierge(apprenti: Apprenti, livretId: string): Livret {
     },
     entretiens: { 1: null, 2: null, 3: null, 4: null },
     fichesSuivi: [],
+    // Périodes en centre (17 juin 2026) — héritées du planning centre, vierges
+    // par défaut ; les livrets démo peuvent les surcharger.
+    fichesSuiviCentre: periodesCentreCapCuisine.map((p) =>
+      creerFichePeriodeVierge(p, `fc-${livretId}-${p.id}`),
+    ),
     evaluationFinaleCompetences: {
       lignes: lignesVides.competences,
       modifieLe: '2025-09-02T08:00:00.000Z',
@@ -450,6 +455,94 @@ const leaPeriode3: FicheSuiviPeriode = {
   historiqueDeverrouillages: [],
 };
 
+// Périodes EN CENTRE de Léa (17 juin 2026) — évaluées par le formateur
+// référent, signées par l'apprenti·e + le formateur (pas de maître au CFA).
+//   C1 (Regroupement d'automne, oct. 2025) : signée 2/2
+//   C2 (Regroupement d'hiver, janv. 2026)  : EN COURS (formateur pas signé)
+const leaCentre1: FicheSuiviPeriode = {
+  id: 'fc-lea-c1',
+  numeroPeriode: 1,
+  periodeFormationId: 'pf-cap-cuisine-2025-c1',
+  titre: "Regroupement d'automne",
+  dateDebut: '2025-10-06',
+  dateFin: '2025-10-17',
+  suiviGretaCfa: {
+    apprenti:
+      "Deux semaines intenses au CFA. J'ai consolidé les taillages et découvert les fonds de sauce.",
+    formateur:
+      "Regroupement d'automne : approfondissement de l'hygiène HACCP, taillages, fonds de base. Travaux pratiques quotidiens, contrôle continu 14/20.",
+  },
+  suiviEntreprise: [
+    {
+      id: 'sc-lea-c1-1',
+      competenceId: 'c1-1',
+      evaluationGreta: 'maitrise',
+      evaluationEntreprise: null,
+      retourApprenti: 'Les contrôles de réception sont maintenant un réflexe.',
+    },
+    {
+      id: 'sc-lea-c1-2',
+      competenceId: 'c2-1',
+      evaluationGreta: 'partiel',
+      evaluationEntreprise: null,
+      retourApprenti: "Les fonds bruns me demandent encore de l'attention.",
+    },
+  ],
+  observations: {
+    apprenti: 'Regroupement très formateur, bonne dynamique de groupe.',
+    formateur: 'Léa progresse bien au centre. À consolider sur les fonds.',
+  },
+  signatures: {
+    apprenti: { signe: true, dateSignature: '2025-10-17T16:00:00.000Z' },
+    maitre: { signe: false },
+    formateur: { signe: true, dateSignature: '2025-10-17T16:10:00.000Z' },
+  },
+  etat: 'signee',
+  historiqueDeverrouillages: [],
+};
+
+const leaCentre2: FicheSuiviPeriode = {
+  id: 'fc-lea-c2',
+  numeroPeriode: 2,
+  periodeFormationId: 'pf-cap-cuisine-2025-c2',
+  titre: "Regroupement d'hiver",
+  dateDebut: '2026-01-19',
+  dateFin: '2026-01-30',
+  suiviGretaCfa: {
+    apprenti:
+      'Regroupement axé pâtisserie. La crème pâtissière reste un point que je dois consolider.',
+    formateur:
+      "Regroupement d'hiver : pâtisserie de base (pâtes, crèmes), desserts à l'assiette. Évaluation en cours.",
+  },
+  suiviEntreprise: [
+    {
+      id: 'sc-lea-c2-1',
+      competenceId: 'c2-2',
+      evaluationGreta: 'maitrise',
+      evaluationEntreprise: null,
+      retourApprenti: "J'ai bien réussi les dressages d'entrées en atelier.",
+    },
+    {
+      id: 'sc-lea-c2-2',
+      competenceId: 'c2-3',
+      evaluationGreta: 'partiel',
+      evaluationEntreprise: null,
+      retourApprenti: 'La précision du dressage progresse régulièrement.',
+    },
+  ],
+  observations: {
+    apprenti: 'Beaucoup de pratique, je gagne en régularité.',
+    formateur: '',
+  },
+  signatures: {
+    apprenti: { signe: true, dateSignature: '2026-01-30T16:00:00.000Z' },
+    maitre: { signe: false },
+    formateur: { signe: false },
+  },
+  etat: 'en-cours',
+  historiqueDeverrouillages: [],
+};
+
 const livretLea: Livret = {
   ...livretVierge(apprentiLeaMartin, 'livret-lea'),
   organisationSuivi: {
@@ -524,6 +617,8 @@ const livretLea: Livret = {
   // « à initialiser » (E3/E4 hors périmètre : la formation est à 2 entretiens).
   entretiens: { 1: entretienLea, 2: null, 3: null, 4: null },
   fichesSuivi: [leaPeriode1, leaPeriode2, leaPeriode3],
+  // Périodes en centre (17 juin 2026) : C1 signée, C2 en cours.
+  fichesSuiviCentre: [leaCentre1, leaCentre2],
   // Attitudes retenues à l'E1 (13 juin 2026) — a9 pas encore évaluée.
   attitudesSelectionnees: ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a9'],
   selectionCompetencesEntreprise: selectionValideeDemo(

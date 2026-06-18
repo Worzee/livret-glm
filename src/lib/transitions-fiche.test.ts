@@ -183,3 +183,50 @@ describe('peutEncoreEditerFiche (R21 — non régression de signature)', () => {
     expect(peutEncoreEditerFiche(f, 'formateur')).toBe(false);
   });
 });
+
+describe('logique centre (signataires apprenti·e + formateur, 17 juin 2026)', () => {
+  it('nombreSignatures(centre) ne compte que apprenti·e + formateur', () => {
+    expect(nombreSignatures(sig(false, false, false), 'centre')).toBe(0);
+    expect(nombreSignatures(sig(true, false, false), 'centre')).toBe(1);
+    expect(nombreSignatures(sig(true, false, true), 'centre')).toBe(2);
+    // Une signature maître résiduelle n'est jamais comptée au centre.
+    expect(nombreSignatures(sig(true, true, false), 'centre')).toBe(1);
+    expect(nombreSignatures(sig(true, true, true), 'centre')).toBe(2);
+  });
+
+  it('deduireEtat(centre) : signee dès apprenti·e + formateur (2/2)', () => {
+    const f = ficheVide();
+    f.signatures = sig(true, false, true);
+    expect(deduireEtat(f, 'centre')).toBe('signee');
+  });
+
+  it('deduireEtat(centre) : une seule des deux parties = en-cours', () => {
+    const f1 = ficheVide();
+    f1.signatures = sig(true, false, false);
+    expect(deduireEtat(f1, 'centre')).toBe('en-cours');
+
+    const f2 = ficheVide();
+    f2.signatures = sig(false, false, true);
+    expect(deduireEtat(f2, 'centre')).toBe('en-cours');
+  });
+
+  it('deduireEtat(centre) : la signature maître ne suffit pas à passer signee', () => {
+    const f = ficheVide();
+    // apprenti·e + maître signés, formateur non → seule la partie apprenti·e
+    // attendue est satisfaite (1/2).
+    f.signatures = sig(true, true, false);
+    expect(deduireEtat(f, 'centre')).toBe('en-cours');
+  });
+
+  it('deduireEtat(centre) : fiche vide reste brouillon', () => {
+    expect(deduireEtat(ficheVide(), 'centre')).toBe('brouillon');
+  });
+
+  it('fichePeutEtreVerrouilleeAuto(centre) se base sur apprenti·e + formateur', () => {
+    const f = ficheVide();
+    f.etat = 'signee';
+    f.signatures = sig(true, false, true); // signées au 2026-04-01
+    expect(fichePeutEtreVerrouilleeAuto(f, new Date('2026-04-11T10:00:00Z'), 'centre')).toBe(false);
+    expect(fichePeutEtreVerrouilleeAuto(f, new Date('2026-05-01T10:00:00Z'), 'centre')).toBe(true);
+  });
+});
