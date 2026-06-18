@@ -126,3 +126,35 @@ test('Léa + apprenti·e : la section sélection est en lecture seule (matrice d
   await expect(page.getByTestId('selection-comp-c1-1')).toBeDisabled();
   await expect(page.getByTestId('selection-comp-c2-4')).toBeDisabled();
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Ajout de compétences à la fiche de période ouvert au tuteur (17 juin 2026)
+// ─────────────────────────────────────────────────────────────────────────────
+
+test('le maître / tuteur peut ajouter une compétence à une fiche de période (17 juin 2026)', async ({
+  page,
+}) => {
+  // Minh : période 1 en brouillon (maître pas encore signataire), sélection des
+  // compétences entreprise validée → le sélecteur d'ajout doit être disponible.
+  await page.getByRole('button', { name: /Ouvrir le livret de Minh NGUYEN/i }).click();
+  await selectRole(page, 'Maître / Tuteur');
+  await page.goto('/livret/fiches-suivi');
+  await page
+    .getByRole('link', { name: /Période 1/i })
+    .first()
+    .click();
+  // Le sélecteur d'ajout, autrefois réservé au formateur, est désormais visible
+  // pour le maître / tuteur.
+  await expect(page.getByLabel(/Ajouter une compétence à la fiche/i)).toBeVisible();
+});
+
+test("l'apprenti·e ne peut toujours pas ajouter de compétence à la fiche", async ({ page }) => {
+  // Léa P3 : sélection validée mais l'apprenti·e n'a pas le droit d'ajout.
+  await selectRole(page, 'Apprenti·e');
+  await page.goto('/livret/fiches-suivi');
+  await page
+    .getByRole('link', { name: /Période 3/i })
+    .first()
+    .click();
+  await expect(page.getByLabel(/Ajouter une compétence à la fiche/i)).toHaveCount(0);
+});

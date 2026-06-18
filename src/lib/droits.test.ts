@@ -115,6 +115,14 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('formateur', 'fiche.evaluation-entreprise')).toBe(false);
     });
 
+    it('ajout d’une compétence à la fiche : formateur ET maître / tuteur (17 juin 2026)', () => {
+      expect(peutEditer('formateur', 'fiche.ajouter-competence')).toBe(true);
+      expect(peutEditer('maitre', 'fiche.ajouter-competence')).toBe(true);
+      expect(peutEditer('apprenti', 'fiche.ajouter-competence')).toBe(false);
+      expect(peutEditer('coordo', 'fiche.ajouter-competence')).toBe(false);
+      expect(peutEditer('admin', 'fiche.ajouter-competence')).toBe(false);
+    });
+
     it('apprenti·e édite la colonne retour apprenti·e', () => {
       expect(peutEditer('apprenti', 'fiche.retour-apprenti')).toBe(true);
       expect(peutEditer('maitre', 'fiche.retour-apprenti')).toBe(false);
@@ -246,6 +254,7 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
         'fiche.suivi-greta-cfa-formateur',
         'fiche.evaluation-entreprise',
         'fiche.evaluation-greta',
+        'fiche.ajouter-competence',
         'fiche.retour-apprenti',
         'fiche.observation-apprenti',
         'fiche.observation-maitre',

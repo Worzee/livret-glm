@@ -57,9 +57,7 @@ export function SectionTrameEntretien1({
   const setAppreciation = useLivretStore((s) => s.setAppreciationMaitre);
   const setCommentaire = useLivretStore((s) => s.setCommentaireEntretien);
   const setEvaluationAttitude = useLivretStore((s) => s.setEvaluationAttitude);
-  const attitudesSelectionnees = useLivretStore(
-    (s) => s.livrets[livretId]?.attitudesSelectionnees,
-  );
+  const attitudesSelectionnees = useLivretStore((s) => s.livrets[livretId]?.attitudesSelectionnees);
   const attitudesMap = useAttitudesStore((s) => s.attitudes);
 
   const editableTrame = peutEditer(roleActif, 'entretien.trame') && !entretienVerrouille;

@@ -92,6 +92,13 @@ export type Ressource =
   | 'fiche.suivi-greta-cfa-formateur'
   | 'fiche.evaluation-entreprise' // colonne entreprise
   | 'fiche.evaluation-greta' // colonne centre
+  /**
+   * Ajout / retrait d'une compétence à évaluer sur une fiche de période
+   * (sélection des compétences travaillées pendant le stage). Ouvert au
+   * formateur référent ET au maître / tuteur (17 juin 2026 : le tuteur, qui
+   * encadre en entreprise, choisit les compétences abordées sur la période).
+   */
+  | 'fiche.ajouter-competence'
   | 'fiche.retour-apprenti'
   | 'fiche.observation-apprenti'
   | 'fiche.observation-maitre'
@@ -184,6 +191,9 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'fiche.suivi-greta-cfa-formateur': ['formateur'],
   'fiche.evaluation-entreprise': ['maitre'],
   'fiche.evaluation-greta': ['formateur'],
+  // Ajout / retrait d'une compétence sur la fiche de période : formateur +
+  // maître / tuteur (17 juin 2026)
+  'fiche.ajouter-competence': ['formateur', 'maitre'],
   'fiche.retour-apprenti': ['apprenti'],
   'fiche.observation-apprenti': ['apprenti'],
   'fiche.observation-maitre': ['maitre'],

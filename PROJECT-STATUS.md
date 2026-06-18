@@ -1,6 +1,6 @@
 # État du projet — Livret d'apprentissage GRETA Lyon Métropole
 
-**Dernière mise à jour** : 2026-06-16 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites, motifs par rôle + séquencement, attitudes professionnelles par entretien + catalogue admin, confirmation avant écrasement d'une évaluation héritée, second maître / tuteur par apprenti·e, tri par année de formation sur le tableau de bord, **signature manuscrite tactile**, **répartition des apprenti·e·s entre coordos**, **questions de l'entretien gérées par formation**, **compétences activées par défaut + maître seul**, **bascule de périmètre coordo depuis l'administration**, **harmonisation du planning des périodes sur toute la promo**, **modalité présentiel/distanciel des entretiens + verrou de la fiche de suivi par signature**, **exports PDF par période / entretien / fiches de suivi**, **séquencement de visibilité des périodes**, **refonte de l'entretien tripartite 1 sur la trame officielle GRETA**)
+**Dernière mise à jour** : 2026-06-16 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites, motifs par rôle + séquencement, attitudes professionnelles par entretien + catalogue admin, confirmation avant écrasement d'une évaluation héritée, second maître / tuteur par apprenti·e, tri par année de formation sur le tableau de bord, **signature manuscrite tactile**, **répartition des apprenti·e·s entre coordos**, **questions de l'entretien gérées par formation**, **compétences activées par défaut + maître seul**, **bascule de périmètre coordo depuis l'administration**, **harmonisation du planning des périodes sur toute la promo**, **modalité présentiel/distanciel des entretiens + verrou de la fiche de suivi par signature**, **exports PDF par période / entretien / fiches de suivi**, **séquencement de visibilité des périodes**, **refonte de l'entretien tripartite 1 sur la trame officielle GRETA**, **ajout de compétences à la fiche de période ouvert au tuteur**)
 **Version applicative** : 0.1.0
 **Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3) **livrée + 4 vagues post-livraison**
 **Pilote métier** : Guillaume FERRERI
@@ -11,7 +11,7 @@
 
 ### État global
 
-L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 5 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026 + retours coordonnateurs juin 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **551 tests unitaires + 172 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
+L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 5 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026 + retours coordonnateurs juin 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **552 tests unitaires + 174 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
 
 ### Ce qui est livré
 
@@ -47,7 +47,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | Aperçu général et démarrage                                     | [`README.md`](README.md)                                                                                  |
 | Modules livrés et périmètre fonctionnel                         | §4                                                                                                        |
 | Règles métier R1 → R24                                          | §5                                                                                                        |
-| État des tests (551 unit + 172 E2E)                             | §6                                                                                                        |
+| État des tests (552 unit + 174 E2E)                             | §6                                                                                                        |
 | Architecture des fichiers                                       | §7                                                                                                        |
 | Reste à faire                                                   | §8                                                                                                        |
 | Limites connues                                                 | §9                                                                                                        |
@@ -69,8 +69,8 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | **URL publique**      | https://livret-glm.duckdns.org                                                                   |
 | **Accès**             | Basic Auth `demo` / _(mdp partagé hors-canal)_                                                   |
 | **Dépôt source**      | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
-| **Tests unitaires**   | **551 / 551 ✓** (Vitest, 35 fichiers de test)                                                    |
-| **Tests E2E**         | **172 / 172 ✓** (Playwright — 160 desktop + 12 mobile Pixel 5, 24 specs)                         |
+| **Tests unitaires**   | **552 / 552 ✓** (Vitest, 35 fichiers de test)                                                    |
+| **Tests E2E**         | **174 / 174 ✓** (Playwright — 162 desktop + 12 mobile Pixel 5, 24 specs)                         |
 | **Bundle JS gzippé**  | 148 KB (cible CDC §19.1 : < 500 KB → marge × 3,4)                                                |
 | **Bundle CSS gzippé** | 6,5 KB (cible : < 50 KB → marge × 7)                                                             |
 | **Chunk PDF lazy**    | 493 KB (chargé uniquement au clic « Exporter »)                                                  |
@@ -227,6 +227,13 @@ Pour les formations de 2 ans, le livret peut désormais porter jusqu'à **4 entr
 - Plomberie mutualisée dans un hook `useDonneesLivretPdf` (identité, formation, référentiel, établissement, banque de questions, attitudes), réutilisé par les 3 pages
 - **Droits** : `export-pdf` étendu de `formateur` à **`formateur` + `coordo` + `admin`** (sortie documentaire, pas de contenu pédagogique) — apprenti·e et maître exclus. Vaut aussi pour l'export du livret complet existant
 - Aucun changement de schéma de données (pas de reset) ; +5 scénarios E2E (`export-pdf.spec.ts`), tests de droits adaptés
+
+#### Ajout de compétences à la fiche de période ouvert au tuteur (17 juin 2026 — retours coordonnateurs pédagogiques)
+
+- Le **maître / tuteur** peut désormais **sélectionner les compétences travaillées** sur une fiche de période (ajout / retrait dans le tableau de suivi en entreprise) — c'est lui qui encadre en entreprise. Auparavant réservé au formateur référent
+- Nouvelle ressource `fiche.ajouter-competence` → `['formateur', 'maitre']` (pédagogique : coordo / admin exclus). Matrice : 51 → **52 ressources**
+- `TableauTriColonnes` : le sélecteur « Ajouter une compétence à la fiche » suit le rôle actif pour le verrou (chacun ajoute tant qu'il peut encore éditer sa part, avant signature). Toujours conditionné à la validation de la sélection des compétences abordées en entreprise
+- Aucun changement de schéma (pas de reset) ; +1 test droits, +2 E2E (tuteur peut ajouter ; apprenti·e ne peut pas)
 
 #### Refonte de l'entretien tripartite 1 sur la trame officielle GRETA (16 juin 2026 — réunion GRETA)
 
@@ -557,7 +564,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 
 ---
 
-## 6. Tests (551 unitaires + 172 E2E)
+## 6. Tests (552 unitaires + 174 E2E)
 
 ### Tests unitaires Vitest (34 fichiers de test)
 
@@ -602,7 +609,7 @@ _Les modules `creation-livret.ts`, `couleurs-role.ts` et `utils.ts` sont couvert
 
 ### Tests E2E Playwright (24 specs)
 
-172 tests (160 desktop + 12 mobile). Ajouts de juin 2026 : 3 scénarios « affectation des questions par le coordo », 5 scénarios « jusqu'à 4 entretiens », 3 scénarios « événements gérés par coordo/admin + liseré par rôle », 2 scénarios « motifs par rôle + séquencement », 4 scénarios « attitudes professionnelles » (`attitudes.spec.ts`), 1 scénario « confirmation avant écrasement d'un héritage », 1 scénario « bascule de périmètre coordo depuis la page Affectations », 2 scénarios « modalité présentiel/distanciel + verrou de la fiche de suivi par signature », 1 scénario « suppression d'un événement réservée au coordo/admin », 5 scénarios « exports PDF par période / entretien / fiches de suivi » (`export-pdf.spec.ts` — boutons par rôle + téléchargements non vides), 1 scénario « séquencement de visibilité des périodes » (accès direct à une période masquée bloqué), 5 scénarios « refonte de l'entretien 1 sur la trame officielle GRETA » (`entretien-1-trame.spec.ts` — rubriques, points d'alerte, représentant légal). Quelques specs ont été adaptés aux refontes :
+174 tests (162 desktop + 12 mobile). Ajouts de juin 2026 : 2 scénarios « ajout de compétence à la fiche ouvert au tuteur » (`entretien-selection-competences.spec.ts`), 3 scénarios « affectation des questions par le coordo », 5 scénarios « jusqu'à 4 entretiens », 3 scénarios « événements gérés par coordo/admin + liseré par rôle », 2 scénarios « motifs par rôle + séquencement », 4 scénarios « attitudes professionnelles » (`attitudes.spec.ts`), 1 scénario « confirmation avant écrasement d'un héritage », 1 scénario « bascule de périmètre coordo depuis la page Affectations », 2 scénarios « modalité présentiel/distanciel + verrou de la fiche de suivi par signature », 1 scénario « suppression d'un événement réservée au coordo/admin », 5 scénarios « exports PDF par période / entretien / fiches de suivi » (`export-pdf.spec.ts` — boutons par rôle + téléchargements non vides), 1 scénario « séquencement de visibilité des périodes » (accès direct à une période masquée bloqué), 5 scénarios « refonte de l'entretien 1 sur la trame officielle GRETA » (`entretien-1-trame.spec.ts` — rubriques, points d'alerte, représentant légal). Quelques specs ont été adaptés aux refontes :
 
 - `fiches-periodes.spec.ts` : 8 tests réécrits pour le nouveau flow planning au niveau formation
 - `sprint3-droits-entretien.spec.ts` : route `/livret/entretien/1`

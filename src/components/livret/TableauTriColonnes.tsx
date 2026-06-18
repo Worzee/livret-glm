@@ -88,13 +88,14 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
     peutEditer(roleActif, 'fiche.evaluation-entreprise') && peutEncoreEditerFiche(fiche, 'maitre');
   const peutEditerRetour =
     peutEditer(roleActif, 'fiche.retour-apprenti') && peutEncoreEditerFiche(fiche, 'apprenti');
-  // Ajout d'une ligne ouvert au formateur — la grille des compétences à
-  // évaluer relève de sa colonne « centre ». On réutilise ce droit comme
-  // garde-fou plutôt que d'ajouter une ressource matrice dédiée.
+  // Ajout / retrait d'une compétence sur la fiche : ouvert au formateur
+  // référent ET au maître / tuteur (17 juin 2026 — le tuteur, qui encadre en
+  // entreprise, sélectionne les compétences travaillées pendant le stage). Le
+  // verrou suit le rôle actif : chacun ajoute tant qu'il peut encore éditer.
+  const roleProprietaireAjout = roleActif === 'maitre' ? 'maitre' : 'formateur';
   const peutAjouterLigne =
-    peutEditer(roleActif, 'fiche.evaluation-greta') && peutEncoreEditerFiche(fiche, 'formateur');
-  // Note : ajout d'une ligne ouvert au formateur (qui structure la grille).
-  // Le maître/apprenti peuvent compléter mais pas créer de ligne.
+    peutEditer(roleActif, 'fiche.ajouter-competence') &&
+    peutEncoreEditerFiche(fiche, roleProprietaireAjout);
 
   return (
     <section className="space-y-3">
