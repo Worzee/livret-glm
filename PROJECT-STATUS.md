@@ -1,6 +1,6 @@
 # État du projet — Livret d'apprentissage GRETA Lyon Métropole
 
-**Dernière mise à jour** : 2026-06-16 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites, motifs par rôle + séquencement, attitudes professionnelles par entretien + catalogue admin, confirmation avant écrasement d'une évaluation héritée, second maître / tuteur par apprenti·e, tri par année de formation sur le tableau de bord, **signature manuscrite tactile**, **répartition des apprenti·e·s entre coordos**, **questions de l'entretien gérées par formation**, **compétences activées par défaut + maître seul**, **bascule de périmètre coordo depuis l'administration**, **harmonisation du planning des périodes sur toute la promo**, **modalité présentiel/distanciel des entretiens + verrou de la fiche de suivi par signature**, **exports PDF par période / entretien / fiches de suivi**, **séquencement de visibilité des périodes**, **refonte de l'entretien tripartite 1 sur la trame officielle GRETA**, **ajout de compétences à la fiche de période ouvert au tuteur**, **fiche de période réduite à « Évaluation entreprise » + « Retour apprenti·e » (colonne GRETA CFA retirée)**)
+**Dernière mise à jour** : 2026-06-18 (retours coordonnateurs pédagogiques — « Maître / Tuteur », affectation des questions par le coordo, jusqu'à 4 entretiens tripartites, motifs par rôle + séquencement, attitudes professionnelles par entretien + catalogue admin, confirmation avant écrasement d'une évaluation héritée, second maître / tuteur par apprenti·e, tri par année de formation sur le tableau de bord, **signature manuscrite tactile**, **répartition des apprenti·e·s entre coordos**, **questions de l'entretien gérées par formation**, **compétences activées par défaut + maître seul**, **bascule de périmètre coordo depuis l'administration**, **harmonisation du planning des périodes sur toute la promo**, **modalité présentiel/distanciel des entretiens + verrou de la fiche de suivi par signature**, **exports PDF par période / entretien / fiches de suivi**, **séquencement de visibilité des périodes**, **refonte de l'entretien tripartite 1 sur la trame officielle GRETA**, **ajout de compétences à la fiche de période ouvert au tuteur**, **fiche de période réduite à « Évaluation entreprise » + « Retour apprenti·e » (colonne GRETA CFA retirée)**, **périodes en centre de formation (miroir de l'entreprise)**, **récapitulatif personnel sur le tableau de bord apprenti·e**, **retrait des 4 attitudes redondantes avec l'appréciation maître (catalogue 16 → 12)**, **banque de questions réservée à l'admin**, **forçage de l'affichage des périodes par le coordo**)
 **Version applicative** : 0.1.0
 **Phase CDC** : Étape 1 — maquette fonctionnelle (CDC v1.3) **livrée + 4 vagues post-livraison**
 **Pilote métier** : Guillaume FERRERI
@@ -11,7 +11,7 @@
 
 ### État global
 
-L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 5 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026 + retours coordonnateurs juin 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **552 tests unitaires + 175 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
+L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 5 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026 + retours coordonnateurs juin 2026). La maquette est fonctionnelle, accessible sur URL publique avec Basic Auth, et tous les flux pédagogiques sont testés en bout-en-bout : **582 tests unitaires + 180 tests E2E passent**, bundle JS gzippé sous 150 KB. Aucune authentification réelle ni backend persistant pour l'instant — c'est précisément l'objet de l'étape 2.
 
 ### Ce qui est livré
 
@@ -22,7 +22,8 @@ L'**étape 1 du CDC v1.3 est livrée et déployée**, enrichie par 5 vagues post
 | **Vague 17 mai 2026**                        | Sélection par stagiaire des compétences abordées en entreprise (validation conjointe formateur + maître à la 3ᵉ signature de l'entretien, R10 motivé) — CDC v1.5 §12                                                                                                                                                    |
 | **Vague fin mai 2026**                       | 5 chantiers structurants : planning des périodes au niveau formation (cascade automatique vers les livrets), 2 entretiens tripartites par livret, import XLSX apprentis/maîtres/formateurs, suivi GRETA CFA en 2 zones texte, maître avec entreprise + fonction                                                         |
 | **Polish 26 mai 2026**                       | Équilibrage de la palette 5 rôles (Coordo orange foncé, Admin or foncé), bugfix PDF aligné UI, ~50 éléments graphiques colorisés par rôle                                                                                                                                                                               |
-| **Vague juin 2026** (retours coordonnateurs) | « Maître / Tuteur » + 2ᵉ tuteur, jusqu'à 4 entretiens, attitudes (catalogue admin 16 entrées, choix à l'E1 + évaluation par entretien), répartition apprenti·e·s ↔ coordos, tri par année au tableau de bord, **signature manuscrite tactile**, logo officiel GRETA CFA, verrous (entretien signé, héritage). Détail §4 |
+| **Vague juin 2026** (retours coordonnateurs) | « Maître / Tuteur » + 2ᵉ tuteur, jusqu'à 4 entretiens, attitudes (catalogue admin, choix à l'E1 + évaluation par entretien), répartition apprenti·e·s ↔ coordos, tri par année au tableau de bord, **signature manuscrite tactile**, logo officiel GRETA CFA, verrous (entretien signé, héritage). Détail §4 |
+| **Vague 17-18 juin 2026** (retours coordonnateurs) | **Périodes en centre de formation** (miroir de l'entreprise, évaluées par le formateur, signature à 2 parties), **récapitulatif personnel du tableau de bord apprenti·e**, **retrait des 4 attitudes redondantes** (catalogue 16 → 12), **banque de questions réservée à l'admin**, **forçage de l'affichage des périodes par le coordo**. Détail §4 |
 
 ### Chantiers identifiés cette session (2026-05-26)
 
@@ -47,7 +48,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | Aperçu général et démarrage                                     | [`README.md`](README.md)                                                                                  |
 | Modules livrés et périmètre fonctionnel                         | §4                                                                                                        |
 | Règles métier R1 → R24                                          | §5                                                                                                        |
-| État des tests (552 unit + 175 E2E)                             | §6                                                                                                        |
+| État des tests (582 unit + 180 E2E)                             | §6                                                                                                        |
 | Architecture des fichiers                                       | §7                                                                                                        |
 | Reste à faire                                                   | §8                                                                                                        |
 | Limites connues                                                 | §9                                                                                                        |
@@ -69,8 +70,8 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | **URL publique**      | https://livret-glm.duckdns.org                                                                   |
 | **Accès**             | Basic Auth `demo` / _(mdp partagé hors-canal)_                                                   |
 | **Dépôt source**      | https://github.com/Worzee/livret-glm (privé, branche `main` — synchronisée GitHub ↔ local ↔ VPS) |
-| **Tests unitaires**   | **552 / 552 ✓** (Vitest, 35 fichiers de test)                                                    |
-| **Tests E2E**         | **175 / 175 ✓** (Playwright — 163 desktop + 12 mobile Pixel 5, 24 specs)                         |
+| **Tests unitaires**   | **582 / 582 ✓** (Vitest, 36 fichiers de test)                                                    |
+| **Tests E2E**         | **180 / 180 ✓** (Playwright — Chromium desktop + mobile Pixel 5, 25 specs)                       |
 | **Bundle JS gzippé**  | 148 KB (cible CDC §19.1 : < 500 KB → marge × 3,4)                                                |
 | **Bundle CSS gzippé** | 6,5 KB (cible : < 50 KB → marge × 7)                                                             |
 | **Chunk PDF lazy**    | 493 KB (chargé uniquement au clic « Exporter »)                                                  |
@@ -85,15 +86,15 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 - **Frontend** : Vite 6 + React 18 + TypeScript 5.7 (strict)
 - **Style** : Tailwind CSS 3 + shadcn/ui (tokens CSS variables, palette 5 rôles équilibrée mai 2026)
 - **State** : Zustand 5 + middleware `persist` — **9 stores** persistés en localStorage :
-  - `livret-donnees` (schema v16) — livrets, fiches, **jusqu'à 4 entretiens tripartites par livret** (avec snapshots questions imposées/obligatoires + **évaluations des attitudes par entretien**), évaluations, sélection des compétences abordées en entreprise
+  - `livret-donnees` (schema v21) — livrets, fiches **entreprise + centre de formation** (`fichesSuiviCentre`), **jusqu'à 4 entretiens tripartites par livret** (avec snapshots questions imposées/obligatoires + **évaluations des attitudes par entretien**), évaluations, sélection des compétences abordées en entreprise, **forçage d'affichage des périodes** (`affichagePeriodesForce`)
   - `livret-role-actif` — rôle + maître actif
   - `livret-apprenti-actif` — id de l'apprenti·e affiché·e
   - `livret-utilisateurs` (schema v4) — apprenti·e·s (avec **second maître / tuteur optionnel** et **coordo de rattachement**, juin 2026), maîtres (avec `entreprise` + `fonction`), formateurs, coordos, admins
-  - `livret-formations` (schema v5) — formations + **planning des périodes** au niveau formation (`lieuId`, référentiel, dates de promo, `periodes[]`, **`nombreEntretiens` 1-4**)
+  - `livret-formations` (schema v6) — formations + **planning des périodes** au niveau formation (`lieuId`, référentiel, dates de promo, `periodes[]` **+ `periodesCentre[]`**, **`nombreEntretiens` 1-4**)
   - `livret-referentiels` (schema v2) — référentiels de compétences (Bloc → Sous-famille? → Compétence)
-  - `livret-banque-questions` (schema v4) — banque centrale des questions de l'entretien tripartite, **affectées E1..E4 + obligatoires par le coordo** (juin 2026)
+  - `livret-banque-questions` (schema v4) — banque centrale des questions de l'entretien tripartite (pur catalogue ; retrait par formation via `Formation.questionsRetirees`), **gestion réservée à l'admin** (18 juin 2026)
   - `livret-etablissements` (schema v1) — lieux de formation + URL Pronote (gestion admin uniquement)
-  - `livret-attitudes` (schema v2) — **catalogue global des attitudes professionnelles** (16 attitudes par défaut, gestion admin uniquement, juin 2026)
+  - `livret-attitudes` (schema v3) — **catalogue global des attitudes professionnelles** (12 attitudes par défaut — a1..a4 retirées car redondantes avec les critères de l'appréciation maître ; gestion admin uniquement, juin 2026)
 - **Routing** : React Router v6
 - **PDF** : `@react-pdf/renderer` 4 (lazy-loaded — chargé uniquement au clic « Exporter », palette PDF alignée sur charte UI mai 2026)
 - **XLSX** : `fflate` (~12 KB) pour la décompression ZIP **et la génération** (modèles d'import utilisateurs), parser maison
@@ -235,6 +236,42 @@ Pour les formations de 2 ans, le livret peut désormais porter jusqu'à **4 entr
 - `TableauTriColonnes` : le sélecteur « Ajouter une compétence à la fiche » suit le rôle actif pour le verrou (chacun ajoute tant qu'il peut encore éditer sa part, avant signature). Toujours conditionné à la validation de la sélection des compétences abordées en entreprise
 - Aucun changement de schéma (pas de reset) ; +1 test droits, +2 E2E (tuteur peut ajouter ; apprenti·e ne peut pas)
 - **Suivi 17 juin 2026 — colonne « Évaluation GRETA CFA » retirée des fiches de période** : pendant le stage, seuls le **tuteur** (« Évaluation entreprise ») et l'**apprenti·e** (« Retour apprenti·e ») renseignent ; le centre n'évalue plus sur la période (il évalue à l'évaluation finale). `TableauTriColonnes` passe de 3 à 2 colonnes (desktop + mobile) et le tableau de la fiche dans le PDF de même. Le champ `evaluationGreta` reste au modèle (compat / synthèse) ; pas de reset. +1 E2E
+
+#### Périodes en centre de formation — miroir de l'entreprise (17 juin 2026 — retours coordonnateurs pédagogiques)
+
+Les périodes de regroupement **au centre de formation (CFA)** obtiennent leur propre suivi, miroir des périodes en entreprise :
+
+- **Planning distinct** au niveau formation (`Formation.periodesCentre`, section dédiée de la modale Planning) ; chaque période cascade une fiche dans `Livret.fichesSuiviCentre` (ids `fc-…`)
+- **Évaluation par le formateur référent** : la fiche centre porte la colonne `evaluationGreta` (vs `evaluationEntreprise` côté tuteur) ; l'apprenti·e garde sa colonne « Retour »
+- **Signature à 2 parties** : apprenti·e + formateur (le maître / tuteur n'intervient pas au CFA). Séquencement de visibilité, déverrouillage R10 et verrou de planning suivent la même logique, paramétrés par un `lieu: 'entreprise' | 'centre'` (type `LieuFiche`)
+- **Synthèse finale** : l'« acquis en centre » de l'évaluation finale hérite désormais des **fiches centre** (et non plus du champ `evaluationGreta` des fiches entreprise)
+- **Pages + PDF + sidebar** : pages « Période en Centre » (liste + détail, routes `/livret/fiches-suivi-centre`), lien sidebar dédié, pages PDF des périodes centre + variante d'export `periode-centre`
+- **Approche** : paramétrage par `lieu` plutôt que duplication (composants `TableauTriColonnes` / `BlocSignatures` / pages / store / libs réutilisés). Bumps `livret-donnees` v19 → v20, `livret-formations` v5 → v6 (reset)
+- Fixtures de démo : 2 regroupements pour Léa (automne signé, hiver en cours) ; tests unitaires (blocs « centre » des libs paramétrées) + E2E `fiches-periodes-centre.spec.ts`
+
+#### Récapitulatif personnel sur le tableau de bord apprenti·e (18 juin 2026 — retours coordonnateurs pédagogiques)
+
+Le rôle apprenti·e n'a qu'un seul livret (le sien) : la liste de sélection du tableau de bord est remplacée, **pour ce rôle uniquement**, par un récapitulatif personnel :
+
+- **3 cartes** : « Ma formation » (diplôme, CFA, contrat, maître / tuteur + entreprise, formateur), « Mes échéances » (prochain entretien + date, période en cours entreprise *et* centre, fin de contrat), « Ma progression » (jauges fiches signées entreprise + centre, entretiens réalisés)
+- **Bandeau d'alerte R7** en tête si le 1ᵉʳ entretien est en retard ; **accès rapides** vers les sections du livret ; auto-sélection de l'apprenti·e actif·ve pour la navigation. Les autres rôles conservent la liste de sélection
+- Logique testable isolée dans `lib/recap-apprenti.ts` (prochain entretien, période en cours, progressions, jours restants — 10 tests) ; composant `TableauBordApprenti`. Aucun changement de schéma ; E2E `tableau-de-bord-6-apprentis` adaptés au récap
+
+#### Retrait des 4 attitudes redondantes avec l'appréciation maître (18 juin 2026 — retours coordonnateurs pédagogiques)
+
+- Les attitudes `a1..a4` (ponctualité, respect des consignes, qualité du travail, intégration) sont **retirées du catalogue** : elles doublonnaient les 4 critères de l'**appréciation du maître / tuteur** (section « Synthèse de la période »), évalués par défaut à chaque entretien. Catalogue ramené de **16 à 12 attitudes** ; les ids restants (`a5..a16`) sont conservés **stables** (référencés par les fixtures)
+- Fixtures de démo nettoyées (`attitudesSelectionnees`, `evaluationsAttitudes`) ; bumps `livret-attitudes` v2 → v3 et `livret-donnees` v20 → v21 (reset) ; tests unitaires + E2E (`attitudes.spec.ts`, `sprint4-evaluation-finale.spec.ts`) adaptés
+
+#### Banque de questions réservée à l'admin (18 juin 2026 — retours coordonnateurs pédagogiques)
+
+- Le droit `admin.banque-questions.gerer` passe de `['coordo', 'admin']` à **`['admin']`** : le coordo ne voit plus le lien dans la sidebar et l'accès direct affiche « Accès réservé à l'administration ». Le coordo **conserve** le retrait de questions *par formation* (modale Planning) — mécanisme distinct du catalogue global
+- Aucun changement de schéma (pas de reset) ; +1 test de droits, `banque-questions.spec.ts` adapté (accès admin)
+
+#### Forçage de l'affichage des périodes par le coordo (18 juin 2026 — retours coordonnateurs pédagogiques)
+
+- Sur la page « Période en Entreprise / en Centre », le **coordo / admin** dispose d'un interrupteur **« Forcer l'affichage de toutes les périodes »**. Activé, toutes les périodes du lieu deviennent visibles par **tous les rôles** (apprenti·e, tuteur, formateur), court-circuitant le séquencement de signature — avec un bandeau d'information côté apprenti·e / tuteur
+- **Par livret** (apprenti·e précis·e) et **par lieu** (entreprise / centre indépendants) : drapeau `Livret.affichagePeriodesForce` (champ optionnel → pas de reset) ; mutation `setAffichagePeriodesForce` ; `voirTout = supervision coordo/admin (peutContournerSequencement) OU forçage actif`
+- Le coordo / admin (supervision) voyait déjà toutes les périodes ; le forçage étend cette visibilité à tous les rôles. +1 scénario E2E
 
 #### Refonte de l'entretien tripartite 1 sur la trame officielle GRETA (16 juin 2026 — réunion GRETA)
 
@@ -565,9 +602,9 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 
 ---
 
-## 6. Tests (552 unitaires + 175 E2E)
+## 6. Tests (582 unitaires + 180 E2E)
 
-### Tests unitaires Vitest (34 fichiers de test)
+### Tests unitaires Vitest (36 fichiers de test)
 
 | Fichier                                        | Tests  | Périmètre                                                                                                                                                           |
 | ---------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -577,7 +614,8 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 | `lib/validation-signature.test.ts`             | 18     | R18/R20 — refonte chantier #3                                                                                                                                       |
 | `lib/regles-periode.test.ts`                   | 27     | R11/R12/R13/R14 + **séquencement de visibilité des périodes (16 juin 2026)**                                                                                        |
 | `lib/regles-entretien.test.ts`                 | 30     | R6/R7/R8/R9 (E1..E4) + R20 questions obligatoires + ≥ 1 attitude (maître) + séquencement `peutInitialiserEntretien` (juin 2026)                                     |
-| `lib/attitudes.test.ts`                        | 10     | Catalogue par défaut (16 attitudes + descriptions) + `attitudeEstUtilisee` + `auMoinsUneAttitudeEvaluee` (juin 2026)                                                |
+| `lib/attitudes.test.ts`                        | 10     | Catalogue par défaut (12 attitudes — a1..a4 retirées le 18 juin) + `attitudeEstUtilisee` + `auMoinsUneAttitudeEvaluee`                                               |
+| `lib/recap-apprenti.test.ts`                   | 10     | **Tableau de bord apprenti·e (18 juin) : prochain entretien, période en cours, progressions, jours restants**                                                       |
 | `lib/nombre-entretiens.test.ts`                | 12     | Bornes 1-4 + verrou de réduction + numéros disponibles (juin 2026)                                                                                                  |
 | `lib/synthese-evaluation.test.ts`              | 18     | Last-write-wins fiches → finales + confirmation avant écrasement d'un héritage (juin 2026)                                                                          |
 | `lib/stats-bloc.test.ts`                       | 6      | Compte des niveaux par bloc                                                                                                                                         |
@@ -608,9 +646,9 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 
 _Les modules `creation-livret.ts`, `couleurs-role.ts` et `utils.ts` sont couverts indirectement via les tests E2E._
 
-### Tests E2E Playwright (24 specs)
+### Tests E2E Playwright (25 specs)
 
-175 tests (163 desktop + 12 mobile). Ajouts de juin 2026 : 2 scénarios « ajout de compétence à la fiche ouvert au tuteur » + 1 « disparition de la colonne Évaluation GRETA CFA sur la fiche » (`entretien-selection-competences.spec.ts`), 3 scénarios « affectation des questions par le coordo », 5 scénarios « jusqu'à 4 entretiens », 3 scénarios « événements gérés par coordo/admin + liseré par rôle », 2 scénarios « motifs par rôle + séquencement », 4 scénarios « attitudes professionnelles » (`attitudes.spec.ts`), 1 scénario « confirmation avant écrasement d'un héritage », 1 scénario « bascule de périmètre coordo depuis la page Affectations », 2 scénarios « modalité présentiel/distanciel + verrou de la fiche de suivi par signature », 1 scénario « suppression d'un événement réservée au coordo/admin », 5 scénarios « exports PDF par période / entretien / fiches de suivi » (`export-pdf.spec.ts` — boutons par rôle + téléchargements non vides), 1 scénario « séquencement de visibilité des périodes » (accès direct à une période masquée bloqué), 5 scénarios « refonte de l'entretien 1 sur la trame officielle GRETA » (`entretien-1-trame.spec.ts` — rubriques, points d'alerte, représentant légal). Quelques specs ont été adaptés aux refontes :
+180 tests (Chromium desktop + mobile Pixel 5). Ajouts de juin 2026 : 2 scénarios « ajout de compétence à la fiche ouvert au tuteur » + 1 « disparition de la colonne Évaluation GRETA CFA sur la fiche » (`entretien-selection-competences.spec.ts`), 3 scénarios « affectation des questions par le coordo », 5 scénarios « jusqu'à 4 entretiens », 3 scénarios « événements gérés par coordo/admin + liseré par rôle », 2 scénarios « motifs par rôle + séquencement », 4 scénarios « attitudes professionnelles » (`attitudes.spec.ts`), 1 scénario « confirmation avant écrasement d'un héritage », 1 scénario « bascule de périmètre coordo depuis la page Affectations », 2 scénarios « modalité présentiel/distanciel + verrou de la fiche de suivi par signature », 1 scénario « suppression d'un événement réservée au coordo/admin », 5 scénarios « exports PDF par période / entretien / fiches de suivi » (`export-pdf.spec.ts` — boutons par rôle + téléchargements non vides), 1 scénario « séquencement de visibilité des périodes » (accès direct à une période masquée bloqué), 5 scénarios « refonte de l'entretien 1 sur la trame officielle GRETA » (`entretien-1-trame.spec.ts` — rubriques, points d'alerte, représentant légal). **Ajouts des 17-18 juin 2026** : 4 scénarios « périodes en centre de formation » (`fiches-periodes-centre.spec.ts` — planning centre, page liste / détail, export PDF), 1 « forçage de l'affichage des périodes par le coordo », 1 « banque de questions réservée à l'admin », `tableau-de-bord-6-apprentis` adapté au récap apprenti·e, `attitudes` / `sprint4-evaluation-finale` adaptés au catalogue 12 attitudes. Quelques specs ont été adaptés aux refontes :
 
 - `fiches-periodes.spec.ts` : 8 tests réécrits pour le nouveau flow planning au niveau formation
 - `sprint3-droits-entretien.spec.ts` : route `/livret/entretien/1`
@@ -636,14 +674,14 @@ LIVRET APPRENTISSAGE/
 ├── cahier-des-charges-livret-apprentissage-v1.5-addendum.md
 ├── design-system/MASTER.md         # palette équilibrée mai 2026
 ├── scripts/                        # déploiement VPS
-├── e2e/                            # tests Playwright (21 specs)
+├── e2e/                            # tests Playwright (25 specs)
 ├── playwright.config.ts            # 2 projets (desktop + mobile)
 ├── package.json
 └── src/
     ├── main.tsx, App.tsx, vite-env.d.ts
     ├── styles/index.css            # variables CSS + utilities couleur-role
     ├── types/index.ts              # modèle (CDC §7 + chantiers mai 2026)
-    ├── lib/                        # 37 modules + 34 fichiers tests
+    ├── lib/                        # 39 modules + 36 fichiers tests
     │   ├── droits.ts               # matrice §6 (48 ressources × 5 rôles)
     │   ├── transitions-fiche.ts    # R15/R16/R17/R21
     │   ├── validation-signature.ts # R18/R20 (zone GRETA texte chantier #3)
@@ -679,12 +717,13 @@ LIVRET APPRENTISSAGE/
     │   └── utils.ts
     ├── store/                      # 9 stores Zustand persistés
     │   ├── useUserStore.ts
-    │   ├── useLivretStore.ts       # v10 — entretien1/entretien2 + suiviGretaCfa texte
+    │   ├── useLivretStore.ts       # v21 — +fichesSuiviCentre +affichagePeriodesForce
     │   ├── useApprentiActifStore.ts
-    │   ├── useUtilisateursStore.ts # v2 — Maitre.entreprise + fonction
-    │   ├── useFormationsStore.ts   # v3 — periodes[] + cascade livrets
+    │   ├── useUtilisateursStore.ts # v4 — Maitre.entreprise + fonction
+    │   ├── useFormationsStore.ts   # v6 — periodes[] + periodesCentre[] + cascade livrets
     │   ├── useReferentielsStore.ts # v2
-    │   ├── useBanqueQuestionsStore.ts # v1
+    │   ├── useAttitudesStore.ts    # v3 — catalogue 12 attitudes (a1..a4 retirées)
+    │   ├── useBanqueQuestionsStore.ts # v4 — catalogue pur, gestion réservée admin
     │   └── useEtablissementsStore.ts # v1
     ├── fixtures/                   # 6 livrets démo + utilisateurs + formations + référentiels
     ├── components/
@@ -826,8 +865,8 @@ npm run dev            # serveur Vite sur http://localhost:5173
 ### Tests / qualité
 
 ```bash
-npm test               # 472 tests Vitest
-npm run e2e            # 148 tests E2E Playwright (build + preview + tests)
+npm test               # 582 tests Vitest
+npm run e2e            # 180 tests E2E Playwright (build + preview + tests)
 npm run e2e:ui         # UI Playwright pour debug
 npm run typecheck      # tsc --noEmit
 npm run lint           # ESLint
@@ -859,6 +898,7 @@ Ou en console DevTools :
   'livret-referentiels',
   'livret-banque-questions',
   'livret-etablissements',
+  'livret-attitudes',
 ].forEach((k) => localStorage.removeItem(k));
 location.reload();
 ```

@@ -51,6 +51,28 @@ Référence : cahier des charges v1.3, section 25.
 > Le **bandeau « MAQUETTE DE DÉMONSTRATION » a été retiré** (cf. §3, 00:00). Une **réécriture
 > complète et datée du script** est recommandée avant la prochaine présentation à la direction.
 
+> **⚠ Mise à jour 18 juin 2026** — vague « périodes en centre + récap apprenti·e ». Évolutions à
+> intégrer avant la prochaine démo :
+>
+> - **Périodes en centre de formation** : nouvelle entrée sidebar « Période en Centre », miroir de
+>   « Période en Entreprise ». Mêmes fiches par période, mais évaluées par le **formateur référent**
+>   et signées par **2 parties** (apprenti·e + formateur, sans le maître). Le planning centre se
+>   définit au niveau formation (modale « Planning », section dédiée) ; le PDF inclut les fiches
+>   centre et la synthèse finale agrège entreprise **et** centre.
+> - **Tableau de bord de l'apprenti·e enrichi** : la carte de sélection (inutile — l'apprenti·e n'a
+>   qu'un livret) est remplacée par un **récapitulatif détaillé** : formation, contrat, échéances des
+>   prochaines périodes / entretiens, progression des signatures.
+> - **Catalogue d'attitudes ramené à 12 entrées** (et non plus 16) : les 4 attitudes redondantes
+>   (ponctualité, respect des consignes, qualité du travail, intégration) sont retirées du catalogue
+>   car déjà couvertes par les **4 appréciations du maître** présentes par défaut dans chaque
+>   entretien.
+> - **Banque de questions réservée à l'admin** : elle disparaît de la sidebar Administration du
+>   coordo (cf. §3 étape 09:00 — ligne coordo corrigée) ; seul l'admin y accède.
+> - **Forçage de l'affichage des périodes par la coordination** : le coordo / admin peut initialiser
+>   des entretiens et afficher des périodes même si les précédentes ne sont pas signées, et dispose
+>   d'un **interrupteur** sur la page des fiches de suivi pour rendre toutes les périodes visibles à
+>   **tous les rôles** (utile si un blocage de signature gêne le suivi).
+
 ---
 
 ## 1. URL et accès
@@ -159,8 +181,8 @@ Référence : cahier des charges v1.3, section 25.
 
 ### 09:00 — 10:00 · Perspectives et clôture
 
-1. **Bascule rôle → Coordo (Martine LEFÈVRE)** : section _Administration_ apparaît dans la sidebar avec **CRUD réel** — gestion utilisateurs, formations, affectations, référentiels (import CSV/XLSX), banque de questions d'entretien.
-2. **Bascule rôle → Admin (Guillaume FERRERI)** : droits étendus + gestion **établissements** + URLs Pronote.
+1. **Bascule rôle → Coordo (Martine LEFÈVRE)** : section _Administration_ apparaît dans la sidebar avec **CRUD réel** — gestion utilisateurs, formations, affectations, référentiels (import CSV/XLSX).
+2. **Bascule rôle → Admin (Guillaume FERRERI)** : droits étendus + gestion **établissements** + URLs Pronote + **banque de questions d'entretien** (réservée à l'admin).
 3. Rappeler les **limites du périmètre étape 1** :
    - Pas d'authentification réelle (role switcher de démo).
    - Pas de conformité RGPD/RGAA stricte.
