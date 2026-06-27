@@ -275,23 +275,22 @@ interface CarteCompetenceProps extends CelluleProps {
 function libelleCompetence(
   ligne: LigneSuiviEntreprise,
   competencesParId: ReadonlyMap<string, Competence>,
-): { code: string; libelle: string } {
+): string {
   if (ligne.competenceId) {
     const c = competencesParId.get(ligne.competenceId);
-    if (c) return { code: c.code, libelle: c.libelle };
+    if (c) return c.libelle;
   }
-  return { code: 'AD-HOC', libelle: ligne.libelleLibre ?? 'Activité libre' };
+  return ligne.libelleLibre ?? 'Activité libre';
 }
 
 function LigneTableau(props: LigneTableauProps) {
   const { ligne, competencesParId, champEval, libelleEval, bordureEval } = props;
-  const { code, libelle } = libelleCompetence(ligne, competencesParId);
+  const libelle = libelleCompetence(ligne, competencesParId);
 
   return (
     <tr className="align-top hover:bg-secondary/30">
       <td className="px-3 py-3">
-        <div className="font-medium text-sm">{code}</div>
-        <div className="text-xs text-muted-foreground">{libelle}</div>
+        <div className="text-sm">{libelle}</div>
       </td>
       <td className={cn('px-3 py-3 border-l-2', bordureEval)}>
         <SelecteurNiveau
@@ -299,7 +298,7 @@ function LigneTableau(props: LigneTableauProps) {
           mode="entreprise"
           valeur={ligne[champEval]}
           onChange={(v) => props.onChangeEval(v as LigneSuiviEntreprise['evaluationEntreprise'])}
-          ariaLabel={`${libelleEval} pour ${code}`}
+          ariaLabel={`${libelleEval} pour ${libelle}`}
         />
       </td>
       <td className="px-3 py-3 border-l-2 border-l-role-apprenti/20">
@@ -320,8 +319,8 @@ function LigneTableau(props: LigneTableauProps) {
       {props.peutSupprimer && (
         <td className="px-3 py-3">
           <BoutonSupprimer
-            ariaLabel={`Supprimer la compétence ${code}`}
-            question={`Supprimer ${code} ?`}
+            ariaLabel={`Supprimer la compétence ${libelle}`}
+            question={`Supprimer ${libelle} ?`}
             onConfirmer={props.onSupprimer}
             variant="icon"
           />
@@ -333,14 +332,13 @@ function LigneTableau(props: LigneTableauProps) {
 
 function CarteCompetence(props: CarteCompetenceProps) {
   const { ligne, competencesParId, champEval, emojiEval, classeTexteEval, bordureEvalCarte } = props;
-  const { code, libelle } = libelleCompetence(ligne, competencesParId);
+  const libelle = libelleCompetence(ligne, competencesParId);
 
   return (
     <article className="rounded-lg border border-border bg-card p-4 space-y-3">
       <header className="flex items-start justify-between gap-2">
         <div>
-          <div className="font-medium text-sm">{code}</div>
-          <div className="text-xs text-muted-foreground">{libelle}</div>
+          <div className="text-sm font-medium">{libelle}</div>
         </div>
         <div className="flex items-center gap-1">
           <Pastille valeur={ligne[champEval]} title={emojiEval} />
@@ -359,7 +357,7 @@ function CarteCompetence(props: CarteCompetenceProps) {
           mode="entreprise"
           valeur={ligne[champEval]}
           onChange={(v) => props.onChangeEval(v as LigneSuiviEntreprise['evaluationEntreprise'])}
-          ariaLabel={`${emojiEval} pour ${code}`}
+          ariaLabel={`${emojiEval} pour ${libelle}`}
         />
       </div>
 
@@ -383,8 +381,8 @@ function CarteCompetence(props: CarteCompetenceProps) {
       {props.peutSupprimer && (
         <div className="text-right">
           <BoutonSupprimer
-            ariaLabel={`Supprimer la compétence ${code}`}
-            question={`Supprimer ${code} ?`}
+            ariaLabel={`Supprimer la compétence ${libelle}`}
+            question={`Supprimer ${libelle} ?`}
             onConfirmer={props.onSupprimer}
             variant="text"
           />
@@ -471,10 +469,10 @@ function AjouterCompetence({
           referentiel.niveauxColonnes === 3 && competencesAbordees.some((c) => c.sousFamille);
         if (!aDesSousFamilles) {
           return [
-            <optgroup key={bloc.id} label={`${bloc.code} — ${bloc.libelle}`}>
+            <optgroup key={bloc.id} label={bloc.libelle}>
               {competencesAbordees.map((c) => (
                 <option key={c.id} value={c.id} disabled={competencesPresentes.includes(c.id)}>
-                  {c.code} {c.libelle}
+                  {c.libelle}
                   {competencesPresentes.includes(c.id) ? ' (déjà présente)' : ''}
                 </option>
               ))}
@@ -491,7 +489,7 @@ function AjouterCompetence({
         return [...groupes.entries()].map(([sousFamille, comps]) => (
           <optgroup
             key={`${bloc.id}-${sousFamille}`}
-            label={sousFamille ? `${bloc.code} — ${sousFamille}` : `${bloc.code} — ${bloc.libelle}`}
+            label={sousFamille ? sousFamille : bloc.libelle}
           >
             {comps.map((c) => (
               <option key={c.id} value={c.id} disabled={competencesPresentes.includes(c.id)}>

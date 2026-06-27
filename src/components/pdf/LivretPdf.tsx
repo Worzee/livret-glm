@@ -3,6 +3,8 @@ import logoGreta from '@/assets/logo-greta.png';
 import type {
   Apprenti,
   AttitudeProfessionnelle,
+  BlocCompetences,
+  Competence,
   EntretienTripartite,
   Etablissement,
   FicheSuiviPeriode,
@@ -21,6 +23,7 @@ import { NUMEROS_ENTRETIEN } from '@/types';
 import { libelleRole } from '@/lib/droits';
 import { synthetiserCompetences, valeurEffective } from '@/lib/synthese-evaluation';
 import { calculerStatsParBloc } from '@/lib/stats-bloc';
+import { grouperParSousFamille } from '@/lib/grouper-competences';
 import { libelleEvenement, libelleModalite, modaliteEffective } from '@/lib/organisation-suivi';
 import { TRAME_ENTRETIEN_1, pointsAlerteTrameE1 } from '@/lib/trame-entretien-1';
 import { attitudesRetenues } from '@/lib/selection-attitudes';
@@ -841,7 +844,7 @@ export function PageFiche({
             {fiche.suiviEntreprise.map((l, idx) => {
               const comp = l.competenceId ? competencesById.get(l.competenceId) : null;
               const libelleC = comp
-                ? `${comp.code} — ${comp.libelle}`
+                ? comp.libelle
                 : (l.libelleLibre ?? 'Activité hors référentiel');
               return (
                 <View
@@ -910,6 +913,26 @@ export function PageFiche({
 // Section : Évaluations finales
 // ─────────────────────────────────────────────────────────────────────────────
 
+type LigneGrillePdf =
+  | { kind: 'sousFamille'; libelle: string }
+  | { kind: 'competence'; competence: Competence; indente: boolean };
+
+/**
+ * Aplatit un bloc en lignes de grille PDF : un titre par sous-famille suivi de
+ * ses compétences-feuilles (indentées), les feuilles directes restant à plat.
+ * On n'affiche que les libellés (la hiérarchie est portée par le retrait).
+ */
+function construireLignesGrillePdf(bloc: BlocCompetences): LigneGrillePdf[] {
+  const rows: LigneGrillePdf[] = [];
+  for (const g of grouperParSousFamille(bloc)) {
+    if (g.sousFamille) rows.push({ kind: 'sousFamille', libelle: g.sousFamille });
+    for (const c of g.competences) {
+      rows.push({ kind: 'competence', competence: c, indente: !!g.sousFamille });
+    }
+  }
+  return rows;
+}
+
 function PageEvaluationFinale({
   livret,
   referentiel,
@@ -937,9 +960,7 @@ function PageEvaluationFinale({
         <Text style={styles.h2}>Synthèse par bloc de compétences</Text>
         {stats.map((s) => (
           <View key={s.bloc.id} style={[styles.encart, { marginBottom: 6 }]}>
-            <Text style={styles.encartTitre}>
-              {s.bloc.code} — {s.bloc.libelle}
-            </Text>
+            <Text style={styles.encartTitre}>{s.bloc.libelle}</Text>
             <Text style={{ fontSize: 9, marginTop: 2 }}>
               Entreprise — Maîtrisé : {s.entreprise.maitrise} · En cours : {s.entreprise.partiel} ·
               Non maîtrisé : {s.entreprise.nonMaitrise} · Non évalué : {s.entreprise.nonEvalue}
@@ -954,9 +975,7 @@ function PageEvaluationFinale({
         <Text style={styles.h2}>Compétences (entreprise / centre)</Text>
         {referentiel.blocs.map((bloc) => (
           <View key={bloc.id} style={{ marginBottom: 8 }} wrap={false}>
-            <Text style={styles.h3}>
-              {bloc.code} — {bloc.libelle}
-            </Text>
+            <Text style={styles.h3}>{bloc.libelle}</Text>
             <View style={styles.tableau}>
               <View style={[styles.tableauLigne, styles.tableauEnTete]}>
                 <Text style={[styles.tableauCellule, { width: '50%' }]}>Compétence</Text>
@@ -964,7 +983,19 @@ function PageEvaluationFinale({
                 <Text style={[styles.tableauCellule, { width: '20%' }]}>Acquis centre</Text>
                 <Text style={[styles.tableauCelluleDerniere, { width: '10%' }]}>Source</Text>
               </View>
-              {bloc.competences.map((c, idx) => {
+              {construireLignesGrillePdf(bloc).map((row, idx, rows) => {
+                const styleLigne =
+                  idx === rows.length - 1 ? styles.tableauLigneSansBordure : styles.tableauLigne;
+                if (row.kind === 'sousFamille') {
+                  return (
+                    <View key={`sf-${idx}`} style={[styleLigne, styles.tableauEnTete]}>
+                      <Text style={[styles.tableauCelluleDerniere, { width: '100%' }]}>
+                        {row.libelle}
+                      </Text>
+                    </View>
+                  );
+                }
+                const c = row.competence;
                 const ligne = lignes.find((l) => l.competenceId === c.id) ?? {
                   competenceId: c.id,
                   acquisEntreprise: null,
@@ -973,16 +1004,14 @@ function PageEvaluationFinale({
                 const ent = valeurEffective(ligne, synthese, 'acquisEntreprise');
                 const cen = valeurEffective(ligne, synthese, 'acquisCentre');
                 return (
-                  <View
-                    key={c.id}
-                    style={
-                      idx === bloc.competences.length - 1
-                        ? styles.tableauLigneSansBordure
-                        : styles.tableauLigne
-                    }
-                  >
-                    <Text style={[styles.tableauCellule, { width: '50%' }]}>
-                      {c.code} — {c.libelle}
+                  <View key={c.id} style={styleLigne}>
+                    <Text
+                      style={[
+                        styles.tableauCellule,
+                        { width: '50%', paddingLeft: row.indente ? 10 : 0 },
+                      ]}
+                    >
+                      {c.libelle}
                     </Text>
                     <Text style={[styles.tableauCellule, { width: '20%' }]}>
                       {libelleNiveau(ent.valeur)}

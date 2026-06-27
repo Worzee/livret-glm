@@ -8,6 +8,7 @@ import { useReferentielsStore } from '@/store/useReferentielsStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
 import { estSelectionnee, estValidee } from '@/lib/selection-competences-entreprise';
+import { grouperParSousFamille } from '@/lib/grouper-competences';
 import {
   LONGUEUR_MAX_MOTIF,
   LONGUEUR_MIN_MOTIF,
@@ -98,19 +99,26 @@ export function SectionSelectionCompetences({
             className={cn('p-3 space-y-2', idxBloc > 0 && 'border-t border-border')}
           >
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              {bloc.code} — {bloc.libelle}
+              {bloc.libelle}
             </p>
-            <ul className="space-y-1">
-              {bloc.competences.map((c) => (
-                <CompetenceCase
-                  key={c.id}
-                  competence={c}
-                  cochee={estSelectionnee(selection, c.id)}
-                  editable={peutCoEditer}
-                  onToggle={() => toggleCompetence(livretId, c.id)}
-                />
-              ))}
-            </ul>
+            {grouperParSousFamille(bloc).map((g, i) => (
+              <div key={g.sousFamille ?? `__plat-${i}`} className={cn(g.sousFamille && 'mt-1')}>
+                {g.sousFamille && (
+                  <p className="text-xs font-medium text-foreground/70">{g.sousFamille}</p>
+                )}
+                <ul className={cn('space-y-1', g.sousFamille && 'ml-3 border-l border-border pl-2')}>
+                  {g.competences.map((c) => (
+                    <CompetenceCase
+                      key={c.id}
+                      competence={c}
+                      cochee={estSelectionnee(selection, c.id)}
+                      editable={peutCoEditer}
+                      onToggle={() => toggleCompetence(livretId, c.id)}
+                    />
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
         ))}
       </div>
@@ -229,7 +237,7 @@ function CompetenceCase({ competence, cochee, editable, onToggle }: CompetenceCa
         checked={cochee}
         disabled={!editable}
         onChange={onToggle}
-        aria-label={`Compétence ${competence.code} abordée en entreprise`}
+        aria-label={`Compétence ${competence.libelle} abordée en entreprise`}
         data-testid={`selection-comp-${competence.id}`}
         className="mt-1 h-4 w-4 rounded border-input accent-[hsl(var(--ring))] focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
       />
@@ -240,10 +248,6 @@ function CompetenceCase({ competence, cochee, editable, onToggle }: CompetenceCa
           !editable && 'cursor-not-allowed',
         )}
       >
-        <strong className="font-medium">{competence.code}</strong>
-        {competence.sousFamille && (
-          <span className="ml-1 text-xs text-muted-foreground">[{competence.sousFamille}]</span>
-        )}{' '}
         {competence.libelle}
       </span>
     </li>

@@ -1,13 +1,7 @@
 import { useId, useState } from 'react';
 import { AlertTriangle, Info, Sparkles, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import type {
-  BlocCompetences,
-  Competence,
-  LigneEvaluationFinaleCompetence,
-  NiveauMaitrise,
-  Referentiel,
-} from '@/types';
+import type { LigneEvaluationFinaleCompetence, NiveauMaitrise, Referentiel } from '@/types';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
@@ -24,6 +18,7 @@ import {
   valeurEffective,
 } from '@/lib/synthese-evaluation';
 import { calculerStatsParBloc } from '@/lib/stats-bloc';
+import { grouperParSousFamille } from '@/lib/grouper-competences';
 import { SelecteurNiveau } from '@/components/common/SelecteurNiveau';
 import { SyntheseBloc } from './SyntheseBloc';
 import { cn } from '@/lib/utils';
@@ -51,7 +46,7 @@ interface GrilleCompetencesProps {
  */
 interface EcrasementEnAttente {
   competenceId: string;
-  codeCompetence: string;
+  libelleCompetence: string;
   nouvelleValeur: NiveauMaitrise;
   valeurHeritee: NiveauMaitrise;
   numeroPeriode?: number;
@@ -135,9 +130,7 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
           referentiel.niveauxColonnes === 3 && groupes.some((g) => g.sousFamille !== undefined);
         return (
           <section key={bloc.id} className="space-y-3">
-            <h2 className="text-lg font-medium">
-              {bloc.code} — {bloc.libelle}
-            </h2>
+            <h2 className="text-lg font-medium">{bloc.libelle}</h2>
             <div className="overflow-x-auto rounded-lg border border-border">
               <table className="w-full text-sm">
                 <thead className="bg-secondary/50 text-xs uppercase tracking-wider text-muted-foreground">
@@ -176,8 +169,7 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
                       return (
                         <tr key={c.id} className="align-top">
                           <td className="px-3 py-3">
-                            <div className="font-medium text-sm">{c.code}</div>
-                            <div className="text-xs text-muted-foreground">{c.libelle}</div>
+                            <div className="text-sm">{c.libelle}</div>
                           </td>
                           <td className="px-3 py-3 border-l-2 border-l-role-maitre/20">
                             {competenceEnEntreprise ? (
@@ -204,7 +196,7 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
                                     );
                                     setEcrasement({
                                       competenceId: c.id,
-                                      codeCompetence: c.code,
+                                      libelleCompetence: c.libelle,
                                       nouvelleValeur: v as NiveauMaitrise,
                                       valeurHeritee: heritage.valeur as NiveauMaitrise,
                                       numeroPeriode: heritage.numeroPeriode,
@@ -213,12 +205,12 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
                                     setLigne(livret.id, c.id, { acquisEntreprise: v });
                                   }
                                 }}
-                                ariaLabel={`Acquis en entreprise pour ${c.code}`}
+                                ariaLabel={`Acquis en entreprise pour ${c.libelle}`}
                               />
                             ) : (
                               <CelluleNonSelectionnee
                                 valeurHistorique={ligne.acquisEntreprise}
-                                codeCompetence={c.code}
+                                libelleCompetence={c.libelle}
                               />
                             )}
                           </td>
@@ -229,7 +221,7 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
                               colonne="acquisCentre"
                               editable={peutEditerCentre}
                               onChange={(v) => setLigne(livret.id, c.id, { acquisCentre: v })}
-                              ariaLabel={`Acquis en centre pour ${c.code}`}
+                              ariaLabel={`Acquis en centre pour ${c.libelle}`}
                             />
                           </td>
                           {/* Séparateur neutre : le commentaire est partagé
@@ -332,7 +324,7 @@ function ModaleConfirmationHeritage({
         <div className="space-y-3 p-4 text-sm">
           <p>
             L'évaluation « <strong>{LIBELLE_NIVEAU[ecrasement.valeurHeritee]}</strong> » de{' '}
-            <strong>{ecrasement.codeCompetence}</strong> provient {provenance} (report automatique).
+            <strong>{ecrasement.libelleCompetence}</strong> provient {provenance} (report automatique).
           </p>
           <p>
             Confirmez-vous son remplacement par «{' '}
@@ -363,29 +355,6 @@ function ModaleConfirmationHeritage({
       </div>
     </div>
   );
-}
-
-/**
- * Regroupe les compétences d'un bloc par sous-famille en préservant l'ordre
- * d'apparition. Si aucune compétence n'a de sous-famille, retourne un seul
- * groupe sans titre (équivalent au comportement plat existant).
- */
-function grouperParSousFamille(
-  bloc: BlocCompetences,
-): Array<{ sousFamille?: string; competences: Competence[] }> {
-  const groupes: Array<{ sousFamille?: string; competences: Competence[] }> = [];
-  const indexParCle = new Map<string, number>();
-  for (const c of bloc.competences) {
-    const cle = c.sousFamille ?? '__plat';
-    let idx = indexParCle.get(cle);
-    if (idx === undefined) {
-      idx = groupes.length;
-      indexParCle.set(cle, idx);
-      groupes.push({ sousFamille: c.sousFamille, competences: [] });
-    }
-    groupes[idx].competences.push(c);
-  }
-  return groupes;
 }
 
 interface CelluleNiveauProps {
@@ -439,17 +408,17 @@ function CelluleNiveau({
  */
 function CelluleNonSelectionnee({
   valeurHistorique,
-  codeCompetence,
+  libelleCompetence,
 }: {
   valeurHistorique: NiveauMaitrise | null;
-  codeCompetence: string;
+  libelleCompetence: string;
 }) {
   if (valeurHistorique === null) {
     return (
       <span
         className="inline-flex items-center text-muted-foreground italic"
-        title={`Compétence ${codeCompetence} non abordée en entreprise pour cet·te apprenti·e.`}
-        aria-label={`Compétence ${codeCompetence} non abordée en entreprise`}
+        title={`Compétence ${libelleCompetence} non abordée en entreprise pour cet·te apprenti·e.`}
+        aria-label={`Compétence ${libelleCompetence} non abordée en entreprise`}
       >
         —
       </span>
@@ -458,13 +427,13 @@ function CelluleNonSelectionnee({
   return (
     <div
       className="opacity-60"
-      title={`Saisie historique conservée — la compétence ${codeCompetence} a été décochée depuis (R10).`}
+      title={`Saisie historique conservée — la compétence ${libelleCompetence} a été décochée depuis (R10).`}
     >
       <SelecteurNiveau
         editable={false}
         mode="greta"
         valeur={valeurHistorique}
-        ariaLabel={`Acquis en entreprise pour ${codeCompetence} (saisie historique, lecture seule)`}
+        ariaLabel={`Acquis en entreprise pour ${libelleCompetence} (saisie historique, lecture seule)`}
       />
     </div>
   );

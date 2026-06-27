@@ -15,6 +15,7 @@ import { useReferentielsStore } from '@/store/useReferentielsStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
 import { evaluerVerrouReferentiel } from '@/lib/referentiel-verrou';
+import { grouperParSousFamille } from '@/lib/grouper-competences';
 import { ModaleImportReferentiel } from '@/components/admin/ModaleImportReferentiel';
 import { cn } from '@/lib/utils';
 
@@ -274,22 +275,38 @@ interface BlocDetailProps {
 }
 
 function BlocDetail({ bloc }: BlocDetailProps) {
+  // Hiérarchie restituée par l'indentation : on n'affiche que les libellés
+  // (le code métier, quand il existe, figure déjà en tête de libellé).
+  const groupes = grouperParSousFamille(bloc);
   return (
     <div className="rounded-md border border-border bg-secondary/20 p-2">
       <p className="text-xs font-medium text-foreground">
-        {bloc.code} — {bloc.libelle}
+        {bloc.libelle}
         <span className="ml-2 text-muted-foreground font-normal">
           ({bloc.competences.length} compétence{bloc.competences.length > 1 ? 's' : ''})
         </span>
       </p>
-      <ul className="mt-1.5 space-y-0.5">
-        {bloc.competences.map((c) => (
-          <li key={c.id} className="text-xs">
-            <strong className="font-medium">{c.code}</strong>{' '}
-            {c.sousFamille && <span className="text-muted-foreground">[{c.sousFamille}]</span>}{' '}
-            {c.libelle}
-          </li>
-        ))}
+      <ul className="mt-1.5 space-y-1">
+        {groupes.map((g, i) =>
+          g.sousFamille ? (
+            <li key={`sf-${i}`} className="text-xs">
+              <p className="font-medium text-foreground/80">{g.sousFamille}</p>
+              <ul className="ml-3 mt-0.5 space-y-0.5 border-l border-border pl-2">
+                {g.competences.map((c) => (
+                  <li key={c.id} className="text-muted-foreground">
+                    {c.libelle}
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ) : (
+            g.competences.map((c) => (
+              <li key={c.id} className="text-xs text-muted-foreground">
+                {c.libelle}
+              </li>
+            ))
+          ),
+        )}
       </ul>
     </div>
   );

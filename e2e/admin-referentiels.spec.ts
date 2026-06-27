@@ -194,8 +194,9 @@ test("la page Référentiels affiche les compétences en lecture seule (CDC v1.5
   await page.goto('/admin/referentiels');
   const carteCap = page.locator('article', { hasText: 'CAP Cuisine' });
   await carteCap.getByText(/Voir les compétences/i).click();
-  // C1.1 reste visible mais sans aucune case à cocher.
-  await expect(carteCap).toContainText(/C1\.1/);
+  // Le libellé de la 1ʳᵉ compétence reste visible mais sans aucune case à cocher
+  // (le code n'est plus affiché — seul l'élément, 18 juin 2026).
+  await expect(carteCap).toContainText(/Réceptionner et stocker la marchandise/i);
   await expect(carteCap.getByTestId('comp-eval-c1-1')).toHaveCount(0);
 });
 

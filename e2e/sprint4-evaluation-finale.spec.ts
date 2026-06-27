@@ -57,9 +57,12 @@ test('maître : remplacer une évaluation entreprise héritée exige une confirm
 
   // Précondition fixture : C1.1 de Léa est héritée de la Période 1 (Maîtrisé).
   // On scope la cellule entreprise — la colonne centre porte son propre badge.
-  const cellule = page
-    .getByRole('cell')
-    .filter({ has: page.getByRole('radiogroup', { name: 'Acquis en entreprise pour C1.1' }) });
+  // (Affichage « libellé seul » depuis le 18 juin 2026 : l'aria-label porte le libellé.)
+  const cellule = page.getByRole('cell').filter({
+    has: page.getByRole('radiogroup', {
+      name: 'Acquis en entreprise pour Réceptionner et stocker la marchandise',
+    }),
+  });
   await expect(cellule.getByText(/Vue en Période 1/i)).toBeVisible();
 
   // 1. Cliquer un autre niveau ouvre la modale — la valeur ne change PAS encore.

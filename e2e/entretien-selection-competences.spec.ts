@@ -79,11 +79,15 @@ test('Léa : la grille finale grise la colonne « Acquis en entreprise » pour c
 }) => {
   await selectRole(page, 'Maître / Tuteur');
   await page.goto('/livret/evaluation-finale');
-  // Cellule entreprise pour c2-4 (non sélectionnée) → texte « — » + aria-label dédié
-  await expect(page.getByLabel(/Compétence C2\.4 non abordée en entreprise/i)).toBeVisible();
-  // Cellule entreprise pour c1-1 (sélectionnée) → SelecteurNiveau éditable
-  // (aria-label « Acquis en entreprise pour C1.1 »)
-  await expect(page.getByLabel(/^Acquis en entreprise pour C1\.1$/i).first()).toBeVisible();
+  // Cellule entreprise pour c2-4 (non sélectionnée) → texte « — » + aria-label dédié.
+  // Affichage « libellé seul » depuis le 18 juin 2026 : l'aria-label porte le libellé.
+  await expect(
+    page.getByLabel(/Compétence Communiquer en situation professionnelle non abordée en entreprise/i),
+  ).toBeVisible();
+  // Cellule entreprise pour c1-1 (sélectionnée) → SelecteurNiveau éditable.
+  await expect(
+    page.getByLabel(/^Acquis en entreprise pour Réceptionner et stocker la marchandise$/i).first(),
+  ).toBeVisible();
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

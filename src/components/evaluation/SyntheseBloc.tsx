@@ -22,9 +22,7 @@ export function SyntheseBloc({ stats }: SyntheseBlocProps) {
   return (
     <article className="rounded-lg border border-border bg-card p-4 space-y-3">
       <header>
-        <h3 className="font-medium">
-          {stats.bloc.code} — {stats.bloc.libelle}
-        </h3>
+        <h3 className="font-medium">{stats.bloc.libelle}</h3>
         <p className="text-xs text-muted-foreground">
           {stats.bloc.competences.length} compétence
           {stats.bloc.competences.length > 1 ? 's' : ''}

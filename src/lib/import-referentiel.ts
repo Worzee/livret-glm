@@ -8,19 +8,26 @@ import { parserXlsxBuffer } from './parser-xlsx';
  *   - Séparateur : `;` (default Excel FR) ou `,` (auto-détecté)
  *   - Encodage : UTF-8 ou Windows-1252 (auto-détecté)
  *   - 2 colonnes  : `Bloc;Compétence (leaf)`
- *   - 3 colonnes  : `Bloc;Sous-famille;Compétence (leaf)`
+ *   - 3 colonnes  : `Bloc;Sous-famille;Compétence détaillée (leaf)`
  *   - Première ligne = en-têtes (libre, ignorée)
  *
- * Exemple 3 colonnes :
- *   Domaine;Compétence;Sous-compétence
- *   A1.1;Compréhension orale;Reconnaître des mots très courants
- *   A1.1;Compréhension orale;Comprendre des consignes simples
- *   A1.1;Compréhension écrite;Reconnaître des mots familiers
+ * Les référentiels 3 colonnes peuvent être « mixtes » : la 3ᵉ colonne n'est
+ * renseignée que pour les compétences qui se déclinent en sous-compétences.
+ * Le parsing se fait alors ligne par ligne :
+ *   - 3ᵉ colonne remplie → la 2ᵉ colonne devient une sous-famille (regroupement
+ *     non évaluable) et la 3ᵉ la compétence-feuille évaluable.
+ *   - 3ᵉ colonne vide → la 2ᵉ colonne est elle-même la compétence-feuille.
  *
- * → Bloc "A1.1" contenant 3 leaves :
- *      - { sousFamille: "Compréhension orale", libelle: "Reconnaître…" }
- *      - { sousFamille: "Compréhension orale", libelle: "Comprendre…" }
- *      - { sousFamille: "Compréhension écrite", libelle: "Reconnaître…" }
+ * Exemple 3 colonnes mixte :
+ *   Bloc;Compétence;Compétence détaillée
+ *   C1;C1-1 Analyser le cahier des charges;            ← feuille directe (niveau 2)
+ *   C1;C1-6 Analyser un échantillon;C1-61 Analyser des matières
+ *   C1;C1-6 Analyser un échantillon;C1-62 Analyser des fils
+ *
+ * → Bloc "C1" contenant 3 leaves :
+ *      - { libelle: "C1-1 Analyser…" }                              (sans sousFamille)
+ *      - { sousFamille: "C1-6 Analyser un échantillon", libelle: "C1-61 …" }
+ *      - { sousFamille: "C1-6 Analyser un échantillon", libelle: "C1-62 …" }
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -125,21 +132,25 @@ export function parserCsv(texte: string, separateur?: string): string[][] {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Heuristique : si la majorité des lignes (hors en-tête) ont 3 colonnes
- * non-vides, c'est un référentiel 3-niveaux. Sinon 2-niveaux.
+ * Détermine si le fichier est un référentiel 2 ou 3 niveaux.
+ *
+ * Un fichier est traité en 3 niveaux dès que l'en-tête comporte 3 colonnes
+ * (signal fort : `Bloc;Compétence;Compétence détaillée`) OU qu'au moins une
+ * ligne du corps renseigne une 3ᵉ colonne. C'est volontairement permissif :
+ * beaucoup de référentiels sont « mixtes » (la 3ᵉ colonne n'est remplie que
+ * pour les compétences qui se déclinent en sous-compétences). Se baser sur la
+ * majorité des lignes ferait basculer ces fichiers en 2 niveaux et perdrait
+ * silencieusement la colonne détaillée.
  */
 export function detecterNiveauxColonnes(lignes: string[][]): 2 | 3 {
   if (lignes.length < 2) return 2;
-  // Sauter la première ligne (en-têtes présumés)
+  // En-tête à 3 colonnes (ou plus) → référentiel 3 niveaux.
+  const colsEnTete = lignes[0].filter((c) => c.trim().length > 0).length;
+  if (colsEnTete >= 3) return 3;
+  // Sinon, bascule en 3 niveaux dès qu'une ligne du corps a une 3ᵉ valeur.
   const corps = lignes.slice(1);
-  let avec3 = 0;
-  let avec2 = 0;
-  for (const ligne of corps) {
-    const remplies = ligne.filter((c) => c.trim().length > 0).length;
-    if (remplies >= 3) avec3++;
-    else if (remplies === 2) avec2++;
-  }
-  return avec3 > avec2 ? 3 : 2;
+  const auMoinsUneLigne3Niveaux = corps.some((l) => (l[2]?.trim().length ?? 0) > 0);
+  return auMoinsUneLigne3Niveaux ? 3 : 2;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -227,12 +238,21 @@ export function construireReferentiel(
     let libelleLeaf: string;
 
     if (niveaux === 3) {
-      sousFamille = ligne[1]?.trim();
-      libelleLeaf = ligne[2]?.trim() ?? '';
-      if (!sousFamille) {
-        avertissements.push(`Ligne ${numLigneCsv} : sous-famille vide, traitée comme niveau 2.`);
+      // Traitement ligne par ligne pour gérer les référentiels « mixtes »
+      // (certaines compétences ont un 3ᵉ niveau, d'autres non).
+      const col2 = ligne[1]?.trim() ?? '';
+      const col3 = ligne[2]?.trim() ?? '';
+      if (col3) {
+        // 3ᵉ niveau présent : col2 regroupe (sous-famille), col3 est la feuille.
+        libelleLeaf = col3;
+        if (col2) {
+          sousFamille = col2;
+          sousFamilles.add(col2);
+        }
       } else {
-        sousFamilles.add(sousFamille);
+        // Pas de 3ᵉ niveau : la 2ᵉ colonne est elle-même la feuille évaluable,
+        // sans sous-famille (sinon ces compétences seraient perdues).
+        libelleLeaf = col2;
       }
     } else {
       libelleLeaf = ligne[1]?.trim() ?? '';

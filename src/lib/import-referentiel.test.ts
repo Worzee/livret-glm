@@ -119,6 +119,16 @@ describe('detecterNiveauxColonnes', () => {
     expect(detecterNiveauxColonnes([])).toBe(2);
     expect(detecterNiveauxColonnes([['en-tête']])).toBe(2);
   });
+
+  it('détecte 3 colonnes sur un fichier mixte (en-tête à 3, majorité de lignes à 2)', () => {
+    const lignes = [
+      ['Bloc', 'Compétence', 'Compétence détaillée'],
+      ['C1', 'C1-1 Analyser', ''],
+      ['C1', 'C1-2 Recenser', ''],
+      ['C1', 'C1-3 Apporter', 'C1-31 Choix matière'],
+    ];
+    expect(detecterNiveauxColonnes(lignes)).toBe(3);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -190,6 +200,54 @@ describe('construireReferentiel — 3 colonnes (cas CECRL)', () => {
     expect(new Set(ids).size).toBe(ids.length); // tous uniques
     expect(ids[0]).toBe('bloc-a1-1-c1');
     expect(ids[2]).toBe('bloc-a1-1-c3');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Construction du Referentiel — cas 3 colonnes « mixte » (Pronote BTS)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('construireReferentiel — 3 colonnes mixte', () => {
+  it('traite chaque ligne selon la présence du 3ᵉ niveau', () => {
+    const lignes = [
+      ['Bloc', 'Compétence', 'Compétence détaillée'],
+      ['C1', 'C1-1 Analyser le cahier des charges', ''],
+      ['C1', 'C1-3 Apporter des solutions', 'C1-31 Proposer un choix de matière'],
+      ['C1', 'C1-3 Apporter des solutions', 'C1-32 Proposer des solutions techniques'],
+      ['C1', 'C1-9 Communiquer en mode projet', ''],
+    ];
+    const r = construireReferentiel(lignes, { nomFormation: 'BTS Textile' }, 'utf-8', ';');
+    expect(r.referentiel.niveauxColonnes).toBe(3);
+    const comps = r.referentiel.blocs[0].competences;
+    expect(comps).toHaveLength(4);
+
+    // Lignes sans 3ᵉ niveau : la 2ᵉ colonne est la feuille, sans sous-famille.
+    expect(comps[0].libelle).toBe('C1-1 Analyser le cahier des charges');
+    expect(comps[0].sousFamille).toBeUndefined();
+    expect(comps[3].libelle).toBe('C1-9 Communiquer en mode projet');
+    expect(comps[3].sousFamille).toBeUndefined();
+
+    // Lignes avec 3ᵉ niveau : feuille = détail, sous-famille = compétence niveau 2.
+    expect(comps[1].libelle).toBe('C1-31 Proposer un choix de matière');
+    expect(comps[1].sousFamille).toBe('C1-3 Apporter des solutions');
+    expect(comps[2].libelle).toBe('C1-32 Proposer des solutions techniques');
+    expect(comps[2].sousFamille).toBe('C1-3 Apporter des solutions');
+
+    // Une seule sous-famille (C1-3) ; C1-1 et C1-9 n'en créent pas.
+    expect(r.stats.nbSousFamilles).toBe(1);
+  });
+
+  it('ne perd aucune compétence de niveau 2 sans détail (régression bug import)', () => {
+    const lignes = [
+      ['Bloc', 'Compétence', 'Compétence détaillée'],
+      ['C1', 'C1-1 Sans détail', ''],
+      ['C1', 'C1-6 Avec détails', 'C1-61 Détail A'],
+      ['C1', 'C1-6 Avec détails', 'C1-62 Détail B'],
+      ['C2', 'C2-1 Autre bloc', ''],
+    ];
+    const r = construireReferentiel(lignes, { nomFormation: 'X' }, 'utf-8', ';');
+    const total = r.referentiel.blocs.reduce((n, b) => n + b.competences.length, 0);
+    expect(total).toBe(4); // aucune ligne ignorée
   });
 });
 
