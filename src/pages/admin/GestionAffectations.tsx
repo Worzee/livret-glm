@@ -15,6 +15,7 @@ import type { Apprenti, Livret } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
+import { useEntreprisesStore } from '@/store/useEntreprisesStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
 import {
@@ -50,6 +51,7 @@ export function GestionAffectations() {
   const coordos = useUtilisateursStore((s) => s.coordos);
   const modifierApprenti = useUtilisateursStore((s) => s.modifierApprenti);
   const formations = useFormationsStore((s) => s.formations);
+  const entreprises = useEntreprisesStore((s) => s.entreprises);
   const livrets = useLivretStore((s) => s.livrets);
   // Auteur des changements (traçabilité de l'historique d'entreprise).
   const auteur = {
@@ -80,6 +82,7 @@ export function GestionAffectations() {
   const maitresList = useMemo(() => Object.values(maitres), [maitres]);
   const formateursList = useMemo(() => Object.values(formateurs), [formateurs]);
   const coordosList = useMemo(() => Object.values(coordos), [coordos]);
+  const entreprisesList = useMemo(() => Object.values(entreprises), [entreprises]);
 
   function basculerDeverrouTemp(apprentiId: string) {
     setDeverrouillesTemp((s) => {
@@ -230,6 +233,7 @@ export function GestionAffectations() {
                       formateurs={formateursList}
                       coordos={coordosList}
                       coordoEditable={roleActif === 'admin'}
+                      entreprises={entreprisesList}
                       deverrouilleTemp={deverrouillesTemp.has(a.id)}
                       onBasculerVerrou={() => basculerDeverrouTemp(a.id)}
                       onChange={(patch) => modifierApprenti(a.id, patch, auteur)}
@@ -256,6 +260,7 @@ interface LigneAffectationProps {
   maitres: Array<{ id: string; prenom: string; nom: string; entreprise: string }>;
   formateurs: Array<{ id: string; prenom: string; nom: string }>;
   coordos: Array<{ id: string; prenom: string; nom: string }>;
+  entreprises: Array<{ id: string; raisonSociale: string }>;
   /**
    * L'affectation apprenti ↔ coordo est réservée à l'admin (juin 2026) :
    * le coordo voit la colonne en lecture seule.
@@ -273,6 +278,7 @@ function LigneAffectation({
   maitres,
   formateurs,
   coordos,
+  entreprises,
   coordoEditable,
   deverrouilleTemp,
   onBasculerVerrou,
@@ -301,15 +307,10 @@ function LigneAffectation({
     setTimeout(() => setChampFlash((c) => (c === champ ? null : c)), 1500);
   }
 
+  // L'entreprise est un choix indépendant (colonne dédiée) — changer le maître
+  // ne la modifie plus (juin 2026, cohérent avec la modale apprenti·e).
   function changerMaitre(nouveauId: string) {
-    const m = maitres.find((mm) => mm.id === nouveauId);
-    patcher(
-      {
-        maitreApprentissageId: nouveauId,
-        entrepriseId: m?.entreprise ?? apprenti.entrepriseId,
-      },
-      'maitre',
-    );
+    patcher({ maitreApprentissageId: nouveauId }, 'maitre');
   }
 
   // Second maître optionnel (juin 2026) — '' = aucun. L'entreprise de
@@ -424,7 +425,21 @@ function LigneAffectation({
           </span>
         )}
       </td>
-      <td className="px-4 py-2 text-muted-foreground text-xs">{apprenti.entrepriseId}</td>
+      <td className="px-2 py-2">
+        <SelectAutoSave
+          valeur={apprenti.entrepriseId}
+          onChange={(v) => patcher({ entrepriseId: v }, 'entreprise')}
+          aDestinationDuFlash={champFlash === 'entreprise'}
+          desactive={!editable}
+          ariaLabel={`Entreprise d'accueil de ${apprenti.prenom} ${apprenti.nom}`}
+        >
+          {entreprises.map((e) => (
+            <option key={e.id} value={e.id}>
+              {e.raisonSociale}
+            </option>
+          ))}
+        </SelectAutoSave>
+      </td>
       <td className="px-2 py-2 text-right">
         {verrou.verrouille && !deverrouilleTemp && (
           <div className="inline-flex flex-col items-end gap-1">

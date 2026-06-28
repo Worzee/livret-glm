@@ -101,6 +101,31 @@ test('le tableau de bord apprenti·e affiche son entreprise d\'accueil', async (
   await expect(blocEntreprise.getByText(/Restaurant Le Gourmet/)).toBeVisible();
 });
 
+test('depuis Affectations, l\'entreprise est une liste déroulante modifiable', async ({ page }) => {
+  await selectRole(page, 'Admin');
+  await page.goto('/admin/affectations');
+
+  // La colonne Entreprise est désormais un select (raison sociale), plus l'id brut.
+  await expect(page.getByText('e-le-gourmet')).toHaveCount(0);
+  const ligneLuca = page.locator('tr', { hasText: 'Luca BIANCHI' });
+  const selectEnt = ligneLuca.getByRole('combobox', {
+    name: /Entreprise d'accueil de Luca BIANCHI/i,
+  });
+  await expect(selectEnt).toBeVisible();
+
+  // Les affectations de Luca sont verrouillées (contrat démarré) → déverrouiller.
+  await ligneLuca
+    .getByRole('button', { name: /Déverrouiller temporairement les affectations de Luca BIANCHI/i })
+    .click();
+  await ligneLuca
+    .getByRole('button', { name: /Confirmer le déverrouillage temporaire de Luca BIANCHI/i })
+    .click();
+
+  // Changer l'entreprise → la nouvelle valeur est reflétée (et tracée).
+  await selectEnt.selectOption({ label: 'Le Bistrot des Canuts' });
+  await expect(selectEnt).toHaveValue('e-bistrot-canuts');
+});
+
 test('un changement d\'entreprise en cours de contrat est signalé (Luca)', async ({ page }) => {
   // Luca a un historique à 2 entreprises (Le Gourmet → La Brasserie du Rhône).
   await page.getByRole('button', { name: /Ouvrir le livret de Luca BIANCHI/i }).click();
