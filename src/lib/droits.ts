@@ -148,6 +148,8 @@ export type Ressource =
   | 'admin.banque-questions.gerer'
   /** CRUD sur les établissements (lieux de formation, URL Pronote). */
   | 'admin.etablissements.gerer'
+  /** CRUD sur les entreprises d'accueil des apprenti·e·s (juin 2026). */
+  | 'admin.entreprises.gerer'
   /**
    * CRUD sur le catalogue global des attitudes professionnelles (retours
    * coordos juin 2026 — évaluées par le maître à chaque entretien).
@@ -243,6 +245,7 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'admin.referentiels.gerer': ['coordo', 'admin'],
   'admin.banque-questions.gerer': ['admin'], // admin uniquement (18 juin 2026)
   'admin.etablissements.gerer': ['admin'], // admin uniquement
+  'admin.entreprises.gerer': ['coordo', 'admin'], // coordo + admin (gestion des apprenti·e·s)
   'admin.attitudes.gerer': ['admin'], // admin uniquement
 };
 

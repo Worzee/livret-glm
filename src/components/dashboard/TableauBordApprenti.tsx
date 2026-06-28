@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
   ArrowRight,
+  Briefcase,
   Building2,
   CalendarClock,
   CalendarRange,
@@ -18,6 +19,7 @@ import {
 import type { Apprenti, Livret } from '@/types';
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { useEtablissementsStore } from '@/store/useEtablissementsStore';
+import { useEntreprisesStore } from '@/store/useEntreprisesStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { useApprentiActifStore } from '@/store/useApprentiActifStore';
 import { calculerResumeLivret, classesBadgeCas, libelleCas } from '@/lib/etat-livret';
@@ -53,6 +55,7 @@ function formatFr(iso: string): string {
 export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiProps) {
   const formations = useFormationsStore((s) => s.formations);
   const etablissements = useEtablissementsStore((s) => s.etablissements);
+  const entreprises = useEntreprisesStore((s) => s.entreprises);
   const maitres = useUtilisateursStore((s) => s.maitres);
   const formateurs = useUtilisateursStore((s) => s.formateurs);
   const setApprentiActif = useApprentiActifStore((s) => s.setApprentiActif);
@@ -66,6 +69,9 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
 
   const formation = formations[apprenti.formationId];
   const etablissement = formation ? etablissements[formation.lieuId] : undefined;
+  const entreprise = entreprises[apprenti.entrepriseId];
+  const histoEntreprises = apprenti.historiqueEntreprises ?? [];
+  const derniereAffectation = histoEntreprises[histoEntreprises.length - 1];
   const maitre = maitres[apprenti.maitreApprentissageId];
   const maitreSecond = apprenti.maitreApprentissageSecondId
     ? maitres[apprenti.maitreApprentissageSecondId]
@@ -141,6 +147,24 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
               {etablissement
                 ? `${etablissement.nom}${etablissement.ville ? ` — ${etablissement.ville}` : ''}`
                 : '—'}
+            </Ligne>
+            <Ligne label="Entreprise d'accueil" Icon={Briefcase}>
+              {entreprise ? (
+                <>
+                  {entreprise.raisonSociale}
+                  {entreprise.ville ? (
+                    <span className="text-muted-foreground"> — {entreprise.ville}</span>
+                  ) : null}
+                  {derniereAffectation ? (
+                    <span className="block text-xs font-normal text-muted-foreground">
+                      depuis le {formatFr(derniereAffectation.dateIso)}
+                      {histoEntreprises.length > 1 ? ' · changement en cours de contrat' : ''}
+                    </span>
+                  ) : null}
+                </>
+              ) : (
+                '—'
+              )}
             </Ligne>
             <Ligne label="Contrat">
               du {formatFr(apprenti.contratDebut)} au {formatFr(apprenti.contratFin)}

@@ -14,6 +14,7 @@ import { GestionAffectations } from '@/pages/admin/GestionAffectations';
 import { GestionReferentiels } from '@/pages/admin/GestionReferentiels';
 import { GestionBanqueQuestions } from '@/pages/admin/GestionBanqueQuestions';
 import { GestionEtablissements } from '@/pages/admin/GestionEtablissements';
+import { GestionEntreprises } from '@/pages/admin/GestionEntreprises';
 import { GestionAttitudes } from '@/pages/admin/GestionAttitudes';
 import { PronoteWeb } from '@/pages/PronoteWeb';
 
@@ -50,6 +51,7 @@ export function App() {
         <Route path="admin/import-utilisateurs" element={<ImportUtilisateurs />} />
         <Route path="admin/formations" element={<GestionFormations />} />
         <Route path="admin/affectations" element={<GestionAffectations />} />
+        <Route path="admin/entreprises" element={<GestionEntreprises />} />
         <Route path="admin/referentiels" element={<GestionReferentiels />} />
         <Route path="admin/banque-questions" element={<GestionBanqueQuestions />} />
         <Route path="admin/etablissements" element={<GestionEtablissements />} />

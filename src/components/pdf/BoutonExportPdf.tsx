@@ -3,6 +3,7 @@ import { AlertTriangle, FileDown } from 'lucide-react';
 import type {
   Apprenti,
   AttitudeProfessionnelle,
+  Entreprise,
   Etablissement,
   Formateur,
   Formation,
@@ -58,6 +59,8 @@ interface BoutonExportPdfProps {
   referentiel: Referentiel;
   /** Établissement (résolu depuis `formation.lieuId`). */
   etablissement?: Etablissement;
+  /** Entreprise d'accueil (résolue depuis `apprenti.entrepriseId`). */
+  entreprise?: Entreprise;
   /** Banque indexée des questions de l'entretien (refonte mai 2026). */
   banqueQuestions: Record<string, QuestionBanque>;
   /** Catalogue global des attitudes professionnelles (juin 2026). */

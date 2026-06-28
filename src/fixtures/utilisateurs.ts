@@ -29,6 +29,16 @@ export const apprentiLeaMartin: Apprenti = {
   dateNaissance: '2007-04-15',
   formationId: 'f-cap-cuisine-2025',
   entrepriseId: 'e-le-gourmet',
+  historiqueEntreprises: [
+    {
+      id: 'aff-lea-1',
+      entrepriseId: 'e-le-gourmet',
+      dateIso: '2025-09-02T08:00:00.000Z',
+      auteurId: 'u-coordo-martine',
+      auteurNom: 'Martine LEFÈVRE',
+      auteurRole: 'coordo',
+    },
+  ],
   maitreApprentissageId: 'u-maitre-karim',
   formateurReferentId: 'u-formateur-sophie',
   coordoId: 'u-coordo-martine',
@@ -46,6 +56,16 @@ export const apprentiTheoDubois: Apprenti = {
   dateNaissance: '2006-11-23',
   formationId: 'f-cap-cuisine-2025',
   entrepriseId: 'e-le-gourmet',
+  historiqueEntreprises: [
+    {
+      id: 'aff-theo-1',
+      entrepriseId: 'e-le-gourmet',
+      dateIso: '2025-09-02T08:00:00.000Z',
+      auteurId: 'u-coordo-martine',
+      auteurNom: 'Martine LEFÈVRE',
+      auteurRole: 'coordo',
+    },
+  ],
   maitreApprentissageId: 'u-maitre-karim',
   formateurReferentId: 'u-formateur-sophie',
   coordoId: 'u-coordo-martine',
@@ -63,6 +83,16 @@ export const apprentiSofiaPereira: Apprenti = {
   dateNaissance: '2007-08-04',
   formationId: 'f-cap-cuisine-2025',
   entrepriseId: 'e-le-gourmet',
+  historiqueEntreprises: [
+    {
+      id: 'aff-sofia-1',
+      entrepriseId: 'e-le-gourmet',
+      dateIso: '2025-09-02T08:00:00.000Z',
+      auteurId: 'u-coordo-martine',
+      auteurNom: 'Martine LEFÈVRE',
+      auteurRole: 'coordo',
+    },
+  ],
   maitreApprentissageId: 'u-maitre-karim',
   formateurReferentId: 'u-formateur-sophie',
   coordoId: 'u-coordo-martine',
@@ -80,6 +110,16 @@ export const apprentiMinhNguyen: Apprenti = {
   dateNaissance: '2007-02-19',
   formationId: 'f-cap-cuisine-2025',
   entrepriseId: 'e-brasserie-rhone',
+  historiqueEntreprises: [
+    {
+      id: 'aff-minh-1',
+      entrepriseId: 'e-brasserie-rhone',
+      dateIso: '2025-09-02T08:00:00.000Z',
+      auteurId: 'u-coordo-bernard',
+      auteurNom: 'Bernard PETIT',
+      auteurRole: 'coordo',
+    },
+  ],
   maitreApprentissageId: 'u-maitre-helene',
   formateurReferentId: 'u-formateur-sophie',
   coordoId: 'u-coordo-bernard',
@@ -97,6 +137,16 @@ export const apprentiAyaKouame: Apprenti = {
   dateNaissance: '2006-06-30',
   formationId: 'f-cap-cuisine-2025',
   entrepriseId: 'e-brasserie-rhone',
+  historiqueEntreprises: [
+    {
+      id: 'aff-aya-1',
+      entrepriseId: 'e-brasserie-rhone',
+      dateIso: '2025-09-02T08:00:00.000Z',
+      auteurId: 'u-coordo-bernard',
+      auteurNom: 'Bernard PETIT',
+      auteurRole: 'coordo',
+    },
+  ],
   maitreApprentissageId: 'u-maitre-helene',
   formateurReferentId: 'u-formateur-sophie',
   coordoId: 'u-coordo-bernard',
@@ -114,6 +164,27 @@ export const apprentiLucaBianchi: Apprenti = {
   dateNaissance: '2007-01-12',
   formationId: 'f-cap-cuisine-2025',
   entrepriseId: 'e-brasserie-rhone',
+  // Changement d'entreprise en cours de contrat (démontre la traçabilité) :
+  // Luca a démarré au Gourmet (avec Karim, resté second tuteur) puis a rejoint
+  // la Brasserie du Rhône (avec Hélène).
+  historiqueEntreprises: [
+    {
+      id: 'aff-luca-1',
+      entrepriseId: 'e-le-gourmet',
+      dateIso: '2025-09-02T08:00:00.000Z',
+      auteurId: 'u-coordo-martine',
+      auteurNom: 'Martine LEFÈVRE',
+      auteurRole: 'coordo',
+    },
+    {
+      id: 'aff-luca-2',
+      entrepriseId: 'e-brasserie-rhone',
+      dateIso: '2026-03-02T08:00:00.000Z',
+      auteurId: 'u-coordo-bernard',
+      auteurNom: 'Bernard PETIT',
+      auteurRole: 'coordo',
+    },
+  ],
   maitreApprentissageId: 'u-maitre-helene',
   // Double tutorat (juin 2026) : Karim suit aussi Luca (second maître).
   maitreApprentissageSecondId: 'u-maitre-karim',

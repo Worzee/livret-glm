@@ -128,9 +128,25 @@ export interface Entreprise {
   id: string;
   raisonSociale: string;
   siret?: string;
-  adresse: string;
-  codePostal: string;
-  ville: string;
+  adresse?: string;
+  codePostal?: string;
+  ville?: string;
+}
+
+/**
+ * Affectation datée d'un·e apprenti·e à une entreprise (juin 2026). L'historique
+ * de ces affectations permet de tracer un changement d'entreprise en cours de
+ * contrat. La dernière entrée correspond à l'entreprise actuelle
+ * (`Apprenti.entrepriseId`).
+ */
+export interface AffectationEntreprise {
+  id: string;
+  entrepriseId: string;
+  /** Date ISO de prise d'effet de l'affectation. */
+  dateIso: string;
+  auteurId: string;
+  auteurNom: string;
+  auteurRole: Role;
 }
 
 export interface Apprenti extends Utilisateur {
@@ -138,6 +154,13 @@ export interface Apprenti extends Utilisateur {
   dateNaissance: string;
   formationId: string;
   entrepriseId: string;
+  /**
+   * Historique daté des affectations d'entreprise (juin 2026). Toujours non
+   * vide après création : la 1ʳᵉ entrée est l'affectation initiale, chaque
+   * changement d'`entrepriseId` en ajoute une. Optionnel pour la rétrocompat
+   * des données persistées avant le bump v5 (reset aux fixtures).
+   */
+  historiqueEntreprises?: AffectationEntreprise[];
   /** Maître / tuteur principal — affiché dans les en-têtes et le PDF. */
   maitreApprentissageId: string;
   /**

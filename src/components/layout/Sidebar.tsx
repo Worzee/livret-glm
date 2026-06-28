@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   Activity,
+  Briefcase,
   Building2,
   CalendarRange,
   ClipboardList,
@@ -86,6 +87,12 @@ const LIENS_ADMIN: Array<LienItem & { ressource: Ressource }> = [
     label: 'Affectations',
     Icon: Link2,
     ressource: 'admin.affectations.gerer',
+  },
+  {
+    to: '/admin/entreprises',
+    label: 'Entreprises',
+    Icon: Briefcase,
+    ressource: 'admin.entreprises.gerer',
   },
   {
     to: '/admin/referentiels',

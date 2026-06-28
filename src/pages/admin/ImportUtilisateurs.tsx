@@ -151,7 +151,11 @@ export function ImportUtilisateurs() {
             formateurReferentId: '',
             coordoId: roleActif === 'coordo' ? utilisateurActif.id : undefined,
           },
-          utilisateurActif.id,
+          {
+            id: utilisateurActif.id,
+            nom: `${utilisateurActif.prenom} ${utilisateurActif.nom}`,
+            role: roleActif,
+          },
         );
       }
       setResultatImport({ nb: lignes.length });

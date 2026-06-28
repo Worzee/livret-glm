@@ -13,6 +13,11 @@ import { useApprentiActifStore } from './useApprentiActifStore';
 import { useFormationsStore } from './useFormationsStore';
 import { creerLivretVierge } from '@/lib/creation-livret';
 import { maitresIdsDeLApprenti } from '@/lib/maitres-apprenti';
+import {
+  ajouterAffectationSiChangement,
+  creerAffectation,
+  type AuteurAffectation,
+} from '@/lib/historique-entreprise';
 
 /**
  * Store des utilisateurs du dispositif (4 rôles métier + admin).
@@ -46,9 +51,17 @@ interface UtilisateursStore {
    * Crée un·e nouvel·le apprenti·e + son livret vierge associé.
    * @returns l'apprenti·e créé·e (avec id auto-généré).
    */
-  ajouterApprenti: (input: Omit<Apprenti, 'id' | 'role'>, auteurId: string) => Apprenti;
-  /** Met à jour les champs d'un·e apprenti·e existant·e. */
-  modifierApprenti: (id: string, patch: Partial<Omit<Apprenti, 'id' | 'role'>>) => void;
+  ajouterApprenti: (input: Omit<Apprenti, 'id' | 'role'>, auteur: AuteurAffectation) => Apprenti;
+  /**
+   * Met à jour les champs d'un·e apprenti·e existant·e. Si `entrepriseId` change
+   * et qu'un `auteur` est fourni, une entrée datée est ajoutée à
+   * `historiqueEntreprises` (traçabilité du changement d'entreprise).
+   */
+  modifierApprenti: (
+    id: string,
+    patch: Partial<Omit<Apprenti, 'id' | 'role'>>,
+    auteur?: AuteurAffectation,
+  ) => void;
   /**
    * Supprime un·e apprenti·e + son livret + retire les références dans les
    * maîtres concernés. Si l'apprenti·e supprimé·e était l'apprenti·e actif·ve,
@@ -93,9 +106,11 @@ interface UtilisateursStore {
   reinitialiser: () => void;
 }
 
-// v4 — répartition des apprenti·e·s par coordo (juin 2026) : fixtures
-//      rechargées avec `Apprenti.coordoId` + 2ᵉ coordo (Bernard PETIT).
-const VERSION_SCHEMA = 4;
+// v4 — répartition des apprenti·e·s par coordo (juin 2026).
+// v5 — entreprise gérée comme entité + `Apprenti.historiqueEntreprises`
+//      (juin 2026) : `entrepriseId` pointe vers `useEntreprisesStore`,
+//      traçabilité des changements d'entreprise en cours de contrat.
+const VERSION_SCHEMA = 5;
 
 /** État initial calculé depuis les fixtures. */
 function etatInitial(): Pick<
@@ -116,9 +131,14 @@ export const useUtilisateursStore = create<UtilisateursStore>()(
     (set, get) => ({
       ...etatInitial(),
 
-      ajouterApprenti: (input, auteurId) => {
+      ajouterApprenti: (input, auteur) => {
         const id = `u-apprenti-${crypto.randomUUID().slice(0, 8)}`;
-        const apprenti: Apprenti = { id, role: 'apprenti', ...input };
+        // Historique d'entreprise : entrée initiale si une entreprise est déjà
+        // affectée à la création (vide pour un import orphelin sans entreprise).
+        const historiqueEntreprises = input.entrepriseId
+          ? [creerAffectation(input.entrepriseId, auteur, new Date().toISOString())]
+          : [];
+        const apprenti: Apprenti = { id, role: 'apprenti', ...input, historiqueEntreprises };
         // Le livret hérite des fiches du planning de la formation rattachée
         // (chantier #1) — vide si l'apprenti·e n'a pas encore de formation
         // (cas d'un import XLSX sans affectation).
@@ -130,7 +150,7 @@ export const useUtilisateursStore = create<UtilisateursStore>()(
         const livret = creerLivretVierge(
           apprenti,
           `livret-${id}`,
-          auteurId,
+          auteur.id,
           planning,
           new Date(),
           planningCentre,
@@ -158,11 +178,25 @@ export const useUtilisateursStore = create<UtilisateursStore>()(
         return apprenti;
       },
 
-      modifierApprenti: (id, patch) => {
+      modifierApprenti: (id, patch, auteur) => {
         const s = get();
         const apprenti = s.apprentis[id];
         if (!apprenti) return;
-        const nouveau: Apprenti = { ...apprenti, ...patch };
+        // Traçabilité : si l'entreprise change et qu'un auteur est fourni, on
+        // ajoute une entrée datée à l'historique des affectations.
+        let patchFinal = patch;
+        if (patch.entrepriseId && patch.entrepriseId !== apprenti.entrepriseId && auteur) {
+          patchFinal = {
+            ...patch,
+            historiqueEntreprises: ajouterAffectationSiChangement(
+              apprenti.historiqueEntreprises,
+              patch.entrepriseId,
+              auteur,
+              new Date().toISOString(),
+            ),
+          };
+        }
+        const nouveau: Apprenti = { ...apprenti, ...patchFinal };
         const updates: Partial<UtilisateursStore> = {
           apprentis: { ...s.apprentis, [id]: nouveau },
         };

@@ -1,9 +1,11 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { GraduationCap, X } from 'lucide-react';
-import type { Apprenti, Maitre } from '@/types';
+import { GraduationCap, History, X } from 'lucide-react';
+import type { AffectationEntreprise, Apprenti, Entreprise, Maitre } from '@/types';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
+import { useEntreprisesStore } from '@/store/useEntreprisesStore';
 import { useUserStore } from '@/store/useUserStore';
+import { libelleRole } from '@/lib/droits';
 import { type SaisieApprenti, validerSaisieApprenti } from '@/lib/validation-apprenti';
 import { cn } from '@/lib/utils';
 
@@ -51,8 +53,9 @@ export function ModaleApprenti({ ouvert, apprenti, onAnnuler, onValide }: Modale
   const formateurs = useUtilisateursStore((s) => s.formateurs);
   const coordos = useUtilisateursStore((s) => s.coordos);
   const formations = useFormationsStore((s) => s.formations);
+  const entreprises = useEntreprisesStore((s) => s.entreprises);
   const roleActif = useUserStore((s) => s.roleActif);
-  const auteurId = useUserStore((s) => s.utilisateurActif.id);
+  const utilisateurActif = useUserStore((s) => s.utilisateurActif);
 
   const titreId = useId();
   const premierChampRef = useRef<HTMLInputElement>(null);
@@ -61,6 +64,12 @@ export function ModaleApprenti({ ouvert, apprenti, onAnnuler, onValide }: Modale
   const maitresList = useMemo(() => Object.values(maitres), [maitres]);
   const formateursList = useMemo(() => Object.values(formateurs), [formateurs]);
   const coordosList = useMemo(() => Object.values(coordos), [coordos]);
+  const entreprisesList = useMemo(() => Object.values(entreprises), [entreprises]);
+  const auteur = {
+    id: utilisateurActif.id,
+    nom: `${utilisateurActif.prenom} ${utilisateurActif.nom}`,
+    role: roleActif,
+  };
 
   // Pré-remplir avec les valeurs de l'apprenti·e à éditer ou avec des défauts
   // sensés en création (premier·e formateur·rice + premier maître + 1ʳᵉ formation).
@@ -79,10 +88,10 @@ export function ModaleApprenti({ ouvert, apprenti, onAnnuler, onValide }: Modale
       formationId: formation?.id ?? '',
       maitreApprentissageId: maitre?.id ?? '',
       formateurReferentId: formateur?.id ?? '',
-      entrepriseId: maitre?.entreprise ?? '',
+      entrepriseId: entreprisesList[0]?.id ?? '',
       // Un coordo qui crée un·e apprenti·e se l'affecte automatiquement ;
       // l'admin choisit via le champ dédié (juin 2026).
-      coordoId: roleActif === 'coordo' ? auteurId : undefined,
+      coordoId: roleActif === 'coordo' ? utilisateurActif.id : undefined,
     };
   }
 
@@ -120,15 +129,10 @@ export function ModaleApprenti({ ouvert, apprenti, onAnnuler, onValide }: Modale
   // a saisi les champs concernés — pas besoin d'attendre la soumission.
   const avertissements = validation.avertissements;
 
-  // Synchronisation entreprise ↔ maître : quand on change de maître, l'entreprise
-  // par défaut suit (modifiable via le champ entreprise lui-même).
+  // L'entreprise est désormais un choix indépendant (liste déroulante) — le
+  // changement de maître ne la pré-remplit plus (juin 2026).
   function changerMaitre(id: string) {
-    const maitre = maitresList.find((m) => m.id === id);
-    setSaisie((s) => ({
-      ...s,
-      maitreApprentissageId: id,
-      entrepriseId: maitre?.entreprise ?? s.entrepriseId,
-    }));
+    setSaisie((s) => ({ ...s, maitreApprentissageId: id }));
   }
 
   function soumettre(e: React.FormEvent) {
@@ -144,10 +148,10 @@ export function ModaleApprenti({ ouvert, apprenti, onAnnuler, onValide }: Modale
       maitreApprentissageSecondId: saisie.maitreApprentissageSecondId || undefined,
     };
     if (apprenti) {
-      modifier(apprenti.id, nettoyee);
+      modifier(apprenti.id, nettoyee, auteur);
       onValide?.({ ...apprenti, ...nettoyee });
     } else {
-      const cree = ajouter(nettoyee, auteurId);
+      const cree = ajouter(nettoyee, auteur);
       onValide?.(cree);
     }
     onAnnuler();
@@ -310,12 +314,12 @@ export function ModaleApprenti({ ouvert, apprenti, onAnnuler, onValide }: Modale
               erreur={erreurs.maitreApprentissageSecondId}
               optionVide="— Aucun —"
             />
-            <Champ
-              label="Identifiant entreprise"
+            <ChampSelect
+              label="Entreprise d'accueil"
               valeur={saisie.entrepriseId}
               onChange={(v) => setSaisie((s) => ({ ...s, entrepriseId: v }))}
+              options={entreprisesList.map((e) => ({ value: e.id, libelle: e.raisonSociale }))}
               erreur={erreurs.entrepriseId}
-              hint="Pré-rempli depuis le maître sélectionné"
               obligatoire
             />
             <ChampSelect
@@ -344,6 +348,14 @@ export function ModaleApprenti({ ouvert, apprenti, onAnnuler, onValide }: Modale
               />
             )}
           </Section>
+
+          {/* Historique des affectations d'entreprise (édition uniquement) */}
+          {apprenti?.historiqueEntreprises && apprenti.historiqueEntreprises.length > 0 && (
+            <HistoriqueEntreprises
+              historique={apprenti.historiqueEntreprises}
+              entreprises={entreprises}
+            />
+          )}
         </div>
 
         <div className="sticky bottom-0 flex flex-row-reverse items-center gap-2 border-t border-border bg-secondary/30 p-3">
@@ -374,6 +386,43 @@ export function ModaleApprenti({ ouvert, apprenti, onAnnuler, onValide }: Modale
 // ─────────────────────────────────────────────────────────────────────────────
 // Sous-composants — section, champ texte, champ select
 // ─────────────────────────────────────────────────────────────────────────────
+
+function HistoriqueEntreprises({
+  historique,
+  entreprises,
+}: {
+  historique: AffectationEntreprise[];
+  entreprises: Record<string, Entreprise>;
+}) {
+  // Plus récent en premier ; la 1ʳᵉ entrée affichée est l'entreprise actuelle.
+  const entrees = [...historique].reverse();
+  return (
+    <section className="space-y-2 rounded-md border border-border bg-secondary/20 p-3">
+      <h3 className="flex items-center gap-1.5 text-sm font-medium">
+        <History className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+        Historique des entreprises
+      </h3>
+      <ol className="space-y-1.5 text-xs">
+        {entrees.map((e, i) => (
+          <li key={e.id} className="flex flex-wrap items-baseline gap-x-2">
+            <span className="font-medium text-foreground">
+              {entreprises[e.entrepriseId]?.raisonSociale ?? 'Entreprise inconnue'}
+            </span>
+            {i === 0 && (
+              <span className="rounded bg-role-apprenti/10 px-1 text-[10px] font-medium text-role-apprenti">
+                actuelle
+              </span>
+            )}
+            <span className="text-muted-foreground">
+              depuis le {new Date(e.dateIso).toLocaleDateString('fr-FR')} — {e.auteurNom} (
+              {libelleRole(e.auteurRole)})
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
 
 function Section({ titre, children }: { titre: string; children: React.ReactNode }) {
   return (

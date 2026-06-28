@@ -1,6 +1,7 @@
 import type {
   Apprenti,
   AttitudeProfessionnelle,
+  Entreprise,
   Etablissement,
   Formateur,
   Formation,
@@ -14,6 +15,7 @@ import { useFormationsStore } from '@/store/useFormationsStore';
 import { useReferentielsStore } from '@/store/useReferentielsStore';
 import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
 import { useEtablissementsStore } from '@/store/useEtablissementsStore';
+import { useEntreprisesStore } from '@/store/useEntreprisesStore';
 import { useAttitudesStore } from '@/store/useAttitudesStore';
 import { getMaitreByIdFromStore } from '@/store/useUtilisateursStore';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
@@ -29,6 +31,7 @@ export interface DonneesLivretPdf {
   formation: Formation;
   referentiel: Referentiel;
   etablissement?: Etablissement;
+  entreprise?: Entreprise;
   banqueQuestions: Record<string, QuestionBanque>;
   attitudes: AttitudeProfessionnelle[];
 }
@@ -49,6 +52,7 @@ export function useDonneesLivretPdf(): DonneesLivretPdf | null {
   const referentiels = useReferentielsStore((s) => s.referentiels);
   const banqueQuestions = useBanqueQuestionsStore((s) => s.questions);
   const etablissements = useEtablissementsStore((s) => s.etablissements);
+  const entreprises = useEntreprisesStore((s) => s.entreprises);
   const attitudesMap = useAttitudesStore((s) => s.attitudes);
   const ctx = useApprentiActif();
 
@@ -57,6 +61,7 @@ export function useDonneesLivretPdf(): DonneesLivretPdf | null {
   const formation = formations[apprenti.formationId] ?? formationCapCuisine;
   const referentiel = referentiels[formation.referentielId] ?? referentielCapCuisine;
   const etablissement = etablissements[formation.lieuId];
+  const entreprise = entreprises[apprenti.entrepriseId];
   const maitre = getMaitreByIdFromStore(apprenti.maitreApprentissageId) ?? maitreKarimBenali;
   const maitreSecond = apprenti.maitreApprentissageSecondId
     ? getMaitreByIdFromStore(apprenti.maitreApprentissageSecondId)
@@ -71,6 +76,7 @@ export function useDonneesLivretPdf(): DonneesLivretPdf | null {
     formation,
     referentiel,
     etablissement,
+    entreprise,
     banqueQuestions,
     attitudes: Object.values(attitudesMap),
   };

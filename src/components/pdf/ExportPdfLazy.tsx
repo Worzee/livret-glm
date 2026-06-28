@@ -2,6 +2,7 @@ import { PDFDownloadLink } from '@react-pdf/renderer';
 import type {
   Apprenti,
   AttitudeProfessionnelle,
+  Entreprise,
   Etablissement,
   Formateur,
   Formation,
@@ -45,6 +46,7 @@ interface ExportPdfLazyProps {
   formation: Formation;
   referentiel: Referentiel;
   etablissement?: Etablissement;
+  entreprise?: Entreprise;
   banqueQuestions: Record<string, QuestionBanque>;
   attitudes: ReadonlyArray<AttitudeProfessionnelle>;
 }

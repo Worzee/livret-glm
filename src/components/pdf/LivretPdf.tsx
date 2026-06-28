@@ -5,6 +5,7 @@ import type {
   AttitudeProfessionnelle,
   BlocCompetences,
   Competence,
+  Entreprise,
   EntretienTripartite,
   Etablissement,
   FicheSuiviPeriode,
@@ -70,6 +71,8 @@ export interface LivretPdfProps {
    * (cas non nominal, on affiche un fallback).
    */
   etablissement?: Etablissement;
+  /** Entreprise d'accueil de l'apprenti·e — résolue via `apprenti.entrepriseId`. */
+  entreprise?: Entreprise;
   /**
    * Banque indexée des questions de l'entretien (refonte mai 2026).
    * Permet au PDF de résoudre les libellés depuis les questionId stockées
@@ -94,6 +97,7 @@ export function LivretPdf({
   formation,
   referentiel,
   etablissement,
+  entreprise,
   banqueQuestions,
   attitudes,
   dateExport,
@@ -118,6 +122,7 @@ export function LivretPdf({
         formateur={formateur}
         formation={formation}
         etablissement={etablissement}
+        entreprise={entreprise}
         livret={livret}
         dateExport={date}
       />
@@ -186,6 +191,7 @@ export function PeriodePdf({
   formation,
   referentiel,
   etablissement,
+  entreprise,
   dateExport,
   lieu = 'entreprise',
 }: LivretPdfProps & { fiche: FicheSuiviPeriode; lieu?: LieuFiche }) {
@@ -206,6 +212,7 @@ export function PeriodePdf({
         formateur={formateur}
         formation={formation}
         etablissement={etablissement}
+        entreprise={entreprise}
         livret={livret}
         dateExport={date}
       />
@@ -231,6 +238,7 @@ export function EntretienPdf({
   formateur,
   formation,
   etablissement,
+  entreprise,
   banqueQuestions,
   attitudes,
   dateExport,
@@ -253,6 +261,7 @@ export function EntretienPdf({
         formateur={formateur}
         formation={formation}
         etablissement={etablissement}
+        entreprise={entreprise}
         livret={livret}
         dateExport={date}
       />
@@ -280,6 +289,7 @@ export function FichesSuiviPdf({
   formateur,
   formation,
   etablissement,
+  entreprise,
   dateExport,
 }: LivretPdfProps) {
   const date = dateExport ?? new Date().toISOString();
@@ -298,6 +308,7 @@ export function FichesSuiviPdf({
         formateur={formateur}
         formation={formation}
         etablissement={etablissement}
+        entreprise={entreprise}
         livret={livret}
         dateExport={date}
       />
@@ -433,6 +444,7 @@ export function PageDeGarde({
   formateur,
   formation,
   etablissement,
+  entreprise,
   livret,
   dateExport,
 }: {
@@ -442,6 +454,7 @@ export function PageDeGarde({
   formateur: Formateur;
   formation: Formation;
   etablissement?: Etablissement;
+  entreprise?: Entreprise;
   livret: Livret;
   dateExport: string;
 }) {
@@ -479,7 +492,10 @@ export function PageDeGarde({
             />
             <Ligne label="Centre de formation" valeur={libelleLieu} />
             <Ligne label="Maître / Tuteur" valeur={`${maitre.prenom} ${maitre.nom}`} />
-            <Ligne label="Entreprise" valeur={maitre.entreprise} />
+            <Ligne
+              label="Entreprise d'accueil"
+              valeur={entreprise?.raisonSociale ?? maitre.entreprise}
+            />
             <Ligne label="Fonction du maître" valeur={maitre.fonction} />
             {maitreSecond && (
               <Ligne

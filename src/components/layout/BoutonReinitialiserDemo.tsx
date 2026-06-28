@@ -8,6 +8,7 @@ import { useFormationsStore } from '@/store/useFormationsStore';
 import { useReferentielsStore } from '@/store/useReferentielsStore';
 import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
 import { useEtablissementsStore } from '@/store/useEtablissementsStore';
+import { useEntreprisesStore } from '@/store/useEntreprisesStore';
 import { useAttitudesStore } from '@/store/useAttitudesStore';
 import { apprentiLeaMartin, maitreKarimBenali } from '@/fixtures/utilisateurs';
 
@@ -30,6 +31,7 @@ export function BoutonReinitialiserDemo() {
   const reinitReferentiels = useReferentielsStore((s) => s.reinitialiser);
   const reinitBanqueQuestions = useBanqueQuestionsStore((s) => s.reinitialiser);
   const reinitEtablissements = useEtablissementsStore((s) => s.reinitialiser);
+  const reinitEntreprises = useEntreprisesStore((s) => s.reinitialiser);
   const reinitAttitudes = useAttitudesStore((s) => s.reinitialiser);
   const changerRole = useUserStore((s) => s.changerRole);
   const setMaitreActif = useUserStore((s) => s.setMaitreActif);
@@ -73,6 +75,7 @@ export function BoutonReinitialiserDemo() {
           reinitReferentiels();
           reinitBanqueQuestions();
           reinitEtablissements();
+          reinitEntreprises();
           reinitAttitudes();
           reinitialiser();
           // Note : setMaitreActif réinit aussi l'apprenti·e actif·ve sur le 1er

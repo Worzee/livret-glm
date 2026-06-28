@@ -51,6 +51,12 @@ export function GestionAffectations() {
   const modifierApprenti = useUtilisateursStore((s) => s.modifierApprenti);
   const formations = useFormationsStore((s) => s.formations);
   const livrets = useLivretStore((s) => s.livrets);
+  // Auteur des changements (traçabilité de l'historique d'entreprise).
+  const auteur = {
+    id: utilisateurActif.id,
+    nom: `${utilisateurActif.prenom} ${utilisateurActif.nom}`,
+    role: roleActif,
+  };
 
   const [requete, setRequete] = useState('');
   const [filtreFormationId, setFiltreFormationId] = useState<string>('toutes');
@@ -226,7 +232,7 @@ export function GestionAffectations() {
                       coordoEditable={roleActif === 'admin'}
                       deverrouilleTemp={deverrouillesTemp.has(a.id)}
                       onBasculerVerrou={() => basculerDeverrouTemp(a.id)}
-                      onChange={(patch) => modifierApprenti(a.id, patch)}
+                      onChange={(patch) => modifierApprenti(a.id, patch, auteur)}
                     />
                   );
                 })}
