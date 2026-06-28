@@ -73,6 +73,20 @@ Référence : cahier des charges v1.3, section 25.
 >   d'un **interrupteur** sur la page des fiches de suivi pour rendre toutes les périodes visibles à
 >   **tous les rôles** (utile si un blocage de signature gêne le suivi).
 
+> **⚠ Mise à jour 28 juin 2026** — vague « corrections & entreprise gérée ». Évolutions à intégrer
+> avant la prochaine démo :
+>
+> - **Import des référentiels CSV/XLSX mixtes 2/3 niveaux** corrigé : un fichier dont seules
+>   certaines compétences ont une 3ᵉ colonne (sous-compétence) s'importe désormais correctement —
+>   plus de doublons ni de perte. Partout, on n'affiche plus les codes générés, **seul le libellé** ;
+>   la hiérarchie passe par l'indentation / le regroupement par sous-famille.
+> - **Entreprise d'accueil gérée comme entité** : nouvelle page **Administration → Entreprises**
+>   (coordo + admin). L'entreprise de chaque apprenti·e se choisit dans une **liste déroulante**
+>   (modale apprenti·e **et** colonne « Entreprise » de la page Affectations), et son changement en
+>   cours de contrat est **tracé** : historique visible dans la modale d'édition + récap
+>   « Entreprise d'accueil » sur le tableau de bord apprenti·e. Démo : **Luca BIANCHI** a changé
+>   d'entreprise (Le Gourmet → La Brasserie du Rhône).
+
 ---
 
 ## 1. URL et accès
