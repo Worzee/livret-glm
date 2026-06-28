@@ -86,7 +86,8 @@ export function BlocSignatures({ livretId, fiche, lieu = 'entreprise' }: BlocSig
         {signataires.map(({ role, Icon, cleSig, classeBordure, classeIcone, classeTexte }) => {
           const sig = fiche.signatures[cleSig];
           const estSonRole = roleActif === role;
-          const validation = estSonRole && !ficheVerrouillee ? validerSignature(fiche, role) : null;
+          const validation =
+            estSonRole && !ficheVerrouillee ? validerSignature(fiche, role, lieu) : null;
 
           return (
             <article

@@ -1,4 +1,4 @@
-import type { FicheSuiviPeriode, Role } from '@/types';
+import type { FicheSuiviPeriode, LieuFiche, Role } from '@/types';
 
 /**
  * Validation des signatures de fin de période.
@@ -11,8 +11,11 @@ import type { FicheSuiviPeriode, Role } from '@/types';
  *   Maître      : ≥ 1 compétence **réellement abordée** (col entreprise, valeur
  *                 autre que `null` et autre que `non-fait`) + zone observation
  *                 maître non vide
- *   Formateur   : zone « Suivi GRETA CFA — formateur » non vide + ≥ 1 compétence
- *                 évaluée (col centre) + zone observation formateur non vide
+ *   Formateur   : zone « Suivi GRETA CFA — formateur » non vide + zone observation
+ *                 formateur non vide ; **au centre uniquement**, ≥ 1 compétence
+ *                 évaluée (col `evaluationGreta`). En entreprise, le formateur
+ *                 n'évalue pas (pas de colonne d'évaluation) — il observe et
+ *                 renseigne le suivi.
  */
 
 export interface ResultatValidation {
@@ -25,7 +28,11 @@ export interface ResultatValidation {
 /**
  * Vérifie que tous les pré-requis de R20 sont remplis pour qu'un rôle signe.
  */
-export function validerSignature(fiche: FicheSuiviPeriode, role: Role): ResultatValidation {
+export function validerSignature(
+  fiche: FicheSuiviPeriode,
+  role: Role,
+  lieu: LieuFiche = 'entreprise',
+): ResultatValidation {
   const raisons: string[] = [];
 
   // Coordo et admin ne signent pas en leur nom propre. Les boutons de signature
@@ -81,16 +88,19 @@ export function validerSignature(fiche: FicheSuiviPeriode, role: Role): Resultat
           'Renseignez la zone « Suivi de la formation au GRETA CFA — Formateur référent ».',
         );
       }
-      // Symétrie avec la règle maître : `'non-fait'` ne suffit pas — le
-      // formateur référent doit avoir évalué au moins une compétence avec
-      // un vrai niveau de maîtrise.
-      const auMoinsUneAbordee = fiche.suiviEntreprise.some(
-        (l) => l.evaluationGreta !== null && l.evaluationGreta !== 'non-fait',
-      );
-      if (!auMoinsUneAbordee) {
-        raisons.push(
-          'Évaluez au moins une compétence abordée dans la colonne « Évaluation GRETA CFA » (autre que « Non fait »).',
+      // L'évaluation des compétences par le formateur ne concerne QUE les
+      // périodes en centre de formation (colonne `evaluationGreta`). En
+      // entreprise, le formateur n'évalue pas (la colonne n'existe pas) — il se
+      // limite à l'observation de fin de période et au suivi GRETA CFA.
+      if (lieu === 'centre') {
+        const auMoinsUneAbordee = fiche.suiviEntreprise.some(
+          (l) => l.evaluationGreta !== null && l.evaluationGreta !== 'non-fait',
         );
+        if (!auMoinsUneAbordee) {
+          raisons.push(
+            'Évaluez au moins une compétence abordée dans la colonne « Évaluation centre » (autre que « Non fait »).',
+          );
+        }
       }
       if (!fiche.observations.formateur || fiche.observations.formateur.trim().length === 0) {
         raisons.push("La zone d'observation formateur référent est vide.");

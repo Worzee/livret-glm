@@ -225,13 +225,13 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
       expect(validerSignature(f, 'formateur').peutSigner).toBe(true);
     });
 
-    it("interdit la signature sans évaluation GRETA d'au moins une compétence", () => {
+    it("au centre, interdit la signature sans évaluation d'au moins une compétence", () => {
       const f = ficheBase();
       f.suiviGretaCfa = { formateur: 'Contenus abordés.' };
       f.observations.formateur = 'OK';
-      const r = validerSignature(f, 'formateur');
+      const r = validerSignature(f, 'formateur', 'centre');
       expect(r.peutSigner).toBe(false);
-      expect(r.raisons.some((m) => m.includes('Évaluation GRETA CFA'))).toBe(true);
+      expect(r.raisons.some((m) => m.includes('Évaluation centre'))).toBe(true);
     });
 
     it('autorise la signature avec les 3 prérequis remplis', () => {
@@ -265,7 +265,7 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
         },
       ];
       f.observations.formateur = 'OK';
-      const r = validerSignature(f, 'formateur');
+      const r = validerSignature(f, 'formateur', 'centre');
       expect(r.peutSigner).toBe(false);
       expect(r.raisons.some((m) => /abord[ée]e/i.test(m))).toBe(true);
     });
@@ -290,7 +290,19 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
         },
       ];
       f.observations.formateur = 'Une compétence acquise, une non abordée.';
-      expect(validerSignature(f, 'formateur').peutSigner).toBe(true);
+      expect(validerSignature(f, 'formateur', 'centre').peutSigner).toBe(true);
+    });
+
+    it('en entreprise, le formateur signe sans évaluer de compétence (28 juin 2026)', () => {
+      // En entreprise, le formateur n'a pas de colonne d'évaluation — sa
+      // contribution se limite au suivi GRETA CFA + à l'observation de fin de
+      // période. La signature ne doit donc PAS exiger d'évaluation.
+      const f = ficheBase();
+      f.suiviGretaCfa = { formateur: 'Suivi de la formation sur la période.' };
+      f.observations.formateur = 'Bilan positif.';
+      // Aucune `evaluationGreta` renseignée.
+      expect(validerSignature(f, 'formateur', 'entreprise').peutSigner).toBe(true);
+      expect(validerSignature(f, 'formateur').peutSigner).toBe(true); // défaut = entreprise
     });
   });
 
