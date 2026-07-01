@@ -87,6 +87,31 @@ Référence : cahier des charges v1.3, section 25.
 >   « Entreprise d'accueil » sur le tableau de bord apprenti·e. Démo : **Luca BIANCHI** a changé
 >   d'entreprise (Le Gourmet → La Brasserie du Rhône).
 
+> **⚠ Mise à jour 1ᵉʳ juillet 2026** — vague « réunion direction GRETA ». Évolutions à intégrer
+> avant la prochaine démo :
+>
+> - **2 signatures sur les périodes en entreprise** : une fiche est signée dès que **l'apprenti·e
+>   et le maître / tuteur** ont signé. Le **formateur référent ne signe plus** : il appose un
+>   **commentaire global optionnel** (sa zone d'observation, éditable jusqu'au verrouillage) puis
+>   **verrouille** la période. Le séquencement suit (2 signatures débloquent la période suivante).
+> - **Suivi GRETA CFA retiré des fiches entreprise** : la zone n'existe plus que sur les périodes
+>   en centre, qui portent ce suivi.
+> - **Tableau de bord groupé par formation** (formateur / coordo / admin) : sections dépliables
+>   « Formation (année) · N apprenti·e·s » — cliquer l'en-tête replie/déplie. Le maître garde la
+>   grille plate, l'apprenti·e son récapitulatif.
+> - **Entretien consultable avant initialisation** : dès que l'événement « Entretien Tripartite N »
+>   existe, tous les rôles voient l'entretien complet en **lecture seule** (bandeau + champs
+>   grisés) ; l'initialisation (formateur / coordo) ouvre la saisie.
+> - **Sélection des compétences toujours « tout coché »** : elle se réaligne automatiquement quand
+>   le référentiel change (import, changement de formation). Le **formateur co-saisit** désormais
+>   tous les champs du tuteur dans les entretiens (questions, appréciations, attitudes, sélection)
+>   — la signature du tuteur reste exclusive.
+> - **Modale Planning épurée** : formulaires d'ajout de période masqués derrière des boutons
+>   dédiés, erreurs affichées seulement après tentative, et la section « Questions de l'entretien »
+>   a disparu (gestion uniquement dans la Banque de questions, admin).
+> - Fixes : une apprentie d'une formation créée en ligne apparaît bien chez son **formateur
+>   référent** ; alignement des sélecteurs Oui/Non de la trame E1.
+
 ---
 
 ## 1. URL et accès
