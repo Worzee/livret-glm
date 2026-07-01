@@ -157,6 +157,23 @@ test("rejet de saisie : chevauchement avec une période existante (R12)", async 
   await expect(modale.getByText(/chevauchent/i)).toBeVisible();
 });
 
+test('le formateur ne signe plus les périodes entreprise mais les verrouille (1ᵉʳ juillet 2026)', async ({
+  page,
+}) => {
+  // P2 de Léa : signée (apprenti·e + maître / tuteur). En formateur (défaut).
+  await page.goto('/livret/fiches-suivi');
+  await page
+    .getByRole('link', { name: /Période 2/i })
+    .first()
+    .click();
+  // Plus de carte de signature formateur — 2 signataires seulement.
+  await expect(page.getByRole('button', { name: /Signer en tant que Sophie/i })).toHaveCount(0);
+  await expect(page.getByText(/l'apprenti·e et le maître \/ tuteur/i).first()).toBeVisible();
+  // La fiche signée 2/2 propose le verrouillage au formateur.
+  await page.getByRole('button', { name: /^Verrouiller$/i }).click();
+  await expect(page.getByText(/La fiche est verrouillée/i)).toBeVisible();
+});
+
 test('la fiche entreprise n\'affiche plus le « Suivi de la formation au GRETA CFA » (1ᵉʳ juillet 2026)', async ({
   page,
 }) => {

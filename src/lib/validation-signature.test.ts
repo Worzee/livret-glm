@@ -293,15 +293,16 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
       expect(validerSignature(f, 'formateur', 'centre').peutSigner).toBe(true);
     });
 
-    it("en entreprise, seule l'observation du formateur est requise (1ᵉʳ juillet 2026)", () => {
-      // En entreprise, le formateur n'a ni colonne d'évaluation ni zone
-      // « Suivi GRETA CFA » (retirée — portée par les périodes en centre) :
-      // son observation de fin de période suffit pour signer.
+    it('en entreprise, le formateur ne signe plus (1ᵉʳ juillet 2026)', () => {
+      // 2 signataires : apprenti·e + maître / tuteur. Le formateur appose un
+      // commentaire global optionnel puis verrouille — la garde défensive
+      // refuse sa « signature » même avec tout rempli.
       const f = ficheBase();
       f.observations.formateur = 'Bilan positif.';
-      // Ni `evaluationGreta` ni `suiviGretaCfa` renseignés.
-      expect(validerSignature(f, 'formateur', 'entreprise').peutSigner).toBe(true);
-      expect(validerSignature(f, 'formateur').peutSigner).toBe(true); // défaut = entreprise
+      const r = validerSignature(f, 'formateur', 'entreprise');
+      expect(r.peutSigner).toBe(false);
+      expect(r.raisons.some((m) => /ne signe pas les périodes en entreprise/i.test(m))).toBe(true);
+      expect(validerSignature(f, 'formateur').peutSigner).toBe(false); // défaut = entreprise
     });
   });
 

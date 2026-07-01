@@ -67,22 +67,28 @@ export function BlocSignatures({ livretId, fiche, lieu = 'entreprise' }: BlocSig
 
   const ficheVerrouillee = fiche.etat === 'verrouillee';
 
-  // Au centre, le maître / tuteur ne signe pas : 2 signataires (apprenti·e +
-  // formateur référent).
-  const signataires =
-    lieu === 'centre' ? SIGNATAIRES.filter((s) => s.role !== 'maitre') : SIGNATAIRES;
-  const texteParties = lieu === 'centre' ? 'les deux parties' : 'les trois parties';
+  // 2 signataires partout (1ᵉʳ juillet 2026) : en entreprise, apprenti·e +
+  // maître / tuteur (le formateur référent commente puis verrouille) ; au
+  // centre, apprenti·e + formateur référent (le maître n'intervient pas au CFA).
+  const signataires = SIGNATAIRES.filter((s) =>
+    lieu === 'centre' ? s.role !== 'maitre' : s.role !== 'formateur',
+  );
+  const detailParties =
+    lieu === 'centre'
+      ? "l'apprenti·e et le formateur référent"
+      : "l'apprenti·e et le maître / tuteur";
 
   return (
     <section className="space-y-3">
       <header>
         <h3 className="text-lg font-medium">Signatures de fin de période</h3>
         <p className="text-xs text-muted-foreground">
-          Une fiche passe à l'état « signée » lorsque {texteParties} ont apposé leur signature.
+          Une fiche passe à l'état « signée » lorsque les deux parties ont apposé leur signature —{' '}
+          {detailParties}.
         </p>
       </header>
 
-      <div className={cn('grid gap-3', lieu === 'centre' ? 'sm:grid-cols-2' : 'sm:grid-cols-3')}>
+      <div className="grid gap-3 sm:grid-cols-2">
         {signataires.map(({ role, Icon, cleSig, classeBordure, classeIcone, classeTexte }) => {
           const sig = fiche.signatures[cleSig];
           const estSonRole = roleActif === role;

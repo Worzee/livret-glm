@@ -83,6 +83,14 @@ export function ZoneObservation({ livretId, fiche, lieu = 'entreprise' }: ZoneOb
                 >
                   <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                   {libelleRole(role)}
+                  {/* 1ᵉʳ juillet 2026 : en entreprise, le formateur ne signe
+                      plus — sa zone devient un commentaire global optionnel,
+                      éditable jusqu'au verrouillage. */}
+                  {role === 'formateur' && lieu === 'entreprise' && (
+                    <span className="text-xs font-normal text-muted-foreground">
+                      · commentaire global (optionnel)
+                    </span>
+                  )}
                 </span>
                 {!editable && (
                   <span

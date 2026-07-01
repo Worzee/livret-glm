@@ -227,8 +227,9 @@ function reponsesTrameDemo(idsNon: ReadonlyArray<string> = []): Record<string, s
 // État au 09/05/2026 :
 //   P1 (sept-déc 2025) : verrouillée
 //   P2 (janv-fév 2026) : signée
-//   P3 (mars-avril 2026) : EN COURS — apprenti·e + maître ont rempli, le
-//                          formateur n'a pas encore validé
+//   P3 (mars-avril 2026) : EN COURS — l'apprenti·e a signé, le maître / tuteur
+//                          pas encore (2 signataires depuis le 1ᵉʳ juillet
+//                          2026 ; le formateur commente puis verrouille)
 // ═════════════════════════════════════════════════════════════════════════════
 
 const entretienLea: EntretienTripartite = {
@@ -443,8 +444,10 @@ const leaPeriode3: FicheSuiviPeriode = {
     formateur: '',
   },
   signatures: {
+    // 2 signataires (1ᵉʳ juillet 2026) : le maître / tuteur n'a pas encore
+    // signé → la fiche reste « en cours » (cas démo de co-édition).
     apprenti: { signe: true, dateSignature: '2026-04-12T16:20:00.000Z' },
-    maitre: { signe: true, dateSignature: '2026-04-12T18:00:00.000Z' },
+    maitre: { signe: false },
     formateur: { signe: false },
   },
   etat: 'en-cours',

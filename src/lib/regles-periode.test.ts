@@ -122,12 +122,13 @@ describe('verifierCreationPeriode (R13 bloquant + R14 avertissement)', () => {
     expect(r.avertissements.length).toBe(1);
   });
 
-  it("R14 : l'avertissement liste les trois parties quand aucune n'a signé", () => {
+  it("R14 : l'avertissement liste les deux parties quand aucune n'a signé (1ᵉʳ juillet 2026)", () => {
     const f = fiche(1, '2026-01-01', '2026-01-31', 'en-cours');
     const r = verifierCreationPeriode([f], true);
     expect(r.avertissements[0]).toContain('apprenti·e');
     expect(r.avertissements[0]).toMatch(/maître \/ tuteur/);
-    expect(r.avertissements[0]).toContain('formateur·rice référent·e');
+    // Le formateur référent ne signe plus les fiches entreprise.
+    expect(r.avertissements[0]).not.toContain('formateur·rice référent·e');
   });
 
   it("R14 : l'avertissement ne mentionne que les parties manquantes", () => {
@@ -142,7 +143,7 @@ describe('verifierCreationPeriode (R13 bloquant + R14 avertissement)', () => {
     const r = verifierCreationPeriode([f], true);
     expect(r.avertissements[0]).not.toContain('apprenti·e');
     expect(r.avertissements[0]).toMatch(/maître \/ tuteur/);
-    expect(r.avertissements[0]).toContain('formateur·rice référent·e');
+    expect(r.avertissements[0]).not.toContain('formateur·rice référent·e');
   });
 
   it('R13 : autorise sans avertissement si la dernière période est signée', () => {
@@ -185,10 +186,11 @@ const ficheSignatures = (num: number, nbSignatures: number): FicheSuiviPeriode =
   },
 });
 
-describe('periodeSigneeTroisParties', () => {
-  it('vrai uniquement quand les 3 parties ont signé', () => {
-    expect(periodeSigneeTroisParties(ficheSignatures(1, 3))).toBe(true);
-    expect(periodeSigneeTroisParties(ficheSignatures(1, 2))).toBe(false);
+describe('periodeSigneeTroisParties (2 signataires en entreprise — 1ᵉʳ juillet 2026)', () => {
+  it("vrai dès que l'apprenti·e et le maître / tuteur ont signé", () => {
+    expect(periodeSigneeTroisParties(ficheSignatures(1, 3))).toBe(true); // formateur résiduel ignoré
+    expect(periodeSigneeTroisParties(ficheSignatures(1, 2))).toBe(true);
+    expect(periodeSigneeTroisParties(ficheSignatures(1, 1))).toBe(false);
     expect(periodeSigneeTroisParties(ficheSignatures(1, 0))).toBe(false);
   });
 });
@@ -209,9 +211,16 @@ describe('periodesVisibles (séquencement)', () => {
     expect(periodesVisibles(fiches).map((f) => f.numeroPeriode)).toEqual([1, 2, 3]);
   });
 
-  it('une signature partielle (2/3) ne débloque pas la suivante', () => {
-    const fiches = [ficheSignatures(1, 2), ficheSignatures(2, 0)];
+  it("une signature partielle (apprenti·e seul·e) ne débloque pas la suivante", () => {
+    const fiches = [ficheSignatures(1, 1), ficheSignatures(2, 0)];
     expect(periodesVisibles(fiches).map((f) => f.numeroPeriode)).toEqual([1]);
+  });
+
+  it('apprenti·e + maître / tuteur signés débloquent la suivante (1ᵉʳ juillet 2026)', () => {
+    // Le formateur référent ne signe plus les fiches entreprise : 2 signatures
+    // suffisent à rendre la période suivante visible.
+    const fiches = [ficheSignatures(1, 2), ficheSignatures(2, 0)];
+    expect(periodesVisibles(fiches).map((f) => f.numeroPeriode)).toEqual([1, 2]);
   });
 
   it('trie les périodes par numéro avant de séquencer', () => {

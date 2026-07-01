@@ -11,12 +11,12 @@ import type { FicheSuiviPeriode, LieuFiche, Role } from '@/types';
  *   Maître      : ≥ 1 compétence **réellement abordée** (col entreprise, valeur
  *                 autre que `null` et autre que `non-fait`) + zone observation
  *                 maître non vide
- *   Formateur   : zone observation formateur non vide ; **au centre
- *                 uniquement**, zone « Suivi GRETA CFA — formateur » non vide
- *                 + ≥ 1 compétence évaluée (col `evaluationGreta`). En
- *                 entreprise, le formateur n'évalue pas et le suivi GRETA CFA
- *                 n'existe plus sur la fiche (1ᵉʳ juillet 2026 — porté par les
- *                 périodes en centre) : seule son observation est requise.
+ *   Formateur   : ne signe QUE les fiches en centre (1ᵉʳ juillet 2026 — en
+ *                 entreprise, 2 signataires : apprenti·e + maître / tuteur ;
+ *                 le formateur appose un commentaire global optionnel puis
+ *                 verrouille). Au centre : zone « Suivi GRETA CFA — formateur »
+ *                 non vide + ≥ 1 compétence évaluée (col `evaluationGreta`)
+ *                 + zone observation formateur non vide.
  */
 
 export interface ResultatValidation {
@@ -83,26 +83,30 @@ export function validerSignature(
     }
 
     case 'formateur': {
-      // Le « Suivi de la formation au GRETA CFA » et l'évaluation des
-      // compétences (colonne `evaluationGreta`) ne concernent QUE les périodes
-      // en centre de formation (1ᵉʳ juillet 2026 — la zone de suivi a été
-      // retirée des fiches entreprise). En entreprise, seule l'observation de
-      // fin de période est requise.
-      if (lieu === 'centre') {
-        const champFormateur = fiche.suiviGretaCfa.formateur?.trim() ?? '';
-        if (champFormateur.length === 0) {
-          raisons.push(
-            'Renseignez la zone « Suivi de la formation au GRETA CFA — Formateur référent ».',
-          );
-        }
-        const auMoinsUneAbordee = fiche.suiviEntreprise.some(
-          (l) => l.evaluationGreta !== null && l.evaluationGreta !== 'non-fait',
+      // 1ᵉʳ juillet 2026 : le formateur référent ne signe plus les périodes
+      // en entreprise (2 signataires : apprenti·e + maître / tuteur). Il y
+      // appose un commentaire global optionnel puis verrouille la fiche
+      // signée. Garde défensive — l'UI ne propose plus ce bouton.
+      if (lieu === 'entreprise') {
+        raisons.push(
+          'Le formateur référent ne signe pas les périodes en entreprise — il peut commenter puis verrouiller la fiche une fois signée par les deux parties.',
         );
-        if (!auMoinsUneAbordee) {
-          raisons.push(
-            'Évaluez au moins une compétence abordée dans la colonne « Évaluation centre » (autre que « Non fait »).',
-          );
-        }
+        return { peutSigner: false, raisons };
+      }
+      // Au centre : suivi GRETA CFA + ≥ 1 évaluation + observation.
+      const champFormateur = fiche.suiviGretaCfa.formateur?.trim() ?? '';
+      if (champFormateur.length === 0) {
+        raisons.push(
+          'Renseignez la zone « Suivi de la formation au GRETA CFA — Formateur référent ».',
+        );
+      }
+      const auMoinsUneAbordee = fiche.suiviEntreprise.some(
+        (l) => l.evaluationGreta !== null && l.evaluationGreta !== 'non-fait',
+      );
+      if (!auMoinsUneAbordee) {
+        raisons.push(
+          'Évaluez au moins une compétence abordée dans la colonne « Évaluation centre » (autre que « Non fait »).',
+        );
       }
       if (!fiche.observations.formateur || fiche.observations.formateur.trim().length === 0) {
         raisons.push("La zone d'observation formateur référent est vide.");

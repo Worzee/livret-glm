@@ -407,7 +407,10 @@ function BlocSignaturesPdf({
   apprenti: Apprenti;
   maitre: Maitre;
   formateur: Formateur;
-  /** Au centre, le maître / tuteur ne signe pas (apprenti·e + formateur). */
+  /**
+   * 2 signataires par lieu (1ᵉʳ juillet 2026) : entreprise = apprenti·e +
+   * maître / tuteur ; centre = apprenti·e + formateur référent.
+   */
   lieu?: LieuFiche;
 }) {
   return (
@@ -424,11 +427,13 @@ function BlocSignaturesPdf({
           nom={`${maitre.prenom} ${maitre.nom}`}
         />
       )}
-      <CarteSignature
-        role="formateur"
-        signature={signatures.formateur}
-        nom={`${formateur.prenom} ${formateur.nom}`}
-      />
+      {lieu === 'centre' && (
+        <CarteSignature
+          role="formateur"
+          signature={signatures.formateur}
+          nom={`${formateur.prenom} ${formateur.nom}`}
+        />
+      )}
     </View>
   );
 }

@@ -1,17 +1,19 @@
 import type { EtatFiche, FicheSuiviPeriode, LieuFiche, SignaturesTripartite } from '@/types';
 
 /**
- * Signataires attendus d'une fiche selon le lieu. Entreprise : les 3 parties
- * (apprenti·e + maître / tuteur + formateur référent). Centre de formation
- * (17 juin 2026) : apprenti·e + formateur référent — le maître / tuteur
- * n'intervient pas au CFA. Source de vérité du décompte des signatures et du
- * critère « signée » par lieu.
+ * Signataires attendus d'une fiche selon le lieu. Entreprise (1ᵉʳ juillet
+ * 2026 — réunion direction) : apprenti·e + maître / tuteur — le formateur
+ * référent ne signe plus ; il appose un commentaire global optionnel puis
+ * verrouille la période signée. Centre de formation (17 juin 2026) :
+ * apprenti·e + formateur référent — le maître / tuteur n'intervient pas au
+ * CFA. Source de vérité du décompte des signatures et du critère « signée »
+ * par lieu.
  */
 export const SIGNATAIRES_PAR_LIEU: Record<
   LieuFiche,
   ReadonlyArray<'apprenti' | 'maitre' | 'formateur'>
 > = {
-  entreprise: ['apprenti', 'maitre', 'formateur'],
+  entreprise: ['apprenti', 'maitre'],
   centre: ['apprenti', 'formateur'],
 };
 
@@ -22,7 +24,7 @@ export const SIGNATAIRES_PAR_LIEU: Record<
  *   [*] --> brouillon
  *   brouillon --> en-cours          (R16 : 1ère modif)
  *   en-cours --> en-cours           (R15 : signature partielle)
- *   en-cours --> signee             (R15 : 3 signatures)
+ *   en-cours --> signee             (R15 : toutes les signatures du lieu)
  *   signee --> verrouillee          (R17 : 15 j sans modif OU clic manuel)
  *   signee --> en-cours             (R10 : déverrouillage formateur)
  */

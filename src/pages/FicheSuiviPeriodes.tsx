@@ -55,9 +55,10 @@ export function FicheSuiviPeriodes({ lieu = 'entreprise' }: FicheSuiviPeriodesPr
   const description = estCentre
     ? 'Compétences travaillées sur chaque période de regroupement au centre de formation, évaluées par le formateur référent.'
     : "Co-édition tripartite des activités et compétences travaillées sur chaque période d'alternance en entreprise.";
+  // 2 signataires par lieu (1ᵉʳ juillet 2026).
   const texteParties = estCentre
     ? "l'apprenti·e et le formateur référent"
-    : 'les 3 parties';
+    : "l'apprenti·e et le maître / tuteur";
 
   return (
     <div className="space-y-6">

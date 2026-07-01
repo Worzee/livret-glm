@@ -8,10 +8,13 @@ import { resetState, selectRole } from './helpers';
  *     sur une autre. »
  *
  * Adaptation : le bugfix R21 fige les zones d'un rôle après sa signature.
- * On utilise donc la Période 3 (apprenti·e + maître ont signé, formateur non),
- * et on vérifie :
- *   - le formateur peut éditer SA zone (pas signé) ;
- *   - les zones apprenti·e / maître sont en lecture seule (signées) ;
+ * On utilise la Période 3 (1ᵉʳ juillet 2026 : l'apprenti·e a signé, le
+ * maître / tuteur pas encore — le formateur ne signe plus les fiches
+ * entreprise), et on vérifie :
+ *   - le formateur peut éditer SA zone (commentaire global, jamais figé par
+ *     signature) ;
+ *   - la zone apprenti·e est en lecture seule (signée), celle du maître
+ *     reste éditable ;
  *   - en basculant de rôle, on ne peut accéder qu'à ses propres zones.
  */
 
@@ -53,12 +56,13 @@ test('bascule de rôle : chaque rôle ne voit en édition que ses propres zones'
   await expect(sectionObs).toBeVisible();
   await expect(sectionObs.locator('textarea')).toHaveCount(0);
 
-  // Bascule en maître d'apprentissage — sa zone aussi est figée (signé P3).
+  // Bascule en maître / tuteur — il n'a PAS encore signé P3 (fixture
+  // 1ᵉʳ juillet 2026) : sa zone est éditable.
   await selectRole(page, 'Maître / Tuteur');
-  await expect(sectionObs.locator('textarea')).toHaveCount(0);
+  await expect(sectionObs.locator('textarea')).toHaveCount(1);
 
-  // Re-bascule en formateur référent — qui n'a PAS signé : sa zone redevient éditable.
+  // Re-bascule en formateur référent — il ne signe plus les fiches
+  // entreprise : son commentaire global reste éditable.
   await selectRole(page, 'Formateur référent');
-  // Une seule textarea : celle du formateur (les 2 autres rôles ont signé).
   await expect(sectionObs.locator('textarea')).toHaveCount(1);
 });

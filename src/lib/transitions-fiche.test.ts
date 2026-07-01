@@ -37,10 +37,12 @@ describe('nombreSignatures', () => {
     expect(nombreSignatures(sig(false, false, false))).toBe(0);
   });
 
-  it('compte les signatures effectives', () => {
+  it('compte les signatures effectives parmi les signataires du lieu', () => {
     expect(nombreSignatures(sig(true, false, false))).toBe(1);
     expect(nombreSignatures(sig(true, true, false))).toBe(2);
-    expect(nombreSignatures(sig(true, true, true))).toBe(3);
+    // 1ᵉʳ juillet 2026 : le formateur ne signe plus en entreprise — une
+    // signature formateur résiduelle n'est pas comptée.
+    expect(nombreSignatures(sig(true, true, true))).toBe(2);
   });
 });
 
@@ -91,17 +93,19 @@ describe('deduireEtat (R15, R16)', () => {
     expect(deduireEtat(f)).toBe('en-cours');
   });
 
-  it('R15 : 1 ou 2 signatures = en-cours', () => {
+  it('R15 : signature partielle = en-cours', () => {
     const f1 = ficheVide();
     f1.signatures = sig(true, false, false);
     expect(deduireEtat(f1)).toBe('en-cours');
-
-    const f2 = ficheVide();
-    f2.signatures = sig(true, true, false);
-    expect(deduireEtat(f2)).toBe('en-cours');
   });
 
-  it('R15 : 3 signatures = signee', () => {
+  it('R15 : apprenti·e + maître / tuteur = signee (2 signataires — 1ᵉʳ juillet 2026)', () => {
+    const f2 = ficheVide();
+    f2.signatures = sig(true, true, false);
+    expect(deduireEtat(f2)).toBe('signee');
+  });
+
+  it('R15 : une signature formateur résiduelle ne change rien (entreprise)', () => {
     const f = ficheVide();
     f.signatures = sig(true, true, true);
     expect(deduireEtat(f)).toBe('signee');

@@ -50,10 +50,12 @@ export function FicheSuiviPeriodeDetail({ lieu = 'entreprise' }: FicheSuiviPerio
   const fiche = toutesFiches.find((f) => f.id === ficheId);
   if (!fiche) return <NotFound />;
 
+  // 2 signataires par lieu (1ᵉʳ juillet 2026) : entreprise = apprenti·e +
+  // maître / tuteur ; centre = apprenti·e + formateur référent.
   const partiesPhrase = estCentre
     ? "l'apprenti·e et le formateur·rice référent·e"
-    : 'apprenti·e, maître / tuteur et formateur·rice référent·e';
-  const partiesCourt = estCentre ? 'les deux parties' : 'les trois parties';
+    : "l'apprenti·e et le maître / tuteur";
+  const partiesCourt = 'les deux parties';
 
   // Séquencement (16 juin 2026) : la période n'est accessible que si la
   // précédente est signée par toutes les parties — garde l'accès par URL
