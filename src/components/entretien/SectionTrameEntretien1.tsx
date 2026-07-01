@@ -247,21 +247,23 @@ function ChampTrame({
 
   if (question.type === 'oui-non') {
     const estAlerte = question.alerteSiNon === true && valeur === false;
+    // Pas de flex-wrap : un libellé long passe sur 2 lignes (flex-1) et le
+    // sélecteur Oui/Non reste aligné à droite comme les autres questions.
     return (
       <div
         data-testid={`trame-q-${question.id}`}
         className={cn(
-          'flex flex-wrap items-center justify-between gap-2 rounded-md border px-2.5 py-1.5',
+          'flex items-center justify-between gap-3 rounded-md border px-2.5 py-1.5',
           estAlerte ? 'border-amber-300 bg-amber-50' : 'border-transparent',
         )}
       >
-        <span className="flex items-center gap-1.5 text-sm">
+        <span className="flex flex-1 items-center gap-1.5 text-sm">
           {estAlerte && (
             <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600" aria-hidden="true" />
           )}
           <span>{question.libelle}</span>
         </span>
-        <div className="flex flex-col items-end gap-0.5">
+        <div className="flex shrink-0 flex-col items-end gap-0.5">
           <CaseOuiNon
             editable={editable}
             valeur={typeof valeur === 'boolean' ? valeur : null}
