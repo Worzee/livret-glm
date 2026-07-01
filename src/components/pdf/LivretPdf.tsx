@@ -774,16 +774,12 @@ export function PageEntretien({
           </>
         )}
 
+        {/* 1ᵉʳ juillet 2026 : 3 commentaires individuels partout (E1 inclus —
+            l'ancienne « synthèse » commune vivait dans c.formateur). */}
         <Text style={styles.h2}>Commentaires</Text>
-        {estE1 ? (
-          <ParagrapheLibre titre="Synthèse de l'entretien" valeur={c.formateur} />
-        ) : (
-          <>
-            <ParagrapheLibre titre="Apprenti·e" valeur={c.apprenti} />
-            <ParagrapheLibre titre="Maître" valeur={c.maitre} />
-            <ParagrapheLibre titre="Formateur" valeur={c.formateur} />
-          </>
-        )}
+        <ParagrapheLibre titre="Apprenti·e" valeur={c.apprenti} />
+        <ParagrapheLibre titre="Maître / Tuteur" valeur={c.maitre} />
+        <ParagrapheLibre titre="Formateur référent" valeur={c.formateur} />
 
         <Text style={styles.h2}>Signatures</Text>
         <BlocSignaturesPdf

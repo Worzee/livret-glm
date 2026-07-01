@@ -1,9 +1,16 @@
-import { AlertTriangle, ClipboardCheck, ListChecks } from 'lucide-react';
+import {
+  AlertTriangle,
+  ClipboardCheck,
+  GraduationCap,
+  HardHat,
+  ListChecks,
+  UserCog,
+} from 'lucide-react';
 import type { EntretienTripartite, NiveauAppreciation, NumeroEntretien } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useAttitudesStore } from '@/store/useAttitudesStore';
-import { peutEditer } from '@/lib/droits';
+import { peutEditer, type Ressource } from '@/lib/droits';
 import { peutEncoreEditer } from '@/lib/regles-entretien';
 import { attitudesRetenues } from '@/lib/selection-attitudes';
 import {
@@ -165,34 +172,99 @@ export function SectionTrameEntretien1({
       {/* Récapitulatif des points d'alerte (réponses « Non »). */}
       <RecapAlertes alertes={alertes} />
 
-      {/* Commentaires libres de l'entretien (zone commune). */}
-      <section className="rounded-lg border border-border bg-card p-4 space-y-2">
-        <label htmlFor="trame-commentaires" className="text-sm font-medium">
-          Commentaires
-        </label>
-        {editableTrame ? (
-          <textarea
-            id="trame-commentaires"
-            rows={3}
-            value={entretien.commentaires.formateur ?? ''}
-            onChange={(e) => setCommentaire(livretId, numero, 'formateur', e.target.value)}
-            placeholder="Synthèse de l'entretien, points d'attention, décisions…"
-            className="w-full resize-y rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-        ) : (
-          <p
-            className={cn(
-              'text-sm whitespace-pre-wrap',
-              !entretien.commentaires.formateur && 'text-muted-foreground italic',
-            )}
-          >
-            {entretien.commentaires.formateur || 'Aucun commentaire.'}
+      {/* Commentaires individuels de fin d'entretien (1ᵉʳ juillet 2026 : la
+          zone commune devient 3 commentaires — un par partie, chacun figé à
+          la signature de son auteur·rice). */}
+      <section className="space-y-3">
+        <header>
+          <h2 className="text-base font-semibold">Commentaires</h2>
+          <p className="text-xs text-muted-foreground">
+            Un commentaire par partie — chacun est figé dès la signature de son auteur·rice.
           </p>
-        )}
+        </header>
+        <div className="grid gap-3 md:grid-cols-3">
+          {COMMENTAIRES_E1.map(({ role, ressource, titre, bordure, classeRole, Icon }) => {
+            const editable =
+              peutEditer(roleActif, ressource) &&
+              peutEncoreEditer(role, entretien) &&
+              !entretienVerrouille;
+            const valeur = entretien.commentaires[role] ?? '';
+            return (
+              <article
+                key={role}
+                className={cn(
+                  'rounded-lg border border-border border-l-4 bg-card p-3 space-y-2',
+                  bordure,
+                )}
+              >
+                <span
+                  className={cn('inline-flex items-center gap-1.5 text-sm font-medium', classeRole)}
+                >
+                  <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  {titre}
+                </span>
+                {editable ? (
+                  <textarea
+                    rows={3}
+                    value={valeur}
+                    onChange={(e) => setCommentaire(livretId, numero, role, e.target.value)}
+                    placeholder="Votre commentaire sur cet entretien…"
+                    aria-label={`Commentaire — ${titre}`}
+                    className="w-full resize-y rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                ) : (
+                  <p
+                    className={cn(
+                      'min-h-[4rem] whitespace-pre-wrap text-sm',
+                      !valeur && 'text-muted-foreground italic',
+                    )}
+                  >
+                    {valeur || 'Aucun commentaire.'}
+                  </p>
+                )}
+              </article>
+            );
+          })}
+        </div>
       </section>
     </div>
   );
 }
+
+/** Cartes de commentaires individuels de l'E1 — une par partie. */
+const COMMENTAIRES_E1: ReadonlyArray<{
+  role: 'apprenti' | 'maitre' | 'formateur';
+  ressource: Ressource;
+  titre: string;
+  bordure: string;
+  classeRole: string;
+  Icon: typeof GraduationCap;
+}> = [
+  {
+    role: 'apprenti',
+    ressource: 'entretien.commentaires-apprenti',
+    titre: 'Apprenti·e',
+    bordure: 'border-l-role-apprenti',
+    classeRole: 'text-role-apprenti',
+    Icon: GraduationCap,
+  },
+  {
+    role: 'maitre',
+    ressource: 'entretien.commentaires-maitre',
+    titre: 'Maître / Tuteur',
+    bordure: 'border-l-role-maitre',
+    classeRole: 'text-role-maitre',
+    Icon: HardHat,
+  },
+  {
+    role: 'formateur',
+    ressource: 'entretien.commentaires-formateur',
+    titre: 'Formateur référent',
+    bordure: 'border-l-role-formateur',
+    classeRole: 'text-role-formateur',
+    Icon: UserCog,
+  },
+];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Rubrique thématique
