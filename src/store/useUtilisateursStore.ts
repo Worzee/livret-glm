@@ -11,6 +11,7 @@ import {
 import { useLivretStore } from './useLivretStore';
 import { useApprentiActifStore } from './useApprentiActifStore';
 import { useFormationsStore } from './useFormationsStore';
+import { useReferentielsStore } from './useReferentielsStore';
 import { creerLivretVierge } from '@/lib/creation-livret';
 import { maitresIdsDeLApprenti } from '@/lib/maitres-apprenti';
 import {
@@ -244,6 +245,21 @@ export const useUtilisateursStore = create<UtilisateursStore>()(
               derniereModification: new Date().toISOString(),
             };
           });
+          // Le référentiel effectif du livret change avec la formation : la
+          // sélection de compétences non validée repart « tout coché » sur le
+          // référentiel de la nouvelle formation (1ᵉʳ juillet 2026).
+          const formation = useFormationsStore.getState().formations[patch.formationId];
+          const referentiel = formation
+            ? useReferentielsStore.getState().referentiels[formation.referentielId]
+            : undefined;
+          if (referentiel) {
+            const livret = Object.values(useLivretStore.getState().livrets).find(
+              (l) => l.apprentiId === id,
+            );
+            if (livret) {
+              useLivretStore.getState().realignerSelectionLivret(livret.id, referentiel);
+            }
+          }
         }
       },
 

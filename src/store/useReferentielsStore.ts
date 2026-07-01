@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import type { Referentiel } from '@/types';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
 import { useFormationsStore } from './useFormationsStore';
+import { useLivretStore } from './useLivretStore';
 
 /**
  * Store des référentiels de compétences.
@@ -64,9 +65,23 @@ export const useReferentielsStore = create<ReferentielsStore>()(
       ...etatInitial(),
 
       ajouterReferentiel: (referentiel) => {
+        const remplace = !!get().referentiels[referentiel.id];
         set({
           referentiels: { ...get().referentiels, [referentiel.id]: referentiel },
         });
+        // Réimport sous le même id : le contenu (ids de compétences) change —
+        // les sélections non validées des livrets des formations rattachées
+        // repartent « tout coché » sur le nouveau contenu (1ᵉʳ juillet 2026).
+        // Un id inédit n'a pas encore de formation rattachée : le réalignement
+        // se fera au rattachement (cf. `modifierFormation`).
+        if (remplace) {
+          const formations = Object.values(useFormationsStore.getState().formations);
+          for (const f of formations) {
+            if (f.referentielId === referentiel.id) {
+              useLivretStore.getState().realignerSelectionsFormation(f.id, referentiel);
+            }
+          }
+        }
         return referentiel;
       },
 

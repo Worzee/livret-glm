@@ -15,6 +15,7 @@ import {
   marquerValidee,
   nettoyerApresMajReferentiel,
   peutEtreEditee,
+  realignerSurReferentiel,
   toggleCompetence,
 } from './selection-competences-entreprise';
 
@@ -277,6 +278,58 @@ describe('invaliderAvecMotif', () => {
     });
     expect(apresInv2.historiqueInvalidations).toHaveLength(2);
     expect(apresInv2.historiqueInvalidations.map((e) => e.id)).toEqual(['inv-1', 'inv-2']);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// realignerSurReferentiel (1ᵉʳ juillet 2026 — tout coché par défaut)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('realignerSurReferentiel', () => {
+  it('recoche toutes les compétences du nouveau référentiel (sélection non validée)', () => {
+    const initial = sel({ ids: ['ancien-1', 'ancien-2'] });
+    const s = realignerSurReferentiel(initial, ref(['c1', 'c2', 'c3']), dateRef);
+    expect(s.ids).toEqual(['c1', 'c2', 'c3']);
+    expect(s.modifieLe).toBe(dateRef.toISOString());
+  });
+
+  it('ne touche pas une sélection déjà validée (même référence)', () => {
+    const initial = sel({
+      ids: ['ancien-1'],
+      validePar: { formateurId: 'f1', maitreId: 'm1', dateIso: '2026-05-17T09:00:00.000Z' },
+    });
+    expect(realignerSurReferentiel(initial, ref(['c1', 'c2']), dateRef)).toBe(initial);
+  });
+
+  it("retourne la même référence si l'ensemble d'ids est déjà identique", () => {
+    const initial = sel({ ids: ['c2', 'c1'] }); // même ensemble, ordre différent
+    expect(realignerSurReferentiel(initial, ref(['c1', 'c2']), dateRef)).toBe(initial);
+  });
+
+  it('recoche les compétences décochées si le contenu du référentiel a changé', () => {
+    // Le maître avait décoché c2 ; un réimport (nouvelle version) repart
+    // de « tout coché par défaut » — comportement demandé par la direction.
+    const initial = sel({ ids: ['c1'] });
+    const s = realignerSurReferentiel(initial, ref(['c1', 'c2']), dateRef);
+    expect(s.ids).toEqual(['c1', 'c2']);
+  });
+
+  it("préserve l'historique d'invalidations", () => {
+    const initial = sel({
+      ids: ['ancien-1'],
+      historiqueInvalidations: [
+        {
+          id: 'inv-1',
+          dateIso: '2026-05-17T09:00:00.000Z',
+          auteurId: 'f1',
+          auteurNom: 'Sophie DUBOIS',
+          auteurRole: 'formateur',
+          motif: 'Erreur de composition initiale.',
+        },
+      ],
+    });
+    const s = realignerSurReferentiel(initial, ref(['c1']), dateRef);
+    expect(s.historiqueInvalidations).toHaveLength(1);
   });
 });
 

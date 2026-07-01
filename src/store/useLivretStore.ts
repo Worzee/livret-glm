@@ -19,6 +19,7 @@ import type {
   NiveauMaitriseEntreprise,
   NumeroEntretien,
   ObservationsFiche,
+  Referentiel,
   ValeurReponseEntretien,
   Role,
 } from '@/types';
@@ -35,6 +36,7 @@ import {
   creerSelectionVierge,
   invaliderAvecMotif as invaliderSelection,
   marquerValidee,
+  realignerSurReferentiel,
   toggleCompetence,
 } from '@/lib/selection-competences-entreprise';
 import { useUtilisateursStore } from './useUtilisateursStore';
@@ -329,6 +331,16 @@ interface LivretStore {
     auteurRole: Role,
     motif: string,
   ) => void;
+  /**
+   * Réaligne « tout coché » les sélections NON validées des livrets d'une
+   * formation sur un (nouveau) référentiel (1ᵉʳ juillet 2026). Appelée quand
+   * le référentiel effectif change : import (nouveau ou réimport du même id),
+   * changement de référentiel de la formation. Les sélections validées sont
+   * préservées (invalidation R10 pour y revenir).
+   */
+  realignerSelectionsFormation: (formationId: string, referentiel: Referentiel) => void;
+  /** Variante ciblée sur un seul livret (changement de formation d'un·e apprenti·e). */
+  realignerSelectionLivret: (livretId: string, referentiel: Referentiel) => void;
 
   // ── Mutations sur les grilles d'évaluation finales (CDC §5.4 / §5.5) ─────
   setLigneCompetenceFinale: (
@@ -910,6 +922,43 @@ export const useLivretStore = create<LivretStore>()(
             ),
           })),
         ),
+
+      // Réalignement « tout coché » quand le référentiel effectif change
+      // (1ᵉʳ juillet 2026). Les sélections validées sont préservées par
+      // `realignerSurReferentiel` (même référence → livret non touché).
+      realignerSelectionsFormation: (formationId, referentiel) =>
+        set((s) => {
+          const livrets = { ...s.livrets };
+          let modifie = false;
+          for (const [id, l] of Object.entries(livrets)) {
+            if (l.formationId !== formationId) continue;
+            const sel = l.selectionCompetencesEntreprise ?? creerSelectionVierge();
+            const realignee = realignerSurReferentiel(sel, referentiel);
+            if (realignee !== sel) {
+              livrets[id] = {
+                ...l,
+                selectionCompetencesEntreprise: realignee,
+                modifieLe: new Date().toISOString(),
+              };
+              modifie = true;
+            }
+          }
+          if (!modifie) return s;
+          return { livrets, derniereModification: new Date().toISOString() };
+        }),
+
+      realignerSelectionLivret: (livretId, referentiel) =>
+        set((s) => {
+          const l = s.livrets[livretId];
+          if (!l) return s;
+          const sel = l.selectionCompetencesEntreprise ?? creerSelectionVierge();
+          const realignee = realignerSurReferentiel(sel, referentiel);
+          if (realignee === sel) return s;
+          return muterLivret(s, livretId, (liv) => ({
+            ...liv,
+            selectionCompetencesEntreprise: realignee,
+          }));
+        }),
 
       // ── Grilles d'évaluation finales ─────────────────────────────────────
       setLigneCompetenceFinale: (livretId, competenceId, patch) =>

@@ -10,6 +10,7 @@ import type {
 import { formationsDemo } from '@/fixtures/formations';
 import { useUtilisateursStore } from './useUtilisateursStore';
 import { useLivretStore } from './useLivretStore';
+import { useReferentielsStore } from './useReferentielsStore';
 import {
   evaluerVerrouPeriode,
   renumeroterPeriodes,
@@ -167,14 +168,23 @@ export const useFormationsStore = create<FormationsStore>()(
         return formation;
       },
 
-      modifierFormation: (id, patch) =>
-        set((s) => {
-          const formation = s.formations[id];
-          if (!formation) return s;
-          return {
-            formations: { ...s.formations, [id]: { ...formation, ...patch } },
-          };
-        }),
+      modifierFormation: (id, patch) => {
+        const formation = get().formations[id];
+        if (!formation) return;
+        set((s) => ({
+          formations: { ...s.formations, [id]: { ...formation, ...patch } },
+        }));
+        // Changement de référentiel de la formation (édition manuelle ou
+        // rattachement post-import) : les sélections de compétences non
+        // validées des livrets de la promo repartent « tout coché » sur le
+        // nouveau référentiel (1ᵉʳ juillet 2026).
+        if (patch.referentielId && patch.referentielId !== formation.referentielId) {
+          const referentiel = useReferentielsStore.getState().referentiels[patch.referentielId];
+          if (referentiel) {
+            useLivretStore.getState().realignerSelectionsFormation(id, referentiel);
+          }
+        }
+      },
 
       supprimerFormation: (id) => {
         const formation = get().formations[id];

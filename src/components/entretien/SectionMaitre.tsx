@@ -17,7 +17,7 @@ import { SelecteurAppreciation } from '@/components/common/SelecteurAppreciation
 import { cn } from '@/lib/utils';
 
 /**
- * Sections de l'entretien réservées au maître / tuteur (CDC §5.2).
+ * Sections de l'entretien du maître / tuteur (CDC §5.2).
  *
  *   - Questions issues de la banque, composées par formation (13 juin 2026 :
  *     toutes présentes sauf celles retirées par le coordo, toutes
@@ -25,6 +25,12 @@ import { cn } from '@/lib/utils';
  *   - Grille d'appréciation 4×4 (en dur — élément standardisé du livret).
  *   - Attitudes professionnelles retenues à l'E1 (évaluées à chaque entretien).
  *   - Commentaire libre du maître.
+ *
+ * 1ᵉʳ juillet 2026 (réunion direction) : le **formateur référent co-saisit**
+ * tous ces champs (il tient souvent le clavier en séance) — la matrice ouvre
+ * les ressources `entretien.*-maitre` / `entretien.attitudes` au formateur.
+ * Le verrou reste inchangé : tout se fige à la signature du MAÎTRE, qui
+ * demeure seul habilité à signer sa section.
  */
 
 interface SectionMaitreProps {
@@ -81,8 +87,9 @@ export function SectionMaitre({ livretId, numero, entretien }: SectionMaitreProp
         <div>
           <h2 className="text-lg font-medium text-role-maitre">Maître / Tuteur</h2>
           <p className="text-xs text-muted-foreground">
-            Réservé au maître / tuteur. Toutes les questions sont à renseigner pour signer.
-            Verrouillé après votre signature.
+            Renseigné par le maître / tuteur — le formateur référent peut co-saisir en séance.
+            Toutes les questions sont à renseigner pour signer. Verrouillé après la signature du
+            maître / tuteur.
           </p>
         </div>
       </header>

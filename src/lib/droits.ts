@@ -173,16 +173,20 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   // Initialisation + date de l'entretien : formateur + coordo + admin
   // (18 juin 2026 — la coordination peut amorcer un entretien).
   'entretien.gestion': ['formateur', 'coordo', 'admin'],
-  'entretien.attitudes': ['maitre'],
+  // Champs du maître / tuteur : le formateur référent peut co-saisir
+  // (1ᵉʳ juillet 2026 — réunion direction : il tient souvent le clavier en
+  // séance). Les champs restent figés à la signature du MAÎTRE, et sa
+  // signature reste exclusive.
+  'entretien.attitudes': ['maitre', 'formateur'],
   'entretien.attitudes-selection': ['maitre', 'formateur'],
   'entretien.questions-apprenti': ['apprenti'],
-  'entretien.questions-maitre': ['maitre'],
-  'entretien.appreciation-maitre': ['maitre'],
+  'entretien.questions-maitre': ['maitre', 'formateur'],
+  'entretien.appreciation-maitre': ['maitre', 'formateur'],
   'entretien.demarches-administratives': ['formateur'],
   'entretien.conditions-pratiques': ['formateur'],
   'entretien.aides-demandees': ['formateur'],
   'entretien.commentaires-apprenti': ['apprenti'],
-  'entretien.commentaires-maitre': ['maitre'],
+  'entretien.commentaires-maitre': ['maitre', 'formateur'],
   'entretien.commentaires-formateur': ['formateur'],
   'entretien.signature-apprenti': ['apprenti'],
   'entretien.signature-maitre': ['maitre'],
@@ -191,7 +195,9 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'entretien.trame': ['formateur', 'maitre'],
   // Signature du représentant légal (E1) : apposée par le formateur référent
   'entretien.signature-representant-legal': ['formateur'],
-  'entretien.selection-competences-entreprise': ['maitre'],
+  // Sélection des compétences abordées en entreprise : maître / tuteur +
+  // formateur référent décochent (1ᵉʳ juillet 2026 — tout est coché par défaut).
+  'entretien.selection-competences-entreprise': ['maitre', 'formateur'],
 
   // Fiche de suivi
   'fiche.suivi-greta-cfa-apprenti': ['apprenti'],

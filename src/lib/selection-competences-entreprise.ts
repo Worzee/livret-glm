@@ -15,12 +15,15 @@ import type {
  * `useLivretStore` (cf. `setSelectionCompetencesEntreprise`,
  * `invaliderSelectionCompetencesEntreprise`).
  *
- * Workflow métier (W1, révisé 13 juin 2026) :
+ * Workflow métier (W1, révisé 13 juin puis 1ᵉʳ juillet 2026) :
  *   1. À la création du livret, **toutes** les compétences du référentiel
- *      sont activées par défaut (cf. `creerSelectionInitiale`).
- *   2. Le **maître / tuteur seul** décoche les compétences non abordées en
- *      entreprise (cf. `toggleCompetence` ; droit `entretien.selection-
- *      competences-entreprise` réservé au maître). Le formateur consulte.
+ *      sont activées par défaut (cf. `creerSelectionInitiale`). Si le
+ *      référentiel effectif change ensuite (import, changement de formation),
+ *      la sélection non validée est réalignée « tout coché » (cf.
+ *      `realignerSurReferentiel`).
+ *   2. Le **maître / tuteur et le formateur référent** décochent les
+ *      compétences non abordées en entreprise (cf. `toggleCompetence` ;
+ *      droit `entretien.selection-competences-entreprise`).
  *   3. La 3ᵉ signature de l'entretien tripartite déclenche `marquerValidee`
  *      (effet dans `signerEntretien` côté store).
  *   4. Une fois validée, la sélection n'est plus éditable. Seule une
@@ -140,6 +143,36 @@ export function invaliderAvecMotif(
     modifieLe: dateIso,
     historiqueInvalidations: [...sel.historiqueInvalidations, trace],
   };
+}
+
+/**
+ * Réaligne la sélection sur un (nouveau) référentiel : **toutes** les
+ * compétences redeviennent cochées par défaut (1ᵉʳ juillet 2026 — demande
+ * direction : « tout le référentiel sélectionné par défaut », le maître /
+ * tuteur et le formateur décochent ensuite).
+ *
+ * Appelée quand le référentiel effectif d'un livret change : import d'un
+ * référentiel (nouveau ou réimport du même id), changement de référentiel
+ * d'une formation, changement de formation d'un·e apprenti·e.
+ *
+ *   - Sélection **validée** (3 signatures) → inchangée : on ne casse pas un
+ *     engagement conjoint ; l'invalidation R10 reste la voie de retouche.
+ *   - Ensemble d'ids déjà identique → même référence (pas de faux signal).
+ *   - Sinon → ids = toutes les compétences du référentiel (l'historique
+ *     d'invalidations est conservé).
+ */
+export function realignerSurReferentiel(
+  sel: SelectionCompetencesEntreprise,
+  referentiel: Referentiel,
+  maintenant: Date = new Date(),
+): SelectionCompetencesEntreprise {
+  if (estValidee(sel)) return sel;
+  const ids = referentiel.blocs.flatMap((b) => b.competences.map((c) => c.id));
+  const actuels = new Set(sel.ids);
+  if (ids.length === sel.ids.length && ids.every((id) => actuels.has(id))) {
+    return sel;
+  }
+  return { ...sel, ids, modifieLe: maintenant.toISOString() };
 }
 
 /**

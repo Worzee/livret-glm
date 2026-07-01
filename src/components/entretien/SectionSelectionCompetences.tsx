@@ -21,11 +21,12 @@ import { cn } from '@/lib/utils';
  * Section « Compétences abordées en entreprise » dans l'entretien tripartite.
  * Référence : CDC v1.5 addendum (mai 2026).
  *
- * 13 juin 2026 : toutes les compétences sont activées par défaut ; le
- * **maître / tuteur seul** décoche celles non abordées en entreprise (le
- * formateur consulte). La sélection est figée automatiquement à la 3ᵉ
- * signature de l'entretien (cf. `useLivretStore.signerEntretien`). Une fois
- * validée, seul le formateur référent peut l'invalider via un motif R10.
+ * 13 juin 2026 : toutes les compétences sont activées par défaut.
+ * 1ᵉʳ juillet 2026 (réunion direction) : le **maître / tuteur ET le formateur
+ * référent** décochent celles non abordées en entreprise. La sélection est
+ * figée automatiquement à la 3ᵉ signature de l'entretien (cf.
+ * `useLivretStore.signerEntretien`). Une fois validée, seul le formateur
+ * référent peut l'invalider via un motif R10.
  */
 
 interface SectionSelectionCompetencesProps {
@@ -78,9 +79,9 @@ export function SectionSelectionCompetences({
           Compétences abordées en entreprise
         </h2>
         <p className="text-xs text-muted-foreground">
-          Toutes les compétences sont activées par défaut. Le <strong>maître / tuteur</strong>{' '}
-          décoche celles qui ne seront pas abordées sur le terrain (le formateur référent consulte).
-          La sélection sera figée à la 3<sup>ᵉ</sup> signature de l'entretien.
+          Toutes les compétences sont activées par défaut. Le <strong>maître / tuteur</strong> et
+          le <strong>formateur référent</strong> décochent celles qui ne seront pas abordées sur le
+          terrain. La sélection sera figée à la 3<sup>ᵉ</sup> signature de l'entretien.
         </p>
       </header>
 

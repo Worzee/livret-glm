@@ -10,8 +10,10 @@ import { resetState, selectRole } from './helpers';
  *     compétences non sélectionnées (a1).
  *   - Sofia (entretien jamais initialisé) : bandeau « non validée » sur la
  *     fiche de période et message dédié sur la grille finale.
- *   - 13 juin 2026 : toutes les compétences sont activées par défaut ; le
- *     maître / tuteur seul décoche (le formateur consulte).
+ *   - 13 juin 2026 : toutes les compétences sont activées par défaut.
+ *   - 1ᵉʳ juillet 2026 : le maître / tuteur ET le formateur référent décochent ;
+ *     la sélection est réalignée « tout coché » quand le référentiel change
+ *     (import, changement de formation).
  */
 
 test.beforeEach(async ({ page }) => {
@@ -94,7 +96,7 @@ test('Léa : la grille finale grise la colonne « Acquis en entreprise » pour c
 // Tout activé par défaut + maître seul édite (13 juin 2026)
 // ─────────────────────────────────────────────────────────────────────────────
 
-test('Sofia : après initialisation, toutes les compétences sont cochées par défaut ; le maître seul décoche', async ({
+test('Sofia : après initialisation, toutes les compétences sont cochées par défaut ; maître ET formateur décochent (1ᵉʳ juillet 2026)', async ({
   page,
 }) => {
   // 1. Le formateur initialise l'entretien de Sofia.
@@ -106,12 +108,14 @@ test('Sofia : après initialisation, toutes les compétences sont cochées par d
     page.getByRole('heading', { name: /Compétences abordées en entreprise/i }),
   ).toBeVisible();
 
-  // 2. Le formateur ne compose plus (lecture seule) : case cochée mais désactivée.
-  const caseFormateur = page.getByTestId('selection-comp-c1-1');
+  // 2. Le formateur peut désormais décocher lui aussi (réunion direction).
+  const caseFormateur = page.getByTestId('selection-comp-c2-4');
   await expect(caseFormateur).toBeChecked();
-  await expect(caseFormateur).toBeDisabled();
+  await expect(caseFormateur).toBeEnabled();
+  await caseFormateur.uncheck();
+  await expect(caseFormateur).not.toBeChecked();
 
-  // 3. Côté maître : toutes les cases sont cochées par défaut et éditables.
+  // 3. Côté maître : toutes les cases restent cochées par défaut et éditables.
   await selectRole(page, 'Maître / Tuteur');
   const caseC11 = page.getByTestId('selection-comp-c1-1');
   await expect(caseC11).toBeChecked();
@@ -119,6 +123,36 @@ test('Sofia : après initialisation, toutes les compétences sont cochées par d
   // Le maître décoche une compétence non abordée → elle se décoche.
   await caseC11.uncheck();
   await expect(caseC11).not.toBeChecked();
+});
+
+test("import d'un nouveau référentiel : la sélection repart « tout coché » (1ᵉʳ juillet 2026)", async ({
+  page,
+}) => {
+  // 1. Le coordo importe un nouveau référentiel sur la formation CAP Cuisine.
+  await selectRole(page, 'Coordinateur·rice');
+  await page.goto('/admin/referentiels');
+  await page.getByRole('button', { name: /Importer un référentiel/i }).click();
+  const modale = page.getByRole('dialog');
+  await modale.getByTestId('import-ref-formation').selectOption({ value: 'f-cap-cuisine-2025' });
+  await modale
+    .getByTestId('import-ref-csv')
+    .fill(['BLOC;COMPETENCE', 'BLOC 1;Préparer les fonds', 'BLOC 1;Dresser les plats'].join('\n'));
+  await modale.getByRole('button', { name: /^Aperçu$/i }).click();
+  await modale.getByRole('button', { name: /Importer \(2 compétences\)/i }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+
+  // 2. Sofia (sélection non validée) : sa sélection est réalignée sur le
+  //    NOUVEAU référentiel, toutes compétences cochées.
+  await selectRole(page, 'Formateur référent');
+  await page.goto('/');
+  await page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }).click();
+  await page.goto('/livret/entretien/1');
+  await page.getByRole('button', { name: /Initialiser l'entretien/i }).click();
+  await expect(
+    page.getByRole('heading', { name: /Compétences abordées en entreprise/i }),
+  ).toBeVisible();
+  await expect(page.getByTestId('selection-comp-bloc-bloc-1-c1')).toBeChecked();
+  await expect(page.getByTestId('selection-comp-bloc-bloc-1-c2')).toBeChecked();
 });
 
 test('Léa + apprenti·e : la section sélection est en lecture seule (matrice droits)', async ({

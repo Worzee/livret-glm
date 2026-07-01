@@ -47,6 +47,31 @@ test("un entretien signé par 3 parties est en lecture seule pour tous (R9)", as
   expect(sectionsEditablesMaitre).toBe(0);
 });
 
+test('le formateur co-saisit les champs du maître sur un entretien non signé (1ᵉʳ juillet 2026)', async ({
+  page,
+}) => {
+  // L'E1 suit la trame officielle (pas de grille d'appréciation) : on passe
+  // par l'E2 de Léa (E1 signé 3/3 → initialisable), entretien vierge.
+  await page.goto('/livret/entretien/2');
+  await page.getByTestId('init-entretien-2').click();
+  await expect(page.getByTestId('attitudes-entretien')).toBeVisible();
+
+  // En formateur, la grille d'appréciation du maître est éditable (co-saisie).
+  await page
+    .getByRole('radiogroup', { name: 'Ponctualité et assiduité', exact: true })
+    .getByRole('radio', { name: '+', exact: true })
+    .click();
+  await expect(
+    page
+      .getByRole('radiogroup', { name: 'Ponctualité et assiduité', exact: true })
+      .getByRole('radio', { name: '+', exact: true }),
+  ).toBeChecked();
+
+  // La signature du maître reste exclusive : aucun bouton « Signer en tant
+  // que Karim » côté formateur (seul son propre slot est actionnable).
+  await expect(page.getByRole('button', { name: /Signer en tant que Karim/i })).toHaveCount(0);
+});
+
 test("le coordinateur·rice consulte l'entretien sans aucun bouton de signature", async ({ page }) => {
   await selectRole(page, 'Coordinateur·rice');
   await page.getByRole('link', { name: /Entretien tripartite 1/i }).click();

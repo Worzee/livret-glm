@@ -95,12 +95,21 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('formateur', 'entretien.signature-apprenti')).toBe(false);
     });
 
-    it('le maître / tuteur seul édite la sélection des compétences abordées en entreprise (13 juin 2026)', () => {
+    it('le maître / tuteur ET le formateur éditent la sélection des compétences abordées en entreprise (1ᵉʳ juillet 2026)', () => {
       expect(peutEditer('maitre', 'entretien.selection-competences-entreprise')).toBe(true);
-      expect(peutEditer('formateur', 'entretien.selection-competences-entreprise')).toBe(false);
+      expect(peutEditer('formateur', 'entretien.selection-competences-entreprise')).toBe(true);
       expect(peutEditer('apprenti', 'entretien.selection-competences-entreprise')).toBe(false);
       expect(peutEditer('coordo', 'entretien.selection-competences-entreprise')).toBe(false);
       expect(peutEditer('admin', 'entretien.selection-competences-entreprise')).toBe(false);
+    });
+
+    it('le formateur référent co-saisit les champs du maître — hors signature (1ᵉʳ juillet 2026)', () => {
+      expect(peutEditer('formateur', 'entretien.questions-maitre')).toBe(true);
+      expect(peutEditer('formateur', 'entretien.appreciation-maitre')).toBe(true);
+      expect(peutEditer('formateur', 'entretien.commentaires-maitre')).toBe(true);
+      expect(peutEditer('formateur', 'entretien.attitudes')).toBe(true);
+      // La signature du maître / tuteur reste exclusive.
+      expect(peutEditer('formateur', 'entretien.signature-maitre')).toBe(false);
     });
   });
 
@@ -190,9 +199,9 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('apprenti', 'entretien.attitudes')).toBe(false);
     });
 
-    it('seul le maître évalue les attitudes professionnelles en entretien (juin 2026)', () => {
+    it('le maître et le formateur évaluent les attitudes professionnelles en entretien (1ᵉʳ juillet 2026)', () => {
       expect(peutEditer('maitre', 'entretien.attitudes')).toBe(true);
-      expect(peutEditer('formateur', 'entretien.attitudes')).toBe(false);
+      expect(peutEditer('formateur', 'entretien.attitudes')).toBe(true);
     });
 
     it("le choix des attitudes à l'E1 est partagé maître + formateur (13 juin 2026)", () => {
@@ -232,9 +241,10 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       // partagée formateur + coordo). `export-pdf` sortie le 16 juin 2026 et
       // `entretien.gestion` le 18 juin 2026 : devenues multi-rôle (formateur +
       // coordo + admin), elles ne sont plus « éditables par un seul rôle ».
+      // `entretien.questions-maitre` sortie le 1ᵉʳ juillet 2026 : co-saisie
+      // maître + formateur (le formateur tient le clavier en séance).
       const RESSOURCES_LIVRET: Ressource[] = [
         'entretien.questions-apprenti',
-        'entretien.questions-maitre',
         'fiche.evaluation-entreprise',
         'fiche.evaluation-greta',
         'fiche.retour-apprenti',
