@@ -46,11 +46,41 @@ interface SectionTrameEntretien1Props {
   entretienVerrouille: boolean;
 }
 
-const NIVEAUX: ReadonlyArray<{ cle: NiveauAppreciation; symbole: string }> = [
-  { cle: 'plusplus', symbole: '++' },
-  { cle: 'plus', symbole: '+' },
-  { cle: 'moins', symbole: '−' },
-  { cle: 'moinsmoins', symbole: '−−' },
+// Chaque niveau porte sa couleur (du vert au rouge), alignée sur le
+// sélecteur des attitudes professionnelles (1ᵉʳ juillet 2026).
+const NIVEAUX: ReadonlyArray<{
+  cle: NiveauAppreciation;
+  symbole: string;
+  classeSymbole: string;
+  classesActif: string;
+}> = [
+  {
+    cle: 'plusplus',
+    symbole: '++',
+    classeSymbole: 'text-appreciation-plusplus',
+    classesActif:
+      'border-appreciation-plusplus bg-appreciation-plusplus/10 ring-1 ring-appreciation-plusplus',
+  },
+  {
+    cle: 'plus',
+    symbole: '+',
+    classeSymbole: 'text-appreciation-plus',
+    classesActif: 'border-appreciation-plus bg-appreciation-plus/10 ring-1 ring-appreciation-plus',
+  },
+  {
+    cle: 'moins',
+    symbole: '−',
+    classeSymbole: 'text-appreciation-moins',
+    classesActif:
+      'border-appreciation-moins bg-appreciation-moins/10 ring-1 ring-appreciation-moins',
+  },
+  {
+    cle: 'moinsmoins',
+    symbole: '−−',
+    classeSymbole: 'text-appreciation-moinsmoins',
+    classesActif:
+      'border-appreciation-moinsmoins bg-appreciation-moinsmoins/10 ring-1 ring-appreciation-moinsmoins',
+  },
 ];
 
 export function SectionTrameEntretien1({
@@ -398,7 +428,7 @@ function LigneAppreciation({
     <div className="space-y-1.5">
       <span className="text-sm font-medium">{critere.libelle}</span>
       <div className="grid gap-1.5 sm:grid-cols-4">
-        {NIVEAUX.map(({ cle, symbole }) => {
+        {NIVEAUX.map(({ cle, symbole, classeSymbole, classesActif }) => {
           const actif = valeur === cle;
           return (
             <button
@@ -411,13 +441,11 @@ function LigneAppreciation({
               className={cn(
                 'rounded-md border p-2 text-left text-xs transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                actif
-                  ? 'border-role-maitre bg-role-maitre/10 ring-1 ring-role-maitre'
-                  : 'border-input bg-background hover:bg-secondary',
+                actif ? classesActif : 'border-input bg-background hover:bg-secondary',
                 !editable && 'cursor-not-allowed opacity-70',
               )}
             >
-              <span className="block font-semibold">{symbole}</span>
+              <span className={cn('block font-semibold', classeSymbole)}>{symbole}</span>
               <span className="block text-muted-foreground">{critere.descriptions[cle]}</span>
             </button>
           );
