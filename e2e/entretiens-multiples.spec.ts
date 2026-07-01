@@ -91,6 +91,30 @@ test('parcours E3 : événement → lien sidebar → initialisation bloquée par
   ).toBeVisible();
 });
 
+test("aperçu : l'entretien est consultable en lecture seule dès que son événement existe (1ᵉʳ juillet 2026)", async ({
+  page,
+}) => {
+  // Léa : événement E2 créé dans les fixtures, entretien NON initialisé.
+  // Côté apprenti·e : structure complète visible, champs inertes, pas de
+  // bouton d'initialisation ni de signature.
+  await selectRole(page, 'Apprenti·e');
+  await page.goto('/livret/entretien/2');
+  await expect(page.getByTestId('apercu-entretien')).toBeVisible();
+  await expect(page.getByTestId('init-entretien-2')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: /Maître \/ Tuteur/i })).toBeVisible();
+  await expect(
+    page.getByText(/Quelles sont vos motivations pour cette formation/i),
+  ).toBeVisible();
+  // Les champs sont rendus mais désactivés (fieldset disabled).
+  await expect(page.locator('textarea').first()).toBeDisabled();
+  await expect(page.getByRole('button', { name: /Signer en tant que/i })).toHaveCount(0);
+
+  // Côté formateur : même aperçu + bouton d'initialisation actif (E1 signé 3/3).
+  await selectRole(page, 'Formateur référent');
+  await expect(page.getByTestId('apercu-entretien')).toBeVisible();
+  await expect(page.getByTestId('init-entretien-2')).toBeEnabled();
+});
+
 test('séquencement : E2 de Léa est initialisable car E1 est signé par les 3 parties', async ({
   page,
 }) => {

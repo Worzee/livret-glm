@@ -439,8 +439,12 @@ function ecrireEntretien(
  * cycle d'import ESM avec useBanqueQuestionsStore est résolu car aucun des
  * deux modules ne déréférence l'autre à l'évaluation (pattern identique aux
  * autres stores croisés, cf. §11 PROJECT-STATUS).
+ *
+ * Exportée (1ᵉʳ juillet 2026) : la page Entretien s'en sert pour afficher un
+ * **aperçu en lecture seule** (non persisté) tant que l'entretien n'est pas
+ * initialisé mais que son événement de suivi existe.
  */
-function entretienVierge(
+export function entretienVierge(
   numero: NumeroEntretien,
   questionsRetirees: ReadonlyArray<string> = [],
 ): EntretienTripartite {
