@@ -14,9 +14,10 @@ import type { FicheSuiviPeriode, LieuFiche, Role } from '@/types';
  *   Formateur   : ne signe QUE les fiches en centre (1ᵉʳ juillet 2026 — en
  *                 entreprise, 2 signataires : apprenti·e + maître / tuteur ;
  *                 le formateur appose un commentaire global optionnel puis
- *                 verrouille). Au centre : zone « Suivi GRETA CFA — formateur »
- *                 non vide + ≥ 1 compétence évaluée (col `evaluationGreta`)
- *                 + zone observation formateur non vide.
+ *                 verrouille). Au centre : ≥ 1 compétence évaluée (col
+ *                 `evaluationGreta`) + zone observation formateur non vide
+ *                 (la zone « Suivi GRETA CFA » a été retirée partout — tout se
+ *                 rédige dans les observations).
  */
 
 export interface ResultatValidation {
@@ -93,13 +94,8 @@ export function validerSignature(
         );
         return { peutSigner: false, raisons };
       }
-      // Au centre : suivi GRETA CFA + ≥ 1 évaluation + observation.
-      const champFormateur = fiche.suiviGretaCfa.formateur?.trim() ?? '';
-      if (champFormateur.length === 0) {
-        raisons.push(
-          'Renseignez la zone « Suivi de la formation au GRETA CFA — Formateur référent ».',
-        );
-      }
+      // Au centre : ≥ 1 évaluation + observation (la zone « Suivi GRETA CFA »
+      // a été retirée le 1ᵉʳ juillet 2026 — tout passe par les observations).
       const auMoinsUneAbordee = fiche.suiviEntreprise.some(
         (l) => l.evaluationGreta !== null && l.evaluationGreta !== 'non-fait',
       );

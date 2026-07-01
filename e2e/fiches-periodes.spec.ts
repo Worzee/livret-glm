@@ -174,11 +174,11 @@ test('le formateur ne signe plus les périodes entreprise mais les verrouille (1
   await expect(page.getByText(/La fiche est verrouillée/i)).toBeVisible();
 });
 
-test('la fiche entreprise n\'affiche plus le « Suivi de la formation au GRETA CFA » (1ᵉʳ juillet 2026)', async ({
+test('la zone « Suivi de la formation au GRETA CFA » a disparu de toutes les fiches (1ᵉʳ juillet 2026)', async ({
   page,
 }) => {
-  // Période entreprise (Léa P3) : la zone a disparu — elle faisait doublon
-  // avec les périodes en centre de formation.
+  // Période entreprise (Léa P3) : plus de zone dédiée — tout se rédige dans
+  // les observations de fin de période.
   await page.goto('/livret/fiches-suivi');
   await page
     .getByRole('link', { name: /Période 3/i })
@@ -186,10 +186,11 @@ test('la fiche entreprise n\'affiche plus le « Suivi de la formation au GRETA C
     .click();
   await expect(page.getByText(/Suivi de la formation au GRETA CFA/i)).toHaveCount(0);
 
-  // Elle reste présente sur les périodes en centre.
+  // Idem sur les périodes en centre.
   await page.goto('/livret/fiches-suivi-centre');
   await page.getByRole('link', { name: /Regroupement d.automne/i }).click();
-  await expect(page.getByText(/Suivi de la formation au GRETA CFA/i)).toBeVisible();
+  await expect(page.getByText(/Suivi de la formation au GRETA CFA/i)).toHaveCount(0);
+  await expect(page.getByText(/Observations de fin de période/i)).toBeVisible();
 });
 
 test("le coordo force l'affichage des périodes — visible par l'apprenti·e (18 juin 2026)", async ({

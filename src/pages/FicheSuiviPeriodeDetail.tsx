@@ -10,7 +10,6 @@ import { libelleFichePeriode } from '@/lib/validation-fiche-periode';
 import { estPeriodeVisible } from '@/lib/regles-periode';
 import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelectionne';
 import { BadgeEtatFiche } from '@/components/common/BadgeEtatFiche';
-import { SuiviGretaCfa } from '@/components/livret/SuiviGretaCfa';
 import { TableauTriColonnes } from '@/components/livret/TableauTriColonnes';
 import { ZoneObservation } from '@/components/livret/ZoneObservation';
 import { BlocSignatures } from '@/components/livret/BlocSignatures';
@@ -151,10 +150,9 @@ export function FicheSuiviPeriodeDetail({ lieu = 'entreprise' }: FicheSuiviPerio
         </div>
       )}
 
-      {/* Le « Suivi de la formation au GRETA CFA » ne concerne plus que les
-          périodes en centre (1ᵉʳ juillet 2026) — cette zone faisait doublon
-          avec les périodes en centre de formation côté entreprise. */}
-      {estCentre && <SuiviGretaCfa livretId={livret.id} fiche={fiche} lieu={lieu} />}
+      {/* La zone « Suivi de la formation au GRETA CFA » a été retirée partout
+          (entreprise puis centre — 1ᵉʳ juillet 2026) : tout se rédige dans les
+          « Observations de fin de période ». */}
       <TableauTriColonnes livretId={livret.id} fiche={fiche} lieu={lieu} />
       <ZoneObservation livretId={livret.id} fiche={fiche} lieu={lieu} />
       <BlocSignatures livretId={livret.id} fiche={fiche} lieu={lieu} />

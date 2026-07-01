@@ -171,47 +171,10 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
   });
 
   describe('Formateur référent', () => {
-    it('au centre, interdit la signature si la zone « Suivi GRETA CFA — Formateur » est vide', () => {
-      // 1ᵉʳ juillet 2026 : l'exigence du suivi GRETA CFA ne concerne plus que
-      // les fiches en centre (la zone a été retirée des fiches entreprise).
+    it("au centre, la zone « Suivi GRETA CFA » n'est plus exigée (1ᵉʳ juillet 2026)", () => {
+      // La zone a été retirée partout : tout se rédige dans les observations.
+      // Éval + observation suffisent pour signer, sans aucun suiviGretaCfa.
       const f = ficheBase();
-      f.suiviEntreprise = [
-        {
-          id: 'l1',
-          competenceId: 'c1',
-          evaluationGreta: 'maitrise',
-          evaluationEntreprise: null,
-          retourApprenti: '',
-        },
-      ];
-      f.observations.formateur = 'OK';
-      const r = validerSignature(f, 'formateur', 'centre');
-      expect(r.peutSigner).toBe(false);
-      expect(r.raisons.some((m) => m.includes('GRETA CFA'))).toBe(true);
-    });
-
-    it('au centre, rejette la signature si la zone formateur ne contient que des espaces', () => {
-      const f = ficheBase();
-      f.suiviGretaCfa = { formateur: '   \n  ' };
-      f.suiviEntreprise = [
-        {
-          id: 'l1',
-          competenceId: 'c1',
-          evaluationGreta: 'maitrise',
-          evaluationEntreprise: null,
-          retourApprenti: '',
-        },
-      ];
-      f.observations.formateur = 'OK';
-      const r = validerSignature(f, 'formateur', 'centre');
-      expect(r.peutSigner).toBe(false);
-      expect(r.raisons.some((m) => m.includes('GRETA CFA'))).toBe(true);
-    });
-
-    it("n'exige pas que la zone apprenti GRETA soit remplie pour la signature formateur (centre)", () => {
-      // Seule la zone formateur est requise. La zone apprenti reste optionnelle.
-      const f = ficheBase();
-      f.suiviGretaCfa = { formateur: 'Contenus pédagogiques de la période.' };
       f.suiviEntreprise = [
         {
           id: 'l1',
@@ -234,9 +197,8 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
       expect(r.raisons.some((m) => m.includes('Évaluation centre'))).toBe(true);
     });
 
-    it('au centre, autorise la signature avec les 3 prérequis remplis', () => {
+    it("au centre, l'observation est requise en plus de l'évaluation", () => {
       const f = ficheBase();
-      f.suiviGretaCfa = { formateur: 'Contenus abordés.' };
       f.suiviEntreprise = [
         {
           id: 'l1',
@@ -246,8 +208,9 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
           retourApprenti: '',
         },
       ];
-      f.observations.formateur = 'Bilan positif.';
-      expect(validerSignature(f, 'formateur', 'centre').peutSigner).toBe(true);
+      const r = validerSignature(f, 'formateur', 'centre');
+      expect(r.peutSigner).toBe(false);
+      expect(r.raisons.some((m) => m.includes('observation'))).toBe(true);
     });
 
     it('rejette la signature si la seule éval centre est « Non fait »', () => {
