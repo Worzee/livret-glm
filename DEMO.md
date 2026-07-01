@@ -94,8 +94,8 @@ Référence : cahier des charges v1.3, section 25.
 >   et le maître / tuteur** ont signé. Le **formateur référent ne signe plus** : il appose un
 >   **commentaire global optionnel** (sa zone d'observation, éditable jusqu'au verrouillage) puis
 >   **verrouille** la période. Le séquencement suit (2 signatures débloquent la période suivante).
-> - **Suivi GRETA CFA retiré des fiches entreprise** : la zone n'existe plus que sur les périodes
->   en centre, qui portent ce suivi.
+> - **Suivi GRETA CFA retiré de toutes les fiches** (entreprise puis centre) : tout se rédige
+>   désormais dans les « Observations de fin de période ».
 > - **Tableau de bord groupé par formation** (formateur / coordo / admin) : sections dépliables
 >   « Formation (année) · N apprenti·e·s » — cliquer l'en-tête replie/déplie. Le maître garde la
 >   grille plate, l'apprenti·e son récapitulatif.
@@ -109,6 +109,11 @@ Référence : cahier des charges v1.3, section 25.
 > - **Modale Planning épurée** : formulaires d'ajout de période masqués derrière des boutons
 >   dédiés, erreurs affichées seulement après tentative, et la section « Questions de l'entretien »
 >   a disparu (gestion uniquement dans la Banque de questions, admin).
+> - **3 commentaires individuels sur l'entretien 1** : le commentaire global de fin de trame
+>   devient 3 cartes (apprenti·e / maître · tuteur / formateur référent) — chacun rédige le sien,
+>   figé à sa signature.
+> - **Grille de synthèse E1 colorée** : les appréciations « Synthèse de la période » prennent le
+>   code couleur des attitudes (++ vert foncé → −− rouge).
 > - Fixes : une apprentie d'une formation créée en ligne apparaît bien chez son **formateur
 >   référent** ; alignement des sélecteurs Oui/Non de la trame E1.
 
