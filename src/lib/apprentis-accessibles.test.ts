@@ -89,10 +89,33 @@ describe('apprentisAccessibles — filtre par rôle', () => {
     expect(r).toHaveLength(6);
   });
 
-  it('formateur·rice sans promo retourne une liste vide', () => {
+  it('formateur·rice sans promo voit quand même ses référé·e·s direct·e·s (1ᵉʳ juillet 2026)', () => {
+    // `promoIds` n'est pas maintenu pour les formations créées en ligne : la
+    // relation directe `formateurReferentId` fait foi. Sophie est référente
+    // des 6 apprenti·e·s fixtures → visibles même sans promoIds.
     const formateurSansPromo = { ...formatriceSophieDubois, promoIds: [] };
     const r = apprentisAccessibles(formateurSansPromo, apprentisDemo);
-    expect(r).toEqual([]);
+    expect(r).toHaveLength(6);
+  });
+
+  it("un formateur ne voit pas les apprenti·e·s dont il n'est ni promo ni référent", () => {
+    const autreFormateur = {
+      ...formatriceSophieDubois,
+      id: 'u-formateur-autre',
+      promoIds: [],
+    };
+    expect(apprentisAccessibles(autreFormateur, apprentisDemo)).toEqual([]);
+  });
+
+  it("une apprentie d'une formation hors promoIds reste visible de son formateur référent (cas Sonia — 1ᵉʳ juillet 2026)", () => {
+    const sonia = {
+      ...apprentiLeaMartin,
+      id: 'a-sonia',
+      formationId: 'f-bts-textile-2026', // formation créée en ligne, absente des promoIds
+      formateurReferentId: formatriceSophieDubois.id,
+    };
+    const r = apprentisAccessibles(formatriceSophieDubois, [sonia]);
+    expect(r.map((a) => a.id)).toEqual(['a-sonia']);
   });
 
   it('maître sans apprenti·e retourne une liste vide', () => {

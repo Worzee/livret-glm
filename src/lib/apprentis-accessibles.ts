@@ -9,7 +9,11 @@ import type { Apprenti, Formateur, Maitre, Utilisateur } from '@/types';
  *   - apprenti  → uniquement lui/elle-même (R3)
  *   - maitre    → ses apprenti·e·s (champ `apprentiIds`)
  *   - formateur → la promo dont il/elle est référent·e (champ `promoIds`,
- *                 résolu via `formationId` de l'apprenti·e)
+ *                 résolu via `formationId` de l'apprenti·e) **ET** les
+ *                 apprenti·e·s dont il/elle est directement référent·e
+ *                 (`Apprenti.formateurReferentId` — fix 1ᵉʳ juillet 2026 :
+ *                 `promoIds` n'est pas maintenu pour les formations créées en
+ *                 ligne, une apprentie devenait invisible de son formateur)
  *   - coordo    → les apprenti·e·s qui lui sont affecté·e·s par l'admin
  *                 (champ `Apprenti.coordoId` — juin 2026 ; un·e apprenti·e
  *                 sans coordo n'est visible que de l'admin)
@@ -25,7 +29,9 @@ export function apprentisAccessibles(utilisateur: Utilisateur, apprentis: Appren
     }
     case 'formateur': {
       const promos = new Set((utilisateur as Formateur).promoIds);
-      return apprentis.filter((a) => promos.has(a.formationId));
+      return apprentis.filter(
+        (a) => promos.has(a.formationId) || a.formateurReferentId === utilisateur.id,
+      );
     }
     case 'coordo':
       return apprentis.filter((a) => a.coordoId === utilisateur.id);
