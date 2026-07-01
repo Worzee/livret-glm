@@ -118,6 +118,34 @@ test('les badges de cas démonstratifs sont visibles sur le tableau de bord', as
   ).toBeVisible();
 });
 
+test('les cartes sont regroupées par formation, sections repliables (1ᵉʳ juillet 2026)', async ({
+  page,
+}) => {
+  // Formateur (rôle par défaut) : un groupe « CAP Cuisine (2025-2026) »
+  // déplié par défaut, contenant les 6 cartes.
+  const groupe = page.getByTestId('groupe-formation-f-cap-cuisine-2025');
+  await expect(groupe).toBeVisible();
+  await expect(groupe.locator('summary').getByText('CAP Cuisine (2025-2026)')).toBeVisible();
+  await expect(groupe.getByRole('button', { name: /Ouvrir le livret de/i })).toHaveCount(6);
+
+  // Replier la section → les cartes sont masquées.
+  await groupe.locator('summary').click();
+  await expect(
+    groupe.getByRole('button', { name: /Ouvrir le livret de Léa MARTIN/i }),
+  ).toBeHidden();
+
+  // Redéplier → les cartes réapparaissent.
+  await groupe.locator('summary').click();
+  await expect(
+    groupe.getByRole('button', { name: /Ouvrir le livret de Léa MARTIN/i }),
+  ).toBeVisible();
+
+  // Le maître / tuteur conserve la grille plate (pas de section par formation).
+  await selectRole(page, 'Maître / Tuteur');
+  await expect(page.locator('details')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Ouvrir le livret de/i })).toHaveCount(4);
+});
+
 test("clic sur une carte ouvre le livret de l'apprenti·e correspondant·e", async ({ page }) => {
   // Choix Théo (cas bon élève).
   await page.getByRole('button', { name: /Ouvrir le livret de Théo DUBOIS/i }).click();

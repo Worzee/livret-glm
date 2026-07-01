@@ -105,6 +105,56 @@ export function trierApprentisParAnneePuisNom(
   });
 }
 
+/** Vue minimale d'une formation pour le groupement du tableau de bord. */
+type FormationPourGroupe = { intitule: string; annee: string };
+
+export interface GroupeFormation {
+  /** `''` quand la formation de l'apprenti·e est introuvable (non affecté·e). */
+  formationId: string;
+  /** « CAP Cuisine (2025-2026) » — ou « Sans formation » pour le groupe orphelin. */
+  libelle: string;
+  apprentis: Apprenti[];
+}
+
+/**
+ * Regroupe les apprenti·e·s par formation pour le tableau de bord
+ * (1ᵉʳ juillet 2026 — réunion direction : sections dépliables par formation).
+ *
+ *   - Groupes triés par année décroissante (promo récente d'abord) puis
+ *     intitulé fr-FR ; les apprenti·e·s sans formation résolue terminent la
+ *     liste dans un groupe « Sans formation ».
+ *   - Apprenti·e·s triés par NOM/prénom au sein de chaque groupe.
+ */
+export function grouperParFormation(
+  apprentis: Apprenti[],
+  formations: Record<string, FormationPourGroupe>,
+): GroupeFormation[] {
+  const parId = new Map<string, Apprenti[]>();
+  for (const a of apprentis) {
+    const id = formations[a.formationId] ? a.formationId : '';
+    const liste = parId.get(id);
+    if (liste) liste.push(a);
+    else parId.set(id, [a]);
+  }
+  const collator = new Intl.Collator('fr-FR', { sensitivity: 'base' });
+  return [...parId.entries()]
+    .map(([formationId, liste]): GroupeFormation => {
+      const f = formations[formationId];
+      return {
+        formationId,
+        libelle: f ? `${f.intitule} (${f.annee})` : 'Sans formation',
+        apprentis: trierApprentis(liste),
+      };
+    })
+    .sort((a, b) => {
+      // « Sans formation » toujours en dernier.
+      if (!a.formationId !== !b.formationId) return a.formationId ? -1 : 1;
+      const anneeA = formations[a.formationId]?.annee ?? '';
+      const anneeB = formations[b.formationId]?.annee ?? '';
+      return anneeB.localeCompare(anneeA) || collator.compare(a.libelle, b.libelle);
+    });
+}
+
 /**
  * Filtre des apprenti·e·s par requête textuelle (nom, prénom).
  * Insensible à la casse et aux accents (Intl.Collator base-sensitivity).

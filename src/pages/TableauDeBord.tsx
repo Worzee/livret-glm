@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Briefcase, CalendarRange, ChevronRight, GraduationCap, Search } from 'lucide-react';
+import type { Apprenti, Formation, Livret } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useApprentiActifStore } from '@/store/useApprentiActifStore';
@@ -12,6 +13,7 @@ import {
   apprentisAccessibles,
   filtrerApprentis,
   filtrerParAnneeFormation,
+  grouperParFormation,
   trierApprentisParAnneePuisNom,
 } from '@/lib/apprentis-accessibles';
 import { calculerResumeLivret, classesBadgeCas, libelleCas } from '@/lib/etat-livret';
@@ -194,75 +196,135 @@ export function TableauDeBord() {
             ? "Aucun·e apprenti·e n'est rattaché·e à votre rôle dans cette démo."
             : 'Aucun·e apprenti·e ne correspond à votre recherche.'}
         </div>
+      ) : roleActif === 'formateur' || roleActif === 'coordo' || roleActif === 'admin' ? (
+        /* Regroupement par formation (1ᵉʳ juillet 2026 — réunion direction) :
+           chaque formation est une section dépliable / repliable, ouverte par
+           défaut. Le maître garde la grille plate (2-4 apprenti·e·s). */
+        <div className="space-y-4">
+          {grouperParFormation(apprentisFiltres, formations).map((groupe) => (
+            <details
+              key={groupe.formationId || 'sans-formation'}
+              open
+              data-testid={`groupe-formation-${groupe.formationId || 'aucune'}`}
+              className="rounded-lg border border-border bg-card"
+            >
+              <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg p-4 hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+                <ChevronRight
+                  className="h-4 w-4 shrink-0 text-muted-foreground transition-transform [details[open]_&]:rotate-90"
+                  aria-hidden="true"
+                />
+                <GraduationCap
+                  className="texte-couleur-role h-4 w-4 shrink-0"
+                  aria-hidden="true"
+                />
+                <span className="font-medium">{groupe.libelle}</span>
+                <span className="text-xs text-muted-foreground">
+                  · {groupe.apprentis.length} apprenti·e{groupe.apprentis.length > 1 ? 's' : ''}
+                </span>
+              </summary>
+              <div className="border-t border-border p-4">
+                <GrilleApprentis
+                  apprentis={groupe.apprentis}
+                  livrets={livrets}
+                  formations={formations}
+                  onOuvrir={ouvrirLivret}
+                />
+              </div>
+            </details>
+          ))}
+        </div>
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {apprentisFiltres.map((apprenti) => {
-            const livret = Object.values(livrets).find((l) => l.apprentiId === apprenti.id);
-            const formation = formations[apprenti.formationId];
-            const resume = livret ? calculerResumeLivret(apprenti, livret) : null;
-            return (
-              // min-w-0 : autorise la carte (item de grille, min-width:auto) à
-              // rétrécir sous la largeur intrinsèque de sa ligne « formation
-              // (année) · contrat » en nowrap — le truncate fait le reste.
-              <li key={apprenti.id} className="min-w-0">
-                <button
-                  type="button"
-                  onClick={() => ouvrirLivret(apprenti.id)}
-                  aria-label={`Ouvrir le livret de ${apprenti.prenom} ${apprenti.nom}`}
-                  className="carte-survol-role group flex h-full w-full flex-col gap-3 rounded-lg border p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <GraduationCap
-                          className="h-4 w-4 shrink-0 text-muted-foreground"
-                          aria-hidden="true"
-                        />
-                        <span className="truncate font-medium">
-                          {apprenti.prenom} {apprenti.nom}
-                        </span>
-                      </div>
-                      <p className="mt-1 truncate text-xs text-muted-foreground">
-                        {formation?.intitule ?? apprenti.formationId}
-                        {formation?.annee ? ` (${formation.annee})` : ''}
-                        {' · '}
-                        contrat {apprenti.contratDebut} → {apprenti.contratFin}
-                      </p>
-                    </div>
-                    <ChevronRight
-                      className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
-                      aria-hidden="true"
-                    />
-                  </div>
-
-                  {resume && (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={cn(
-                          'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium',
-                          classesBadgeCas(resume.cas),
-                        )}
-                      >
-                        {libelleCas(resume.cas)}
-                      </span>
-                      {resume.nbFiches > 0 && (
-                        <span className="text-xs text-muted-foreground">
-                          {resume.nbFichesSignees} / {resume.nbFiches} fiche
-                          {resume.nbFiches > 1 ? 's' : ''} signée
-                          {resume.nbFichesSignees > 1 ? 's' : ''}
-                        </span>
-                      )}
-                      {resume.entretienComplet && (
-                        <span className="text-xs text-muted-foreground">· entretien signé</span>
-                      )}
-                    </div>
-                  )}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        <GrilleApprentis
+          apprentis={apprentisFiltres}
+          livrets={livrets}
+          formations={formations}
+          onOuvrir={ouvrirLivret}
+        />
       )}
     </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Grille de cartes apprenti·e·s — partagée entre le rendu groupé par formation
+// (formateur / coordo / admin) et la grille plate (maître).
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface GrilleApprentisProps {
+  apprentis: Apprenti[];
+  livrets: Record<string, Livret>;
+  formations: Record<string, Formation>;
+  onOuvrir: (apprentiId: string) => void;
+}
+
+function GrilleApprentis({ apprentis, livrets, formations, onOuvrir }: GrilleApprentisProps) {
+  return (
+    <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      {apprentis.map((apprenti) => {
+        const livret = Object.values(livrets).find((l) => l.apprentiId === apprenti.id);
+        const formation = formations[apprenti.formationId];
+        const resume = livret ? calculerResumeLivret(apprenti, livret) : null;
+        return (
+          // min-w-0 : autorise la carte (item de grille, min-width:auto) à
+          // rétrécir sous la largeur intrinsèque de sa ligne « formation
+          // (année) · contrat » en nowrap — le truncate fait le reste.
+          <li key={apprenti.id} className="min-w-0">
+            <button
+              type="button"
+              onClick={() => onOuvrir(apprenti.id)}
+              aria-label={`Ouvrir le livret de ${apprenti.prenom} ${apprenti.nom}`}
+              className="carte-survol-role group flex h-full w-full flex-col gap-3 rounded-lg border p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap
+                      className="h-4 w-4 shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                    <span className="truncate font-medium">
+                      {apprenti.prenom} {apprenti.nom}
+                    </span>
+                  </div>
+                  <p className="mt-1 truncate text-xs text-muted-foreground">
+                    {formation?.intitule ?? apprenti.formationId}
+                    {formation?.annee ? ` (${formation.annee})` : ''}
+                    {' · '}
+                    contrat {apprenti.contratDebut} → {apprenti.contratFin}
+                  </p>
+                </div>
+                <ChevronRight
+                  className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+                  aria-hidden="true"
+                />
+              </div>
+
+              {resume && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={cn(
+                      'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium',
+                      classesBadgeCas(resume.cas),
+                    )}
+                  >
+                    {libelleCas(resume.cas)}
+                  </span>
+                  {resume.nbFiches > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      {resume.nbFichesSignees} / {resume.nbFiches} fiche
+                      {resume.nbFiches > 1 ? 's' : ''} signée
+                      {resume.nbFichesSignees > 1 ? 's' : ''}
+                    </span>
+                  )}
+                  {resume.entretienComplet && (
+                    <span className="text-xs text-muted-foreground">· entretien signé</span>
+                  )}
+                </div>
+              )}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

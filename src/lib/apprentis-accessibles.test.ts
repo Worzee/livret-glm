@@ -19,6 +19,7 @@ import {
   apprentisAccessibles,
   filtrerApprentis,
   filtrerParAnneeFormation,
+  grouperParFormation,
   trierApprentis,
   trierApprentisParAnneePuisNom,
 } from './apprentis-accessibles';
@@ -122,6 +123,46 @@ describe('apprentisAccessibles — filtre par rôle', () => {
     const maitreSansApprenti = { ...maitreKarimBenali, apprentiIds: [] };
     const r = apprentisAccessibles(maitreSansApprenti, apprentisDemo);
     expect(r).toEqual([]);
+  });
+});
+
+describe('grouperParFormation — sections du tableau de bord (1ᵉʳ juillet 2026)', () => {
+  const FORMATIONS = {
+    'f-cap-cuisine-2025': { intitule: 'CAP Cuisine', annee: '2025-2026' },
+    'f-bts-textile-2026': { intitule: 'BTS Textile', annee: '2026-2028' },
+  };
+
+  it('regroupe par formation et trie les apprenti·e·s par nom dans chaque groupe', () => {
+    const g = grouperParFormation(apprentisDemo, FORMATIONS);
+    expect(g).toHaveLength(1);
+    expect(g[0].libelle).toBe('CAP Cuisine (2025-2026)');
+    expect(g[0].apprentis.map((a) => a.nom)).toEqual([
+      'BIANCHI',
+      'DUBOIS',
+      'KOUAMÉ',
+      'MARTIN',
+      'NGUYEN',
+      'PEREIRA',
+    ]);
+  });
+
+  it('trie les groupes par année décroissante (promo récente en premier)', () => {
+    const sonia = { ...apprentiLeaMartin, id: 'a-sonia', formationId: 'f-bts-textile-2026' };
+    const g = grouperParFormation([...apprentisDemo, sonia], FORMATIONS);
+    expect(g.map((x) => x.libelle)).toEqual(['BTS Textile (2026-2028)', 'CAP Cuisine (2025-2026)']);
+  });
+
+  it('regroupe les apprenti·e·s sans formation résolue dans « Sans formation », en dernier', () => {
+    const orphelin = { ...apprentiLeaMartin, id: 'a-orphelin', formationId: '' };
+    const g = grouperParFormation([...apprentisDemo, orphelin], FORMATIONS);
+    expect(g).toHaveLength(2);
+    expect(g[1].libelle).toBe('Sans formation');
+    expect(g[1].formationId).toBe('');
+    expect(g[1].apprentis.map((a) => a.id)).toEqual(['a-orphelin']);
+  });
+
+  it('retourne une liste vide pour aucun·e apprenti·e', () => {
+    expect(grouperParFormation([], FORMATIONS)).toEqual([]);
   });
 });
 
