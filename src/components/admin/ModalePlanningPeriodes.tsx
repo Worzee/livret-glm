@@ -4,7 +4,6 @@ import type { Formation, LieuFiche, Livret, NumeroEntretien, PeriodeFormation } 
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
-import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
 import {
   evaluerVerrouPeriode,
   libellePeriode,
@@ -18,11 +17,17 @@ import { cn } from '@/lib/utils';
  * chantier #1, étendue juin 2026 : nombre d'entretiens tripartites, puis
  * 17 juin 2026 : périodes en centre de formation).
  *
- * Affiche le nombre d'entretiens tripartites, les questions retirées, puis
- * **deux** plannings de périodes indépendants — en entreprise et en centre —
- * via le sous-composant `SectionPeriodes`. Chaque période génère une fiche
- * dans le livret de chaque apprenti·e de la promo (entreprise →
- * `fichesSuivi`, centre → `fichesSuiviCentre`).
+ * Affiche le nombre d'entretiens tripartites, puis **deux** plannings de
+ * périodes indépendants — en entreprise et en centre — via le sous-composant
+ * `SectionPeriodes`. Chaque période génère une fiche dans le livret de chaque
+ * apprenti·e de la promo (entreprise → `fichesSuivi`, centre →
+ * `fichesSuiviCentre`).
+ *
+ * 1ᵉʳ juillet 2026 (réunion direction) : la section « Questions de
+ * l'entretien tripartite » (retrait par formation) est retirée de cette
+ * modale — les questions se gèrent uniquement dans la banque de questions
+ * côté admin. Le mécanisme `Formation.questionsRetirees` reste dans le
+ * modèle (sans UI pour le moment).
  */
 
 interface ModalePlanningPeriodesProps {
@@ -39,10 +44,8 @@ export function ModalePlanningPeriodes({
   onFermer,
 }: ModalePlanningPeriodesProps) {
   const setNombreEntretiens = useFormationsStore((s) => s.setNombreEntretiens);
-  const toggleQuestionRetiree = useFormationsStore((s) => s.toggleQuestionRetiree);
   const livretsTous = useLivretStore((s) => s.livrets);
   const apprentis = useUtilisateursStore((s) => s.apprentis);
-  const questionsBanque = useBanqueQuestionsStore((s) => s.questions);
 
   const titreId = useId();
   const [erreurEntretiens, setErreurEntretiens] = useState<string | null>(null);
@@ -151,60 +154,6 @@ export function ModalePlanningPeriodes({
             )}
           </section>
 
-          {/* Questions de l'entretien retirées pour la formation (13 juin 2026) ── */}
-          <section className="space-y-2">
-            <h3 className="text-sm font-medium">Questions de l'entretien tripartite</h3>
-            <div className="space-y-2 rounded-md border border-border bg-secondary/30 p-3">
-              <p className="text-xs text-muted-foreground">
-                Par défaut, <strong>toutes</strong> les questions de la banque sont posées et
-                obligatoires dans les entretiens de cette formation. Décochez celles à{' '}
-                <strong>retirer</strong> pour cette formation. Sans effet sur les entretiens déjà
-                initialisés.
-              </p>
-              {(() => {
-                const retirees = new Set(formationCourante.questionsRetirees ?? []);
-                const triees = Object.values(questionsBanque).sort((a, b) => {
-                  if (a.cible !== b.cible) return a.cible === 'apprenti' ? -1 : 1;
-                  return a.libelle.localeCompare(b.libelle, 'fr-FR');
-                });
-                if (triees.length === 0) {
-                  return (
-                    <p className="text-xs italic text-muted-foreground">
-                      Aucune question dans la banque.
-                    </p>
-                  );
-                }
-                return (
-                  <ul className="space-y-1">
-                    {triees.map((q) => {
-                      const incluse = !retirees.has(q.id);
-                      return (
-                        <li key={q.id}>
-                          <label className="flex items-start gap-2 text-sm cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={incluse}
-                              onChange={() => toggleQuestionRetiree(formation.id, q.id)}
-                              data-testid={`planning-question-${q.id}`}
-                              aria-label={`Inclure la question : ${q.libelle}`}
-                              className="mt-0.5 h-4 w-4 rounded border-input accent-[hsl(var(--ring))] focus-visible:ring-2 focus-visible:ring-ring"
-                            />
-                            <span className={cn(!incluse && 'text-muted-foreground line-through')}>
-                              <span className="text-[10px] uppercase tracking-wide text-muted-foreground mr-1">
-                                {q.cible === 'apprenti' ? 'Apprenti·e' : 'Maître'}
-                              </span>
-                              {q.libelle}
-                            </span>
-                          </label>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                );
-              })()}
-            </div>
-          </section>
-
           {/* Périodes en entreprise ─────────────────────────────────────── */}
           <SectionPeriodes formation={formation} lieu="entreprise" livretsPromo={livretsPromo} />
 
@@ -252,6 +201,11 @@ function SectionPeriodes({ formation, lieu, livretsPromo }: SectionPeriodesProps
   const [saisie, setSaisie] = useState<SaisiePeriode>(SAISIE_VIDE);
   const [erreurServeur, setErreurServeur] = useState<string | null>(null);
   const [confirmationSuppression, setConfirmationSuppression] = useState<string | null>(null);
+  // 1ᵉʳ juillet 2026 : le formulaire d'ajout est masqué par défaut derrière
+  // un bouton ; les erreurs de champ vide n'apparaissent qu'après une
+  // tentative d'ajout (et non dès l'ouverture du formulaire).
+  const [formulaireOuvert, setFormulaireOuvert] = useState(false);
+  const [tentative, setTentative] = useState(false);
 
   const periodes = useMemo(
     () => [...formationCourante[cle]].sort((a, b) => a.numero - b.numero),
@@ -268,17 +222,27 @@ function SectionPeriodes({ formation, lieu, livretsPromo }: SectionPeriodesProps
     setEditionId(null);
     setSaisie(SAISIE_VIDE);
     setErreurServeur(null);
+    setTentative(false);
+    setFormulaireOuvert(false);
   }
 
   function commencerEdition(p: PeriodeFormation) {
     setEditionId(p.id);
     setSaisie({ titre: p.titre ?? '', dateDebut: p.dateDebut, dateFin: p.dateFin });
     setErreurServeur(null);
+    setTentative(false);
+    setFormulaireOuvert(true);
   }
 
   function soumettre(e: React.FormEvent) {
     e.preventDefault();
     setErreurServeur(null);
+    // Le bouton reste cliquable : une soumission invalide révèle les erreurs
+    // (pattern tentativeSoumission du projet) sans rien écrire dans le store.
+    if (!validation.ok) {
+      setTentative(true);
+      return;
+    }
     const result = editionId
       ? modifier(formation.id, editionId, saisie, lieu)
       : ajouter(formation.id, saisie, lieu);
@@ -303,17 +267,23 @@ function SectionPeriodes({ formation, lieu, livretsPromo }: SectionPeriodesProps
 
   // Validation live pour feedback dans le formulaire d'ajout/édition.
   const validation = validerSaisiePeriode(saisie, formationCourante[cle], editionId ?? undefined);
+  // Erreur d'un champ affichée seulement après une tentative d'ajout, ou dès
+  // que le champ porte une valeur incohérente (R11/R12) — jamais à l'ouverture.
+  const erreurDebut =
+    tentative || saisie.dateDebut !== '' ? validation.erreurs.dateDebut : undefined;
+  const erreurFin = tentative || saisie.dateFin !== '' ? validation.erreurs.dateFin : undefined;
 
   const titreListe = estCentre
     ? `Périodes en centre définies (${periodes.length})`
     : `Périodes en entreprise définies (${periodes.length})`;
-  const titreForm = estCentre
-    ? editionId
+  const libelleAjout = estCentre
+    ? 'Ajouter une période en centre'
+    : 'Ajouter une période en entreprise';
+  const titreForm = editionId
+    ? estCentre
       ? 'Modifier la période en centre'
-      : 'Ajouter une période en centre'
-    : editionId
-      ? 'Modifier la période'
-      : 'Ajouter une période';
+      : 'Modifier la période'
+    : libelleAjout;
   const placeholderTitre = estCentre ? "Ex : Regroupement d'automne" : "Ex : Période d'automne";
 
   return (
@@ -322,7 +292,7 @@ function SectionPeriodes({ formation, lieu, livretsPromo }: SectionPeriodesProps
       {periodes.length === 0 ? (
         <p className="rounded-md border border-dashed border-border bg-secondary/30 p-3 text-sm text-muted-foreground">
           Aucune période planifiée{estCentre ? ' en centre' : ''}. Ajoutez la première via le
-          formulaire ci-dessous.
+          bouton ci-dessous.
         </p>
       ) : (
         <ul className="space-y-2">
@@ -395,81 +365,88 @@ function SectionPeriodes({ formation, lieu, livretsPromo }: SectionPeriodesProps
         </ul>
       )}
 
-      {/* Formulaire ajout / édition ──────────────────────────────────── */}
-      <div className="rounded-md border border-border bg-secondary/20 p-3 space-y-3">
-        <h4 className="text-sm font-medium">{titreForm}</h4>
-        <form onSubmit={soumettre} className="space-y-3">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="sm:col-span-3 space-y-1">
-              <label className="text-xs font-medium" htmlFor={`${tid}-titre`}>
-                Titre <span className="text-muted-foreground">(optionnel)</span>
-              </label>
-              <input
-                id={`${tid}-titre`}
-                type="text"
-                value={saisie.titre ?? ''}
-                onChange={(e) => setSaisie((s) => ({ ...s, titre: e.target.value }))}
-                placeholder={placeholderTitre}
-                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                data-testid={`${tid}-titre`}
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium" htmlFor={`${tid}-debut`}>
-                Date de début <span className="text-red-600">*</span>
-              </label>
-              <input
-                id={`${tid}-debut`}
-                type="date"
-                value={saisie.dateDebut}
-                onChange={(e) => setSaisie((s) => ({ ...s, dateDebut: e.target.value }))}
-                className={cn(
-                  'w-full rounded-md border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring',
-                  validation.erreurs.dateDebut ? 'border-red-400' : 'border-input',
+      {/* Formulaire ajout / édition — masqué par défaut derrière un bouton
+          (1ᵉʳ juillet 2026). ─────────────────────────────────────────── */}
+      {!formulaireOuvert ? (
+        <button
+          type="button"
+          onClick={() => setFormulaireOuvert(true)}
+          data-testid={`${tid}-ouvrir-ajout`}
+          className="inline-flex items-center gap-1.5 rounded-md bouton-plein-couleur-role px-3 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+          {libelleAjout}
+        </button>
+      ) : (
+        <div className="rounded-md border border-border bg-secondary/20 p-3 space-y-3">
+          <h4 className="text-sm font-medium">{titreForm}</h4>
+          <form onSubmit={soumettre} className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="sm:col-span-3 space-y-1">
+                <label className="text-xs font-medium" htmlFor={`${tid}-titre`}>
+                  Titre <span className="text-muted-foreground">(optionnel)</span>
+                </label>
+                <input
+                  id={`${tid}-titre`}
+                  type="text"
+                  value={saisie.titre ?? ''}
+                  onChange={(e) => setSaisie((s) => ({ ...s, titre: e.target.value }))}
+                  placeholder={placeholderTitre}
+                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  data-testid={`${tid}-titre`}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium" htmlFor={`${tid}-debut`}>
+                  Date de début <span className="text-red-600">*</span>
+                </label>
+                <input
+                  id={`${tid}-debut`}
+                  type="date"
+                  value={saisie.dateDebut}
+                  onChange={(e) => setSaisie((s) => ({ ...s, dateDebut: e.target.value }))}
+                  className={cn(
+                    'w-full rounded-md border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring',
+                    erreurDebut ? 'border-red-400' : 'border-input',
+                  )}
+                  data-testid={`${tid}-debut`}
+                />
+                {erreurDebut && (
+                  <p className="text-xs text-red-700" role="alert">
+                    {erreurDebut}
+                  </p>
                 )}
-                data-testid={`${tid}-debut`}
-              />
-              {validation.erreurs.dateDebut && (
-                <p className="text-xs text-red-700" role="alert">
-                  {validation.erreurs.dateDebut}
-                </p>
-              )}
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium" htmlFor={`${tid}-fin`}>
-                Date de fin <span className="text-red-600">*</span>
-              </label>
-              <input
-                id={`${tid}-fin`}
-                type="date"
-                value={saisie.dateFin}
-                onChange={(e) => setSaisie((s) => ({ ...s, dateFin: e.target.value }))}
-                className={cn(
-                  'w-full rounded-md border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring',
-                  validation.erreurs.dateFin ? 'border-red-400' : 'border-input',
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium" htmlFor={`${tid}-fin`}>
+                  Date de fin <span className="text-red-600">*</span>
+                </label>
+                <input
+                  id={`${tid}-fin`}
+                  type="date"
+                  value={saisie.dateFin}
+                  onChange={(e) => setSaisie((s) => ({ ...s, dateFin: e.target.value }))}
+                  className={cn(
+                    'w-full rounded-md border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring',
+                    erreurFin ? 'border-red-400' : 'border-input',
+                  )}
+                  data-testid={`${tid}-fin`}
+                />
+                {erreurFin && (
+                  <p className="text-xs text-red-700" role="alert">
+                    {erreurFin}
+                  </p>
                 )}
-                data-testid={`${tid}-fin`}
-              />
-              {validation.erreurs.dateFin && (
-                <p className="text-xs text-red-700" role="alert">
-                  {validation.erreurs.dateFin}
-                </p>
-              )}
-            </div>
-            <div className="flex items-end gap-2">
-              <button
-                type="submit"
-                disabled={!validation.ok}
-                className={cn(
-                  'inline-flex items-center gap-1 rounded-md bouton-plein-couleur-role px-3 py-1.5 text-sm font-medium',
-                  !validation.ok && 'opacity-40 cursor-not-allowed hover:opacity-40',
-                )}
-                data-testid={`${tid}-soumettre`}
-              >
-                <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-                {editionId ? 'Enregistrer' : 'Ajouter'}
-              </button>
-              {editionId && (
+              </div>
+              <div className="flex items-end gap-2">
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-1 rounded-md bouton-plein-couleur-role px-3 py-1.5 text-sm font-medium"
+                  data-testid={`${tid}-soumettre`}
+                >
+                  <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                  {editionId ? 'Enregistrer' : 'Ajouter'}
+                </button>
                 <button
                   type="button"
                   onClick={reinitFormulaire}
@@ -477,20 +454,20 @@ function SectionPeriodes({ formation, lieu, livretsPromo }: SectionPeriodesProps
                 >
                   Annuler
                 </button>
-              )}
+              </div>
             </div>
-          </div>
-          {erreurServeur && (
-            <p
-              role="alert"
-              className="flex items-center gap-2 rounded-md border border-red-300 bg-red-50 px-2 py-1.5 text-xs text-red-900"
-            >
-              <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
-              {erreurServeur}
-            </p>
-          )}
-        </form>
-      </div>
+            {erreurServeur && (
+              <p
+                role="alert"
+                className="flex items-center gap-2 rounded-md border border-red-300 bg-red-50 px-2 py-1.5 text-xs text-red-900"
+              >
+                <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                {erreurServeur}
+              </p>
+            )}
+          </form>
+        </div>
+      )}
     </section>
   );
 }

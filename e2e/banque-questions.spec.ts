@@ -76,31 +76,19 @@ test('suppression bloquée si la question est utilisée par un entretien', async
   await expect(ligneMotivations.getByText(/Utilisée dans au moins un entretien/i)).toBeVisible();
 });
 
-test('le coordo retire une question pour la formation — absente du futur entretien (13 juin 2026)', async ({
+test("la modale Planning n'expose plus le retrait de questions par formation (1ᵉʳ juillet 2026)", async ({
   page,
 }) => {
-  // 1. Le coordo retire « ressenti équipe » pour la formation CAP Cuisine
-  //    via la modale Planning.
+  // Réunion direction : les questions se gèrent uniquement dans la banque de
+  // questions côté admin — la section « Questions de l'entretien tripartite »
+  // a été retirée de la modale Planning (le mécanisme `questionsRetirees`
+  // reste dans le modèle, sans UI pour le moment).
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/formations');
   await page.getByRole('button', { name: /Planning des périodes de CAP Cuisine/i }).click();
-  const caseQuestion = page.getByTestId('planning-question-q-app-ressenti-equipe');
-  await expect(caseQuestion).toBeChecked(); // incluse par défaut
-  await caseQuestion.uncheck();
-  // Persiste après réouverture (Échap ferme la modale).
-  await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: /Planning des périodes de CAP Cuisine/i }).click();
-  await expect(page.getByTestId('planning-question-q-app-ressenti-equipe')).not.toBeChecked();
-  await page.keyboard.press('Escape');
-
-  // 2. Le formateur initialise l'entretien 2 de Léa (E1 signé 3/3).
-  await selectRole(page, 'Formateur référent');
-  await page.goto('/livret/entretien/2');
-  await page.getByTestId('init-entretien-2').click();
-
-  // 3. La question retirée n'apparaît pas ; une autre question apprenti, oui.
-  await expect(page.getByText(/Comment vous sentez-vous au sein de votre équipe/i)).toHaveCount(0);
-  await expect(page.getByText(/Quelles sont vos motivations pour cette formation/i)).toBeVisible();
+  const modale = page.getByRole('dialog');
+  await expect(modale.getByText(/Questions de l'entretien tripartite/i)).toHaveCount(0);
+  await expect(modale.getByTestId('planning-question-q-app-ressenti-equipe')).toHaveCount(0);
 });
 
 test('le formateur ne compose plus les questions, présentes à E2 (aucun bouton de sélection)', async ({

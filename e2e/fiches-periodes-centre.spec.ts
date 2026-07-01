@@ -33,6 +33,8 @@ test('le coordo ajoute une période en centre via le formulaire dédié', async 
   await page.goto('/admin/formations');
   await page.getByRole('button', { name: /Planning des périodes de CAP Cuisine/i }).click();
   const modale = page.getByRole('dialog');
+  // Le formulaire d'ajout est masqué derrière un bouton (1ᵉʳ juillet 2026).
+  await modale.getByTestId('planning-centre-ouvrir-ajout').click();
   await modale.getByTestId('planning-centre-titre').fill('Regroupement de printemps');
   await modale.getByTestId('planning-centre-debut').fill('2026-04-13');
   await modale.getByTestId('planning-centre-fin').fill('2026-04-24');

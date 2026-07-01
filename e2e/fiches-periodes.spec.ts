@@ -47,6 +47,16 @@ test("le coordo ajoute une nouvelle période et la voit apparaître dans le livr
     .getByRole('button', { name: /Planning des périodes de CAP Cuisine/i })
     .click();
   const modale = page.getByRole('dialog');
+  // 1ᵉʳ juillet 2026 : le formulaire est masqué par défaut derrière un bouton,
+  // et aucune erreur rouge n'apparaît avant une vraie tentative.
+  await expect(modale.getByTestId('planning-debut')).toHaveCount(0);
+  await modale.getByTestId('planning-ouvrir-ajout').click();
+  await expect(modale.getByTestId('planning-debut')).toBeVisible();
+  await expect(modale.getByText(/La date de début est obligatoire/i)).toHaveCount(0);
+  // Tentative à vide → les erreurs de champs obligatoires apparaissent.
+  await modale.getByTestId('planning-soumettre').click();
+  await expect(modale.getByText(/La date de début est obligatoire/i)).toBeVisible();
+
   await modale.getByTestId('planning-titre').fill('Période bilan');
   await modale.getByTestId('planning-debut').fill('2026-05-04');
   await modale.getByTestId('planning-fin').fill('2026-06-30');
@@ -124,11 +134,13 @@ test("rejet de saisie : date de fin antérieure au début (R11)", async ({ page 
     .getByRole('button', { name: /Planning des périodes de CAP Cuisine/i })
     .click();
   const modale = page.getByRole('dialog');
+  await modale.getByTestId('planning-ouvrir-ajout').click();
   await modale.getByTestId('planning-debut').fill('2026-09-01');
   await modale.getByTestId('planning-fin').fill('2026-08-01'); // antérieur
   await expect(modale.getByText(/R11/i)).toBeVisible();
-  // Le bouton soumettre reste désactivé tant que la validation échoue
-  await expect(modale.getByTestId('planning-soumettre')).toBeDisabled();
+  // Une soumission invalide ne crée rien (aucune Période 4 n'apparaît).
+  await modale.getByTestId('planning-soumettre').click();
+  await expect(modale.getByText(/Période 4/i)).toHaveCount(0);
 });
 
 test("rejet de saisie : chevauchement avec une période existante (R12)", async ({ page }) => {
@@ -138,6 +150,7 @@ test("rejet de saisie : chevauchement avec une période existante (R12)", async 
     .getByRole('button', { name: /Planning des périodes de CAP Cuisine/i })
     .click();
   const modale = page.getByRole('dialog');
+  await modale.getByTestId('planning-ouvrir-ajout').click();
   // P1 fixture : 2025-09-02 → 2025-12-20. On chevauche dessus.
   await modale.getByTestId('planning-debut').fill('2025-11-01');
   await modale.getByTestId('planning-fin').fill('2026-02-15');
