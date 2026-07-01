@@ -157,6 +157,24 @@ test("rejet de saisie : chevauchement avec une période existante (R12)", async 
   await expect(modale.getByText(/chevauchent/i)).toBeVisible();
 });
 
+test('la fiche entreprise n\'affiche plus le « Suivi de la formation au GRETA CFA » (1ᵉʳ juillet 2026)', async ({
+  page,
+}) => {
+  // Période entreprise (Léa P3) : la zone a disparu — elle faisait doublon
+  // avec les périodes en centre de formation.
+  await page.goto('/livret/fiches-suivi');
+  await page
+    .getByRole('link', { name: /Période 3/i })
+    .first()
+    .click();
+  await expect(page.getByText(/Suivi de la formation au GRETA CFA/i)).toHaveCount(0);
+
+  // Elle reste présente sur les périodes en centre.
+  await page.goto('/livret/fiches-suivi-centre');
+  await page.getByRole('link', { name: /Regroupement d.automne/i }).click();
+  await expect(page.getByText(/Suivi de la formation au GRETA CFA/i)).toBeVisible();
+});
+
 test("le coordo force l'affichage des périodes — visible par l'apprenti·e (18 juin 2026)", async ({
   page,
 }) => {

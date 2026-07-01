@@ -149,7 +149,10 @@ export function FicheSuiviPeriodeDetail({ lieu = 'entreprise' }: FicheSuiviPerio
         </div>
       )}
 
-      <SuiviGretaCfa livretId={livret.id} fiche={fiche} lieu={lieu} />
+      {/* Le « Suivi de la formation au GRETA CFA » ne concerne plus que les
+          périodes en centre (1ᵉʳ juillet 2026) — cette zone faisait doublon
+          avec les périodes en centre de formation côté entreprise. */}
+      {estCentre && <SuiviGretaCfa livretId={livret.id} fiche={fiche} lieu={lieu} />}
       <TableauTriColonnes livretId={livret.id} fiche={fiche} lieu={lieu} />
       <ZoneObservation livretId={livret.id} fiche={fiche} lieu={lieu} />
       <BlocSignatures livretId={livret.id} fiche={fiche} lieu={lieu} />

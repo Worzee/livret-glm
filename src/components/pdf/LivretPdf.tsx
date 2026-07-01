@@ -837,10 +837,15 @@ export function PageFiche({
           Du {formaterDateLongue(fiche.dateDebut)} au {formaterDateLongue(fiche.dateFin)}
         </Text>
 
-        {/* Suivi GRETA CFA — 2 zones de texte (refonte mai 2026) */}
-        <Text style={styles.h2}>Suivi de la formation au GRETA CFA</Text>
-        <ParagrapheLibre titre="Apprenti·e" valeur={fiche.suiviGretaCfa.apprenti} />
-        <ParagrapheLibre titre="Formateur référent" valeur={fiche.suiviGretaCfa.formateur} />
+        {/* Suivi GRETA CFA — 2 zones de texte, uniquement sur les fiches en
+            centre (1ᵉʳ juillet 2026 : la zone a quitté les fiches entreprise). */}
+        {estCentre && (
+          <>
+            <Text style={styles.h2}>Suivi de la formation au GRETA CFA</Text>
+            <ParagrapheLibre titre="Apprenti·e" valeur={fiche.suiviGretaCfa.apprenti} />
+            <ParagrapheLibre titre="Formateur référent" valeur={fiche.suiviGretaCfa.formateur} />
+          </>
+        )}
 
         {/* Tableau tri-colonnes (compétences + évaluations + retour apprenti) */}
         <Text style={styles.h2}>Activités et évaluations</Text>
