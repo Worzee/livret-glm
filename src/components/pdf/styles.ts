@@ -74,17 +74,26 @@ export const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'space-between',
   },
+  // Logo officiel scindé (3 juillet 2026) : bloc « République française »
+  // (Marianne) à gauche, bloc « Réseau GRETA CFA — Académie de Lyon » à
+  // droite ; le titre du document passe SOUS cette rangée.
   gardeMarque: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'space-between',
   },
-  // Logo officiel du réseau GRETA CFA (PNG horizontal ~3,3:1 — juin 2026,
-  // remplace le carré « GLM » de la maquette).
-  gardeLogo: {
-    width: 160,
-    height: 48,
+  gardeLogoRepublique: {
+    width: 60,
+    height: 52,
     objectFit: 'contain',
+  },
+  gardeLogoReseau: {
+    width: 97,
+    height: 52,
+    objectFit: 'contain',
+  },
+  gardeTitreBloc: {
+    marginTop: 24,
   },
   gardeTitre: {
     fontSize: 28,

@@ -1,5 +1,6 @@
 import { Document, Image, Page, Text, View } from '@react-pdf/renderer';
-import logoGreta from '@/assets/logo-greta.png';
+import logoRepublique from '@/assets/logo-republique-francaise.png';
+import logoReseauGreta from '@/assets/logo-reseau-greta-cfa.png';
 import type {
   Apprenti,
   AttitudeProfessionnelle,
@@ -473,12 +474,15 @@ export function PageDeGarde({
     <Page size="A4" style={styles.page}>
       <View style={styles.garde}>
         <View>
+          {/* Logo officiel scindé (3 juillet 2026) : Marianne à gauche,
+              réseau GRETA CFA à droite, titre du document en dessous. */}
           <View style={styles.gardeMarque}>
-            <Image src={logoGreta} style={styles.gardeLogo} />
-            <View>
-              <Text style={styles.gardeTitre}>Livret d'apprentissage</Text>
-              <Text style={styles.gardeSousTitre}>GRETA Lyon Métropole</Text>
-            </View>
+            <Image src={logoRepublique} style={styles.gardeLogoRepublique} />
+            <Image src={logoReseauGreta} style={styles.gardeLogoReseau} />
+          </View>
+          <View style={styles.gardeTitreBloc}>
+            <Text style={styles.gardeTitre}>Livret d'apprentissage</Text>
+            <Text style={styles.gardeSousTitre}>GRETA Lyon Métropole</Text>
           </View>
 
           <View style={styles.gardeBlocIdentite}>
