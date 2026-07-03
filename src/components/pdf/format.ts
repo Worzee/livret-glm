@@ -63,9 +63,9 @@ export function libelleAppreciation(n: NiveauAppreciation | null | undefined): s
     case 'plus':
       return '+';
     case 'moins':
-      return '−';
+      return '-';
     case 'moinsmoins':
-      return '−−';
+      return '--';
     default:
       return '—';
   }

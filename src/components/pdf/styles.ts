@@ -31,6 +31,23 @@ export const COULEURS = {
   admin: '#a16207', // or foncé (UI: yellow-700)
   alerte: '#b45309',
   succes: '#15803d',
+  // Niveaux de maîtrise — tokens du site (tailwind.config.ts > colors.niveau).
+  niveauMaitrise: '#059669',
+  niveauPartiel: '#d97706',
+  niveauNonMaitrise: '#dc2626',
+  niveauNonFait: '#64748b',
+} as const;
+
+/**
+ * Couleurs des appréciations ++/+/-/-- — tokens du site
+ * (tailwind.config.ts > colors.appreciation), utilisées en pastilles pleines
+ * (texte blanc), comme le sélecteur de l'UI.
+ */
+export const COULEURS_APPRECIATION = {
+  plusplus: '#059669',
+  plus: '#65a30d',
+  moins: '#d97706',
+  moinsmoins: '#dc2626',
 } as const;
 
 export const styles = StyleSheet.create({
@@ -159,15 +176,15 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Helvetica-Bold',
     color: COULEURS.texte,
-    marginTop: 14,
-    marginBottom: 6,
+    marginTop: 11,
+    marginBottom: 5,
   },
   h3: {
     fontSize: 11,
     fontFamily: 'Helvetica-Bold',
     color: COULEURS.texte,
-    marginTop: 10,
-    marginBottom: 4,
+    marginTop: 7,
+    marginBottom: 3,
   },
   paragraphe: {
     marginBottom: 4,
@@ -268,18 +285,44 @@ export const styles = StyleSheet.create({
     color: COULEURS.texteSecondaire,
   },
   // ── Champs clé/valeur ───────────────────────────────────────────────────
+  // Texte fluide « label : valeur » sur toute la largeur (3 juillet 2026) —
+  // l'ancienne colonne de labels à largeur fixe (140 pt) forçait des retours
+  // à la ligne inutiles sur les questions longues.
   paire: {
-    flexDirection: 'row',
     marginBottom: 3,
+    fontSize: 9,
+    lineHeight: 1.35,
   },
   paireLabel: {
-    width: 140,
     color: COULEURS.texteSecondaire,
-    fontSize: 9,
   },
   paireValeur: {
-    flex: 1,
+    color: COULEURS.texte,
+  },
+  // Ligne « label + pastille d'appréciation » (attitudes, appréciations).
+  paireAppreciation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 3,
+  },
+  paireAppreciationLabel: {
     fontSize: 9,
+    color: COULEURS.texteSecondaire,
+    flexShrink: 1,
+  },
+  pastilleAppreciation: {
+    fontSize: 9,
+    fontFamily: 'Helvetica-Bold',
+    color: '#ffffff',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 3,
+  },
+  appreciationVide: {
+    fontSize: 9,
+    fontStyle: 'italic',
+    color: COULEURS.texteSecondaire,
   },
   // ── Liste à puces ───────────────────────────────────────────────────────
   liste: {
@@ -293,21 +336,21 @@ export const styles = StyleSheet.create({
   listePuce: {
     width: 8,
   },
-  // ── Couleurs niveaux (pastilles texte) ──────────────────────────────────
+  // ── Couleurs niveaux (pastilles texte — tokens du site) ─────────────────
   niveauMaitrise: {
-    color: COULEURS.succes,
+    color: COULEURS.niveauMaitrise,
     fontFamily: 'Helvetica-Bold',
   },
   niveauPartiel: {
-    color: COULEURS.alerte,
+    color: COULEURS.niveauPartiel,
     fontFamily: 'Helvetica-Bold',
   },
   niveauNonMaitrise: {
-    color: '#dc2626',
+    color: COULEURS.niveauNonMaitrise,
     fontFamily: 'Helvetica-Bold',
   },
   niveauNonFait: {
-    color: COULEURS.texteSecondaire,
+    color: COULEURS.niveauNonFait,
     fontStyle: 'italic',
   },
   // ── Bandeaux d'état fiche ───────────────────────────────────────────────

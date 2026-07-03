@@ -1,4 +1,5 @@
-import { Document, Image, Page, Text, View } from '@react-pdf/renderer';
+import { Document, Image, Page, Text as TextePdf, View } from '@react-pdf/renderer';
+import type { ComponentProps, ReactNode } from 'react';
 import logoRepublique from '@/assets/logo-republique-francaise.png';
 import logoReseauGreta from '@/assets/logo-reseau-greta-cfa.png';
 import type {
@@ -15,6 +16,9 @@ import type {
   LieuFiche,
   Livret,
   Maitre,
+  NiveauAppreciation,
+  NiveauMaitrise,
+  NiveauMaitriseEntreprise,
   NumeroEntretien,
   QuestionBanque,
   Referentiel,
@@ -30,7 +34,7 @@ import { libelleEvenement, libelleModalite, modaliteEffective } from '@/lib/orga
 import { TRAME_ENTRETIEN_1, pointsAlerteTrameE1 } from '@/lib/trame-entretien-1';
 import { ATTITUDES_OBLIGATOIRES, lignesSyntheseAttitudes } from '@/lib/attitudes';
 import { attitudesRetenues } from '@/lib/selection-attitudes';
-import { COULEURS, styles } from './styles';
+import { COULEURS, COULEURS_APPRECIATION, styles } from './styles';
 import {
   couleurEtatFiche,
   formaterDateCourte,
@@ -112,10 +116,10 @@ export function LivretPdf({
 
   return (
     <Document
-      title={`Livret d'apprentissage — ${nomComplet}`}
+      title={`Livret d'apprentissage - ${nomComplet}`}
       author="GRETA Lyon Métropole"
       subject={`Livret de ${formation.intitule}`}
-      creator="Maquette Livret GRETA — étape 1"
+      creator="Maquette Livret GRETA - étape 1"
     >
       <PageDeGarde
         apprenti={apprenti}
@@ -202,10 +206,10 @@ export function PeriodePdf({
   const estCentre = lieu === 'centre';
   return (
     <Document
-      title={`Période ${estCentre ? 'en centre ' : ''}${fiche.numeroPeriode} — ${nomComplet}`}
+      title={`Période ${estCentre ? 'en centre ' : ''}${fiche.numeroPeriode} - ${nomComplet}`}
       author="GRETA Lyon Métropole"
-      subject={`Période en ${estCentre ? 'centre' : 'entreprise'} — ${formation.intitule}`}
-      creator="Maquette Livret GRETA — étape 1"
+      subject={`Période en ${estCentre ? 'centre' : 'entreprise'} - ${formation.intitule}`}
+      creator="Maquette Livret GRETA - étape 1"
     >
       <PageDeGarde
         apprenti={apprenti}
@@ -251,10 +255,10 @@ export function EntretienPdf({
   const attitudesDuLivret = attitudesRetenues(attitudes, livret.attitudesSelectionnees ?? []);
   return (
     <Document
-      title={`Entretien tripartite ${numero} — ${nomComplet}`}
+      title={`Entretien tripartite ${numero} - ${nomComplet}`}
       author="GRETA Lyon Métropole"
-      subject={`Entretien tripartite — ${formation.intitule}`}
-      creator="Maquette Livret GRETA — étape 1"
+      subject={`Entretien tripartite - ${formation.intitule}`}
+      creator="Maquette Livret GRETA - étape 1"
     >
       <PageDeGarde
         apprenti={apprenti}
@@ -298,10 +302,10 @@ export function FichesSuiviPdf({
   const nomComplet = `${apprenti.prenom} ${apprenti.nom}`;
   return (
     <Document
-      title={`Fiches de suivi — ${nomComplet}`}
+      title={`Fiches de suivi - ${nomComplet}`}
       author="GRETA Lyon Métropole"
-      subject={`Fiches de suivi — ${formation.intitule}`}
-      creator="Maquette Livret GRETA — étape 1"
+      subject={`Fiches de suivi - ${formation.intitule}`}
+      creator="Maquette Livret GRETA - étape 1"
     >
       <PageDeGarde
         apprenti={apprenti}
@@ -323,6 +327,113 @@ export function FichesSuiviPdf({
 // Composants utilitaires
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Remplace les tirets longs par des tirets simples (demande pilote, 3 juillet 2026). */
+function remplacerTiretsLongs(node: ReactNode): ReactNode {
+  if (typeof node === 'string') return node.replace(/—/g, '-');
+  if (Array.isArray(node)) return node.map((n) => remplacerTiretsLongs(n));
+  return node;
+}
+
+/**
+ * Props du `Text` non-SVG de react-pdf (la variante SVG, qui exige `x`/`y`,
+ * est écartée de l'union — le PDF du livret n'en utilise pas).
+ */
+type ProprietesTexte = Exclude<
+  ComponentProps<typeof TextePdf>,
+  { x: string | number; y: string | number }
+>;
+
+/**
+ * `Text` local : toutes les chaînes rendues dans le PDF (littéraux, données,
+ * helpers de format) passent par ce wrapper — un « — » ne peut pas atteindre
+ * le document. Ne pas importer `Text` de @react-pdf/renderer directement.
+ */
+function Text(props: ProprietesTexte) {
+  const { children, render, ...reste } = props;
+  // `render` n'est transmis que s'il existe : react-pdf teste la présence de
+  // la prop, un `render={undefined}` explicite le fait planter.
+  if (render) {
+    return <TextePdf {...reste} render={(args) => remplacerTiretsLongs(render(args))} />;
+  }
+  return <TextePdf {...reste}>{remplacerTiretsLongs(children)}</TextePdf>;
+}
+
+/** Style de texte coloré d'un niveau de maîtrise (tokens du site). */
+function styleNiveau(n: NiveauMaitrise | NiveauMaitriseEntreprise | null | undefined) {
+  switch (n) {
+    case 'maitrise':
+      return styles.niveauMaitrise;
+    case 'partiel':
+      return styles.niveauPartiel;
+    case 'non-maitrise':
+      return styles.niveauNonMaitrise;
+    case 'non-fait':
+      return styles.niveauNonFait;
+    default:
+      return { color: COULEURS.texteSecondaire };
+  }
+}
+
+/** Pastille pleine ++/+/-/-- aux couleurs du sélecteur du site. */
+function PastilleAppreciation({ niveau }: { niveau: NiveauAppreciation | null | undefined }) {
+  if (!niveau) return <Text style={styles.appreciationVide}>Non renseigné</Text>;
+  return (
+    <Text style={[styles.pastilleAppreciation, { backgroundColor: COULEURS_APPRECIATION[niveau] }]}>
+      {libelleAppreciation(niveau)}
+    </Text>
+  );
+}
+
+/** Ligne « label + pastille d'appréciation » (attitudes, appréciations). */
+function ChampAppreciation({
+  label,
+  niveau,
+}: {
+  label: string;
+  niveau: NiveauAppreciation | null | undefined;
+}) {
+  return (
+    <View style={styles.paireAppreciation}>
+      <Text style={styles.paireAppreciationLabel}>{label}</Text>
+      <PastilleAppreciation niveau={niveau} />
+    </View>
+  );
+}
+
+/** Ligne « label : Oui/Non » — Oui vert, Non rouge (couleurs du site). */
+function ChampOuiNon({ label, valeur }: { label: string; valeur: boolean | null | undefined }) {
+  const couleur =
+    valeur === true
+      ? styles.niveauMaitrise
+      : valeur === false
+        ? styles.niveauNonMaitrise
+        : { color: COULEURS.texteSecondaire };
+  return (
+    <Text style={styles.paire}>
+      <Text style={styles.paireLabel}>{label} : </Text>
+      <Text style={couleur}>{libelleOuiNon(valeur)}</Text>
+    </Text>
+  );
+}
+
+/** Ligne de synthèse par bloc, compteurs colorés aux couleurs des niveaux. */
+function LigneStats({
+  titre,
+  stats,
+}: {
+  titre: string;
+  stats: { maitrise: number; partiel: number; nonMaitrise: number; nonEvalue: number };
+}) {
+  return (
+    <Text style={{ fontSize: 9, marginTop: 2 }}>
+      {titre} — <Text style={styles.niveauMaitrise}>Maîtrisé : {stats.maitrise}</Text> ·{' '}
+      <Text style={styles.niveauPartiel}>En cours : {stats.partiel}</Text> ·{' '}
+      <Text style={styles.niveauNonMaitrise}>Non maîtrisé : {stats.nonMaitrise}</Text> ·{' '}
+      <Text style={{ color: COULEURS.texteSecondaire }}>Non évalué : {stats.nonEvalue}</Text>
+    </Text>
+  );
+}
+
 function PiedDePage({ dateExport }: { dateExport: string }) {
   return (
     <View style={styles.piedDePage} fixed>
@@ -338,16 +449,16 @@ function PiedDePage({ dateExport }: { dateExport: string }) {
 
 function Champ({ label, valeur }: { label: string; valeur: string | undefined }) {
   return (
-    <View style={styles.paire}>
-      <Text style={styles.paireLabel}>{label}</Text>
+    <Text style={styles.paire}>
+      <Text style={styles.paireLabel}>{label} : </Text>
       <Text style={styles.paireValeur}>{valeur && valeur.length > 0 ? valeur : '—'}</Text>
-    </View>
+    </Text>
   );
 }
 
 function ParagrapheLibre({ titre, valeur }: { titre: string; valeur: string | undefined }) {
   return (
-    <View style={{ marginBottom: 6 }}>
+    <View style={{ marginBottom: 4 }}>
       <Text style={styles.h3}>{titre}</Text>
       {valeur && valeur.trim().length > 0 ? (
         <Text style={styles.paragraphe}>{valeur}</Text>
@@ -403,18 +514,22 @@ function BlocSignaturesPdf({
   apprenti,
   maitre,
   formateur,
-  lieu = 'entreprise',
+  lieu,
 }: {
   signatures: SignaturesTripartite;
   apprenti: Apprenti;
   maitre: Maitre;
   formateur: Formateur;
   /**
-   * 2 signataires par lieu (1ᵉʳ juillet 2026) : entreprise = apprenti·e +
-   * maître / tuteur ; centre = apprenti·e + formateur référent.
+   * 2 signataires par lieu de fiche (1ᵉʳ juillet 2026) : entreprise =
+   * apprenti·e + maître / tuteur ; centre = apprenti·e + formateur référent.
+   * Sans `lieu` (entretien tripartite), les 3 parties signent (R9) — la vague
+   * du 1ᵉʳ juillet avait masqué à tort la carte du formateur sur les
+   * entretiens (corrigé le 3 juillet 2026).
    */
   lieu?: LieuFiche;
 }) {
+  const estEntretien = lieu === undefined;
   return (
     <View style={styles.signaturesRangee} wrap={false}>
       <CarteSignature
@@ -422,14 +537,14 @@ function BlocSignaturesPdf({
         signature={signatures.apprenti}
         nom={`${apprenti.prenom} ${apprenti.nom}`}
       />
-      {lieu !== 'centre' && (
+      {(estEntretien || lieu === 'entreprise') && (
         <CarteSignature
           role="maitre"
           signature={signatures.maitre}
           nom={`${maitre.prenom} ${maitre.nom}`}
         />
       )}
-      {lieu === 'centre' && (
+      {(estEntretien || lieu === 'centre') && (
         <CarteSignature
           role="formateur"
           signature={signatures.formateur}
@@ -656,11 +771,7 @@ export function PageEntretien({
       const v = reponses[q.id];
       if (q.type === 'oui-non') {
         return (
-          <Champ
-            key={q.id}
-            label={q.libelle}
-            valeur={libelleOuiNon(typeof v === 'boolean' ? v : null)}
-          />
+          <ChampOuiNon key={q.id} label={q.libelle} valeur={typeof v === 'boolean' ? v : null} />
         );
       }
       const txt = typeof v === 'string' ? v : '';
@@ -686,10 +797,10 @@ export function PageEntretien({
                 {rubrique.questions.map((q) => {
                   const v = entretien.reponsesTrame?.[q.id];
                   return q.type === 'oui-non' ? (
-                    <Champ
+                    <ChampOuiNon
                       key={q.id}
                       label={q.libelle}
-                      valeur={libelleOuiNon(typeof v === 'boolean' ? v : null)}
+                      valeur={typeof v === 'boolean' ? v : null}
                     />
                   ) : (
                     <ParagrapheLibre
@@ -737,17 +848,13 @@ export function PageEntretien({
             maître) ouvrent la liste, au-dessus des optionnelles retenues. */}
         <Text style={styles.h3}>Attitudes professionnelles (maître)</Text>
         {ATTITUDES_OBLIGATOIRES.map((o) => (
-          <Champ
-            key={o.cle}
-            label={`${o.libelle} (obligatoire)`}
-            valeur={libelleAppreciation(ap[o.cle])}
-          />
+          <ChampAppreciation key={o.cle} label={`${o.libelle} (obligatoire)`} niveau={ap[o.cle]} />
         ))}
         {attitudes.map((a) => (
-          <Champ
+          <ChampAppreciation
             key={a.id}
             label={a.libelle}
-            valeur={libelleAppreciation(entretien.evaluationsAttitudes[a.id] ?? undefined)}
+            niveau={entretien.evaluationsAttitudes[a.id]}
           />
         ))}
         {ap.commentaires && (
@@ -759,10 +866,10 @@ export function PageEntretien({
         {!estE1 && (
           <>
             <Text style={styles.h2}>Démarches administratives</Text>
-            <Champ label="Contrat signé" valeur={libelleOuiNon(da.contratSigne)} />
-            <Champ label="Visite médicale" valeur={libelleOuiNon(da.visiteMedicale)} />
-            <Champ label="Permis de conduire" valeur={libelleOuiNon(da.permisConduire)} />
-            <Champ label="Voiture" valeur={libelleOuiNon(da.voiture)} />
+            <ChampOuiNon label="Contrat signé" valeur={da.contratSigne} />
+            <ChampOuiNon label="Visite médicale" valeur={da.visiteMedicale} />
+            <ChampOuiNon label="Permis de conduire" valeur={da.permisConduire} />
+            <ChampOuiNon label="Voiture" valeur={da.voiture} />
             {da.remarques && <ParagrapheLibre titre="Remarques" valeur={da.remarques} />}
 
             <Text style={styles.h2}>Conditions pratiques</Text>
@@ -772,9 +879,9 @@ export function PageEntretien({
             <Champ label="Transport (entreprise)" valeur={cp.transportEntreprise} />
 
             <Text style={styles.h2}>Aides demandées</Text>
-            <Champ label="Logement" valeur={libelleOuiNon(ai.logement)} />
-            <Champ label="Premier équipement" valeur={libelleOuiNon(ai.premierEquipement)} />
-            <Champ label="Permis" valeur={libelleOuiNon(ai.permis)} />
+            <ChampOuiNon label="Logement" valeur={ai.logement} />
+            <ChampOuiNon label="Premier équipement" valeur={ai.premierEquipement} />
+            <ChampOuiNon label="Permis" valeur={ai.permis} />
             {ai.autres && <ParagrapheLibre titre="Autres aides" valeur={ai.autres} />}
           </>
         )}
@@ -866,6 +973,7 @@ export function PageFiche({
               const libelleC = comp
                 ? comp.libelle
                 : (l.libelleLibre ?? 'Activité hors référentiel');
+              const evaluation = estCentre ? l.evaluationGreta : l.evaluationEntreprise;
               return (
                 <View
                   key={l.id}
@@ -878,7 +986,7 @@ export function PageFiche({
                 >
                   <Text style={[styles.tableauCellule, { width: '40%' }]}>{libelleC}</Text>
                   <Text style={[styles.tableauCellule, { width: '25%' }]}>
-                    {libelleNiveau(estCentre ? l.evaluationGreta : l.evaluationEntreprise)}
+                    <Text style={styleNiveau(evaluation)}>{libelleNiveau(evaluation)}</Text>
                   </Text>
                   <Text style={[styles.tableauCelluleDerniere, { width: '35%' }]}>
                     {l.retourApprenti || '—'}
@@ -988,14 +1096,8 @@ function PageEvaluationFinale({
         {stats.map((s) => (
           <View key={s.bloc.id} style={[styles.encart, { marginBottom: 6 }]}>
             <Text style={styles.encartTitre}>{s.bloc.libelle}</Text>
-            <Text style={{ fontSize: 9, marginTop: 2 }}>
-              Entreprise — Maîtrisé : {s.entreprise.maitrise} · En cours : {s.entreprise.partiel} ·
-              Non maîtrisé : {s.entreprise.nonMaitrise} · Non évalué : {s.entreprise.nonEvalue}
-            </Text>
-            <Text style={{ fontSize: 9, marginTop: 2 }}>
-              Centre — Maîtrisé : {s.centre.maitrise} · En cours : {s.centre.partiel} · Non maîtrisé
-              : {s.centre.nonMaitrise} · Non évalué : {s.centre.nonEvalue}
-            </Text>
+            <LigneStats titre="Entreprise" stats={s.entreprise} />
+            <LigneStats titre="Centre" stats={s.centre} />
           </View>
         ))}
 
@@ -1041,10 +1143,10 @@ function PageEvaluationFinale({
                       {c.libelle}
                     </Text>
                     <Text style={[styles.tableauCellule, { width: '20%' }]}>
-                      {libelleNiveau(ent.valeur)}
+                      <Text style={styleNiveau(ent.valeur)}>{libelleNiveau(ent.valeur)}</Text>
                     </Text>
                     <Text style={[styles.tableauCellule, { width: '20%' }]}>
-                      {libelleNiveau(cen.valeur)}
+                      <Text style={styleNiveau(cen.valeur)}>{libelleNiveau(cen.valeur)}</Text>
                     </Text>
                     <Text style={[styles.tableauCelluleDerniere, { width: '10%', fontSize: 8 }]}>
                       {ent.source === 'synthese' || cen.source === 'synthese' ? 'fiches' : 'final'}
@@ -1089,19 +1191,30 @@ function PageEvaluationFinale({
               <Text style={[styles.tableauCellule, { width: '40%' }]}>
                 {ligne.obligatoire ? `${ligne.libelle} (obligatoire)` : ligne.libelle}
               </Text>
-              {NUMEROS_ENTRETIEN.map((n, idxN) => (
-                <Text
-                  key={n}
-                  style={[
-                    idxN === NUMEROS_ENTRETIEN.length - 1
-                      ? styles.tableauCelluleDerniere
-                      : styles.tableauCellule,
-                    { width: '15%' },
-                  ]}
-                >
-                  {libelleAppreciation(ligne.niveaux[n] ?? undefined)}
-                </Text>
-              ))}
+              {NUMEROS_ENTRETIEN.map((n, idxN) => {
+                const niveau = ligne.niveaux[n];
+                return (
+                  <Text
+                    key={n}
+                    style={[
+                      idxN === NUMEROS_ENTRETIEN.length - 1
+                        ? styles.tableauCelluleDerniere
+                        : styles.tableauCellule,
+                      { width: '15%' },
+                    ]}
+                  >
+                    <Text
+                      style={
+                        niveau
+                          ? { color: COULEURS_APPRECIATION[niveau], fontFamily: 'Helvetica-Bold' }
+                          : { color: COULEURS.texteSecondaire }
+                      }
+                    >
+                      {libelleAppreciation(niveau)}
+                    </Text>
+                  </Text>
+                );
+              })}
             </View>
           ))}
         </View>
