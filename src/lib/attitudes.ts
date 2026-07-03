@@ -1,4 +1,13 @@
-import type { AttitudeProfessionnelle, EntretienTripartite } from '@/types';
+import type {
+  AppreciationMaitre,
+  AttitudeProfessionnelle,
+  EntretienTripartite,
+  NiveauAppreciation,
+  NumeroEntretien,
+} from '@/types';
+import { NUMEROS_ENTRETIEN } from '@/types';
+import { CRITERES_APPRECIATION_E1 } from './trame-entretien-1';
+import { attitudesRetenues } from './selection-attitudes';
 
 /**
  * Attitudes professionnelles — catalogue global + helpers.
@@ -125,4 +134,95 @@ export function attitudeEstSelectionnee(
   selections: ReadonlyArray<ReadonlyArray<string>>,
 ): boolean {
   return selections.some((ids) => ids.includes(attitudeId));
+}
+
+/**
+ * Attitudes professionnelles **obligatoires** (3 juillet 2026).
+ *
+ * Les 4 critères de l'appréciation générale du maître / tuteur (grille
+ * standardisée, évaluée à chaque entretien — trame officielle E1) sont des
+ * attitudes évaluées d'office : ce sont les anciennes a1..a4 retirées du
+ * catalogue le 18 juin 2026. Les synthèses (onglet « Attitudes » de
+ * l'évaluation finale + PDF) doivent les récapituler AU-DESSUS des attitudes
+ * optionnelles retenues à l'E1. Les libellés suivent la trame officielle
+ * (`CRITERES_APPRECIATION_E1`).
+ */
+export interface AttitudeObligatoire {
+  /** Clé du critère dans `AppreciationMaitre`. */
+  cle: keyof Omit<AppreciationMaitre, 'commentaires'>;
+  libelle: string;
+  description: string;
+}
+
+const DESCRIPTIONS_ATTITUDES_OBLIGATOIRES: Record<AttitudeObligatoire['cle'], string> = {
+  ponctualite: "Arrive à l'heure et fait preuve d'assiduité.",
+  comprehensionConsignes: 'Comprend les consignes données et les applique.',
+  qualiteTravail: "Réalise un travail de qualité, avec le niveau d'autonomie attendu.",
+  integration: "S'intègre dans l'équipe de l'entreprise.",
+};
+
+export const ATTITUDES_OBLIGATOIRES: ReadonlyArray<AttitudeObligatoire> =
+  CRITERES_APPRECIATION_E1.map((c) => ({
+    cle: c.cle,
+    libelle: c.libelle,
+    description: DESCRIPTIONS_ATTITUDES_OBLIGATOIRES[c.cle],
+  }));
+
+/**
+ * Ligne du tableau de synthèse des attitudes (UI de l'évaluation finale et
+ * PDF) : une attitude × son niveau à chaque entretien.
+ */
+export interface LigneSyntheseAttitudes {
+  /** `oblig-<cle>` pour un critère d'appréciation, id du catalogue sinon. */
+  id: string;
+  libelle: string;
+  description?: string;
+  obligatoire: boolean;
+  /** Niveau par entretien — `null` si non évalué ou entretien absent. */
+  niveaux: Record<NumeroEntretien, NiveauAppreciation | null>;
+}
+
+/**
+ * Construit les lignes de la synthèse des attitudes : les 4 **obligatoires**
+ * d'abord (lues dans l'appréciation générale du maître de chaque entretien),
+ * puis les optionnelles retenues pour le livret (lues dans
+ * `evaluationsAttitudes`), dans l'ordre du catalogue.
+ */
+export function lignesSyntheseAttitudes(
+  catalogue: ReadonlyArray<AttitudeProfessionnelle>,
+  selection: ReadonlyArray<string>,
+  entretiens: Readonly<Record<NumeroEntretien, EntretienTripartite | null>>,
+): LigneSyntheseAttitudes[] {
+  const niveauxDepuis = (
+    lire: (e: EntretienTripartite) => NiveauAppreciation | null | undefined,
+  ): Record<NumeroEntretien, NiveauAppreciation | null> => {
+    const niveaux = {} as Record<NumeroEntretien, NiveauAppreciation | null>;
+    for (const n of NUMEROS_ENTRETIEN) {
+      const e = entretiens[n];
+      niveaux[n] = e ? (lire(e) ?? null) : null;
+    }
+    return niveaux;
+  };
+
+  const obligatoires = ATTITUDES_OBLIGATOIRES.map(
+    (o): LigneSyntheseAttitudes => ({
+      id: `oblig-${o.cle}`,
+      libelle: o.libelle,
+      description: o.description,
+      obligatoire: true,
+      niveaux: niveauxDepuis((e) => e.appreciationMaitre[o.cle]),
+    }),
+  );
+
+  const optionnelles = attitudesRetenues(catalogue, selection).map(
+    (a): LigneSyntheseAttitudes => ({
+      id: a.id,
+      libelle: a.libelle,
+      description: a.description,
+      obligatoire: false,
+      niveaux: niveauxDepuis((e) => e.evaluationsAttitudes[a.id]),
+    }),
+  );
+
+  return [...obligatoires, ...optionnelles];
 }

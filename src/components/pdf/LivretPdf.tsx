@@ -27,6 +27,7 @@ import { calculerStatsParBloc } from '@/lib/stats-bloc';
 import { grouperParSousFamille } from '@/lib/grouper-competences';
 import { libelleEvenement, libelleModalite, modaliteEffective } from '@/lib/organisation-suivi';
 import { TRAME_ENTRETIEN_1, pointsAlerteTrameE1 } from '@/lib/trame-entretien-1';
+import { ATTITUDES_OBLIGATOIRES, lignesSyntheseAttitudes } from '@/lib/attitudes';
 import { attitudesRetenues } from '@/lib/selection-attitudes';
 import { COULEURS, styles } from './styles';
 import {
@@ -727,20 +728,17 @@ export function PageEntretien({
           </>
         )}
 
-        <Text style={styles.h3}>Appréciations (maître)</Text>
-        <Champ label="Ponctualité" valeur={libelleAppreciation(ap.ponctualite)} />
-        <Champ
-          label="Compréhension consignes"
-          valeur={libelleAppreciation(ap.comprehensionConsignes)}
-        />
-        <Champ label="Qualité du travail" valeur={libelleAppreciation(ap.qualiteTravail)} />
-        <Champ label="Intégration" valeur={libelleAppreciation(ap.integration)} />
-        {ap.commentaires && (
-          <ParagrapheLibre titre="Commentaires du maître" valeur={ap.commentaires} />
-        )}
-
-        {/* Attitudes professionnelles évaluées à chaque entretien (juin 2026). */}
+        {/* Attitudes professionnelles évaluées à chaque entretien (juin 2026).
+            3 juillet 2026 : les 4 obligatoires (appréciation générale du
+            maître) ouvrent la liste, au-dessus des optionnelles retenues. */}
         <Text style={styles.h3}>Attitudes professionnelles (maître)</Text>
+        {ATTITUDES_OBLIGATOIRES.map((o) => (
+          <Champ
+            key={o.cle}
+            label={`${o.libelle} (obligatoire)`}
+            valeur={libelleAppreciation(ap[o.cle])}
+          />
+        ))}
         {attitudes.map((a) => (
           <Champ
             key={a.id}
@@ -748,6 +746,9 @@ export function PageEntretien({
             valeur={libelleAppreciation(entretien.evaluationsAttitudes[a.id] ?? undefined)}
           />
         ))}
+        {ap.commentaires && (
+          <ParagrapheLibre titre="Commentaires du maître" valeur={ap.commentaires} />
+        )}
 
         {/* Démarches / conditions / aides : entretiens 2 à 4 uniquement
             (retirées de la trame officielle E1). */}
@@ -965,6 +966,13 @@ function PageEvaluationFinale({
   );
   const lignes = livret.evaluationFinaleCompetences.lignes;
   const stats = calculerStatsParBloc(referentiel, lignes, synthese);
+  // 3 juillet 2026 : 4 attitudes obligatoires (appréciation du maître) en
+  // tête du tableau, puis les optionnelles retenues pour le livret.
+  const lignesAttitudes = lignesSyntheseAttitudes(
+    attitudes,
+    livret.attitudesSelectionnees ?? [],
+    livret.entretiens,
+  );
 
   return (
     <Page size="A4" style={styles.page}>
@@ -1048,55 +1056,51 @@ function PageEvaluationFinale({
             par le maître / tuteur à chaque entretien — une colonne par
             entretien initialisé. */}
         <Text style={styles.h2}>Attitudes professionnelles (synthèse des entretiens)</Text>
-        {attitudes.length === 0 ? (
-          <Text style={styles.vide}>Aucune attitude dans le catalogue.</Text>
-        ) : (
-          <View style={styles.tableau}>
-            <View style={[styles.tableauLigne, styles.tableauEnTete]}>
-              <Text style={[styles.tableauCellule, { width: '40%' }]}>Attitude</Text>
-              {NUMEROS_ENTRETIEN.map((n, idx) => (
+        <View style={styles.tableau}>
+          <View style={[styles.tableauLigne, styles.tableauEnTete]}>
+            <Text style={[styles.tableauCellule, { width: '40%' }]}>Attitude</Text>
+            {NUMEROS_ENTRETIEN.map((n, idx) => (
+              <Text
+                key={n}
+                style={[
+                  idx === NUMEROS_ENTRETIEN.length - 1
+                    ? styles.tableauCelluleDerniere
+                    : styles.tableauCellule,
+                  { width: '15%' },
+                ]}
+              >
+                Entretien {n}
+              </Text>
+            ))}
+          </View>
+          {lignesAttitudes.map((ligne, idx) => (
+            <View
+              key={ligne.id}
+              style={
+                idx === lignesAttitudes.length - 1
+                  ? styles.tableauLigneSansBordure
+                  : styles.tableauLigne
+              }
+            >
+              <Text style={[styles.tableauCellule, { width: '40%' }]}>
+                {ligne.obligatoire ? `${ligne.libelle} (obligatoire)` : ligne.libelle}
+              </Text>
+              {NUMEROS_ENTRETIEN.map((n, idxN) => (
                 <Text
                   key={n}
                   style={[
-                    idx === NUMEROS_ENTRETIEN.length - 1
+                    idxN === NUMEROS_ENTRETIEN.length - 1
                       ? styles.tableauCelluleDerniere
                       : styles.tableauCellule,
                     { width: '15%' },
                   ]}
                 >
-                  Entretien {n}
+                  {libelleAppreciation(ligne.niveaux[n] ?? undefined)}
                 </Text>
               ))}
             </View>
-            {attitudes.map((a, idx) => (
-              <View
-                key={a.id}
-                style={
-                  idx === attitudes.length - 1
-                    ? styles.tableauLigneSansBordure
-                    : styles.tableauLigne
-                }
-              >
-                <Text style={[styles.tableauCellule, { width: '40%' }]}>{a.libelle}</Text>
-                {NUMEROS_ENTRETIEN.map((n, idxN) => (
-                  <Text
-                    key={n}
-                    style={[
-                      idxN === NUMEROS_ENTRETIEN.length - 1
-                        ? styles.tableauCelluleDerniere
-                        : styles.tableauCellule,
-                      { width: '15%' },
-                    ]}
-                  >
-                    {libelleAppreciation(
-                      livret.entretiens[n]?.evaluationsAttitudes[a.id] ?? undefined,
-                    )}
-                  </Text>
-                ))}
-              </View>
-            ))}
-          </View>
-        )}
+          ))}
+        </View>
       </View>
     </Page>
   );

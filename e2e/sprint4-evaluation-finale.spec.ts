@@ -49,6 +49,40 @@ test("l'onglet Attitudes affiche la synthèse lecture seule des entretiens (juin
   await expect(page.getByText('++', { exact: true }).first()).toBeVisible();
 });
 
+test('la synthèse récapitule les 4 attitudes obligatoires au-dessus des optionnelles (3 juillet 2026)', async ({
+  page,
+}) => {
+  await page.goto('/livret/evaluation-finale');
+  await page.getByRole('tab', { name: /Attitudes professionnelles/i }).click();
+
+  // Les 4 obligatoires (critères de l'appréciation générale du maître, trame
+  // officielle E1) ouvrent le tableau, avec leur badge.
+  const lignes = page.locator('tbody tr');
+  await expect(lignes.nth(0)).toHaveAttribute(
+    'data-testid',
+    'synthese-attitude-oblig-ponctualite',
+  );
+  await expect(lignes.nth(1)).toHaveAttribute(
+    'data-testid',
+    'synthese-attitude-oblig-comprehensionConsignes',
+  );
+  await expect(lignes.nth(2)).toHaveAttribute(
+    'data-testid',
+    'synthese-attitude-oblig-qualiteTravail',
+  );
+  await expect(lignes.nth(3)).toHaveAttribute('data-testid', 'synthese-attitude-oblig-integration');
+  await expect(lignes.nth(0).getByText('Obligatoire', { exact: true })).toBeVisible();
+
+  // La colonne E1 reprend l'appréciation portée par Karim sur Léa (fixture :
+  // ponctualité « ++ »).
+  await expect(lignes.nth(0).getByText('++', { exact: true })).toBeVisible();
+
+  // Les attitudes optionnelles retenues suivent, sans badge « Obligatoire ».
+  const optionnelle = page.getByTestId('synthese-attitude-a5');
+  await expect(optionnelle).toBeVisible();
+  await expect(optionnelle.getByText('Obligatoire', { exact: true })).toHaveCount(0);
+});
+
 test('maître : remplacer une évaluation entreprise héritée exige une confirmation (juin 2026)', async ({
   page,
 }) => {
