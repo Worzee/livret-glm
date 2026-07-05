@@ -5,7 +5,7 @@ import {
   adminGuillaumeFerreri,
   apprentisDemo,
   coordosDemo,
-  formatriceSophieDubois,
+  formateursDemo,
   maitresDemo,
 } from '@/fixtures/utilisateurs';
 import { useLivretStore } from './useLivretStore';
@@ -111,7 +111,9 @@ interface UtilisateursStore {
 // v5 — entreprise gérée comme entité + `Apprenti.historiqueEntreprises`
 //      (juin 2026) : `entrepriseId` pointe vers `useEntreprisesStore`,
 //      traçabilité des changements d'entreprise en cours de contrat.
-const VERSION_SCHEMA = 5;
+// v6 — 2ᵉ promo de démo BTS MHR 2025-2027 (3 juillet 2026) : 2 apprenti·e·s,
+//      2 tuteurs, formateur Marc TISSIER.
+const VERSION_SCHEMA = 6;
 
 /** État initial calculé depuis les fixtures. */
 function etatInitial(): Pick<
@@ -121,7 +123,7 @@ function etatInitial(): Pick<
   return {
     apprentis: Object.fromEntries(apprentisDemo.map((a) => [a.id, a])),
     maitres: Object.fromEntries(maitresDemo.map((m) => [m.id, m])),
-    formateurs: { [formatriceSophieDubois.id]: formatriceSophieDubois },
+    formateurs: Object.fromEntries(formateursDemo.map((f) => [f.id, f])),
     coordos: Object.fromEntries(coordosDemo.map((c) => [c.id, c])),
     admins: { [adminGuillaumeFerreri.id]: adminGuillaumeFerreri },
   };
@@ -401,4 +403,9 @@ export function getMaitreByIdFromStore(id: string): Maitre | undefined {
 /** Lookup non-réactif d'un·e coordo par id. */
 export function getCoordoByIdFromStore(id: string): Coordo | undefined {
   return useUtilisateursStore.getState().coordos[id];
+}
+
+/** Lookup non-réactif d'un formateur par id (3 juillet 2026). */
+export function getFormateurByIdFromStore(id: string): Formateur | undefined {
+  return useUtilisateursStore.getState().formateurs[id];
 }

@@ -23,10 +23,10 @@ test('formateur·rice voit 6 cartes apprenti·e·s sur le tableau de bord', asyn
   await expect(liens).toHaveCount(6);
 });
 
-test('admin voit 6 cartes apprenti·e·s', async ({ page }) => {
+test('admin voit 8 cartes apprenti·e·s (6 CAP + 2 BTS — 3 juillet 2026)', async ({ page }) => {
   await selectRole(page, 'Admin');
   const liens = page.getByRole('button', { name: /Ouvrir le livret de/i });
-  await expect(liens).toHaveCount(6);
+  await expect(liens).toHaveCount(8);
 });
 
 test('maître / tuteur Karim voit ses 4 apprenti·e·s (dont Luca en second — juin 2026)', async ({
@@ -201,7 +201,9 @@ test('accès direct à une période masquée : page « Période non accessible �
   await expect(page.getByRole('heading', { name: /Période non accessible/i })).toBeVisible();
   // La période 1 (visible), elle, s'ouvre normalement.
   await page.goto('/livret/fiches-suivi/fp-minh-1');
-  await expect(page.getByRole('heading', { name: /Période en Entreprise n° 1|Période 1/i })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: /Période en Entreprise n° 1|Période 1/i }),
+  ).toBeVisible();
 });
 
 test("Sofia (cas alerte R7) : la page Entretien affiche le bandeau d'alerte", async ({ page }) => {

@@ -17,9 +17,13 @@ import {
   trierApprentisParAnneePuisNom,
 } from '@/lib/apprentis-accessibles';
 import { calculerResumeLivret, classesBadgeCas, libelleCas } from '@/lib/etat-livret';
+import { statsPilotage } from '@/lib/pilotage';
+import type { AlerteTableauBord } from '@/lib/alertes';
 import { cn } from '@/lib/utils';
 import { SelecteurCoordoActif } from '@/components/common/SelecteurCoordoActif';
 import { TableauBordApprenti } from '@/components/dashboard/TableauBordApprenti';
+import { BandeauPilotage } from '@/components/dashboard/BandeauPilotage';
+import { CentreAlertes } from '@/components/dashboard/CentreAlertes';
 
 /**
  * Tableau de bord — point d'entrée par rôle.
@@ -40,10 +44,13 @@ export function TableauDeBord() {
   const utilisateurActif = useUserStore((s) => s.utilisateurActif);
   const maitreActifId = useUserStore((s) => s.maitreActifId);
   const setMaitreActif = useUserStore((s) => s.setMaitreActif);
+  const formateurActifId = useUserStore((s) => s.formateurActifId);
+  const setFormateurActif = useUserStore((s) => s.setFormateurActif);
   const livrets = useLivretStore((s) => s.livrets);
   const setApprentiActif = useApprentiActifStore((s) => s.setApprentiActif);
   const apprentis = useUtilisateursStore((s) => s.apprentis);
   const maitres = useUtilisateursStore((s) => s.maitres);
+  const formateurs = useUtilisateursStore((s) => s.formateurs);
   const formations = useFormationsStore((s) => s.formations);
   const navigate = useNavigate();
   const [requete, setRequete] = useState('');
@@ -60,6 +67,8 @@ export function TableauDeBord() {
     [utilisateurActif, apprentis, formations],
   );
   const maitresList = useMemo(() => Object.values(maitres), [maitres]);
+  const formateursList = useMemo(() => Object.values(formateurs), [formateurs]);
+  const apprentisList = useMemo(() => Object.values(apprentis), [apprentis]);
   const annees = useMemo(
     () => anneesFormationsDisponibles(apprentisVisibles, formations),
     [apprentisVisibles, formations],
@@ -76,6 +85,13 @@ export function TableauDeBord() {
   function ouvrirLivret(apprentiId: string) {
     setApprentiActif(apprentiId);
     navigate('/livret/organisation-suivi');
+  }
+
+  // Centre d'alertes (3 juillet 2026) : le clic active l'apprenti·e concerné·e
+  // puis navigue directement vers la page où l'action est attendue.
+  function ouvrirAlerte(alerte: AlerteTableauBord) {
+    setApprentiActif(alerte.apprentiId);
+    navigate(alerte.lien);
   }
 
   // Rôle apprenti·e : un seul livret (le sien) → récapitulatif personnel
@@ -145,10 +161,69 @@ export function TableauDeBord() {
         </fieldset>
       )}
 
+      {/* Sélecteur de formateur (3 juillet 2026) — même mécanique que le
+          sélecteur de maître : chaque formateur ne voit que sa promo
+          (Sophie DUBOIS ↔ Marc TISSIER). */}
+      {roleActif === 'formateur' && formateursList.length > 1 && (
+        <fieldset className="rounded-lg border border-role-formateur/40 bg-role-formateur/5 p-3">
+          <legend className="flex items-center gap-1.5 px-1.5 text-xs font-medium text-role-formateur">
+            <GraduationCap className="h-3.5 w-3.5" aria-hidden="true" />
+            Formateur·rice référent·e actif·ve
+          </legend>
+          <div className="flex flex-wrap gap-2">
+            {formateursList.map((f) => {
+              const actif = f.id === formateurActifId;
+              const nbApprentis = apprentisAccessibles(f, apprentisList).length;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setFormateurActif(f.id)}
+                  aria-pressed={actif}
+                  className={cn(
+                    'inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    actif
+                      ? 'border-role-formateur bg-role-formateur text-white'
+                      : 'border-input bg-background hover:bg-secondary',
+                  )}
+                >
+                  <span className="font-medium">
+                    {f.prenom} {f.nom}
+                  </span>
+                  <span
+                    className={cn('text-xs', actif ? 'text-white/85' : 'text-muted-foreground')}
+                  >
+                    · {nbApprentis} apprenti·e{nbApprentis > 1 ? 's' : ''}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+      )}
+
       {/* Sélecteur de coordo — composant partagé (tableau de bord + pages
           d'administration filtrées par périmètre). Visible uniquement en rôle
           coordo, il démontre que chaque coordo ne voit que ses apprenti·e·s. */}
       <SelecteurCoordoActif />
+
+      {/* Pilotage du périmètre (3 juillet 2026) — coordo / admin uniquement :
+          KPI agrégés (fiches signées, entretiens, alertes R7). */}
+      {(roleActif === 'coordo' || roleActif === 'admin') && (
+        <BandeauPilotage apprentis={apprentisVisibles} livrets={livrets} formations={formations} />
+      )}
+
+      {/* Centre d'alertes (3 juillet 2026) — « qu'est-ce qui attend mon
+          action ? », par rôle. L'apprenti·e a son récapitulatif dédié. */}
+      {roleActif !== 'apprenti' && (
+        <CentreAlertes
+          role={roleActif}
+          apprentis={apprentisVisibles}
+          livrets={livrets}
+          formations={formations}
+          onOuvrir={ouvrirAlerte}
+        />
+      )}
 
       {apprentisVisibles.length > 1 && (
         <div className="flex flex-wrap items-center gap-3">
@@ -213,14 +288,19 @@ export function TableauDeBord() {
                   className="h-4 w-4 shrink-0 text-muted-foreground transition-transform [details[open]_&]:rotate-90"
                   aria-hidden="true"
                 />
-                <GraduationCap
-                  className="texte-couleur-role h-4 w-4 shrink-0"
-                  aria-hidden="true"
-                />
+                <GraduationCap className="texte-couleur-role h-4 w-4 shrink-0" aria-hidden="true" />
                 <span className="font-medium">{groupe.libelle}</span>
                 <span className="text-xs text-muted-foreground">
                   · {groupe.apprentis.length} apprenti·e{groupe.apprentis.length > 1 ? 's' : ''}
                 </span>
+                {/* Mini-pilotage par promo (3 juillet 2026) — coordo / admin. */}
+                {(roleActif === 'coordo' || roleActif === 'admin') && (
+                  <StatsGroupe
+                    apprentis={groupe.apprentis}
+                    livrets={livrets}
+                    formations={formations}
+                  />
+                )}
               </summary>
               <div className="border-t border-border p-4">
                 <GrilleApprentis
@@ -242,6 +322,38 @@ export function TableauDeBord() {
         />
       )}
     </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mini-pilotage d'un groupe de formation (résumé dans l'en-tête de section).
+// ─────────────────────────────────────────────────────────────────────────────
+
+function StatsGroupe({
+  apprentis,
+  livrets,
+  formations,
+}: {
+  apprentis: Apprenti[];
+  livrets: Record<string, Livret>;
+  formations: Record<string, Formation>;
+}) {
+  const stats = useMemo(
+    () => statsPilotage(apprentis, livrets, formations),
+    [apprentis, livrets, formations],
+  );
+  return (
+    <span className="ml-auto flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+      <span className="hidden sm:inline">
+        {stats.fichesEntreprise.signees}/{stats.fichesEntreprise.total} fiches ·{' '}
+        {stats.entretiens.realises}/{stats.entretiens.attendus} entretiens
+      </span>
+      {stats.alertesR7 > 0 && (
+        <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 font-medium text-amber-800">
+          {stats.alertesR7} alerte{stats.alertesR7 > 1 ? 's' : ''} R7
+        </span>
+      )}
+    </span>
   );
 }
 

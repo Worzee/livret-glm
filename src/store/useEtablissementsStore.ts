@@ -40,7 +40,8 @@ interface EtablissementsStore {
   reinitialiser: () => void;
 }
 
-const VERSION_SCHEMA = 1;
+// v2 — 2ᵉ site de démo (Bellecour, accueille le BTS MHR) — 3 juillet 2026.
+const VERSION_SCHEMA = 2;
 
 function etatInitial(): Pick<EtablissementsStore, 'etablissements'> {
   return { etablissements: { ...etablissementsDemo } };

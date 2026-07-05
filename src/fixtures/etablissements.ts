@@ -16,7 +16,17 @@ export const etablissementSiteDiderot: Etablissement = {
   ville: 'Lyon',
 };
 
+/** 2ᵉ site (3 juillet 2026) — accueille le BTS MHR, démontre le multi-sites. */
+export const etablissementSiteBellecour: Etablissement = {
+  id: 'eta-site-bellecour',
+  nom: 'GRETA Lyon Métropole — Site Bellecour',
+  adresse: '18 place Bellecour',
+  codePostal: '69002',
+  ville: 'Lyon',
+};
+
 /** Indexée par id pour les lookups O(1). */
 export const etablissementsDemo: Record<string, Etablissement> = {
   [etablissementSiteDiderot.id]: etablissementSiteDiderot,
+  [etablissementSiteBellecour.id]: etablissementSiteBellecour,
 };

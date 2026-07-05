@@ -38,7 +38,8 @@ interface EntreprisesStore {
   reinitialiser: () => void;
 }
 
-const VERSION_SCHEMA = 1;
+// v2 — Hôtel Le Continental (accueille une apprentie BTS MHR) — 3 juillet 2026.
+const VERSION_SCHEMA = 2;
 
 function etatInitial(): Pick<EntreprisesStore, 'entreprises'> {
   return { entreprises: { ...entreprisesDemo } };

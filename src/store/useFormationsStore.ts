@@ -143,7 +143,9 @@ interface FormationsStore {
 //   v6 — 17 juin 2026 : `Formation.periodesCentre` (planning des périodes en
 //        centre de formation, miroir de `periodes`, cascade vers
 //        `Livret.fichesSuiviCentre`). Reset aux fixtures.
-const VERSION_SCHEMA = 6;
+//   v7 — 3 juillet 2026 : 2ᵉ formation de démo BTS MHR 2025-2027 (référentiel
+//        3 niveaux, 4 entretiens, site Bellecour). Reset aux fixtures.
+const VERSION_SCHEMA = 7;
 
 function etatInitial(): Pick<FormationsStore, 'formations'> {
   return { formations: { ...formationsDemo } };

@@ -1,0 +1,241 @@
+import { describe, expect, it } from 'vitest';
+import type {
+  Apprenti,
+  EntretienTripartite,
+  FicheSuiviPeriode,
+  Livret,
+  SignaturesTripartite,
+} from '@/types';
+import { apprentiLeaMartin } from '@/fixtures/utilisateurs';
+import { alertesTableauBord } from './alertes';
+
+/**
+ * Centre d'alertes du tableau de bord (3 juillet 2026).
+ * Fixtures minimales locales, date « maintenant » injectée.
+ */
+
+const MAINTENANT = new Date('2026-07-03T12:00:00.000Z');
+
+const AUCUNE: SignaturesTripartite = {
+  apprenti: { signe: false },
+  maitre: { signe: false },
+  formateur: { signe: false },
+};
+
+function fiche(sur: Partial<FicheSuiviPeriode>): FicheSuiviPeriode {
+  return {
+    id: 'f-1',
+    numeroPeriode: 1,
+    dateDebut: '2025-09-01',
+    dateFin: '2025-12-19',
+    suiviGretaCfa: {},
+    suiviEntreprise: [],
+    observations: {},
+    signatures: AUCUNE,
+    etat: 'en-cours',
+    historiqueDeverrouillages: [],
+    ...sur,
+  };
+}
+
+function entretien(signatures: Partial<SignaturesTripartite> = {}): EntretienTripartite {
+  return {
+    questionsApprentiSelectionnees: [],
+    questionsMaitreSelectionnees: [],
+    questionsImposees: [],
+    questionsObligatoires: [],
+    evaluationsAttitudes: {},
+    reponsesApprenti: {},
+    reponsesMaitre: {},
+    appreciationMaitre: {},
+    demarchesAdministratives: {
+      contratSigne: null,
+      visiteMedicale: null,
+      permisConduire: null,
+      voiture: null,
+    },
+    conditionsPratiques: {},
+    aidesDemandees: { logement: null, premierEquipement: null, permis: null },
+    commentaires: {},
+    signatures: { ...AUCUNE, ...signatures },
+  };
+}
+
+function livret(apprentiId: string, sur: Partial<Livret> = {}): Livret {
+  return {
+    id: `livret-${apprentiId}`,
+    apprentiId,
+    formationId: 'f-test',
+    organisationSuivi: { evenements: [], modifieLe: '', modifiePar: '' },
+    entretiens: { 1: null, 2: null, 3: null, 4: null },
+    fichesSuivi: [],
+    fichesSuiviCentre: [],
+    evaluationFinaleCompetences: { lignes: [], modifieLe: '' },
+    selectionCompetencesEntreprise: { ids: [], modifieLe: '', historiqueInvalidations: [] },
+    attitudesSelectionnees: [],
+    cloture: null,
+    creeLe: '',
+    modifieLe: '',
+    ...sur,
+  };
+}
+
+function apprenti(id: string, sur: Partial<Apprenti> = {}): Apprenti {
+  return {
+    ...apprentiLeaMartin,
+    id,
+    nom: 'TEST',
+    prenom: 'Alex',
+    formationId: 'f-test',
+    contratDebut: '2025-09-01',
+    ...sur,
+  };
+}
+
+const FORMATIONS = { 'f-test': { nombreEntretiens: 2 } } as never;
+
+function alertesPour(
+  role: 'apprenti' | 'maitre' | 'formateur' | 'coordo' | 'admin',
+  l: Livret,
+  a = apprenti('a1'),
+) {
+  return alertesTableauBord(role, [a], { [l.id]: l }, FORMATIONS, MAINTENANT);
+}
+
+describe('alertesTableauBord — signatures de fiches', () => {
+  it('signale au maître une fiche entreprise entamée dont la période est finie', () => {
+    const l = livret('a1', { fichesSuivi: [fiche({ etat: 'en-cours' })] });
+    const r = alertesPour('maitre', l);
+    expect(r).toHaveLength(1);
+    expect(r[0].type).toBe('signature-fiche');
+    expect(r[0].message).toContain('Période 1 terminée');
+    expect(r[0].lien).toBe('/livret/fiches-suivi/f-1');
+  });
+
+  it("ne signale pas une fiche dont la période n'est pas terminée, ni une fiche brouillon", () => {
+    const enCours = fiche({ id: 'f-encours', dateFin: '2026-07-10' }); // finit après « maintenant »
+    const brouillon = fiche({ id: 'f-brouillon', etat: 'brouillon' });
+    const l = livret('a1', { fichesSuivi: [enCours, brouillon] });
+    expect(alertesPour('maitre', l)).toHaveLength(0);
+  });
+
+  it("ne signale pas une fiche que j'ai déjà signée", () => {
+    const l = livret('a1', {
+      fichesSuivi: [fiche({ signatures: { ...AUCUNE, maitre: { signe: true } } })],
+    });
+    expect(alertesPour('maitre', l)).toHaveLength(0);
+  });
+
+  it('au centre, le signataire est le formateur (pas le maître)', () => {
+    const l = livret('a1', { fichesSuiviCentre: [fiche({ id: 'fc-1' })] });
+    expect(alertesPour('maitre', l)).toHaveLength(0);
+    const r = alertesPour('formateur', l);
+    expect(r.map((x) => x.type)).toContain('signature-fiche');
+    expect(r.find((x) => x.type === 'signature-fiche')?.lien).toBe(
+      '/livret/fiches-suivi-centre/fc-1',
+    );
+  });
+});
+
+describe('alertesTableauBord — entretiens', () => {
+  it('signale à chaque partie manquante un entretien initialisé non signé', () => {
+    const l = livret('a1', {
+      entretiens: { 1: entretien({ apprenti: { signe: true } }), 2: null, 3: null, 4: null },
+    });
+    expect(alertesPour('apprenti', l)).toHaveLength(0);
+    expect(alertesPour('maitre', l).map((a) => a.type)).toContain('signature-entretien');
+    expect(alertesPour('formateur', l).map((a) => a.type)).toContain('signature-entretien');
+  });
+
+  it('signale au formateur un entretien planifié (événement) prêt à initialiser', () => {
+    const l = livret('a1', {
+      organisationSuivi: {
+        evenements: [{ id: 'evt-1', motif: 'entretien-tripartite-1' }],
+        modifieLe: '',
+        modifiePar: '',
+      },
+    });
+    const r = alertesPour('formateur', l);
+    expect(r.map((x) => x.type)).toContain('entretien-a-initialiser');
+    expect(r.find((x) => x.type === 'entretien-a-initialiser')?.lien).toBe('/livret/entretien/1');
+  });
+
+  it("ne propose pas d'initialiser E2 tant que E1 n'est pas signé des 3 parties (séquencement)", () => {
+    const l = livret('a1', {
+      organisationSuivi: {
+        evenements: [{ id: 'evt-2', motif: 'entretien-tripartite-2' }],
+        modifieLe: '',
+        modifiePar: '',
+      },
+      entretiens: { 1: entretien({ apprenti: { signe: true } }), 2: null, 3: null, 4: null },
+    });
+    const types = alertesPour('formateur', l).map((x) => x.type);
+    expect(types).not.toContain('entretien-a-initialiser');
+  });
+});
+
+describe('alertesTableauBord — verrouillage et R7', () => {
+  it('signale au formateur une fiche signée à verrouiller', () => {
+    const l = livret('a1', { fichesSuivi: [fiche({ etat: 'signee' })] });
+    const r = alertesPour('formateur', l);
+    expect(r.map((x) => x.type)).toContain('fiche-a-verrouiller');
+  });
+
+  it("signale l'alerte R7 au formateur, au coordo et à l'admin — pas au maître", () => {
+    const l = livret('a1'); // aucun E1, contrat démarré depuis > 60 j
+    expect(alertesPour('formateur', l).map((x) => x.type)).toContain('alerte-r7');
+    expect(alertesPour('coordo', l).map((x) => x.type)).toContain('alerte-r7');
+    expect(alertesPour('admin', l).map((x) => x.type)).toContain('alerte-r7');
+    expect(alertesPour('maitre', l).map((x) => x.type)).not.toContain('alerte-r7');
+  });
+
+  it('classe les R7 avant les signatures et trie par apprenti·e', () => {
+    const a1 = apprenti('a1', { nom: 'ZOLA' });
+    const a2 = apprenti('a2', { nom: 'AUBRY' });
+    const livrets = {
+      l1: livret('a1', { fichesSuiviCentre: [fiche({ id: 'fc-a1' })] }),
+      l2: livret('a2'),
+    };
+    const r = alertesTableauBord('formateur', [a1, a2], livrets, FORMATIONS, MAINTENANT);
+    expect(r.map((x) => x.type)).toEqual(['alerte-r7', 'alerte-r7', 'signature-fiche']);
+    expect(r[0].apprentiNom).toContain('AUBRY');
+  });
+});
+
+describe('alertesTableauBord — coordo / admin (sans droit pédagogique)', () => {
+  it("ne remonte jamais de signature ou d'initialisation au coordo", () => {
+    const l = livret('a1', {
+      fichesSuivi: [fiche({ etat: 'en-cours' }), fiche({ id: 'f-2', etat: 'signee' })],
+      entretiens: { 1: entretien(), 2: null, 3: null, 4: null },
+    });
+    const types = alertesPour('coordo', l).map((x) => x.type);
+    expect(types).not.toContain('signature-fiche');
+    expect(types).not.toContain('signature-entretien');
+    expect(types).not.toContain('fiche-a-verrouiller');
+  });
+
+  it("signale à l'admin une affectation incomplète", () => {
+    const orphelin = apprenti('a1', { maitreApprentissageId: '', entrepriseId: undefined });
+    const r = alertesPour(
+      'admin',
+      livret('a1', {
+        entretiens: {
+          1: entretien({
+            apprenti: { signe: true },
+            maitre: { signe: true },
+            formateur: { signe: true },
+          }),
+          2: null,
+          3: null,
+          4: null,
+        },
+      }),
+      orphelin,
+    );
+    expect(r).toHaveLength(1);
+    expect(r[0].type).toBe('affectation-incomplete');
+    expect(r[0].message).toContain('maître / tuteur');
+    expect(r[0].message).toContain('entreprise');
+    expect(r[0].lien).toBe('/admin/affectations');
+  });
+});

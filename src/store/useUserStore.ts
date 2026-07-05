@@ -4,6 +4,7 @@ import type { Role, Utilisateur } from '@/types';
 import {
   apprentiLeaMartin,
   coordoMartineLefevre,
+  formatriceSophieDubois,
   maitreKarimBenali,
   utilisateursDemo,
 } from '@/fixtures/utilisateurs';
@@ -11,6 +12,7 @@ import { useApprentiActifStore } from './useApprentiActifStore';
 import {
   getApprentiByIdFromStore,
   getCoordoByIdFromStore,
+  getFormateurByIdFromStore,
   getMaitreByIdFromStore,
   useUtilisateursStore,
 } from './useUtilisateursStore';
@@ -36,6 +38,9 @@ import {
  * En rôle `coordo`, même mécanique (juin 2026) : bascule entre les coordos
  * (Martine LEFÈVRE / Bernard PETIT) pour démontrer que chaque coordo ne voit
  * que les apprenti·e·s de son périmètre (`Apprenti.coordoId`).
+ *
+ * En rôle `formateur`, même mécanique (3 juillet 2026) : bascule entre les
+ * formateurs (Sophie DUBOIS / Marc TISSIER) — chacun ne voit que sa promo.
  */
 
 interface UserStore {
@@ -45,17 +50,22 @@ interface UserStore {
   maitreActifId: string;
   /** Id du coordo actif quand `roleActif === 'coordo'`. Persisté. */
   coordoActifId: string;
+  /** Id du formateur actif quand `roleActif === 'formateur'`. Persisté. */
+  formateurActifId: string;
   changerRole: (role: Role) => void;
   /** Bascule entre les maîtres d'apprentissage (réinit l'apprenti·e actif·ve). */
   setMaitreActif: (id: string) => void;
   /** Bascule entre les coordos (réinit l'apprenti·e actif·ve sur son périmètre). */
   setCoordoActif: (id: string) => void;
+  /** Bascule entre les formateurs (réinit l'apprenti·e actif·ve sur sa promo). */
+  setFormateurActif: (id: string) => void;
 }
 
 function utilisateurPourRole(
   role: Role,
   maitreActifId: string,
   coordoActifId: string,
+  formateurActifId: string,
 ): Utilisateur {
   if (role === 'apprenti') {
     const id = useApprentiActifStore.getState().apprentiActifId;
@@ -66,6 +76,9 @@ function utilisateurPourRole(
   }
   if (role === 'coordo') {
     return getCoordoByIdFromStore(coordoActifId) || coordoMartineLefevre;
+  }
+  if (role === 'formateur') {
+    return getFormateurByIdFromStore(formateurActifId) || formatriceSophieDubois;
   }
   return utilisateursDemo[role];
 }
@@ -78,10 +91,16 @@ export const useUserStore = create<UserStore>()(
       utilisateurActif: utilisateursDemo.formateur,
       maitreActifId: maitreKarimBenali.id,
       coordoActifId: coordoMartineLefevre.id,
+      formateurActifId: formatriceSophieDubois.id,
       changerRole: (role) =>
         set({
           roleActif: role,
-          utilisateurActif: utilisateurPourRole(role, get().maitreActifId, get().coordoActifId),
+          utilisateurActif: utilisateurPourRole(
+            role,
+            get().maitreActifId,
+            get().coordoActifId,
+            get().formateurActifId,
+          ),
         }),
       setMaitreActif: (id) => {
         const maitre = getMaitreByIdFromStore(id) ?? maitreKarimBenali;
@@ -111,6 +130,22 @@ export const useUserStore = create<UserStore>()(
           useApprentiActifStore.getState().setApprentiActif(premierApprenti.id);
         }
       },
+      setFormateurActif: (id) => {
+        const formateur = getFormateurByIdFromStore(id) ?? formatriceSophieDubois;
+        set({
+          formateurActifId: formateur.id,
+          utilisateurActif: get().roleActif === 'formateur' ? formateur : get().utilisateurActif,
+        });
+        // Réinit l'apprenti·e actif·ve sur le 1er de sa promo (référent direct
+        // ou promoIds), sinon on resterait pointé hors périmètre.
+        const premierApprenti = Object.values(useUtilisateursStore.getState().apprentis).find(
+          (a) =>
+            a.formateurReferentId === formateur.id || formateur.promoIds.includes(a.formationId),
+        );
+        if (premierApprenti) {
+          useApprentiActifStore.getState().setApprentiActif(premierApprenti.id);
+        }
+      },
     }),
     {
       name: 'livret-role-actif',
@@ -118,6 +153,7 @@ export const useUserStore = create<UserStore>()(
         roleActif: state.roleActif,
         maitreActifId: state.maitreActifId,
         coordoActifId: state.coordoActifId,
+        formateurActifId: state.formateurActifId,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
@@ -125,6 +161,7 @@ export const useUserStore = create<UserStore>()(
             state.roleActif,
             state.maitreActifId ?? maitreKarimBenali.id,
             state.coordoActifId ?? coordoMartineLefevre.id,
+            state.formateurActifId ?? formatriceSophieDubois.id,
           );
         }
       },

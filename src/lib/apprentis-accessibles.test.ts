@@ -1,15 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import {
   apprentiAyaKouame,
+  apprentieCamilleMoreau,
   apprentiLeaMartin,
   apprentiLucaBianchi,
   apprentiMinhNguyen,
   apprentiSofiaPereira,
   apprentiTheoDubois,
+  apprentiYanisBelkacem,
   apprentisDemo,
   adminGuillaumeFerreri,
   coordoBernardPetit,
   coordoMartineLefevre,
+  formateurMarcTissier,
   formatriceSophieDubois,
   maitreHeleneRoche,
   maitreKarimBenali,
@@ -65,10 +68,16 @@ describe('apprentisAccessibles — filtre par rôle', () => {
     expect(r).toHaveLength(6);
   });
 
-  it('coordo Martine ne voit que les apprenti·e·s de son périmètre (Léa, Théo, Sofia — juin 2026)', () => {
+  it('coordo Martine ne voit que son périmètre (CAP Le Gourmet + promo BTS — 3 juillet 2026)', () => {
     const r = apprentisAccessibles(coordoMartineLefevre, apprentisDemo);
     expect(r.map((a) => a.id).sort()).toEqual(
-      [apprentiLeaMartin.id, apprentiTheoDubois.id, apprentiSofiaPereira.id].sort(),
+      [
+        apprentiLeaMartin.id,
+        apprentiTheoDubois.id,
+        apprentiSofiaPereira.id,
+        apprentieCamilleMoreau.id,
+        apprentiYanisBelkacem.id,
+      ].sort(),
     );
   });
 
@@ -87,7 +96,14 @@ describe('apprentisAccessibles — filtre par rôle', () => {
 
   it('admin voit tous les apprenti·e·s', () => {
     const r = apprentisAccessibles(adminGuillaumeFerreri, apprentisDemo);
-    expect(r).toHaveLength(6);
+    expect(r).toHaveLength(8);
+  });
+
+  it('formateur Marc voit sa promo BTS (2 apprenti·e·s — 3 juillet 2026)', () => {
+    const r = apprentisAccessibles(formateurMarcTissier, apprentisDemo);
+    expect(r.map((a) => a.id).sort()).toEqual(
+      [apprentieCamilleMoreau.id, apprentiYanisBelkacem.id].sort(),
+    );
   });
 
   it('formateur·rice sans promo voit quand même ses référé·e·s direct·e·s (1ᵉʳ juillet 2026)', () => {
@@ -129,14 +145,18 @@ describe('apprentisAccessibles — filtre par rôle', () => {
 describe('grouperParFormation — sections du tableau de bord (1ᵉʳ juillet 2026)', () => {
   const FORMATIONS = {
     'f-cap-cuisine-2025': { intitule: 'CAP Cuisine', annee: '2025-2026' },
+    'f-bts-mhr-2025': { intitule: 'BTS MHR', annee: '2025-2027' },
     'f-bts-textile-2026': { intitule: 'BTS Textile', annee: '2026-2028' },
   };
 
   it('regroupe par formation et trie les apprenti·e·s par nom dans chaque groupe', () => {
     const g = grouperParFormation(apprentisDemo, FORMATIONS);
-    expect(g).toHaveLength(1);
-    expect(g[0].libelle).toBe('CAP Cuisine (2025-2026)');
-    expect(g[0].apprentis.map((a) => a.nom)).toEqual([
+    expect(g).toHaveLength(2);
+    // Promo la plus récente en premier (BTS 2025-2027 avant CAP 2025-2026).
+    expect(g[0].libelle).toBe('BTS MHR (2025-2027)');
+    expect(g[0].apprentis.map((a) => a.nom)).toEqual(['BELKACEM', 'MOREAU']);
+    expect(g[1].libelle).toBe('CAP Cuisine (2025-2026)');
+    expect(g[1].apprentis.map((a) => a.nom)).toEqual([
       'BIANCHI',
       'DUBOIS',
       'KOUAMÉ',
@@ -149,16 +169,20 @@ describe('grouperParFormation — sections du tableau de bord (1ᵉʳ juillet 20
   it('trie les groupes par année décroissante (promo récente en premier)', () => {
     const sonia = { ...apprentiLeaMartin, id: 'a-sonia', formationId: 'f-bts-textile-2026' };
     const g = grouperParFormation([...apprentisDemo, sonia], FORMATIONS);
-    expect(g.map((x) => x.libelle)).toEqual(['BTS Textile (2026-2028)', 'CAP Cuisine (2025-2026)']);
+    expect(g.map((x) => x.libelle)).toEqual([
+      'BTS Textile (2026-2028)',
+      'BTS MHR (2025-2027)',
+      'CAP Cuisine (2025-2026)',
+    ]);
   });
 
   it('regroupe les apprenti·e·s sans formation résolue dans « Sans formation », en dernier', () => {
     const orphelin = { ...apprentiLeaMartin, id: 'a-orphelin', formationId: '' };
     const g = grouperParFormation([...apprentisDemo, orphelin], FORMATIONS);
-    expect(g).toHaveLength(2);
-    expect(g[1].libelle).toBe('Sans formation');
-    expect(g[1].formationId).toBe('');
-    expect(g[1].apprentis.map((a) => a.id)).toEqual(['a-orphelin']);
+    expect(g).toHaveLength(3);
+    expect(g[2].libelle).toBe('Sans formation');
+    expect(g[2].formationId).toBe('');
+    expect(g[2].apprentis.map((a) => a.id)).toEqual(['a-orphelin']);
   });
 
   it('retourne une liste vide pour aucun·e apprenti·e', () => {
@@ -170,10 +194,12 @@ describe('trierApprentis — tri canonique fr-FR', () => {
   it('trie par NOM puis prénom', () => {
     const trie = trierApprentis(apprentisDemo).map((a) => `${a.nom} ${a.prenom}`);
     expect(trie).toEqual([
+      'BELKACEM Yanis',
       'BIANCHI Luca',
       'DUBOIS Théo',
       'KOUAMÉ Aya',
       'MARTIN Léa',
+      'MOREAU Camille',
       'NGUYEN Minh',
       'PEREIRA Sofia',
     ]);

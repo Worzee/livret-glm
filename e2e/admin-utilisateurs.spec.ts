@@ -26,16 +26,16 @@ test('le rôle apprenti voit la page admin en accès refusé', async ({ page }) 
 test('le coordo voit la table restreinte à son périmètre (juin 2026)', async ({ page }) => {
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/utilisateurs');
-  // Martine ne liste que SES 3 apprenti·e·s (Léa, Théo, Sofia) + le staff
-  // complet : 2 maîtres + 1 formatrice + 2 coordos + 1 admin = 9 lignes.
+  // Martine ne liste que SES 5 apprenti·e·s (Léa, Théo, Sofia + Camille, Yanis)
+  // + le staff complet : 4 maîtres + 2 formateurs + 2 coordos + 1 admin = 9.
   const lignes = page.locator('tbody tr');
-  await expect(lignes).toHaveCount(9);
+  await expect(lignes).toHaveCount(14);
   await expect(page.locator('tbody tr', { hasText: /Minh NGUYEN/ })).toHaveCount(0);
 
-  // L'admin voit tout : 6 apprenti·e·s + 6 staff = 12 lignes.
+  // L'admin voit tout : 8 apprenti·e·s + 9 staff = 17 lignes.
   await selectRole(page, 'Admin');
   await page.goto('/admin/utilisateurs');
-  await expect(page.locator('tbody tr')).toHaveCount(12);
+  await expect(page.locator('tbody tr')).toHaveCount(17);
 });
 
 test('le coordo crée un·e nouvel·le apprenti·e — la carte apparaît au tableau de bord', async ({
@@ -65,8 +65,8 @@ test('le coordo crée un·e nouvel·le apprenti·e — la carte apparaît au tab
 
   // La modale se ferme
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  // 10 lignes maintenant (périmètre Martine : 3 + Sarah auto-affectée + 6 staff)
-  await expect(page.locator('tbody tr')).toHaveCount(10);
+  // 15 lignes maintenant (périmètre Martine : 5 + Sarah auto-affectée + 9 staff)
+  await expect(page.locator('tbody tr')).toHaveCount(15);
 
   // Sur le tableau de bord (toujours en coordo), la carte apparaît
   await page.goto('/');

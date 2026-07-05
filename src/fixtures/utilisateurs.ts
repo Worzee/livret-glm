@@ -194,6 +194,65 @@ export const apprentiLucaBianchi: Apprenti = {
   contratFin: '2027-09-01',
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Apprenti·e·s (2) — promo BTS MHR 2025-2027 (3 juillet 2026)
+// Suivis par Martine (coordo), formateur référent Marc TISSIER.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const apprentieCamilleMoreau: Apprenti = {
+  id: 'u-apprenti-camille',
+  role: 'apprenti',
+  nom: 'MOREAU',
+  prenom: 'Camille',
+  email: 'camille.moreau@demo.fr',
+  telephone: '01 99 99 99 16',
+  dateNaissance: '2004-09-27',
+  formationId: 'f-bts-mhr-2025',
+  entrepriseId: 'e-hotel-continental',
+  historiqueEntreprises: [
+    {
+      id: 'aff-camille-1',
+      entrepriseId: 'e-hotel-continental',
+      dateIso: '2025-09-08T08:00:00.000Z',
+      auteurId: 'u-coordo-martine',
+      auteurNom: 'Martine LEFÈVRE',
+      auteurRole: 'coordo',
+    },
+  ],
+  maitreApprentissageId: 'u-maitre-nadia',
+  formateurReferentId: 'u-formateur-marc',
+  coordoId: 'u-coordo-martine',
+  contratDebut: '2025-09-08',
+  contratFin: '2027-08-31',
+};
+
+export const apprentiYanisBelkacem: Apprenti = {
+  id: 'u-apprenti-yanis',
+  role: 'apprenti',
+  nom: 'BELKACEM',
+  prenom: 'Yanis',
+  email: 'yanis.belkacem@demo.fr',
+  telephone: '01 99 99 99 17',
+  dateNaissance: '2005-03-14',
+  formationId: 'f-bts-mhr-2025',
+  entrepriseId: 'e-table-halles',
+  historiqueEntreprises: [
+    {
+      id: 'aff-yanis-1',
+      entrepriseId: 'e-table-halles',
+      dateIso: '2025-09-08T08:00:00.000Z',
+      auteurId: 'u-coordo-martine',
+      auteurNom: 'Martine LEFÈVRE',
+      auteurRole: 'coordo',
+    },
+  ],
+  maitreApprentissageId: 'u-maitre-julien',
+  formateurReferentId: 'u-formateur-marc',
+  coordoId: 'u-coordo-martine',
+  contratDebut: '2025-09-08',
+  contratFin: '2027-08-31',
+};
+
 /**
  * Liste plate des apprenti·e·s — facilite la consommation côté pages
  * (tableau de bord, lookup par id, etc.).
@@ -205,6 +264,8 @@ export const apprentisDemo: Apprenti[] = [
   apprentiMinhNguyen,
   apprentiAyaKouame,
   apprentiLucaBianchi,
+  apprentieCamilleMoreau,
+  apprentiYanisBelkacem,
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -241,7 +302,38 @@ export const maitreHeleneRoche: Maitre = {
   apprentiIds: [apprentiMinhNguyen.id, apprentiAyaKouame.id, apprentiLucaBianchi.id],
 };
 
-export const maitresDemo: Maitre[] = [maitreKarimBenali, maitreHeleneRoche];
+// Tuteurs de la promo BTS MHR (3 juillet 2026) — profils salle / hôtellerie.
+
+export const maitreNadiaHamdi: Maitre = {
+  id: 'u-maitre-nadia',
+  role: 'maitre',
+  nom: 'HAMDI',
+  prenom: 'Nadia',
+  email: 'nadia.hamdi@continental.demo',
+  telephone: '01 99 99 99 23',
+  entreprise: 'Hôtel Le Continental',
+  fonction: 'Directrice de la restauration',
+  apprentiIds: [apprentieCamilleMoreau.id],
+};
+
+export const maitreJulienFaure: Maitre = {
+  id: 'u-maitre-julien',
+  role: 'maitre',
+  nom: 'FAURE',
+  prenom: 'Julien',
+  email: 'julien.faure@tabledeshalles.demo',
+  telephone: '01 99 99 99 24',
+  entreprise: 'La Table des Halles',
+  fonction: "Maître d'hôtel",
+  apprentiIds: [apprentiYanisBelkacem.id],
+};
+
+export const maitresDemo: Maitre[] = [
+  maitreKarimBenali,
+  maitreHeleneRoche,
+  maitreNadiaHamdi,
+  maitreJulienFaure,
+];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Formateur référent — un·e seul·e pour la promo (cohérent CFA)
@@ -257,6 +349,19 @@ export const formatriceSophieDubois: Formateur = {
   promoIds: ['f-cap-cuisine-2025'],
 };
 
+/** Formateur référent de la promo BTS MHR (3 juillet 2026). */
+export const formateurMarcTissier: Formateur = {
+  id: 'u-formateur-marc',
+  role: 'formateur',
+  nom: 'TISSIER',
+  prenom: 'Marc',
+  email: 'marc.tissier@greta-demo.fr',
+  telephone: '01 99 99 99 06',
+  promoIds: ['f-bts-mhr-2025'],
+};
+
+export const formateursDemo: Formateur[] = [formatriceSophieDubois, formateurMarcTissier];
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Coordo + Admin (extensions hors-CDC v1.3)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -268,7 +373,8 @@ export const coordoMartineLefevre: Coordo = {
   prenom: 'Martine',
   email: 'martine.lefevre@greta-demo.fr',
   telephone: '01 99 99 99 04',
-  formationIds: ['f-cap-cuisine-2025'],
+  // Martine coordonne aussi la promo BTS MHR (3 juillet 2026) — accès Pronote.
+  formationIds: ['f-cap-cuisine-2025', 'f-bts-mhr-2025'],
 };
 
 /**

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Referentiel } from '@/types';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
+import { referentielBtsMhr } from '@/fixtures/referentiel-bts-mhr';
 import { useFormationsStore } from './useFormationsStore';
 import { useLivretStore } from './useLivretStore';
 
@@ -51,11 +52,16 @@ interface ReferentielsStore {
 //        compétences abordées en entreprise se fait désormais par livret,
 //        validé conjointement formateur + maître à l'entretien tripartite —
 //        cf. `useLivretStore.selectionCompetencesEntreprise`)
-const VERSION_SCHEMA = 2;
+//   v3 — référentiel BTS MHR à 3 niveaux (Bloc → Sous-famille → Compétence)
+//        ajouté aux fixtures (3 juillet 2026). Reset pour recharger.
+const VERSION_SCHEMA = 3;
 
 function etatInitial(): Pick<ReferentielsStore, 'referentiels'> {
   return {
-    referentiels: { [referentielCapCuisine.id]: referentielCapCuisine },
+    referentiels: {
+      [referentielCapCuisine.id]: referentielCapCuisine,
+      [referentielBtsMhr.id]: referentielBtsMhr,
+    },
   };
 }
 

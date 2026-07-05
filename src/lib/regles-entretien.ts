@@ -110,7 +110,7 @@ export function peutEncoreEditer(role: Role, entretien: EntretienTripartite): bo
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Un entretien est complet quand les 3 parties ont signé (R9). */
-function entretienSigneParTous(entretien: EntretienTripartite | null): boolean {
+export function entretienSigneParTous(entretien: EntretienTripartite | null): boolean {
   return (
     !!entretien &&
     entretien.signatures.apprenti.signe &&

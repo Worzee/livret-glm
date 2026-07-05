@@ -1,0 +1,130 @@
+import { expect, test } from '@playwright/test';
+import { resetState, selectRole } from './helpers';
+
+/**
+ * Pilotage + centre d'alertes + promo BTS (3 juillet 2026 — préparation démo
+ * direction).
+ *
+ *   - Bandeau de KPI (coordo / admin) sur le périmètre actif
+ *   - Centre d'alertes par rôle (« qu'est-ce qui attend mon action ? »)
+ *   - 2ᵉ formation BTS MHR : groupes du tableau de bord, sélecteur de
+ *     formateur actif, référentiel 3 niveaux, jusqu'à 4 entretiens
+ */
+
+test.beforeEach(async ({ page }) => {
+  await resetState(page);
+});
+
+test('coordo : bandeau de pilotage sur le périmètre + mini-stats par formation', async ({
+  page,
+}) => {
+  await selectRole(page, 'Coordinateur·rice');
+
+  // Martine : 5 apprenti·e·s (Léa, Théo, Sofia + Camille, Yanis) et 2 alertes
+  // R7 (Sofia côté CAP, Yanis côté BTS).
+  const bandeau = page.getByTestId('bandeau-pilotage');
+  await expect(bandeau).toBeVisible();
+  await expect(bandeau.getByTestId('pilotage-apprentis')).toContainText('5');
+  await expect(bandeau.getByTestId('pilotage-alertes-r7')).toContainText('2');
+
+  // 2 groupes de formation, BTS (promo la plus récente) en premier, chacun
+  // avec son badge « 1 alerte R7 » dans l'en-tête de section.
+  const groupeBts = page.getByTestId('groupe-formation-f-bts-mhr-2025');
+  const groupeCap = page.getByTestId('groupe-formation-f-cap-cuisine-2025');
+  await expect(groupeBts).toBeVisible();
+  await expect(groupeCap).toBeVisible();
+  await expect(groupeBts.locator('summary').getByText('1 alerte R7')).toBeVisible();
+  await expect(groupeCap.locator('summary').getByText('1 alerte R7')).toBeVisible();
+
+  // Bascule sur Bernard : 3 apprenti·e·s (CAP Brasserie), aucune alerte R7.
+  await page.getByRole('button', { name: /Bernard PETIT/i }).click();
+  await expect(bandeau.getByTestId('pilotage-apprentis')).toContainText('3');
+  await expect(bandeau.getByTestId('pilotage-alertes-r7')).toContainText('0');
+});
+
+test("formateur : centre d'alertes (R7, signature centre, entretien à initialiser, fiche à verrouiller) — sans bandeau de pilotage", async ({
+  page,
+}) => {
+  // Rôle par défaut = formatrice Sophie (promo CAP).
+  await expect(page.getByTestId('bandeau-pilotage')).toHaveCount(0);
+
+  const centre = page.getByTestId('centre-alertes');
+  await expect(centre).toBeVisible();
+  // Sofia : R7. Léa : C2 centre à signer, E2 à initialiser, P2 à verrouiller.
+  await expect(centre.getByTestId('alerte-r7-u-apprenti-sofia')).toBeVisible();
+  await expect(centre.getByTestId('alerte-sig-fiche-fc-lea-c2')).toBeVisible();
+  await expect(centre.getByTestId('alerte-init-entretien-2-u-apprenti-lea')).toBeVisible();
+  await expect(centre.getByTestId('alerte-verrou-fp-lea-2')).toBeVisible();
+});
+
+test("clic sur une alerte : active l'apprenti·e et navigue vers la page cible", async ({
+  page,
+}) => {
+  await page.getByTestId('alerte-verrou-fp-lea-2').click();
+  await expect(page).toHaveURL(/\/livret\/fiches-suivi\/fp-lea-2/);
+  await expect(page.getByRole('heading', { name: /^Période 2/i })).toBeVisible();
+  // Le trio d'identité du header pointe bien sur Léa (apprentie activée au clic).
+  await expect(page.locator('strong', { hasText: 'Léa MARTIN' }).first()).toBeVisible();
+});
+
+test('bascule de formateur : Marc TISSIER ne voit que sa promo BTS, avec ses alertes', async ({
+  page,
+}) => {
+  // Sélecteur de formateur actif (3 juillet 2026) — pattern du sélecteur de maître.
+  const selecteur = page.getByText(/Formateur·rice référent·e actif·ve/i);
+  await expect(selecteur).toBeVisible();
+  await page.getByRole('button', { name: /Marc TISSIER/i }).click();
+
+  // Le header reflète l'utilisateur connecté, la grille = 2 cartes BTS.
+  await expect(
+    page
+      .locator('header')
+      .getByText(/Connecté en tant que/i)
+      .getByText(/Marc TISSIER/i),
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: /Ouvrir le livret de/i })).toHaveCount(2);
+  await expect(
+    page.getByRole('button', { name: /Ouvrir le livret de Camille MOREAU/i }),
+  ).toBeVisible();
+
+  // Ses alertes : R7 Yanis, E3 de Camille à signer, C2 à signer, P2 à verrouiller.
+  const centre = page.getByTestId('centre-alertes');
+  await expect(centre.getByTestId('alerte-r7-u-apprenti-yanis')).toBeVisible();
+  await expect(centre.getByTestId('alerte-sig-entretien-3-u-apprenti-camille')).toBeVisible();
+  await expect(centre.getByTestId('alerte-sig-fiche-fc-camille-c2')).toBeVisible();
+  await expect(centre.getByTestId('alerte-verrou-fp-camille-2')).toBeVisible();
+});
+
+test('maître Karim : « votre signature est attendue » sur la P3 de Léa (période échue)', async ({
+  page,
+}) => {
+  await selectRole(page, 'Maître / Tuteur');
+  const centre = page.getByTestId('centre-alertes');
+  await expect(centre.getByTestId('alerte-sig-fiche-fp-lea-3')).toBeVisible();
+  await expect(centre.getByTestId('alerte-sig-fiche-fp-lea-3')).toContainText(
+    /Période 3 terminée : votre signature est attendue/i,
+  );
+});
+
+test('BTS MHR : référentiel 3 niveaux (sous-familles) et 3ᵉ entretien accessibles sur le livret de Camille', async ({
+  page,
+}) => {
+  // Bascule sur Marc puis ouverture du livret de Camille.
+  await page.getByRole('button', { name: /Marc TISSIER/i }).click();
+  await page.getByRole('button', { name: /Ouvrir le livret de Camille MOREAU/i }).click();
+
+  // 3 événements « Entretien Tripartite » → 3 liens sidebar (E4 pas encore créé).
+  await expect(page.getByRole('link', { name: /Entretien tripartite 1/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Entretien tripartite 2/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Entretien tripartite 3/i })).toBeVisible();
+
+  // E3 : initialisé, signé par Camille seule (1/3).
+  await page.getByRole('link', { name: /Entretien tripartite 3/i }).click();
+  await expect(page.getByRole('heading', { name: /Entretien tripartite/i }).first()).toBeVisible();
+
+  // Évaluation finale : la hiérarchie du référentiel 3 niveaux s'affiche par
+  // sous-familles (regroupements non évaluables).
+  await page.getByRole('link', { name: /Évaluation finale/i }).click();
+  await expect(page.getByText('Relation client et commercialisation').first()).toBeVisible();
+  await expect(page.getByText('Pilotage économique').first()).toBeVisible();
+});

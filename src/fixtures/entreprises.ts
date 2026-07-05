@@ -43,10 +43,21 @@ export const entrepriseTableHalles: Entreprise = {
   ville: 'Lyon',
 };
 
+/** Entreprise hôtelière (3 juillet 2026) — accueille une apprentie du BTS MHR. */
+export const entrepriseHotelContinental: Entreprise = {
+  id: 'e-hotel-continental',
+  raisonSociale: 'Hôtel Le Continental',
+  siret: '324 654 987 00034',
+  adresse: '8 rue Grolée',
+  codePostal: '69002',
+  ville: 'Lyon',
+};
+
 /** Indexées par id pour les lookups O(1). */
 export const entreprisesDemo: Record<string, Entreprise> = {
   [entrepriseLeGourmet.id]: entrepriseLeGourmet,
   [entrepriseBrasserieRhone.id]: entrepriseBrasserieRhone,
   [entrepriseBistrotCanuts.id]: entrepriseBistrotCanuts,
   [entrepriseTableHalles.id]: entrepriseTableHalles,
+  [entrepriseHotelContinental.id]: entrepriseHotelContinental,
 };

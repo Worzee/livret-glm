@@ -115,7 +115,9 @@ import { useUtilisateursStore } from './useUtilisateursStore';
 //   v21 — 18 juin 2026 : attitudes a1..a4 retirées du catalogue (doublon avec
 //        l'appréciation maître) — fixtures `attitudesSelectionnees` et
 //        `evaluationsAttitudes` mises à jour. Reset pour recharger.
-const VERSION_SCHEMA = 21;
+//   v22 — 3 juillet 2026 : livrets de la promo BTS MHR 2025-2027 (Camille :
+//        E1+E2 signés, E3 initialisé ; Yanis : alerte R7, P1 non signée).
+const VERSION_SCHEMA = 22;
 
 interface LivretStore {
   livrets: Record<string, Livret>;
@@ -535,9 +537,9 @@ export const useLivretStore = create<LivretStore>()(
 
       getLivret: (id) => get().livrets[id],
       getFiche: (livretId, ficheId, lieu = 'entreprise') =>
-        get().livrets[livretId]?.[
-          lieu === 'centre' ? 'fichesSuiviCentre' : 'fichesSuivi'
-        ].find((f) => f.id === ficheId),
+        get().livrets[livretId]?.[lieu === 'centre' ? 'fichesSuiviCentre' : 'fichesSuivi'].find(
+          (f) => f.id === ficheId,
+        ),
 
       setEvaluationLigne: (livretId, ficheId, ligneId, champ, lieu = 'entreprise') =>
         set((s) =>
@@ -579,7 +581,13 @@ export const useLivretStore = create<LivretStore>()(
           })),
         ),
 
-      ajouterLigneSuiviEntreprise: (livretId, ficheId, competenceId, libelleLibre, lieu = 'entreprise') => {
+      ajouterLigneSuiviEntreprise: (
+        livretId,
+        ficheId,
+        competenceId,
+        libelleLibre,
+        lieu = 'entreprise',
+      ) => {
         const nouvelId = `se-${crypto.randomUUID()}`;
         set((s) =>
           muterFiche(s, livretId, ficheId, lieu, (f) => ({
@@ -1035,7 +1043,15 @@ export const useLivretStore = create<LivretStore>()(
         ),
 
       // ── Déverrouillage de fiche avec motif (R10) ──────────────────────────
-      deverrouillerFiche: (livretId, ficheId, auteurId, auteurNom, auteurRole, motif, lieu = 'entreprise') =>
+      deverrouillerFiche: (
+        livretId,
+        ficheId,
+        auteurId,
+        auteurNom,
+        auteurRole,
+        motif,
+        lieu = 'entreprise',
+      ) =>
         set((s) =>
           muterFiche(s, livretId, ficheId, lieu, (f) => {
             const trace: EntreeDeverrouillage = {

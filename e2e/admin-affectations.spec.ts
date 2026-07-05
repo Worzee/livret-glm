@@ -26,18 +26,18 @@ test('le coordo accède à la page, restreinte à son périmètre (juin 2026)', 
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/affectations');
   await expect(page.getByRole('heading', { name: /Gestion des affectations/i })).toBeVisible();
-  // Martine ne voit que Léa, Théo, Sofia.
-  await expect(page.locator('tbody tr')).toHaveCount(3);
+  // Martine voit son périmètre : Léa, Théo, Sofia + la promo BTS (Camille, Yanis).
+  await expect(page.locator('tbody tr')).toHaveCount(5);
   // La colonne Coordinateur·rice est en lecture seule pour le coordo.
   await expect(page.getByLabel(/Coordinateur·rice de Léa MARTIN/i)).toHaveCount(0);
   await expect(
     page.locator('tbody tr', { hasText: 'Léa MARTIN' }).getByText('Martine LEFÈVRE'),
   ).toBeVisible();
 
-  // L'admin voit les 6 apprenti·e·s et peut éditer la colonne.
+  // L'admin voit les 8 apprenti·e·s et peut éditer la colonne.
   await selectRole(page, 'Admin');
   await page.goto('/admin/affectations');
-  await expect(page.locator('tbody tr')).toHaveCount(6);
+  await expect(page.locator('tbody tr')).toHaveCount(8);
   await expect(page.getByLabel(/Coordinateur·rice de Léa MARTIN/i)).toBeVisible();
 });
 
@@ -61,8 +61,8 @@ test('verrou par défaut : tous les apprenti·e·s des fixtures sont verrouillé
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/affectations');
   // Bandeau d'info global.
-  // Le bandeau compte le périmètre du coordo (Martine : 3 apprenti·e·s).
-  await expect(page.getByText(/3 apprenti·es verrouillé·es par défaut/i)).toBeVisible();
+  // Le bandeau compte le périmètre du coordo (Martine : 5 apprenti·e·s).
+  await expect(page.getByText(/5 apprenti·es verrouillé·es par défaut/i)).toBeVisible();
   // Les selects de Léa sont disabled.
   const selectMaitreLea = page
     .locator('tbody tr', { hasText: /Léa MARTIN/ })
@@ -154,11 +154,12 @@ test("l'admin répartit les apprenti·e·s entre coordos — chaque coordo voit 
     .getByLabel(/Coordinateur·rice de Léa MARTIN/i)
     .selectOption({ label: 'Bernard PETIT' });
 
-  // 2. Côté coordo : Martine (par défaut) ne voit plus que Théo et Sofia.
+  // 2. Côté coordo : Martine (par défaut) perd Léa — reste Théo, Sofia + la
+  //    promo BTS (Camille, Yanis).
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/');
   await expect(
-    page.getByRole('button', { name: /Martine LEFÈVRE/i }).getByText(/2 apprenti·e·s/i),
+    page.getByRole('button', { name: /Martine LEFÈVRE/i }).getByText(/4 apprenti·e·s/i),
   ).toBeVisible();
   await expect(page.getByRole('button', { name: /Ouvrir le livret de Léa MARTIN/i })).toHaveCount(
     0,
@@ -182,8 +183,8 @@ test('le coordo bascule de périmètre directement depuis la page Affectations (
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/affectations');
 
-  // Périmètre par défaut (Martine) : Léa, Théo, Sofia.
-  await expect(page.locator('tbody tr')).toHaveCount(3);
+  // Périmètre par défaut (Martine) : Léa, Théo, Sofia + Camille, Yanis (BTS).
+  await expect(page.locator('tbody tr')).toHaveCount(5);
   await expect(page.locator('tbody tr', { hasText: 'Léa MARTIN' })).toBeVisible();
 
   // Bascule sur Bernard sans quitter la page → son périmètre (Minh, Aya, Luca).

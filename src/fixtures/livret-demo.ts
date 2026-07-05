@@ -9,16 +9,21 @@ import type {
 } from '@/types';
 import {
   apprentiAyaKouame,
+  apprentieCamilleMoreau,
   apprentiLeaMartin,
   apprentiLucaBianchi,
   apprentiMinhNguyen,
   apprentiSofiaPereira,
   apprentiTheoDubois,
+  apprentiYanisBelkacem,
   apprentisDemo,
+  formateurMarcTissier,
   formatriceSophieDubois,
 } from './utilisateurs';
+import type { Referentiel } from '@/types';
 import { referentielCapCuisine } from './referentiel-cap-cuisine';
-import { periodesCapCuisine, periodesCentreCapCuisine } from './formations';
+import { referentielBtsMhr } from './referentiel-bts-mhr';
+import { periodesCapCuisine, periodesCentreBtsMhr, periodesCentreCapCuisine } from './formations';
 import { QUESTIONS_BANQUE_INITIALE, idsQuestionsActives } from '@/lib/questions-entretien';
 import { creerFichePeriodeVierge } from '@/lib/creation-livret';
 import { questionsTrameE1 } from '@/lib/trame-entretien-1';
@@ -60,9 +65,9 @@ const signaturesCompletes = (date: string): SignaturesTripartite => ({
 });
 
 /** Initialise les lignes vides de l'évaluation finale depuis le référentiel. */
-function lignesEvaluationFinaleVides() {
+function lignesEvaluationFinaleVides(referentiel: Referentiel = referentielCapCuisine) {
   return {
-    competences: referentielCapCuisine.blocs
+    competences: referentiel.blocs
       .flatMap((b) => b.competences)
       .map((c) => ({
         competenceId: c.id,
@@ -113,17 +118,25 @@ function selectionValideeDemo(
  * toutes les compétences du référentiel sont activées par défaut. Le maître /
  * tuteur décochera celles non abordées lors de l'E1.
  */
-function selectionInitialeDemo(dateIso: string): SelectionCompetencesEntreprise {
+function selectionInitialeDemo(
+  dateIso: string,
+  referentiel: Referentiel = referentielCapCuisine,
+): SelectionCompetencesEntreprise {
   return {
-    ids: referentielCapCuisine.blocs.flatMap((b) => b.competences).map((c) => c.id),
+    ids: referentiel.blocs.flatMap((b) => b.competences).map((c) => c.id),
     modifieLe: dateIso,
     historiqueInvalidations: [],
   };
 }
 
 /** Construit un livret vierge (sans entretien, sans fiche) pour un·e apprenti·e. */
-function livretVierge(apprenti: Apprenti, livretId: string): Livret {
-  const lignesVides = lignesEvaluationFinaleVides();
+function livretVierge(
+  apprenti: Apprenti,
+  livretId: string,
+  referentiel: Referentiel = referentielCapCuisine,
+  periodesCentre = periodesCentreCapCuisine,
+): Livret {
+  const lignesVides = lignesEvaluationFinaleVides(referentiel);
   return {
     id: livretId,
     apprentiId: apprenti.id,
@@ -176,7 +189,7 @@ function livretVierge(apprenti: Apprenti, livretId: string): Livret {
     fichesSuivi: [],
     // Périodes en centre (17 juin 2026) — héritées du planning centre, vierges
     // par défaut ; les livrets démo peuvent les surcharger.
-    fichesSuiviCentre: periodesCentreCapCuisine.map((p) =>
+    fichesSuiviCentre: periodesCentre.map((p) =>
       creerFichePeriodeVierge(p, `fc-${livretId}-${p.id}`),
     ),
     evaluationFinaleCompetences: {
@@ -185,7 +198,7 @@ function livretVierge(apprenti: Apprenti, livretId: string): Livret {
     },
     // Démarre vierge par défaut ; les livrets démo dont l'entretien est signé
     // override ce champ avec `selectionValideeDemo(...)` plus bas.
-    selectionCompetencesEntreprise: selectionInitialeDemo('2025-09-02T08:00:00.000Z'),
+    selectionCompetencesEntreprise: selectionInitialeDemo('2025-09-02T08:00:00.000Z', referentiel),
     // Choix des attitudes : se fera à l'E1 (13 juin 2026).
     attitudesSelectionnees: [],
     cloture: null,
@@ -210,14 +223,17 @@ const TEXTES_TRAME_E1_DEMO: Record<string, string> = {
 /**
  * Réponses de démonstration à la trame de l'entretien 1 : toutes les oui/non à
  * « Oui » sauf les ids passés dans `idsNon` (qui déclenchent un point d'alerte),
- * et des textes courts réalistes.
+ * et des textes courts réalistes (surchageables par formation).
  */
-function reponsesTrameDemo(idsNon: ReadonlyArray<string> = []): Record<string, string | boolean> {
+function reponsesTrameDemo(
+  idsNon: ReadonlyArray<string> = [],
+  textes: Record<string, string> = TEXTES_TRAME_E1_DEMO,
+): Record<string, string | boolean> {
   const non = new Set(idsNon);
   const out: Record<string, string | boolean> = {};
   for (const q of questionsTrameE1()) {
     if (q.type === 'oui-non') out[q.id] = !non.has(q.id);
-    else out[q.id] = TEXTES_TRAME_E1_DEMO[q.id] ?? '';
+    else out[q.id] = textes[q.id] ?? '';
   }
   return out;
 }
@@ -1356,6 +1372,508 @@ const livretLuca: Livret = {
   modifieLe: '2026-04-05T17:00:00.000Z',
 };
 
+// ═════════════════════════════════════════════════════════════════════════════
+// Promo BTS MHR 2025-2027 (3 juillet 2026) — 2ᵉ formation de démo.
+// Référentiel 3 niveaux, 4 entretiens tripartites, formateur Marc TISSIER.
+//   - Camille MOREAU : mi-parcours riche — E1 + E2 signés, E3 initialisé
+//     (apprentie signée), P1 verrouillée, P2 signée (à verrouiller), P3 en
+//     cours, C1 signée, C2 en cours (formateur pas signé)
+//   - Yanis BELKACEM : « retard » — aucun entretien (alerte R7), P1 entamée
+//     mais non signée alors que la période est terminée
+// ═════════════════════════════════════════════════════════════════════════════
+
+/** Signatures d'une fiche ENTREPRISE (2 parties depuis le 1ᵉʳ juillet 2026). */
+const signaturesEntreprise = (date: string): SignaturesTripartite => ({
+  apprenti: { signe: true, dateSignature: date },
+  maitre: { signe: true, dateSignature: date },
+  formateur: { signe: false },
+});
+
+/** Signatures d'une fiche CENTRE (apprenti·e + formateur référent). */
+const signaturesCentre = (date: string): SignaturesTripartite => ({
+  apprenti: { signe: true, dateSignature: date },
+  maitre: { signe: false },
+  formateur: { signe: true, dateSignature: date },
+});
+
+/** Textes de la trame E1 adaptés au contexte salle / hôtellerie du BTS MHR. */
+const TEXTES_TRAME_E1_CAMILLE: Record<string, string> = {
+  'e1-integ-accueil':
+    "Accueil très structuré : journée d'intégration avec visite de l'hôtel et du restaurant.",
+  'e1-integ-presentation':
+    'Présentation des équipes de salle et de réception, des standards de service et du poste.',
+  'e1-accomp-echanges':
+    'Brief quotidien avant le service ; point hebdomadaire le jeudi avec la directrice de la restauration.',
+  'e1-adeq-activites':
+    'Accueil des clients, service au restaurant gastronomique, participation aux briefings.',
+  'e1-adeq-difficultes':
+    "L'anglais professionnel en situation de service reste à consolider - à travailler en centre.",
+};
+
+const entretienCamilleE1: EntretienTripartite = {
+  dateEntretien: '2025-10-21',
+  reponsesTrame: reponsesTrameDemo([], TEXTES_TRAME_E1_CAMILLE),
+  questionsApprentiSelectionnees: [...QUESTIONS_E1_APPRENTI],
+  questionsMaitreSelectionnees: [...QUESTIONS_E1_MAITRE],
+  questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],
+  questionsObligatoires: [...QUESTIONS_E1_OBLIGATOIRES],
+  // Attitudes retenues à l'E1 : hygiène/tenue exclues au profit du relationnel.
+  evaluationsAttitudes: { a7: 'plus', a9: 'plusplus', a10: 'moins', a12: 'plus' },
+  reponsesApprenti: {},
+  reponsesMaitre: {},
+  appreciationMaitre: {
+    ponctualite: 'plus',
+    comprehensionConsignes: 'plus',
+    qualiteTravail: 'moins',
+    integration: 'plusplus',
+    commentaires:
+      'Très bon relationnel client. La rigueur des mises en place doit encore progresser — normal à ce stade.',
+  },
+  demarchesAdministratives: {
+    contratSigne: true,
+    visiteMedicale: true,
+    permisConduire: true,
+    voiture: false,
+  },
+  conditionsPratiques: {},
+  aidesDemandees: { logement: false, premierEquipement: true, permis: null },
+  commentaires: {
+    apprenti: "L'équipe m'a très bien intégrée, le rythme des services est soutenu mais motivant.",
+    maitre: 'Profil prometteur pour la salle. Objectif : responsabiliser Camille sur un rang.',
+    formateur: 'Alternance bien engagée. Programme anglais professionnel renforcé au centre.',
+  },
+  signatures: {
+    apprenti: { signe: true, dateSignature: '2025-10-21T14:30:00.000Z' },
+    maitre: { signe: true, dateSignature: '2025-10-21T14:35:00.000Z' },
+    formateur: { signe: true, dateSignature: '2025-10-21T14:40:00.000Z' },
+  },
+};
+
+const entretienCamilleE2: EntretienTripartite = {
+  dateEntretien: '2026-03-30',
+  questionsApprentiSelectionnees: [...QUESTIONS_E1_APPRENTI],
+  questionsMaitreSelectionnees: [...QUESTIONS_E1_MAITRE],
+  questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],
+  questionsObligatoires: [...QUESTIONS_E1_OBLIGATOIRES],
+  // Progression visible entre E1 et E2 sur les mêmes attitudes.
+  evaluationsAttitudes: { a7: 'plusplus', a9: 'plusplus', a10: 'plus', a12: 'plusplus' },
+  reponsesApprenti: {
+    'q-app-motivations':
+      "Confirmées : je vise un poste de cheffe de rang à l'issue du BTS, puis une assistance de direction.",
+    'q-app-contact-entreprise':
+      "Candidature spontanée après un forum de l'alternance au GRETA en mars 2025.",
+    'q-app-connaissance-entreprise':
+      "Je connaissais la réputation de l'hôtel ; j'ai découvert l'organisation interne depuis.",
+    'q-app-metier-representation':
+      'Le management de la salle est plus exigeant que je ne le pensais — coordination permanente avec la cuisine.',
+    'q-app-difficultes-formation':
+      'La gestion analytique (ratios, coûts) demande un vrai travail personnel.',
+    'q-app-difficultes-autres': "Les coupures en période de haute saison fatiguent, je m'organise.",
+    'q-app-ressenti-equipe':
+      'Très bonne entente avec la brigade de salle. On me confie désormais un rang complet.',
+  },
+  reponsesMaitre: {
+    'q-mai-deja-forme': true,
+    'q-mai-diplomes-deja-formes':
+      'BTS MHR (2 apprenti·e·s) et mentions complémentaires sommellerie.',
+    'q-mai-objectifs-embauche':
+      "CDI de cheffe de rang envisagé à l'issue du contrat, selon la saison 2027.",
+    'q-mai-organisation-tutorat':
+      "Tutorat assuré par moi-même avec délégation au maître d'hôtel les soirs de banquet.",
+  },
+  appreciationMaitre: {
+    ponctualite: 'plusplus',
+    comprehensionConsignes: 'plus',
+    qualiteTravail: 'plus',
+    integration: 'plusplus',
+    commentaires: 'Nette progression sur la rigueur. Camille anime déjà le briefing des extras.',
+  },
+  demarchesAdministratives: {
+    contratSigne: true,
+    visiteMedicale: true,
+    permisConduire: true,
+    voiture: true,
+  },
+  conditionsPratiques: {
+    hebergementCentre: 'Studio à Lyon 2e, à 10 minutes à pied du site Bellecour.',
+    hebergementEntreprise: 'Idem (hôtel dans le même quartier).',
+    transportCentre: 'À pied.',
+    transportEntreprise: 'À pied.',
+  },
+  aidesDemandees: { logement: true, premierEquipement: false, permis: false },
+  commentaires: {
+    apprenti: 'Mi-parcours très positif, je me sens à ma place sur ce métier.',
+    maitre: "Objectif jusqu'à l'été : autonomie complète sur les banquets.",
+    formateur: "Résultats solides au centre. Dossier de gestion à approfondir pour l'examen.",
+  },
+  signatures: {
+    apprenti: { signe: true, dateSignature: '2026-03-30T17:00:00.000Z' },
+    maitre: { signe: true, dateSignature: '2026-03-30T17:05:00.000Z' },
+    formateur: { signe: true, dateSignature: '2026-03-30T17:10:00.000Z' },
+  },
+};
+
+/**
+ * E3 initialisé le 1ᵉʳ juillet 2026 : Camille a répondu et signé ; le maître
+ * et le formateur pas encore → alimente le centre d'alertes (signatures
+ * attendues) côté Nadia HAMDI et Marc TISSIER.
+ */
+const entretienCamilleE3: EntretienTripartite = {
+  dateEntretien: '2026-07-01',
+  questionsApprentiSelectionnees: [...QUESTIONS_E1_APPRENTI],
+  questionsMaitreSelectionnees: [...QUESTIONS_E1_MAITRE],
+  questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],
+  questionsObligatoires: [...QUESTIONS_E1_OBLIGATOIRES],
+  evaluationsAttitudes: {},
+  reponsesApprenti: {
+    'q-app-motivations': 'Toujours cap sur la salle — je prépare le concours général des métiers.',
+    'q-app-contact-entreprise': 'Sans changement depuis le dernier entretien.',
+    'q-app-connaissance-entreprise':
+      "Je participe désormais aux réunions d'exploitation mensuelles.",
+    'q-app-metier-representation': 'Vision plus complète avec la dimension gestion des coûts.',
+    'q-app-difficultes-formation': "L'épreuve de gestion reste mon chantier prioritaire.",
+    'q-app-difficultes-autres': 'Rien de particulier.',
+    'q-app-ressenti-equipe': "Excellente : je forme moi-même les extras de l'été.",
+  },
+  reponsesMaitre: {},
+  appreciationMaitre: {},
+  demarchesAdministratives: {
+    contratSigne: true,
+    visiteMedicale: true,
+    permisConduire: true,
+    voiture: true,
+  },
+  conditionsPratiques: {},
+  aidesDemandees: { logement: null, premierEquipement: null, permis: null },
+  commentaires: {
+    apprenti: "Fin de 1ʳᵉ année très encourageante, merci à l'équipe du Continental.",
+  },
+  signatures: {
+    apprenti: { signe: true, dateSignature: '2026-07-01T16:00:00.000Z' },
+    maitre: { signe: false },
+    formateur: { signe: false },
+  },
+};
+
+const camillePeriode1: FicheSuiviPeriode = {
+  id: 'fp-camille-1',
+  numeroPeriode: 1,
+  periodeFormationId: 'pf-bts-mhr-2025-p1',
+  dateDebut: '2025-09-08',
+  dateFin: '2025-12-19',
+  suiviGretaCfa: {},
+  suiviEntreprise: [
+    {
+      id: 'se-camille-1-1',
+      competenceId: 'mhr1-1',
+      evaluationGreta: null,
+      evaluationEntreprise: 'maitrise',
+      retourApprenti: "L'accueil et le placement des clients sont devenus naturels.",
+    },
+    {
+      id: 'se-camille-1-2',
+      competenceId: 'mhr1-3',
+      evaluationGreta: null,
+      evaluationEntreprise: 'partiel',
+      retourApprenti: 'Le service au guéridon demande encore de la pratique.',
+    },
+    {
+      id: 'se-camille-1-3',
+      competenceId: 'mhr1-5',
+      evaluationGreta: null,
+      evaluationEntreprise: 'maitrise',
+      retourApprenti: "Les affichages allergènes n'ont plus de secret pour moi.",
+    },
+  ],
+  observations: {
+    apprenti: 'Première période dense : les services du soir sont exigeants mais formateurs.',
+    maitre:
+      'Camille a trouvé sa place en salle dès les premières semaines. Très bon contact client.',
+    formateur: "Démarrage cohérent entre le centre et l'entreprise.",
+  },
+  signatures: signaturesEntreprise('2025-12-20T11:00:00.000Z'),
+  etat: 'verrouillee',
+  historiqueDeverrouillages: [],
+};
+
+const camillePeriode2: FicheSuiviPeriode = {
+  id: 'fp-camille-2',
+  numeroPeriode: 2,
+  periodeFormationId: 'pf-bts-mhr-2025-p2',
+  dateDebut: '2026-01-05',
+  dateFin: '2026-03-27',
+  suiviGretaCfa: {},
+  suiviEntreprise: [
+    {
+      id: 'se-camille-2-1',
+      competenceId: 'mhr1-2',
+      evaluationGreta: null,
+      evaluationEntreprise: 'maitrise',
+      retourApprenti: 'Ventes additionnelles régulières sur les suggestions du chef.',
+    },
+    {
+      id: 'se-camille-2-2',
+      competenceId: 'mhr1-4',
+      evaluationGreta: null,
+      evaluationEntreprise: 'partiel',
+      retourApprenti: 'Les accords mets-vins progressent grâce aux dégustations du mardi.',
+    },
+    {
+      id: 'se-camille-2-3',
+      competenceId: 'mhr3-1',
+      evaluationGreta: null,
+      evaluationEntreprise: 'partiel',
+      retourApprenti: 'Je participe au calcul des ratios du restaurant chaque fin de mois.',
+    },
+  ],
+  observations: {
+    apprenti: 'Période riche : banquets, séminaires et premiers calculs de ratios.',
+    maitre: 'Autonomie confirmée sur un rang. Camille encadre ponctuellement un commis.',
+    formateur: '',
+  },
+  signatures: signaturesEntreprise('2026-03-28T10:30:00.000Z'),
+  etat: 'signee',
+  historiqueDeverrouillages: [],
+};
+
+const camillePeriode3: FicheSuiviPeriode = {
+  id: 'fp-camille-3',
+  numeroPeriode: 3,
+  periodeFormationId: 'pf-bts-mhr-2025-p3',
+  dateDebut: '2026-04-27',
+  dateFin: '2026-07-10',
+  suiviGretaCfa: {},
+  suiviEntreprise: [
+    {
+      id: 'se-camille-3-1',
+      competenceId: 'mhr2-1',
+      evaluationGreta: null,
+      evaluationEntreprise: 'partiel',
+      retourApprenti: "J'anime le briefing du midi une semaine sur deux.",
+    },
+    {
+      id: 'se-camille-3-2',
+      competenceId: 'mhr2-2',
+      evaluationGreta: null,
+      evaluationEntreprise: null,
+      retourApprenti: "Tutorat des extras de l'été en cours.",
+    },
+  ],
+  observations: {
+    apprenti: 'Période en cours — gros volume avec la saison des terrasses.',
+    maitre: '',
+    formateur: '',
+  },
+  signatures: aucuneSignature,
+  etat: 'en-cours',
+  historiqueDeverrouillages: [],
+};
+
+const camilleCentre1: FicheSuiviPeriode = {
+  id: 'fc-camille-c1',
+  numeroPeriode: 1,
+  periodeFormationId: 'pf-bts-mhr-2025-c1',
+  titre: 'Regroupement service & relation client',
+  dateDebut: '2025-11-03',
+  dateFin: '2025-11-14',
+  suiviGretaCfa: {},
+  suiviEntreprise: [
+    {
+      id: 'sc-camille-c1-1',
+      competenceId: 'mhr1-1',
+      evaluationGreta: 'maitrise',
+      evaluationEntreprise: null,
+      retourApprenti: 'Ateliers accueil en anglais très utiles pour la clientèle étrangère.',
+    },
+    {
+      id: 'sc-camille-c1-2',
+      competenceId: 'mhr1-4',
+      evaluationGreta: 'partiel',
+      evaluationEntreprise: null,
+      retourApprenti: 'Initiation sommellerie : les accords classiques sont acquis.',
+    },
+  ],
+  observations: {
+    apprenti: 'Regroupement intense, beaucoup de mises en situation.',
+    formateur: 'Très bonne participation. Anglais professionnel en net progrès.',
+  },
+  signatures: signaturesCentre('2025-11-14T16:30:00.000Z'),
+  etat: 'signee',
+  historiqueDeverrouillages: [],
+};
+
+const camilleCentre2: FicheSuiviPeriode = {
+  id: 'fc-camille-c2',
+  numeroPeriode: 2,
+  periodeFormationId: 'pf-bts-mhr-2025-c2',
+  titre: "Regroupement gestion d'équipe",
+  dateDebut: '2026-02-09',
+  dateFin: '2026-02-20',
+  suiviGretaCfa: {},
+  suiviEntreprise: [
+    {
+      id: 'sc-camille-c2-1',
+      competenceId: 'mhr2-1',
+      evaluationGreta: 'partiel',
+      evaluationEntreprise: null,
+      retourApprenti: 'Jeux de rôle de briefing : à retravailler sur la concision.',
+    },
+    {
+      id: 'sc-camille-c2-2',
+      competenceId: 'mhr3-1',
+      evaluationGreta: 'maitrise',
+      evaluationEntreprise: null,
+      retourApprenti: 'Les calculs de coûts matière sont maîtrisés sur tableur.',
+    },
+  ],
+  observations: {
+    apprenti: 'Regroupement gestion très concret, directement réutilisable en entreprise.',
+    formateur: '',
+  },
+  signatures: {
+    // La formatrice n'a pas encore signé → alimente le centre d'alertes de Marc.
+    apprenti: { signe: true, dateSignature: '2026-02-20T16:00:00.000Z' },
+    maitre: { signe: false },
+    formateur: { signe: false },
+  },
+  etat: 'en-cours',
+  historiqueDeverrouillages: [],
+};
+
+const livretCamille: Livret = {
+  ...livretVierge(
+    apprentieCamilleMoreau,
+    'livret-camille',
+    referentielBtsMhr,
+    periodesCentreBtsMhr,
+  ),
+  organisationSuivi: {
+    evenements: [
+      {
+        id: 'evt-camille-1',
+        motif: 'reunion-rentree',
+        date: '2025-09-08',
+        commentaire: 'Amphithéâtre du site Bellecour',
+      },
+      {
+        id: 'evt-camille-2',
+        motif: 'entretien-tripartite-1',
+        date: '2025-10-21',
+        modalite: 'presentiel',
+        commentaire: 'Entretien tripartite n° 1 — dans les 2 mois suivant le contrat (R7).',
+      },
+      {
+        id: 'evt-camille-3',
+        motif: 'visite-entreprise',
+        titre: 'Visite n°1',
+        date: '2025-12-18',
+        commentaire: "Point d'étape avec Nadia HAMDI avant les fêtes.",
+      },
+      {
+        id: 'evt-camille-4',
+        motif: 'entretien-tripartite-2',
+        date: '2026-03-30',
+        modalite: 'distanciel',
+        commentaire: 'Bilan de mi-parcours de 1ʳᵉ année.',
+      },
+      {
+        id: 'evt-camille-5',
+        motif: 'entretien-tripartite-3',
+        date: '2026-07-01',
+        modalite: 'presentiel',
+        commentaire: 'Bilan de fin de 1ʳᵉ année.',
+      },
+      {
+        id: 'evt-camille-6',
+        motif: 'bilan-formation',
+        commentaire: 'Bilan final prévu en juin 2027 (entretien n° 4).',
+      },
+    ],
+    modifieLe: '2026-06-25T09:00:00.000Z',
+    modifiePar: formateurMarcTissier.id,
+  },
+  entretiens: { 1: entretienCamilleE1, 2: entretienCamilleE2, 3: entretienCamilleE3, 4: null },
+  fichesSuivi: [camillePeriode1, camillePeriode2, camillePeriode3],
+  fichesSuiviCentre: [camilleCentre1, camilleCentre2],
+  attitudesSelectionnees: ['a7', 'a9', 'a10', 'a12'],
+  selectionCompetencesEntreprise: selectionValideeDemo(
+    apprentieCamilleMoreau,
+    ['mhr1-1', 'mhr1-2', 'mhr1-3', 'mhr1-4', 'mhr1-5', 'mhr2-1', 'mhr2-2', 'mhr3-1', 'mhr3-3'],
+    '2025-10-21T14:40:00.000Z',
+  ),
+  creeLe: '2025-09-08T08:00:00.000Z',
+  modifieLe: '2026-07-01T16:00:00.000Z',
+};
+
+const yanisPeriode1: FicheSuiviPeriode = {
+  id: 'fp-yanis-1',
+  numeroPeriode: 1,
+  periodeFormationId: 'pf-bts-mhr-2025-p1',
+  dateDebut: '2025-09-08',
+  dateFin: '2025-12-19',
+  suiviGretaCfa: {},
+  suiviEntreprise: [
+    {
+      id: 'se-yanis-1-1',
+      competenceId: 'mhr1-1',
+      evaluationGreta: null,
+      evaluationEntreprise: 'partiel',
+      retourApprenti: 'Je commence à prendre les réservations téléphoniques.',
+    },
+  ],
+  observations: {
+    apprenti: "Découverte du restaurant, on m'a confié le poste des petits-déjeuners.",
+    maitre: '',
+    formateur: '',
+  },
+  // Période terminée depuis décembre mais fiche jamais signée → alimente le
+  // centre d'alertes de Yanis (apprenti) et Julien FAURE (tuteur).
+  signatures: aucuneSignature,
+  etat: 'en-cours',
+  historiqueDeverrouillages: [],
+};
+
+const livretYanis: Livret = {
+  ...livretVierge(apprentiYanisBelkacem, 'livret-yanis', referentielBtsMhr, periodesCentreBtsMhr),
+  // Aucun événement « Entretien Tripartite 1 » : le contrat court depuis
+  // septembre 2025 → alerte R7 visible chez Marc TISSIER et Martine.
+  organisationSuivi: {
+    evenements: [
+      {
+        id: 'evt-yanis-1',
+        motif: 'reunion-rentree',
+        date: '2025-09-08',
+        commentaire: 'Amphithéâtre du site Bellecour',
+      },
+      {
+        id: 'evt-yanis-2',
+        motif: 'accueil-tuteur',
+        date: '2025-09-22',
+        commentaire: 'Journée tuteurs — Julien FAURE excusé (à reprogrammer).',
+      },
+      {
+        id: 'evt-yanis-3',
+        motif: 'entretien-individuel',
+        commentaire: "À planifier d'urgence avec le tuteur.",
+      },
+    ],
+    modifieLe: '2025-09-22T10:00:00.000Z',
+    modifiePar: formateurMarcTissier.id,
+  },
+  fichesSuivi: [
+    yanisPeriode1,
+    creerFichePeriodeVierge(
+      { id: 'pf-bts-mhr-2025-p2', numero: 2, dateDebut: '2026-01-05', dateFin: '2026-03-27' },
+      'fp-yanis-2',
+    ),
+    creerFichePeriodeVierge(
+      { id: 'pf-bts-mhr-2025-p3', numero: 3, dateDebut: '2026-04-27', dateFin: '2026-07-10' },
+      'fp-yanis-3',
+    ),
+  ],
+  modifieLe: '2026-01-10T09:00:00.000Z',
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Catalogue final
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1368,6 +1886,8 @@ export const livretsDemo: Record<string, Livret> = {
   [livretMinh.id]: livretMinh,
   [livretAya.id]: livretAya,
   [livretLuca.id]: livretLuca,
+  [livretCamille.id]: livretCamille,
+  [livretYanis.id]: livretYanis,
 };
 
 // Sanity check à la compilation : un livret par apprenti·e démo.

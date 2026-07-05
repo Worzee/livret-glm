@@ -1,5 +1,5 @@
 import type { Formation, PeriodeFormation } from '@/types';
-import { etablissementSiteDiderot } from './etablissements';
+import { etablissementSiteBellecour, etablissementSiteDiderot } from './etablissements';
 
 /**
  * Formations fictives de démonstration.
@@ -77,10 +77,71 @@ export const formationCapCuisine: Formation = {
   questionsRetirees: [],
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// BTS MHR 2025-2027 (3 juillet 2026) — 2ᵉ formation de démo : promo sur 2 ans,
+// référentiel 3 niveaux, 2ᵉ site, 4 entretiens tripartites. Fait vivre le
+// groupement par formation, le tri par année et les périmètres coordo.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const periodesBtsMhr: PeriodeFormation[] = [
+  {
+    id: 'pf-bts-mhr-2025-p1',
+    numero: 1,
+    dateDebut: '2025-09-08',
+    dateFin: '2025-12-19',
+  },
+  {
+    id: 'pf-bts-mhr-2025-p2',
+    numero: 2,
+    dateDebut: '2026-01-05',
+    dateFin: '2026-03-27',
+  },
+  {
+    id: 'pf-bts-mhr-2025-p3',
+    numero: 3,
+    dateDebut: '2026-04-27',
+    dateFin: '2026-07-10',
+  },
+];
+
+export const periodesCentreBtsMhr: PeriodeFormation[] = [
+  {
+    id: 'pf-bts-mhr-2025-c1',
+    numero: 1,
+    titre: 'Regroupement service & relation client',
+    dateDebut: '2025-11-03',
+    dateFin: '2025-11-14',
+  },
+  {
+    id: 'pf-bts-mhr-2025-c2',
+    numero: 2,
+    titre: "Regroupement gestion d'équipe",
+    dateDebut: '2026-02-09',
+    dateFin: '2026-02-20',
+  },
+];
+
+export const formationBtsMhr: Formation = {
+  id: 'f-bts-mhr-2025',
+  intitule: 'BTS Management en Hôtellerie-Restauration',
+  niveau: 'BTS',
+  annee: '2025-2027',
+  referentielId: 'ref-bts-mhr',
+  dateDebut: '2025-09-08',
+  dateFin: '2027-08-31',
+  lieuId: etablissementSiteBellecour.id,
+  periodes: periodesBtsMhr,
+  periodesCentre: periodesCentreBtsMhr,
+  // Formation en 2 ans → le maximum de 4 entretiens tripartites.
+  nombreEntretiens: 4,
+  questionsRetirees: [],
+};
+
 /**
  * Toutes les formations connues, indexées par id.
  * Les sprints suivants permettront au coordo d'en créer de nouvelles.
  */
 export const formationsDemo: Record<string, Formation> = {
   [formationCapCuisine.id]: formationCapCuisine,
+  [formationBtsMhr.id]: formationBtsMhr,
 };
