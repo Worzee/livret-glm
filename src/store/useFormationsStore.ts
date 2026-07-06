@@ -1,16 +1,29 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { FicheSuiviPeriode, Formation, LieuFiche, PeriodeFormation } from '@/types';
+import type {
+  FicheSuiviPeriode,
+  Formation,
+  LieuFiche,
+  ModeEvaluation,
+  PeriodeFormation,
+} from '@/types';
 import { formationsDemo } from '@/fixtures/formations';
 import { useUtilisateursStore } from './useUtilisateursStore';
 import { useLivretStore } from './useLivretStore';
 import { useReferentielsStore } from './useReferentielsStore';
+import { useActivitesStore } from './useActivitesStore';
 import {
   evaluerVerrouPeriode,
   renumeroterPeriodes,
   type SaisiePeriode,
   validerSaisiePeriode,
 } from '@/lib/validation-periode-formation';
+import {
+  modeEffectif,
+  peutBasculerMode,
+  peutChangerReferentielFormation,
+  type ResultatValidation,
+} from '@/lib/mode-evaluation';
 
 /**
  * Store des formations du dispositif.
@@ -49,8 +62,36 @@ interface FormationsStore {
    * @returns la formation créée (avec id auto-généré).
    */
   ajouterFormation: (input: Omit<Formation, 'id' | 'periodes' | 'periodesCentre'>) => Formation;
-  /** Met à jour les champs d'une formation existante (hors `periodes`). */
-  modifierFormation: (id: string, patch: Partial<Omit<Formation, 'id' | 'periodes'>>) => void;
+  /**
+   * Met à jour les champs d'une formation existante (hors `periodes`).
+   * Juillet 2026 (chantier #4) : le changement de `referentielId` est refusé
+   * si la formation est en mode activités (le mapping du modèle porte sur le
+   * référentiel actuel).
+   */
+  modifierFormation: (
+    id: string,
+    patch: Partial<Omit<Formation, 'id' | 'periodes'>>,
+  ) => ResultatValidation;
+
+  /**
+   * Bascule le mode d'évaluation de la formation (juillet 2026 — chantier
+   * #4). Gardes (`lib/mode-evaluation`) : verrou dès la première saisie
+   * signée dans la promo (les deux sens), balayage complet requis pour
+   * passer en activités. Le passage en activités réaligne « tout coché »
+   * les sélections d'activités non validées des livrets de la promo.
+   */
+  setModeEvaluation: (formationId: string, cible: ModeEvaluation) => ResultatValidation;
+
+  /**
+   * Rattache (ou détache avec `undefined`) un modèle d'activités à la
+   * formation. Refusé en mode activités (repasser d'abord en compétences) et
+   * si le modèle est mappé sur un autre référentiel que celui de la
+   * formation. Réaligne les sélections d'activités non validées des livrets.
+   */
+  attacherModeleActivites: (
+    formationId: string,
+    modeleActivitesId: string | undefined,
+  ) => ResultatValidation;
   /**
    * Supprime une formation. **Empêche la suppression** si au moins un·e
    * apprenti·e y est rattaché·e (cohérence référentielle).
@@ -119,7 +160,12 @@ interface FormationsStore {
 //   v8 — 6 juillet 2026 : entretien tripartite unique — suppression de
 //        `Formation.nombreEntretiens` et `Formation.questionsRetirees`
 //        (disparition de la banque de questions). Reset aux fixtures.
-const VERSION_SCHEMA = 8;
+//   v9 — 6 juillet 2026 : mode d'évaluation par activités (chantier
+//        référentiels/compétences #4) — `Formation.modeEvaluation`
+//        ('competences' | 'activites', absent = compétences) +
+//        `Formation.modeleActivitesId`. La promo CAP Cuisine passe en mode
+//        activités (modèle `act-cap-cuisine`). Reset aux fixtures.
+const VERSION_SCHEMA = 9;
 
 function etatInitial(): Pick<FormationsStore, 'formations'> {
   return { formations: { ...formationsDemo } };
@@ -144,7 +190,13 @@ export const useFormationsStore = create<FormationsStore>()(
 
       modifierFormation: (id, patch) => {
         const formation = get().formations[id];
-        if (!formation) return;
+        if (!formation) return { ok: false, raison: 'Formation introuvable.' };
+        // Chantier #4 (juillet 2026) : en mode activités, le référentiel est
+        // figé — le mapping du modèle porte sur lui (arbitrage pilote Q6).
+        if (patch.referentielId && patch.referentielId !== formation.referentielId) {
+          const garde = peutChangerReferentielFormation(formation);
+          if (!garde.ok) return garde;
+        }
         set((s) => ({
           formations: { ...s.formations, [id]: { ...formation, ...patch } },
         }));
@@ -158,6 +210,69 @@ export const useFormationsStore = create<FormationsStore>()(
             useLivretStore.getState().realignerSelectionsFormation(id, referentiel);
           }
         }
+        return { ok: true };
+      },
+
+      setModeEvaluation: (formationId, cible) => {
+        const formation = get().formations[formationId];
+        if (!formation) return { ok: false, raison: 'Formation introuvable.' };
+        const modele = formation.modeleActivitesId
+          ? useActivitesStore.getState().modeles[formation.modeleActivitesId]
+          : undefined;
+        const referentiel = useReferentielsStore.getState().referentiels[formation.referentielId];
+        const livretsPromo = Object.values(useLivretStore.getState().livrets).filter(
+          (l) => l.formationId === formationId,
+        );
+        const garde = peutBasculerMode({ formation, cible, modele, referentiel, livretsPromo });
+        if (!garde.ok) return garde;
+        set((s) => ({
+          formations: {
+            ...s.formations,
+            [formationId]: { ...formation, modeEvaluation: cible },
+          },
+        }));
+        // Passage en mode activités : les sélections d'activités non validées
+        // des livrets de la promo repartent « tout coché » sur le modèle
+        // (rien n'est signé — le verrou de bascule le garantit).
+        if (cible === 'activites' && modele) {
+          useLivretStore.getState().realignerSelectionsActivitesFormation(formationId, modele);
+        }
+        return { ok: true };
+      },
+
+      attacherModeleActivites: (formationId, modeleActivitesId) => {
+        const formation = get().formations[formationId];
+        if (!formation) return { ok: false, raison: 'Formation introuvable.' };
+        if (modeEffectif(formation) === 'activites') {
+          return {
+            ok: false,
+            raison:
+              'La formation est en mode activités — repassez d’abord en mode compétences pour changer de modèle.',
+          };
+        }
+        const modele = modeleActivitesId
+          ? useActivitesStore.getState().modeles[modeleActivitesId]
+          : undefined;
+        if (modeleActivitesId && !modele) {
+          return { ok: false, raison: 'Modèle d’activités introuvable.' };
+        }
+        if (modele && modele.referentielId !== formation.referentielId) {
+          return {
+            ok: false,
+            raison: 'Ce modèle est mappé sur un autre référentiel que celui de la formation.',
+          };
+        }
+        set((s) => ({
+          formations: {
+            ...s.formations,
+            [formationId]: { ...formation, modeleActivitesId },
+          },
+        }));
+        // Le modèle effectif des livrets change : sélections d'activités non
+        // validées réalignées (« tout coché » sur le nouveau modèle, vidées
+        // si détachement).
+        useLivretStore.getState().realignerSelectionsActivitesFormation(formationId, modele);
+        return { ok: true };
       },
 
       supprimerFormation: (id) => {

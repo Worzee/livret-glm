@@ -1,4 +1,4 @@
-import type { FicheSuiviPeriode, LieuFiche, Role } from '@/types';
+import type { FicheSuiviPeriode, LieuFiche, ModeEvaluation, Role } from '@/types';
 import { attitudesNonEvaluees } from './attitudes';
 
 /**
@@ -39,12 +39,17 @@ export interface ResultatValidation {
  *   (choisies à l'entretien tripartite). Utilisé pour le maître en entreprise
  *   uniquement : toutes doivent être évaluées sur la fiche pour signer.
  *   Optionnel (défaut `[]`) — sans sélection, aucune exigence d'attitude.
+ * @param modeEvaluation Mode d'évaluation de la formation (juillet 2026 —
+ *   chantier #4). En mode `activites`, l'exigence maître « ≥ 1 compétence
+ *   abordée » devient « ≥ 1 activité évaluée » — même prédicat sur les lignes
+ *   (autre que null / non-fait), seul le message change.
  */
 export function validerSignature(
   fiche: FicheSuiviPeriode,
   role: Role,
   lieu: LieuFiche = 'entreprise',
   attitudesSelectionnees: ReadonlyArray<string> = [],
+  modeEvaluation: ModeEvaluation = 'competences',
 ): ResultatValidation {
   const raisons: string[] = [];
 
@@ -89,7 +94,9 @@ export function validerSignature(
       );
       if (!auMoinsUneAbordee) {
         raisons.push(
-          'Évaluez au moins une compétence abordée dans la colonne « Évaluation entreprise » (autre que « Non fait »).',
+          modeEvaluation === 'activites'
+            ? 'Évaluez au moins une activité dans la colonne « Évaluation entreprise » (autre que « Non fait »).'
+            : 'Évaluez au moins une compétence abordée dans la colonne « Évaluation entreprise » (autre que « Non fait »).',
         );
       }
       if (!fiche.observations.maitre || fiche.observations.maitre.trim().length === 0) {

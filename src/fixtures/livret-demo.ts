@@ -4,6 +4,7 @@ import type {
   EntreeDeverrouillage,
   FicheSuiviPeriode,
   Livret,
+  SelectionActivitesEntreprise,
   SelectionCompetencesEntreprise,
   SignaturesTripartite,
 } from '@/types';
@@ -23,6 +24,7 @@ import {
 import type { Referentiel } from '@/types';
 import { referentielCapCuisine } from './referentiel-cap-cuisine';
 import { referentielBtsMhr } from './referentiel-bts-mhr';
+import { modeleActivitesCapCuisine } from './modele-activites-cap-cuisine';
 import { periodesCapCuisine, periodesCentreBtsMhr, periodesCentreCapCuisine } from './formations';
 import { creerFichePeriodeVierge } from '@/lib/creation-livret';
 import { questionsTrame } from '@/lib/trame-entretien';
@@ -122,6 +124,37 @@ function selectionInitialeDemo(
   };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Sélection des activités prévues en entreprise (chantier #4, juillet 2026)
+// La promo CAP Cuisine vit en mode « activités » : chaque livret CAP porte
+// une sélection d'activités (miroir de la sélection de compétences), le BTS
+// MHR reste en mode compétences (sélection d'activités vide).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Sélection d'activités vide (livrets des formations en mode compétences). */
+function selectionActivitesVide(dateIso: string): SelectionActivitesEntreprise {
+  return { ids: [], modifieLe: dateIso, historiqueInvalidations: [] };
+}
+
+/** Sélection d'activités initiale « tout coché » (entretien non signé). */
+function selectionActivitesInitialeDemo(dateIso: string): SelectionActivitesEntreprise {
+  return {
+    ids: modeleActivitesCapCuisine.activites.map((a) => a.id),
+    modifieLe: dateIso,
+    historiqueInvalidations: [],
+  };
+}
+
+/** Sélection d'activités validée à la 3ᵉ signature de l'entretien (même forme
+ *  que `selectionValideeDemo` — le type est partagé). */
+function selectionActivitesValideeDemo(
+  apprenti: Apprenti,
+  ids: string[],
+  dateIso: string,
+): SelectionActivitesEntreprise {
+  return selectionValideeDemo(apprenti, ids, dateIso);
+}
+
 /** Construit un livret vierge (sans entretien, sans fiche) pour un·e apprenti·e. */
 function livretVierge(
   apprenti: Apprenti,
@@ -191,6 +224,14 @@ function livretVierge(
     // Démarre vierge par défaut ; les livrets démo dont l'entretien est signé
     // override ce champ avec `selectionValideeDemo(...)` plus bas.
     selectionCompetencesEntreprise: selectionInitialeDemo('2025-09-02T08:00:00.000Z', referentiel),
+    // Chantier #4 (juillet 2026) : sélection d'activités « tout coché » pour
+    // les livrets CAP (mode activités), vide pour le BTS (mode compétences).
+    // Les livrets CAP dont l'entretien est signé overrident avec
+    // `selectionActivitesValideeDemo(...)` plus bas.
+    selectionActivitesEntreprise:
+      referentiel.id === modeleActivitesCapCuisine.referentielId
+        ? selectionActivitesInitialeDemo('2025-09-02T08:00:00.000Z')
+        : selectionActivitesVide('2025-09-02T08:00:00.000Z'),
     // Choix des attitudes : se fera à l'entretien (13 juin 2026).
     attitudesSelectionnees: [],
     cloture: null,
@@ -278,24 +319,29 @@ const leaPeriode1: FicheSuiviPeriode = {
     formateur:
       'Technologie culinaire : familles de matières premières, hygiène HACCP introductive. Travaux pratiques : tailles de légumes, fonds, première mise en place complète. Contrôle continu 14/20, évaluation finale 13/20. Profil sérieux.',
   },
+  // Mode activités (chantier #4) : le tuteur évalue les ACTIVITÉS du modèle
+  // CAP — chacune se projette sur les compétences couvertes dans la Synthèse.
   suiviEntreprise: [
     {
       id: 'se-lea-1-1',
-      competenceId: 'c1-1',
+      competenceId: null,
+      activiteId: 'act-cap-a1', // → c1-1
       evaluationEntreprise: 'maitrise',
       retourApprenti:
         "J'ai appris à contrôler les bons de livraison et à respecter le FIFO en chambre froide.",
     },
     {
       id: 'se-lea-1-2',
-      competenceId: 'c1-2',
+      competenceId: null,
+      activiteId: 'act-cap-a2', // → c1-2, c1-3
       evaluationEntreprise: 'partiel',
       retourApprenti:
         "Mise en place rapide pour le service de midi. Je manque encore d'autonomie en fin de service.",
     },
     {
       id: 'se-lea-1-3',
-      competenceId: 'c2-1',
+      competenceId: null,
+      activiteId: 'act-cap-a3', // → c2-1, c2-2
       evaluationEntreprise: 'partiel',
       retourApprenti:
         'Cuissons à la poêle bien acquises. Les fonds bruns demandent encore de la pratique.',
@@ -330,19 +376,22 @@ const leaPeriode2: FicheSuiviPeriode = {
   suiviEntreprise: [
     {
       id: 'se-lea-2-1',
-      competenceId: 'c2-2',
+      competenceId: null,
+      activiteId: 'act-cap-a3', // → c2-1, c2-2
       evaluationEntreprise: 'maitrise',
       retourApprenti: "J'ai dressé seule plusieurs entrées du menu déjeuner.",
     },
     {
       id: 'se-lea-2-2',
-      competenceId: 'c2-3',
+      competenceId: null,
+      activiteId: 'act-cap-a4', // → c2-3, c2-4
       evaluationEntreprise: 'partiel',
       retourApprenti: "Le dressage demande de la précision, je m'améliore.",
     },
     {
       id: 'se-lea-2-3',
-      competenceId: 'c3-1',
+      competenceId: null,
+      activiteId: 'act-cap-a5', // → c3-1, c3-2
       evaluationEntreprise: 'non-fait',
       retourApprenti: "Pas encore eu l'occasion de réaliser de la pâtisserie en service.",
     },
@@ -374,20 +423,23 @@ const leaPeriode3: FicheSuiviPeriode = {
   suiviEntreprise: [
     {
       id: 'se-lea-3-1',
-      competenceId: 'c2-2',
+      competenceId: null,
+      activiteId: 'act-cap-a3', // → c2-1, c2-2 (LWW : écrase la P1/P2)
       evaluationEntreprise: 'maitrise',
       retourApprenti:
         "J'ai pu réaliser plusieurs plats principaux du menu. Très satisfaite du résultat.",
     },
     {
       id: 'se-lea-3-2',
-      competenceId: 'c2-3',
+      competenceId: null,
+      activiteId: 'act-cap-a4', // → c2-3, c2-4
       evaluationEntreprise: 'partiel',
       retourApprenti: "Le dressage à l'assiette me prend encore beaucoup de temps en service.",
     },
     {
       id: 'se-lea-3-3',
-      competenceId: 'c3-2',
+      competenceId: null,
+      activiteId: 'act-cap-a5', // → c3-1, c3-2 (non évaluée : pas de projection)
       evaluationEntreprise: null,
       retourApprenti: '',
     },
@@ -538,6 +590,14 @@ const livretLea: Livret = {
     ['c1-1', 'c1-2', 'c1-3', 'c2-1', 'c2-2', 'c2-3', 'c3-1', 'c3-2'],
     '2025-10-28T15:40:00.000Z',
   ),
+  // Activités prévues en entreprise (chantier #4) : a6 (desserts à
+  // l'assiette) écartée — Le Gourmet n'a pas de poste dessert dédié. La
+  // Synthèse de Léa se restreint aux compétences couvertes par a1..a5.
+  selectionActivitesEntreprise: selectionActivitesValideeDemo(
+    apprentiLeaMartin,
+    ['act-cap-a1', 'act-cap-a2', 'act-cap-a3', 'act-cap-a4', 'act-cap-a5'],
+    '2025-10-28T15:40:00.000Z',
+  ),
   modifieLe: '2026-04-12T18:00:00.000Z',
 };
 
@@ -590,24 +650,28 @@ const theoFiche = (
           ? 'Pâtisserie : pâtes, crèmes, premiers desserts. Niveau 18/20, excellente progression.'
           : 'Cuisine méditerranéenne : spécialités du pourtour méditerranéen. Niveau 17/20.',
   },
+  // Mode activités (chantier #4) : lignes d'activités du modèle CAP.
   suiviEntreprise:
     numero === 1
       ? [
           {
             id: `se-theo-${numero}-1`,
-            competenceId: 'c1-1',
+            competenceId: null,
+            activiteId: 'act-cap-a1', // → c1-1
             evaluationEntreprise: 'maitrise',
             retourApprenti: "Très à l'aise avec les contrôles de réception.",
           },
           {
             id: `se-theo-${numero}-2`,
-            competenceId: 'c1-2',
+            competenceId: null,
+            activiteId: 'act-cap-a2', // → c1-2, c1-3
             evaluationEntreprise: 'maitrise',
             retourApprenti: 'Mise en place rapide et propre.',
           },
           {
             id: `se-theo-${numero}-3`,
-            competenceId: 'c2-1',
+            competenceId: null,
+            activiteId: 'act-cap-a3', // → c2-1, c2-2
             evaluationEntreprise: 'maitrise',
             retourApprenti: 'Les techniques de base sont acquises.',
           },
@@ -616,13 +680,15 @@ const theoFiche = (
         ? [
             {
               id: `se-theo-${numero}-1`,
-              competenceId: 'c2-2',
+              competenceId: null,
+              activiteId: 'act-cap-a3', // → c2-1, c2-2
               evaluationEntreprise: 'maitrise',
               retourApprenti: 'Production complète sur le menu déjeuner.',
             },
             {
               id: `se-theo-${numero}-2`,
-              competenceId: 'c3-1',
+              competenceId: null,
+              activiteId: 'act-cap-a5', // → c3-1, c3-2
               evaluationEntreprise: 'maitrise',
               retourApprenti: 'Pâtes de base maîtrisées rapidement.',
             },
@@ -630,15 +696,17 @@ const theoFiche = (
         : [
             {
               id: `se-theo-${numero}-1`,
-              competenceId: 'c2-3',
+              competenceId: null,
+              activiteId: 'act-cap-a4', // → c2-3, c2-4
               evaluationEntreprise: 'maitrise',
               retourApprenti: 'Dressage soigné, tempo rapide en service.',
             },
             {
               id: `se-theo-${numero}-2`,
-              competenceId: 'c3-2',
+              competenceId: null,
+              activiteId: 'act-cap-a6', // → c3-3
               evaluationEntreprise: 'maitrise',
-              retourApprenti: 'Crèmes et mousses très bien réussies.',
+              retourApprenti: 'Desserts à l’assiette très bien réussis.',
             },
           ],
   // Attitudes retenues (a5/a6/a9) toutes évaluées à chaque période (R20).
@@ -669,6 +737,12 @@ const livretTheo: Livret = {
     ['c1-1', 'c1-2', 'c1-3', 'c2-1', 'c2-2', 'c2-3', 'c3-1', 'c3-2', 'c3-3'],
     '2025-10-15T17:00:00.000Z',
   ),
+  // Toutes les activités du modèle prévues en entreprise (« bon élève »).
+  selectionActivitesEntreprise: selectionActivitesValideeDemo(
+    apprentiTheoDubois,
+    modeleActivitesCapCuisine.activites.map((a) => a.id),
+    '2025-10-15T17:00:00.000Z',
+  ),
   modifieLe: '2026-04-13T09:00:00.000Z',
 };
 
@@ -694,13 +768,15 @@ const sofiaPeriode1: FicheSuiviPeriode = {
   suiviEntreprise: [
     {
       id: 'se-sofia-1-1',
-      competenceId: 'c1-1',
+      competenceId: null,
+      activiteId: 'act-cap-a1', // → c1-1
       evaluationEntreprise: 'partiel',
       retourApprenti: 'Encore en apprentissage des contrôles de réception.',
     },
     {
       id: 'se-sofia-1-2',
-      competenceId: 'c1-2',
+      competenceId: null,
+      activiteId: 'act-cap-a2', // → c1-2, c1-3
       evaluationEntreprise: 'partiel',
       retourApprenti: '',
     },
@@ -840,6 +916,12 @@ const livretMinh: Livret = {
     ['c1-1', 'c1-2', 'c1-3', 'c2-1', 'c2-2', 'c2-3', 'c3-2'],
     '2026-04-20T16:00:00.000Z',
   ),
+  // Activités : a6 (desserts à l'assiette) écartée à l'entretien.
+  selectionActivitesEntreprise: selectionActivitesValideeDemo(
+    apprentiMinhNguyen,
+    ['act-cap-a1', 'act-cap-a2', 'act-cap-a3', 'act-cap-a4', 'act-cap-a5'],
+    '2026-04-20T16:00:00.000Z',
+  ),
   modifieLe: '2026-04-20T16:00:00.000Z',
 };
 
@@ -864,13 +946,15 @@ const ayaPeriode1: FicheSuiviPeriode = {
   suiviEntreprise: [
     {
       id: 'se-aya-1-1',
-      competenceId: 'c1-1',
+      competenceId: null,
+      activiteId: 'act-cap-a1', // → c1-1
       evaluationEntreprise: 'maitrise',
       retourApprenti: 'OK sur les contrôles.',
     },
     {
       id: 'se-aya-1-2',
-      competenceId: 'c2-1',
+      competenceId: null,
+      activiteId: 'act-cap-a3', // → c2-1, c2-2
       evaluationEntreprise: 'maitrise',
       retourApprenti: 'Techniques de base acquises.',
     },
@@ -894,7 +978,7 @@ const ayaDeverrouillagePeriode2: EntreeDeverrouillage = {
   auteurNom: `${formatriceSophieDubois.prenom} ${formatriceSophieDubois.nom}`,
   auteurRole: 'formateur',
   motif:
-    "Désaccord exprimé par l'apprenti·e sur l'évaluation entreprise C2-3 (dressage). À réévaluer après la visite du 12/03/2026.",
+    "Désaccord exprimé par l'apprenti·e sur l'évaluation de l'activité « Dresser, contrôler et envoyer pendant le service ». À réévaluer après la visite du 12/03/2026.",
 };
 
 const ayaPeriode2: FicheSuiviPeriode = {
@@ -912,13 +996,15 @@ const ayaPeriode2: FicheSuiviPeriode = {
   suiviEntreprise: [
     {
       id: 'se-aya-2-1',
-      competenceId: 'c2-2',
+      competenceId: null,
+      activiteId: 'act-cap-a3', // → c2-1, c2-2
       evaluationEntreprise: 'maitrise',
       retourApprenti: 'Production OK sur le menu midi.',
     },
     {
       id: 'se-aya-2-2',
-      competenceId: 'c2-3',
+      competenceId: null,
+      activiteId: 'act-cap-a4', // → c2-3, c2-4
       evaluationEntreprise: 'non-maitrise',
       retourApprenti:
         "Je ne suis pas d'accord avec l'évaluation de l'entreprise sur le dressage. Plusieurs services sans retour négatif.",
@@ -932,7 +1018,7 @@ const ayaPeriode2: FicheSuiviPeriode = {
       "L'évaluation entreprise sur le dressage me semble injuste. Je demande à en discuter lors de la visite.",
     maitre: 'Période globalement OK. Point de désaccord sur le dressage à clarifier ensemble.',
     formateur:
-      'Désaccord identifié sur C2-3. Fiche déverrouillée le 10/03/2026 pour permettre une nouvelle évaluation après visite (cf. historique).',
+      'Désaccord identifié sur l’activité de dressage / envoi. Fiche déverrouillée le 10/03/2026 pour permettre une nouvelle évaluation après visite (cf. historique).',
   },
   // Signatures invalidées par le déverrouillage R10/R21.
   signatures: aucuneSignature,
@@ -971,6 +1057,12 @@ const livretAya: Livret = {
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiAyaKouame,
     ['c1-1', 'c1-2', 'c1-3', 'c2-1', 'c2-2', 'c2-3', 'c3-1', 'c3-2'],
+    '2025-10-22T17:30:00.000Z',
+  ),
+  // Activités : a6 (desserts à l'assiette) écartée à l'entretien.
+  selectionActivitesEntreprise: selectionActivitesValideeDemo(
+    apprentiAyaKouame,
+    ['act-cap-a1', 'act-cap-a2', 'act-cap-a3', 'act-cap-a4', 'act-cap-a5'],
     '2025-10-22T17:30:00.000Z',
   ),
   modifieLe: '2026-03-10T11:30:00.000Z',
@@ -1014,19 +1106,22 @@ const lucaPeriode1: FicheSuiviPeriode = {
   suiviEntreprise: [
     {
       id: 'se-luca-1-1',
-      competenceId: 'c1-1',
+      competenceId: null,
+      activiteId: 'act-cap-a1', // → c1-1
       evaluationEntreprise: 'maitrise',
       retourApprenti: 'Contrôles de réception OK.',
     },
     {
       id: 'se-luca-1-2',
-      competenceId: 'c1-2',
+      competenceId: null,
+      activiteId: 'act-cap-a2', // → c1-2, c1-3
       evaluationEntreprise: 'partiel',
       retourApprenti: 'Mise en place propre, gain de vitesse en cours.',
     },
     {
       id: 'se-luca-1-3',
-      competenceId: 'c2-1',
+      competenceId: null,
+      activiteId: 'act-cap-a3', // → c2-1, c2-2
       evaluationEntreprise: 'partiel',
       retourApprenti: 'Cuissons à consolider.',
     },
@@ -1057,13 +1152,15 @@ const lucaPeriode2: FicheSuiviPeriode = {
   suiviEntreprise: [
     {
       id: 'se-luca-2-1',
-      competenceId: 'c2-2',
+      competenceId: null,
+      activiteId: 'act-cap-a3', // → c2-1, c2-2
       evaluationEntreprise: 'maitrise',
       retourApprenti: 'Production complète sur le menu déjeuner.',
     },
     {
       id: 'se-luca-2-2',
-      competenceId: 'c3-1',
+      competenceId: null,
+      activiteId: 'act-cap-a5', // → c3-1, c3-2
       evaluationEntreprise: 'non-fait',
       retourApprenti: "Pas encore d'occasion en service de pâtisserie.",
     },
@@ -1095,13 +1192,17 @@ const lucaPeriode3: FicheSuiviPeriode = {
   suiviEntreprise: [
     {
       id: 'se-luca-3-1',
-      competenceId: 'c2-3',
+      competenceId: null,
+      activiteId: 'act-cap-a4', // → c2-3, c2-4
       evaluationEntreprise: 'partiel',
       retourApprenti: 'Dressage en progression, vitesse à améliorer.',
     },
     {
       id: 'se-luca-3-2',
-      competenceId: 'c2-4',
+      // Activité libre hors modèle (arbitrage Q5) : évaluée sur la fiche,
+      // sans projection vers la Synthèse — cas démo de l'activité ad hoc.
+      competenceId: null,
+      libelleLibre: 'Inventaire de fin de mois en économat',
       evaluationEntreprise: 'partiel',
       retourApprenti: '',
     },
@@ -1126,6 +1227,12 @@ const livretLuca: Livret = {
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiLucaBianchi,
     ['c1-1', 'c1-2', 'c1-3', 'c2-1', 'c2-2', 'c2-3', 'c3-1', 'c3-2', 'c3-3'],
+    '2025-10-30T16:30:00.000Z',
+  ),
+  // Toutes les activités du modèle prévues en entreprise.
+  selectionActivitesEntreprise: selectionActivitesValideeDemo(
+    apprentiLucaBianchi,
+    modeleActivitesCapCuisine.activites.map((a) => a.id),
     '2025-10-30T16:30:00.000Z',
   ),
   modifieLe: '2026-04-05T17:00:00.000Z',

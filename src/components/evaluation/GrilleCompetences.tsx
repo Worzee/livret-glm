@@ -1,7 +1,12 @@
 import { useId, useState } from 'react';
 import { AlertTriangle, Info, Sparkles, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import type { LigneEvaluationFinaleCompetence, NiveauMaitrise, Referentiel } from '@/types';
+import type {
+  LigneEvaluationFinaleCompetence,
+  ModeleActivites,
+  NiveauMaitrise,
+  Referentiel,
+} from '@/types';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
@@ -12,6 +17,8 @@ import {
   estValidee,
   restreindreReferentielALaSelection,
 } from '@/lib/selection-competences-entreprise';
+import { restreindreReferentielAuxActivitesRetenues } from '@/lib/selection-activites-entreprise';
+import { projeterActivites, type ProjectionCompetenceEntree } from '@/lib/projection-activites';
 import {
   confirmationRequisePourEcraserHeritage,
   synthetiserCompetences,
@@ -40,6 +47,16 @@ import { cn } from '@/lib/utils';
 
 interface GrilleCompetencesProps {
   referentiel: Referentiel;
+  /**
+   * Modèle d'activités de la formation quand elle est en mode ACTIVITÉS
+   * (juillet 2026 — chantier #4). La grille reste par compétences, mais :
+   *   - elle se restreint aux compétences couvertes par les activités
+   *     retenues à l'entretien (sélection d'activités validée) ;
+   *   - l'héritage vient de la PROJECTION des évaluations d'activités
+   *     (last-write-wins chronologique), avec provenance « via activité X ».
+   * L'écrasement manuel avec confirmation reste permis (arbitrage Q3).
+   */
+  modeleActivites?: ModeleActivites;
 }
 
 /**
@@ -53,9 +70,11 @@ interface EcrasementEnAttente {
   nouvelleValeur: NiveauMaitrise;
   valeurHeritee: NiveauMaitrise;
   numeroPeriode?: number;
+  /** Activité d'origine de l'héritage (mode activités — chantier #4). */
+  libelleActivite?: string;
 }
 
-export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
+export function GrilleCompetences({ referentiel, modeleActivites }: GrilleCompetencesProps) {
   const ctx = useApprentiActif();
   const setLigne = useLivretStore((s) => s.setLigneCompetenceFinale);
   const roleActif = useUserStore((s) => s.roleActif);
@@ -72,15 +91,27 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
   // Fallback défensif : un livret persisté avant le bump v7→v8 peut ne pas
   // avoir le sous-objet `selectionCompetencesEntreprise`. La migration store
   // est censée reset, mais on protège quand même la chaîne de rendu.
-  const selection = livret.selectionCompetencesEntreprise ?? creerSelectionVierge();
+  // Chantier #4 : en mode activités, c'est la sélection d'ACTIVITÉS qui
+  // gouverne la grille (validée elle aussi à la 3ᵉ signature de l'entretien).
+  const selection = modeleActivites
+    ? (livret.selectionActivitesEntreprise ?? creerSelectionVierge())
+    : (livret.selectionCompetencesEntreprise ?? creerSelectionVierge());
   const selectionValidee = estValidee(selection);
 
-  // Juillet 2026 : la grille ne présente QUE les compétences abordées en
-  // stage (sélection entreprise) — blocs sans compétence retenue masqués.
-  const referentielSelectionne = restreindreReferentielALaSelection(referentiel, selection);
+  // Juillet 2026 : la grille ne présente QUE ce qui est prévu en stage —
+  // compétences de la sélection entreprise, ou compétences couvertes par les
+  // activités retenues (mode activités, chantier #4).
+  const referentielSelectionne = modeleActivites
+    ? restreindreReferentielAuxActivitesRetenues(referentiel, modeleActivites, selection)
+    : restreindreReferentielALaSelection(referentiel, selection);
 
-  // Synthèse héritée des fiches ENTREPRISE (R23 — recalculée à chaque render).
-  const synthese = synthetiserCompetences(livret.fichesSuivi, referentielSelectionne);
+  // Héritage des fiches ENTREPRISE (R23 — recalculé à chaque render) :
+  // last-write-wins direct par compétence, ou PROJECTION des activités
+  // évaluées (mode activités — provenance « via activité X — Période N »).
+  const synthese: Map<string, ProjectionCompetenceEntree> = modeleActivites
+    ? projeterActivites(livret.fichesSuivi, modeleActivites, referentielSelectionne)
+    : synthetiserCompetences(livret.fichesSuivi, referentielSelectionne);
+  const activitesParId = new Map((modeleActivites?.activites ?? []).map((a) => [a.id, a]));
   const lignes = livret.evaluationFinaleCompetences.lignes;
   const stats = calculerStatsParBloc(referentielSelectionne, lignes, synthese);
 
@@ -96,12 +127,15 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
         <Info className="h-5 w-5 shrink-0 mt-0.5" aria-hidden="true" />
         <div className="space-y-1">
           <p className="font-medium">
-            Sélection des compétences abordées en entreprise non validée
+            {modeleActivites
+              ? 'Sélection des activités prévues en entreprise non validée'
+              : 'Sélection des compétences abordées en entreprise non validée'}
           </p>
           <p>
             La grille de synthèse s'affichera dès que le formateur référent et le maître
-            d'apprentissage auront validé conjointement la liste des compétences travaillées en
-            entreprise pour cet·te apprenti·e. Cette décision se prend à l'
+            d'apprentissage auront validé conjointement la liste des{' '}
+            {modeleActivites ? 'activités prévues' : 'compétences travaillées'} en entreprise pour
+            cet·te apprenti·e. Cette décision se prend à l'
             <Link className="underline hover:no-underline" to="/livret/entretien">
               entretien tripartite
             </Link>{' '}
@@ -164,6 +198,12 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
                           competenceId: c.id,
                           acquisEntreprise: null,
                         } satisfies LigneEvaluationFinaleCompetence);
+                      // Provenance de l'héritage en mode activités :
+                      // « via activité X — Période N » (chantier #4).
+                      const activiteProvenance = synthese.get(c.id)?.activiteId;
+                      const libelleActivite = activiteProvenance
+                        ? activitesParId.get(activiteProvenance)?.libelle
+                        : undefined;
 
                       return (
                         <tr key={c.id} className="align-top">
@@ -174,6 +214,7 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
                             <CelluleNiveau
                               ligne={ligne}
                               synthese={synthese}
+                              libelleActivite={libelleActivite}
                               editable={peutEditerEntreprise}
                               onChange={(v) => {
                                 // Garde-fou : remplacer une valeur héritée
@@ -186,6 +227,7 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
                                     nouvelleValeur: v as NiveauMaitrise,
                                     valeurHeritee: heritage.valeur as NiveauMaitrise,
                                     numeroPeriode: heritage.numeroPeriode,
+                                    libelleActivite,
                                   });
                                 } else {
                                   setLigne(livret.id, c.id, { acquisEntreprise: v });
@@ -251,8 +293,15 @@ function ModaleConfirmationHeritage({
   onConfirmer: () => void;
 }) {
   const titreId = useId();
-  const provenance =
-    ecrasement.numeroPeriode !== undefined
+  // Chantier #4 : en mode activités, l'héritage vient de la projection d'une
+  // activité évaluée — la provenance la nomme explicitement.
+  const provenance = ecrasement.libelleActivite
+    ? `de l'activité « ${ecrasement.libelleActivite} »${
+        ecrasement.numeroPeriode !== undefined
+          ? ` évaluée en Période ${ecrasement.numeroPeriode}`
+          : ''
+      }`
+    : ecrasement.numeroPeriode !== undefined
       ? `de la fiche de la Période ${ecrasement.numeroPeriode}`
       : 'des fiches de période';
 
@@ -331,12 +380,21 @@ function ModaleConfirmationHeritage({
 interface CelluleNiveauProps {
   ligne: LigneEvaluationFinaleCompetence;
   synthese: ReturnType<typeof synthetiserCompetences>;
+  /** Libellé de l'activité d'origine de l'héritage (mode activités). */
+  libelleActivite?: string;
   editable: boolean;
   onChange: (v: NiveauMaitrise | null) => void;
   ariaLabel: string;
 }
 
-function CelluleNiveau({ ligne, synthese, editable, onChange, ariaLabel }: CelluleNiveauProps) {
+function CelluleNiveau({
+  ligne,
+  synthese,
+  libelleActivite,
+  editable,
+  onChange,
+  ariaLabel,
+}: CelluleNiveauProps) {
   const eff = valeurEffective(ligne, synthese);
   return (
     <div className="flex flex-col items-start gap-1">
@@ -349,11 +407,15 @@ function CelluleNiveau({ ligne, synthese, editable, onChange, ariaLabel }: Cellu
         permetEffacer
       />
       {eff.source === 'synthese' && (
-        <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs italic text-muted-foreground">
+        <span className="inline-flex items-center gap-1 text-xs italic text-muted-foreground">
           <Sparkles className="h-3 w-3 shrink-0" aria-hidden="true" />
-          {eff.numeroPeriode !== undefined
-            ? `Vue en Période ${eff.numeroPeriode}`
-            : 'Vue dans les fiches'}
+          {libelleActivite
+            ? `Via activité « ${libelleActivite} »${
+                eff.numeroPeriode !== undefined ? ` — Période ${eff.numeroPeriode}` : ''
+              }`
+            : eff.numeroPeriode !== undefined
+              ? `Vue en Période ${eff.numeroPeriode}`
+              : 'Vue dans les fiches'}
         </span>
       )}
     </div>

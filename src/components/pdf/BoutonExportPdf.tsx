@@ -9,6 +9,7 @@ import type {
   Formation,
   Livret,
   Maitre,
+  ModeleActivites,
   Referentiel,
 } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
@@ -61,6 +62,11 @@ interface BoutonExportPdfProps {
   entreprise?: Entreprise;
   /** Catalogue global des attitudes professionnelles (juin 2026). */
   attitudes: ReadonlyArray<AttitudeProfessionnelle>;
+  /**
+   * Modèle d'activités de la formation en mode activités (juillet 2026 —
+   * chantier #4) : fiches par activités + Synthèse projetée dans le PDF.
+   */
+  modeleActivites?: ModeleActivites;
   /** Document à générer (défaut : livret complet). */
   variante?: VarianteExportPdf;
   /** Libellé du bouton (défaut : « Exporter le livret »). */

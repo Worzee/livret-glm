@@ -217,7 +217,20 @@ export function restreindreReferentielALaSelection(
   referentiel: Referentiel,
   sel: SelectionCompetencesEntreprise,
 ): Referentiel {
-  const ids = new Set(sel.ids);
+  return restreindreReferentielAuxIds(referentiel, sel.ids);
+}
+
+/**
+ * Restreint un référentiel à un ensemble d'ids de compétences (juillet 2026 —
+ * partagé avec le mode activités, où la grille « Synthèse » se restreint aux
+ * compétences couvertes par les activités retenues). Retourne la même
+ * référence si rien n'est filtré.
+ */
+export function restreindreReferentielAuxIds(
+  referentiel: Referentiel,
+  idsGardes: ReadonlyArray<string> | ReadonlySet<string>,
+): Referentiel {
+  const ids = idsGardes instanceof Set ? idsGardes : new Set(idsGardes);
   const toutSelectionne = referentiel.blocs.every((b) => b.competences.every((c) => ids.has(c.id)));
   if (toutSelectionne) return referentiel;
   const blocs = referentiel.blocs

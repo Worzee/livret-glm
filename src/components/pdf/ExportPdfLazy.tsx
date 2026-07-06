@@ -8,6 +8,7 @@ import type {
   Formation,
   Livret,
   Maitre,
+  ModeleActivites,
   Referentiel,
 } from '@/types';
 import { EntretienPdf, FichesSuiviPdf, LivretPdf, PeriodePdf } from './LivretPdf';
@@ -47,6 +48,8 @@ interface ExportPdfLazyProps {
   etablissement?: Etablissement;
   entreprise?: Entreprise;
   attitudes: ReadonlyArray<AttitudeProfessionnelle>;
+  /** Modèle d'activités (mode activités — chantier #4, juillet 2026). */
+  modeleActivites?: ModeleActivites;
 }
 
 export default function ExportPdfLazy({ variante, ...donnees }: ExportPdfLazyProps) {

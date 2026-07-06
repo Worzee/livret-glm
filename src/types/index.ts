@@ -78,6 +78,21 @@ export interface PeriodeFormation {
   dateFin: string;
 }
 
+/**
+ * Mode d'évaluation d'une formation (juillet 2026 — chantier
+ * référentiels/compétences #4). Certaines formations ne se prêtent pas à une
+ * évaluation « par compétences » : le tuteur évalue alors des **activités**
+ * (modèle importé + mappé sur le référentiel), projetées vers les compétences
+ * dans la grille « Synthèse ». Le référentiel de compétences reste impératif
+ * dans les deux modes.
+ *
+ * Le passage en mode `activites` exige un **balayage complet** du référentiel
+ * par le mapping du modèle (hors compétences exclues). La bascule — dans les
+ * deux sens — est **verrouillée dès la première saisie signée** dans la promo
+ * (cf. `lib/mode-evaluation`).
+ */
+export type ModeEvaluation = 'competences' | 'activites';
+
 export interface Formation {
   id: string;
   intitule: string;
@@ -85,6 +100,17 @@ export interface Formation {
   annee: string;
   niveau: string;
   referentielId: string;
+  /**
+   * Mode d'évaluation de la promo (juillet 2026 — chantier #4). Absent =
+   * `'competences'` (comportement historique). `'activites'` exige un
+   * `modeleActivitesId` dont le mapping balaie tout le référentiel.
+   */
+  modeEvaluation?: ModeEvaluation;
+  /**
+   * Modèle d'activités rattaché à la formation (cf. `ModeleActivites`,
+   * `useActivitesStore`). Requis pour basculer en mode `activites`.
+   */
+  modeleActivitesId?: string;
   /** Date de début de la promo (ISO 8601 YYYY-MM-DD). */
   dateDebut: string;
   /** Date de fin de la promo (ISO 8601 YYYY-MM-DD). */
@@ -252,6 +278,54 @@ export interface Referentiel {
   niveauxColonnes?: 2 | 3;
   /** Indication de la source d'origine, utile en debug et dans l'admin. */
   source?: 'fixture' | 'import-csv' | 'import-xlsx' | 'edition-manuelle';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 7.2 bis — Modèles d'activités (juillet 2026 — chantier #4)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Une activité professionnelle d'un modèle d'activités (mode d'évaluation
+ * `activites`). Évaluée par le tuteur sur les fiches de période entreprise
+ * (même échelle 4 niveaux que les compétences), puis **projetée** vers les
+ * compétences qu'elle couvre dans la grille « Synthèse »
+ * (cf. `lib/projection-activites`).
+ */
+export interface Activite {
+  id: string;
+  code: string;
+  libelle: string;
+  description?: string;
+  /**
+   * Mapping activité → compétences couvertes (ids de compétences-feuilles du
+   * référentiel du modèle). Renseigné **dans l'UI post-import** par le
+   * coordo / admin (arbitrage pilote #4 — le fichier importé ne contient que
+   * les activités). Vide tant que l'activité n'est pas mappée.
+   */
+  competenceIds: string[];
+}
+
+/**
+ * Modèle d'activités d'une formation (juillet 2026 — chantier #4). Importé
+ * depuis un fichier CSV/XLSX (activités seules : code, libellé, description),
+ * puis mappé activité par activité sur le référentiel dans l'UI. Le passage
+ * de la formation en mode `activites` exige un **balayage complet** : chaque
+ * compétence évaluable (non exclue) du référentiel doit être couverte par au
+ * moins une activité (cf. `lib/balayage-referentiel`).
+ */
+export interface ModeleActivites {
+  id: string;
+  /** Nom du modèle (visible dans l'admin, ex : « Activités CAP Cuisine »). */
+  nom: string;
+  /**
+   * Référentiel sur lequel porte le mapping — celui de la formation cible au
+   * moment de l'import. Le rattachement à une formation exige la concordance
+   * (`Formation.referentielId === ModeleActivites.referentielId`).
+   */
+  referentielId: string;
+  activites: Activite[];
+  /** Indication de la source d'origine, utile en debug et dans l'admin. */
+  source?: 'fixture' | 'import-csv' | 'import-xlsx';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -443,6 +517,15 @@ export interface SuiviGretaCfa {
 export interface LigneSuiviEntreprise {
   id: string;
   competenceId: string | null; // null si activité ad hoc
+  /**
+   * Activité du modèle évaluée sur la période (juillet 2026 — chantier #4,
+   * formations en mode `activites`). Exclusif de `competenceId` : une ligne
+   * porte SOIT une compétence (mode compétences), SOIT une activité (mode
+   * activités), soit ni l'un ni l'autre (`libelleLibre` — ligne ad hoc,
+   * autorisée dans les deux modes ; en mode activités elle n'est PAS projetée
+   * vers la Synthèse faute de mapping).
+   */
+  activiteId?: string;
   libelleLibre?: string; // si hors référentiel
   /**
    * Évaluation par le maître / tuteur. `'non-fait'` signale une compétence
@@ -618,6 +701,19 @@ export interface SelectionCompetencesEntreprise {
   historiqueInvalidations: EntreeDeverrouillage[];
 }
 
+/**
+ * Sélection des **activités prévues en entreprise** pour un livret dont la
+ * formation est en mode `activites` (juillet 2026 — chantier #4, arbitrage
+ * pilote Q4). Miroir exact de `SelectionCompetencesEntreprise` : tout coché
+ * par défaut (toutes les activités du modèle), le maître / tuteur décoche,
+ * validée à la 3ᵉ signature de l'entretien tripartite, invalidation R10
+ * motivée pour rouvrir. La grille « Synthèse » se restreint aux compétences
+ * couvertes par les activités retenues.
+ *
+ * Les `ids` référencent des `Activite.id` du modèle de la formation.
+ */
+export type SelectionActivitesEntreprise = SelectionCompetencesEntreprise;
+
 export interface Livret {
   id: string;
   apprentiId: string;
@@ -652,6 +748,13 @@ export interface Livret {
   evaluationFinaleCompetences: EvaluationFinaleCompetences;
   /** Sélection des compétences abordées en entreprise (cf. SelectionCompetencesEntreprise). */
   selectionCompetencesEntreprise: SelectionCompetencesEntreprise;
+  /**
+   * Sélection des activités prévues en entreprise (juillet 2026 — chantier
+   * #4, mode `activites` uniquement ; cf. `SelectionActivitesEntreprise`).
+   * Toujours présent (init vide à la création) — repeuplée « tout coché »
+   * depuis le modèle quand la formation passe en mode activités.
+   */
+  selectionActivitesEntreprise: SelectionActivitesEntreprise;
   /**
    * Attitudes professionnelles retenues pour ce livret (13 juin 2026) —
    * choisies à l'entretien tripartite (maître + formateur), figées à sa

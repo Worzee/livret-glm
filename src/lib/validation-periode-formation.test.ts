@@ -104,6 +104,11 @@ function livretAvec(...fiches: FicheSuiviPeriode[]): Livret {
       modifieLe: '',
       historiqueInvalidations: [],
     },
+    selectionActivitesEntreprise: {
+      ids: [],
+      modifieLe: '',
+      historiqueInvalidations: [],
+    },
     cloture: null,
     creeLe: '',
     modifieLe: '',

@@ -6,7 +6,9 @@ import { useFormationsStore } from '@/store/useFormationsStore';
 import { useReferentielsStore } from '@/store/useReferentielsStore';
 import { useEtablissementsStore } from '@/store/useEtablissementsStore';
 import { useAttitudesStore } from '@/store/useAttitudesStore';
+import { useActivitesStore } from '@/store/useActivitesStore';
 import { peutEditer } from '@/lib/droits';
+import { modeEffectif } from '@/lib/mode-evaluation';
 import { referentielEvaluable } from '@/lib/limite-referentiel';
 import { libelleRole } from '@/lib/droits';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
@@ -43,6 +45,7 @@ export function Synthese() {
   const referentiels = useReferentielsStore((s) => s.referentiels);
   const etablissements = useEtablissementsStore((s) => s.etablissements);
   const attitudesMap = useAttitudesStore((s) => s.attitudes);
+  const modeles = useActivitesStore((s) => s.modeles);
   const ctx = useApprentiActif();
 
   if (!ctx) return <AucunApprentiSelectionne />;
@@ -55,6 +58,12 @@ export function Synthese() {
   const referentiel = referentielEvaluable(
     referentiels[formation.referentielId] ?? referentielCapCuisine,
   );
+  // Chantier #4 : en mode activités, la grille reste PAR COMPÉTENCES mais
+  // s'alimente par la projection des activités évaluées sur les fiches.
+  const modeleActivites =
+    modeEffectif(formation) === 'activites' && formation.modeleActivitesId
+      ? modeles[formation.modeleActivitesId]
+      : undefined;
   const etablissement = etablissements[formation.lieuId];
   const maitre = getMaitreByIdFromStore(apprenti.maitreApprentissageId) ?? maitreKarimBenali;
   const maitreSecond = apprenti.maitreApprentissageSecondId
@@ -71,8 +80,9 @@ export function Synthese() {
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold">Synthèse</h1>
           <p className="text-muted-foreground">
-            Synthèse des compétences abordées en stage et des attitudes professionnelles. Les
-            valeurs non saisies héritent des évaluations des fiches de suivi par période.
+            {modeleActivites
+              ? 'Synthèse par compétences, alimentée par les activités évaluées en période (formation en mode activités), et attitudes professionnelles.'
+              : 'Synthèse des compétences abordées en stage et des attitudes professionnelles. Les valeurs non saisies héritent des évaluations des fiches de suivi par période.'}
           </p>
           <p className="text-xs text-muted-foreground">
             Apprenti·e :{' '}
@@ -97,6 +107,7 @@ export function Synthese() {
           referentiel={referentiel}
           etablissement={etablissement}
           attitudes={Object.values(attitudesMap)}
+          modeleActivites={modeleActivites}
         />
       </header>
 
@@ -118,7 +129,9 @@ export function Synthese() {
       </div>
 
       <div role="tabpanel">
-        {onglet === 'competences' && <GrilleCompetences referentiel={referentiel} />}
+        {onglet === 'competences' && (
+          <GrilleCompetences referentiel={referentiel} modeleActivites={modeleActivites} />
+        )}
         {onglet === 'attitudes' && <SyntheseAttitudes />}
       </div>
     </div>

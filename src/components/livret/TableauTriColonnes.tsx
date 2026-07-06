@@ -2,9 +2,11 @@ import { useMemo } from 'react';
 import { Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type {
+  Activite,
   Competence,
   FicheSuiviPeriode,
   LigneSuiviEntreprise,
+  ModeleActivites,
   Referentiel,
   SelectionCompetencesEntreprise,
 } from '@/types';
@@ -13,7 +15,9 @@ import { useLivretStore } from '@/store/useLivretStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { useReferentielsStore } from '@/store/useReferentielsStore';
+import { useActivitesStore } from '@/store/useActivitesStore';
 import { peutEditer } from '@/lib/droits';
+import { modeEffectif } from '@/lib/mode-evaluation';
 import { peutEncoreEditerFiche } from '@/lib/transitions-fiche';
 import { estSelectionnee, estValidee } from '@/lib/selection-competences-entreprise';
 import { referentielEvaluable } from '@/lib/limite-referentiel';
@@ -52,23 +56,35 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
   const ajouter = useLivretStore((s) => s.ajouterLigneSuiviEntreprise);
   const supprimer = useLivretStore((s) => s.supprimerLigneSuiviEntreprise);
   const livretCourant = useLivretStore((s) => s.livrets[livretId]);
+  const ajouterActivite = useLivretStore((s) => s.ajouterLigneActiviteEntreprise);
   const ctx = useApprentiActif();
   const formations = useFormationsStore((s) => s.formations);
   const referentiels = useReferentielsStore((s) => s.referentiels);
+  const modeles = useActivitesStore((s) => s.modeles);
 
-  // Sélection des compétences abordées en entreprise (CDC v1.5 addendum).
-  const selection: SelectionCompetencesEntreprise | undefined =
-    livretCourant?.selectionCompetencesEntreprise;
+  // Chantier #4 (juillet 2026) : en mode activités, la fiche évalue les
+  // ACTIVITÉS du modèle de la formation (plus aucune compétence directe).
+  const formation = ctx ? formations[ctx.apprenti.formationId] : undefined;
+  const modele: ModeleActivites | undefined =
+    modeEffectif(formation) === 'activites' && formation?.modeleActivitesId
+      ? modeles[formation.modeleActivitesId]
+      : undefined;
+  const enModeActivites = !!modele;
+
+  // Sélection « entreprise » gouvernant le sélecteur d'ajout : compétences
+  // (CDC v1.5 addendum) ou activités (chantier #4) selon le mode.
+  const selection: SelectionCompetencesEntreprise | undefined = enModeActivites
+    ? livretCourant?.selectionActivitesEntreprise
+    : livretCourant?.selectionCompetencesEntreprise;
   const selectionValidee = selection ? estValidee(selection) : false;
 
   // Résolution du référentiel courant via la formation de l'apprenti·e
   // actif·ve — filtré des compétences exclues (limite des lignes évaluables).
   const referentiel: Referentiel = useMemo(() => {
-    const formation = ctx ? formations[ctx.apprenti.formationId] : undefined;
     return referentielEvaluable(
       (formation && referentiels[formation.referentielId]) ?? referentielCapCuisine,
     );
-  }, [ctx, formations, referentiels]);
+  }, [formation, referentiels]);
 
   const competencesParId = useMemo(() => {
     const m = new Map<string, Competence>();
@@ -80,15 +96,23 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
     return m;
   }, [referentiel]);
 
+  const activitesParId = useMemo(() => {
+    const m = new Map<string, Activite>();
+    for (const a of modele?.activites ?? []) m.set(a.id, a);
+    return m;
+  }, [modele]);
+
   // R21 : chaque colonne se ferme dès que le rôle propriétaire a signé.
-  // Réouvrable uniquement via un déverrouillage R10.
+  // Réouvrable uniquement via un déverrouillage R10. En mode activités, la
+  // ressource `fiche.activites` (miroir maître) gouverne l'évaluation.
   const peutEditerEval =
-    peutEditer(roleActif, 'fiche.evaluation-entreprise') && peutEncoreEditerFiche(fiche, 'maitre');
+    peutEditer(roleActif, enModeActivites ? 'fiche.activites' : 'fiche.evaluation-entreprise') &&
+    peutEncoreEditerFiche(fiche, 'maitre');
   const peutEditerRetour =
     peutEditer(roleActif, 'fiche.retour-apprenti') && peutEncoreEditerFiche(fiche, 'apprenti');
 
-  // Ajout / retrait d'une compétence sur la fiche : formateur + maître /
-  // tuteur (17 juin 2026), filtré par la sélection validée à l'entretien.
+  // Ajout / retrait d'une ligne sur la fiche : formateur + maître / tuteur
+  // (17 juin 2026), filtré par la sélection validée à l'entretien.
   const roleProprietaireAjout = roleActif === 'maitre' ? 'maitre' : 'formateur';
   const peutAjouterLigne =
     peutEditer(roleActif, 'fiche.ajouter-competence') &&
@@ -97,7 +121,10 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
   const sectionAjoutVisible = peutAjouterLigne && selectionValidee && !!selection;
 
   const titreSection = 'Suivi de la formation en entreprise';
-  const sousTitreSection = 'Co-édition tripartite par compétence du référentiel.';
+  const sousTitreSection = enModeActivites
+    ? 'Co-édition tripartite par activité du modèle de la formation.'
+    : 'Co-édition tripartite par compétence du référentiel.';
+  const libelleObjet = enModeActivites ? 'activité' : 'compétence';
   const libelleEval = 'Évaluation entreprise';
   const emojiEval = '🏭 Entreprise';
   const classeTexteEval = 'text-role-maitre';
@@ -111,16 +138,26 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
           <h3 className="text-lg font-medium">{titreSection}</h3>
           <p className="text-xs text-muted-foreground">{sousTitreSection}</p>
         </div>
-        {sectionAjoutVisible && (
-          <AjouterCompetence
-            referentiel={referentiel}
-            selection={selection}
-            onAjouter={(id) => ajouter(livretId, fiche.id, id)}
-            competencesPresentes={
-              fiche.suiviEntreprise.map((l) => l.competenceId).filter(Boolean) as string[]
-            }
-          />
-        )}
+        {sectionAjoutVisible &&
+          (enModeActivites && modele ? (
+            <AjouterActivite
+              modele={modele}
+              selection={selection}
+              onAjouter={(id) => ajouterActivite(livretId, fiche.id, id)}
+              activitesPresentes={
+                fiche.suiviEntreprise.map((l) => l.activiteId).filter(Boolean) as string[]
+              }
+            />
+          ) : (
+            <AjouterCompetence
+              referentiel={referentiel}
+              selection={selection}
+              onAjouter={(id) => ajouter(livretId, fiche.id, id)}
+              competencesPresentes={
+                fiche.suiviEntreprise.map((l) => l.competenceId).filter(Boolean) as string[]
+              }
+            />
+          ))}
       </header>
 
       {/* Bandeau « sélection non validée ». */}
@@ -132,12 +169,14 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
           <Info className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
           <div className="space-y-1">
             <p className="font-medium">
-              Sélection des compétences abordées en entreprise non validée
+              {enModeActivites
+                ? 'Sélection des activités prévues en entreprise non validée'
+                : 'Sélection des compétences abordées en entreprise non validée'}
             </p>
             <p className="text-xs">
-              La liste des compétences à travailler en entreprise pour cet·te apprenti·e doit être
-              définie conjointement par le formateur référent et le maître / tuteur, puis validée à
-              l'
+              La liste des {libelleObjet}s à travailler en entreprise pour cet·te apprenti·e doit
+              être définie conjointement par le formateur référent et le maître / tuteur, puis
+              validée à l'
               <Link className="underline hover:no-underline" to="/livret/entretien">
                 entretien tripartite
               </Link>
@@ -152,7 +191,9 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
         <table className="w-full text-sm">
           <thead className="bg-secondary/50 text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
-              <th className="px-3 py-2 text-left w-1/3">Activité (compétence)</th>
+              <th className="px-3 py-2 text-left w-1/3">
+                {enModeActivites ? 'Activité' : 'Activité (compétence)'}
+              </th>
               <th className="px-3 py-2 text-left">{libelleEval}</th>
               <th className="px-3 py-2 text-left w-1/3">Retour apprenti·e</th>
               {peutAjouterLigne && <th className="w-10"></th>}
@@ -165,7 +206,7 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
                   colSpan={peutAjouterLigne ? 4 : 3}
                   className="px-3 py-6 text-center text-sm italic text-muted-foreground"
                 >
-                  Aucune compétence travaillée pour cette période.
+                  Aucune {libelleObjet} travaillée pour cette période.
                 </td>
               </tr>
             )}
@@ -174,6 +215,7 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
                 key={l.id}
                 ligne={l}
                 competencesParId={competencesParId}
+                activitesParId={activitesParId}
                 libelleEval={libelleEval}
                 bordureEval={bordureEval}
                 peutEditerEval={peutEditerEval}
@@ -196,7 +238,7 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
       <div className="md:hidden space-y-3">
         {fiche.suiviEntreprise.length === 0 && (
           <p className="rounded-lg border border-border p-4 text-center text-sm italic text-muted-foreground">
-            Aucune compétence travaillée pour cette période.
+            Aucune {libelleObjet} travaillée pour cette période.
           </p>
         )}
         {fiche.suiviEntreprise.map((l) => (
@@ -204,6 +246,7 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
             key={l.id}
             ligne={l}
             competencesParId={competencesParId}
+            activitesParId={activitesParId}
             emojiEval={emojiEval}
             classeTexteEval={classeTexteEval}
             bordureEvalCarte={bordureEvalCarte}
@@ -231,6 +274,8 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
 interface CelluleProps {
   ligne: LigneSuiviEntreprise;
   competencesParId: ReadonlyMap<string, Competence>;
+  /** Activités du modèle (mode activités — chantier #4). Vide sinon. */
+  activitesParId: ReadonlyMap<string, Activite>;
   peutEditerEval: boolean;
   peutEditerRetour: boolean;
   peutSupprimer: boolean;
@@ -253,7 +298,14 @@ interface CarteCompetenceProps extends CelluleProps {
 function libelleCompetence(
   ligne: LigneSuiviEntreprise,
   competencesParId: ReadonlyMap<string, Competence>,
+  activitesParId: ReadonlyMap<string, Activite>,
 ): string {
+  // Chantier #4 : une ligne d'activité (mode activités) se résout dans le
+  // modèle de la formation ; une ligne de compétence dans le référentiel.
+  if (ligne.activiteId) {
+    const a = activitesParId.get(ligne.activiteId);
+    if (a) return a.libelle;
+  }
   if (ligne.competenceId) {
     const c = competencesParId.get(ligne.competenceId);
     if (c) return c.libelle;
@@ -262,8 +314,8 @@ function libelleCompetence(
 }
 
 function LigneTableau(props: LigneTableauProps) {
-  const { ligne, competencesParId, libelleEval, bordureEval } = props;
-  const libelle = libelleCompetence(ligne, competencesParId);
+  const { ligne, competencesParId, activitesParId, libelleEval, bordureEval } = props;
+  const libelle = libelleCompetence(ligne, competencesParId, activitesParId);
 
   return (
     <tr className="align-top hover:bg-secondary/30">
@@ -309,8 +361,9 @@ function LigneTableau(props: LigneTableauProps) {
 }
 
 function CarteCompetence(props: CarteCompetenceProps) {
-  const { ligne, competencesParId, emojiEval, classeTexteEval, bordureEvalCarte } = props;
-  const libelle = libelleCompetence(ligne, competencesParId);
+  const { ligne, competencesParId, activitesParId, emojiEval, classeTexteEval, bordureEvalCarte } =
+    props;
+  const libelle = libelleCompetence(ligne, competencesParId, activitesParId);
 
   return (
     <article className="rounded-lg border border-border bg-card p-4 space-y-3">
@@ -393,6 +446,56 @@ function Pastille({ valeur, title, mode = 'standard' }: PastilleProps) {
       aria-label={`${title} : ${valeur ?? 'non renseigné'}`}
       className={cn('inline-block h-3 w-3 rounded-full ring-1 ring-white', couleur)}
     />
+  );
+}
+
+// ── Sous-composant : ajouter une activité du modèle (mode activités) ─────────
+interface AjouterActiviteProps {
+  /** Modèle d'activités de la formation. */
+  modele: ModeleActivites;
+  /** Sélection validée des activités prévues en entreprise. */
+  selection?: SelectionCompetencesEntreprise;
+  onAjouter: (activiteId: string | null) => void;
+  activitesPresentes: string[];
+}
+
+function AjouterActivite({
+  modele,
+  selection,
+  onAjouter,
+  activitesPresentes,
+}: AjouterActiviteProps) {
+  // Filtrage : seules les activités RETENUES à l'entretien apparaissent
+  // (arbitrage Q4 — miroir de la sélection de compétences).
+  const activitesRetenues = selection
+    ? modele.activites.filter((a) => estSelectionnee(selection, a.id))
+    : modele.activites;
+  return (
+    <select
+      onChange={(e) => {
+        const v = e.target.value;
+        if (v === '') return;
+        if (v === '__libre') onAjouter(null);
+        else onAjouter(v);
+        e.target.value = '';
+      }}
+      defaultValue=""
+      className="rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+      aria-label="Ajouter une activité à la fiche"
+    >
+      <option value="" disabled>
+        + Ajouter une activité…
+      </option>
+      {activitesRetenues.map((a) => (
+        <option key={a.id} value={a.id} disabled={activitesPresentes.includes(a.id)}>
+          {a.libelle}
+          {activitesPresentes.includes(a.id) ? ' (déjà présente)' : ''}
+        </option>
+      ))}
+      {/* Activité libre hors modèle autorisée (arbitrage Q5) — évaluée sur la
+          fiche, sans projection vers la Synthèse. */}
+      <option value="__libre">+ Activité libre (hors modèle)</option>
+    </select>
   );
 }
 

@@ -47,17 +47,19 @@ test('le coordo voit la page et le référentiel CAP Cuisine des fixtures', asyn
   await expect(carte.getByText(/10 compétences/i)).toBeVisible();
 });
 
-test('import via textarea (3 colonnes) → aperçu, association et nom auto-généré', async ({ page }) => {
+test('import via textarea (3 colonnes) → aperçu, association BTS et nom auto-généré', async ({ page }) => {
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/referentiels');
   await page.getByRole('button', { name: /Importer un référentiel/i }).click();
 
   const modale = page.getByRole('dialog');
   await expect(modale.getByRole('heading', { name: /Importer un référentiel/i })).toBeVisible();
-  // Choix de la formation cible (CAP Cuisine 2025-2026 dans la fixture)
-  await modale.getByTestId('import-ref-formation').selectOption({ value: "f-cap-cuisine-2025" });
+  // Choix de la formation cible — le BTS MHR (mode compétences) : la
+  // formation CAP Cuisine est en mode activités, son référentiel est figé
+  // (chantier #4, arbitrage Q6 — cf. admin-activites.spec.ts).
+  await modale.getByTestId('import-ref-formation').selectOption({ value: "f-bts-mhr-2025" });
   // Le libellé auto-généré est affiché à droite du select
-  await expect(modale.getByText(/Referentiel_CAP Cuisine_\d{4}-\d{2}-\d{2}/)).toBeVisible();
+  await expect(modale.getByText(/Referentiel_BTS Management en Hôtellerie-Restauration_\d{4}-\d{2}-\d{2}/)).toBeVisible();
 
   await modale.getByTestId('import-ref-csv').fill(
     [
@@ -72,10 +74,10 @@ test('import via textarea (3 colonnes) → aperçu, association et nom auto-gén
 
   // Aperçu — affiche les stats
   await modale.getByRole('button', { name: /^Aperçu$/i }).click();
-  await expect(modale.getByText(/Aperçu prêt — Referentiel_CAP Cuisine_/)).toBeVisible();
+  await expect(modale.getByText(/Aperçu prêt — Referentiel_BTS Management/)).toBeVisible();
   await expect(modale.locator('li', { hasText: /^2 blocs?$/i })).toBeVisible();
   await expect(modale.locator('li', { hasText: /^4 compétences?$/i })).toBeVisible();
-  // Avertissement de remplacement (la formation CAP Cuisine est déjà rattachée
+  // Avertissement de remplacement (la formation BTS MHR est déjà rattachée
   // au référentiel des fixtures)
   await expect(modale.getByText(/L'import remplacera ce rattachement/i)).toBeVisible();
 
@@ -84,7 +86,7 @@ test('import via textarea (3 colonnes) → aperçu, association et nom auto-gén
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
   // La carte du nouveau référentiel apparaît avec le nom auto-généré
-  await expect(page.locator('article').filter({ hasText: /Referentiel_CAP Cuisine_/ })).toBeVisible();
+  await expect(page.locator('article').filter({ hasText: /Referentiel_BTS Management/ })).toBeVisible();
 });
 
 test("import d'un fichier CSV réel — exemple-1 (3 colonnes, 16 sous-compétences)", async ({
@@ -94,7 +96,7 @@ test("import d'un fichier CSV réel — exemple-1 (3 colonnes, 16 sous-compéten
   await page.goto('/admin/referentiels');
   await page.getByRole('button', { name: /Importer un référentiel/i }).click();
   const modale = page.getByRole('dialog');
-  await modale.getByTestId('import-ref-formation').selectOption({ value: "f-cap-cuisine-2025" });
+  await modale.getByTestId('import-ref-formation').selectOption({ value: "f-bts-mhr-2025" });
   await modale.locator('input[type="file"]').setInputFiles(EXEMPLE_1_CSV);
   await modale.getByRole('button', { name: /^Aperçu$/i }).click();
   await expect(modale.locator('li', { hasText: /^2 blocs?$/i })).toBeVisible();
@@ -111,7 +113,7 @@ test("import d'un fichier XLSX réel — exemple-1 (3 colonnes, format détecté
   await page.goto('/admin/referentiels');
   await page.getByRole('button', { name: /Importer un référentiel/i }).click();
   const modale = page.getByRole('dialog');
-  await modale.getByTestId('import-ref-formation').selectOption({ value: "f-cap-cuisine-2025" });
+  await modale.getByTestId('import-ref-formation').selectOption({ value: "f-bts-mhr-2025" });
   await modale.locator('input[type="file"]').setInputFiles(EXEMPLE_1_XLSX);
   await modale.getByRole('button', { name: /^Aperçu$/i }).click();
   await expect(modale.locator('li', { hasText: /^16 compétences?$/i })).toBeVisible();
@@ -126,7 +128,7 @@ test("import d'un fichier XLSX 2 colonnes — exemple-2 (référentiel plat)", a
   await page.goto('/admin/referentiels');
   await page.getByRole('button', { name: /Importer un référentiel/i }).click();
   const modale = page.getByRole('dialog');
-  await modale.getByTestId('import-ref-formation').selectOption({ value: "f-cap-cuisine-2025" });
+  await modale.getByTestId('import-ref-formation').selectOption({ value: "f-bts-mhr-2025" });
   await modale.locator('input[type="file"]').setInputFiles(EXEMPLE_2_XLSX);
   await modale.getByRole('button', { name: /^Aperçu$/i }).click();
   // 2 niveaux : pas de ligne « sous-familles » dans l'aperçu
@@ -142,7 +144,7 @@ test("import d'un fichier CSV 2 colonnes — exemple-2 (Pronote, séparateur ;)"
   await page.goto('/admin/referentiels');
   await page.getByRole('button', { name: /Importer un référentiel/i }).click();
   const modale = page.getByRole('dialog');
-  await modale.getByTestId('import-ref-formation').selectOption({ value: "f-cap-cuisine-2025" });
+  await modale.getByTestId('import-ref-formation').selectOption({ value: "f-bts-mhr-2025" });
   await modale.locator('input[type="file"]').setInputFiles(EXEMPLE_2_CSV);
   await modale.getByRole('button', { name: /^Aperçu$/i }).click();
   await expect(modale.locator('li', { hasText: /^16 compétences?$/i })).toBeVisible();
@@ -168,19 +170,19 @@ test('après import, la formation est rattachée au nouveau référentiel (auto-
   await page.goto('/admin/referentiels');
   await page.getByRole('button', { name: /Importer un référentiel/i }).click();
   const modaleRef = page.getByRole('dialog');
-  await modaleRef.getByTestId('import-ref-formation').selectOption({ value: "f-cap-cuisine-2025" });
+  await modaleRef.getByTestId('import-ref-formation').selectOption({ value: "f-bts-mhr-2025" });
   await modaleRef.locator('input[type="file"]').setInputFiles(EXEMPLE_2_CSV);
   await modaleRef.getByRole('button', { name: /^Aperçu$/i }).click();
   await modaleRef.getByRole('button', { name: /Importer \(/i }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
-  // 2) Sur la page Formations, ouvrir l'édition de CAP Cuisine et vérifier
+  // 2) Sur la page Formations, ouvrir l'édition du BTS MHR et vérifier
   //    que le select Référentiel pointe désormais vers le nouveau libellé
   await page.goto('/admin/formations');
-  await page.getByRole('button', { name: /^Modifier CAP Cuisine/ }).click();
+  await page.getByRole('button', { name: /^Modifier BTS Management/ }).click();
   const modaleForm = page.getByRole('dialog');
   const selectRef = modaleForm.getByLabel('Référentiel', { exact: false });
-  await expect(selectRef).toContainText(/Referentiel_CAP Cuisine_/);
+  await expect(selectRef).toContainText(/Referentiel_BTS Management/);
 });
 
 test("la page Référentiels affiche les compétences en lecture seule (CDC v1.5 — flag retiré)", async ({
@@ -254,13 +256,13 @@ test('persistance après reload : le référentiel importé survit', async ({ pa
   await page.goto('/admin/referentiels');
   await page.getByRole('button', { name: /Importer un référentiel/i }).click();
   const modale = page.getByRole('dialog');
-  await modale.getByTestId('import-ref-formation').selectOption({ value: "f-cap-cuisine-2025" });
+  await modale.getByTestId('import-ref-formation').selectOption({ value: "f-bts-mhr-2025" });
   await modale.locator('input[type="file"]').setInputFiles(EXEMPLE_1_CSV);
   await modale.getByRole('button', { name: /^Aperçu$/i }).click();
   await modale.getByRole('button', { name: /Importer \(/i }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.locator('article').filter({ hasText: /Referentiel_CAP Cuisine_/ })).toBeVisible();
+  await expect(page.locator('article').filter({ hasText: /Referentiel_BTS Management/ })).toBeVisible();
 
   await page.reload();
-  await expect(page.locator('article').filter({ hasText: /Referentiel_CAP Cuisine_/ })).toBeVisible();
+  await expect(page.locator('article').filter({ hasText: /Referentiel_BTS Management/ })).toBeVisible();
 });

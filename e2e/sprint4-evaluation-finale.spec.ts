@@ -34,13 +34,15 @@ test("l'ancienne URL « evaluation-finale » redirige vers la Synthèse", async 
   await expect(page.getByRole('heading', { name: 'Synthèse', exact: true })).toBeVisible();
 });
 
-test('la synthèse hérite des fiches de période (last-write-wins)', async ({ page }) => {
+test('la synthèse hérite des fiches de période (projection des activités, chantier #4)', async ({
+  page,
+}) => {
   await page.goto('/livret/synthese');
 
-  // La fixture de Léa contient des évaluations sur les fiches → au moins
-  // une cellule porte le badge ✨ "Vue en Période N" (N = dernière période
-  // où la cellule a été évaluée, last-write-wins).
-  await expect(page.getByText(/Vue en Période \d+/i).first()).toBeVisible();
+  // La promo CAP est en mode activités (juillet 2026) : les cellules héritées
+  // portent la provenance « Via activité X — Période N » (projection
+  // last-write-wins chronologique des évaluations d'activités de Léa).
+  await expect(page.getByText(/Via activité « .+ » — Période \d+/i).first()).toBeVisible();
 });
 
 test('la grille ne montre plus de colonne « Acquis en centre » (juillet 2026)', async ({
@@ -111,33 +113,39 @@ test('maître : remplacer une évaluation entreprise héritée exige une confirm
   await selectRole(page, 'Maître / Tuteur');
   await page.goto('/livret/synthese');
 
-  // Précondition fixture : C1.1 de Léa est héritée de la Période 1 (Maîtrisé).
-  // (Affichage « libellé seul » depuis le 18 juin 2026 : l'aria-label porte le libellé.)
+  // Précondition fixture (mode activités — chantier #4) : c1-1 de Léa est
+  // héritée de la PROJECTION de l'activité A1 évaluée « Maîtrisé » en P1.
   const cellule = page.getByRole('cell').filter({
     has: page.getByRole('radiogroup', {
       name: 'Acquis en entreprise pour Réceptionner et stocker la marchandise',
     }),
   });
-  await expect(cellule.getByText(/Vue en Période 1/i)).toBeVisible();
+  await expect(
+    cellule.getByText(/Via activité « Réceptionner et stocker les livraisons du jour » — Période 1/i),
+  ).toBeVisible();
 
-  // 1. Cliquer un autre niveau ouvre la modale — la valeur ne change PAS encore.
+  // 1. Cliquer un autre niveau ouvre la modale — la valeur ne change PAS
+  //    encore. La provenance nomme l'activité (arbitrage Q3 : l'écrasement
+  //    manuel reste permis en mode activités, avec confirmation).
   await cellule.getByRole('radio', { name: 'Partiel', exact: true }).click();
   const modale = page.getByTestId('confirmation-heritage');
   await expect(modale).toBeVisible();
-  await expect(modale.getByText(/provient de la fiche de la Période 1/i)).toBeVisible();
+  await expect(
+    modale.getByText(/provient de l'activité « Réceptionner et stocker les livraisons du jour »/i),
+  ).toBeVisible();
 
   // 2. Annuler → l'héritage est conservé.
   await page.getByTestId('confirmation-heritage-annuler').click();
   await expect(modale).toHaveCount(0);
   await expect(cellule.getByRole('radio', { name: 'Maîtrisé', exact: true })).toBeChecked();
-  await expect(cellule.getByText(/Vue en Période 1/i)).toBeVisible();
+  await expect(cellule.getByText(/Via activité/i)).toBeVisible();
 
   // 3. Re-cliquer puis confirmer → la saisie manuelle remplace l'héritage.
   await cellule.getByRole('radio', { name: 'Partiel', exact: true }).click();
   await page.getByTestId('confirmation-heritage-confirmer').click();
   await expect(modale).toHaveCount(0);
   await expect(cellule.getByRole('radio', { name: 'Partiel', exact: true })).toBeChecked();
-  await expect(cellule.getByText(/Vue en Période 1/i)).toHaveCount(0);
+  await expect(cellule.getByText(/Via activité/i)).toHaveCount(0);
 });
 
 test('en apprenti·e, la grille est en lecture seule (R24 + matrice)', async ({ page }) => {

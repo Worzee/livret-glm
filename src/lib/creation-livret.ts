@@ -1,6 +1,6 @@
 import type { Apprenti, FicheSuiviPeriode, Livret, PeriodeFormation } from '@/types';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
-import { creerSelectionInitiale } from './selection-competences-entreprise';
+import { creerSelectionInitiale, creerSelectionVierge } from './selection-competences-entreprise';
 
 /**
  * Matérialise une fiche de suivi **vierge** (brouillon, sans contenu
@@ -107,6 +107,11 @@ export function creerLivretVierge(
       lignesCompetences.map((l) => l.competenceId),
       maintenant,
     ),
+    // Chantier #4 (juillet 2026) : sélection d'activités vierge à la
+    // création — repeuplée « tout coché » par la cascade de réalignement si
+    // la formation de l'apprenti·e est en mode activités (cf.
+    // `useUtilisateursStore.ajouterApprenti`).
+    selectionActivitesEntreprise: creerSelectionVierge(maintenant),
     // 13 juin 2026 : les attitudes à évaluer se choisissent à l'E1 (maître +
     // formateur) — vierge à la création, figée à la 3ᵉ signature de l'E1.
     attitudesSelectionnees: [],

@@ -84,6 +84,12 @@ export type Ressource =
   | 'fiche.suivi-greta-cfa-formateur'
   | 'fiche.evaluation-entreprise' // colonne entreprise
   /**
+   * Évaluation des ACTIVITÉS sur les fiches de période entreprise des
+   * formations en mode activités (juillet 2026 — chantier #4). Miroir de
+   * `fiche.evaluation-entreprise` : le maître / tuteur seul évalue.
+   */
+  | 'fiche.activites'
+  /**
    * Évaluation des attitudes professionnelles retenues, sur chaque fiche de
    * période ENTREPRISE (juillet 2026 — l'évaluation quitte l'entretien
    * tripartite). Réservée au maître / tuteur, comme la colonne entreprise.
@@ -153,7 +159,14 @@ export type Ressource =
    * CRUD sur le catalogue global des attitudes professionnelles (retours
    * coordos juin 2026 — évaluées par le maître lors de l'entretien).
    */
-  | 'admin.attitudes.gerer';
+  | 'admin.attitudes.gerer'
+  /**
+   * Modèles d'activités (juillet 2026 — chantier #4) : import, mapping
+   * activités ↔ compétences, choix du mode d'évaluation d'une formation.
+   * Ingénierie de formation, pas de contenu pédagogique — coordo + admin,
+   * cohérent avec `admin.referentiels.gerer`.
+   */
+  | 'admin.activites.gerer';
 
 /**
  * Matrice statique : pour chaque ressource, l'ensemble des rôles autorisés.
@@ -196,6 +209,9 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'fiche.suivi-greta-cfa-apprenti': ['apprenti'],
   'fiche.suivi-greta-cfa-formateur': ['formateur'],
   'fiche.evaluation-entreprise': ['maitre'],
+  // Évaluation des activités (mode activités, juillet 2026 — chantier #4) :
+  // miroir de la colonne d'évaluation entreprise, maître / tuteur seul.
+  'fiche.activites': ['maitre'],
   // Attitudes professionnelles par période entreprise (juillet 2026) :
   // le maître / tuteur seul, comme la colonne d'évaluation entreprise.
   'fiche.attitudes': ['maitre'],
@@ -249,6 +265,9 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'admin.parametres.gerer': ['admin'], // admin uniquement (seuil référentiels, juillet 2026)
   'admin.entreprises.gerer': ['coordo', 'admin'], // coordo + admin (gestion des apprenti·e·s)
   'admin.attitudes.gerer': ['admin'], // admin uniquement
+  // Modèles d'activités + mapping + choix du mode (juillet 2026 — chantier
+  // #4) : ingénierie de formation, coordo + admin (cf. admin.referentiels.gerer).
+  'admin.activites.gerer': ['coordo', 'admin'],
 };
 
 /**

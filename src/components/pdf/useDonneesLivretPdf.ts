@@ -7,6 +7,7 @@ import type {
   Formation,
   Livret,
   Maitre,
+  ModeleActivites,
   Referentiel,
 } from '@/types';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
@@ -15,7 +16,9 @@ import { useReferentielsStore } from '@/store/useReferentielsStore';
 import { useEtablissementsStore } from '@/store/useEtablissementsStore';
 import { useEntreprisesStore } from '@/store/useEntreprisesStore';
 import { useAttitudesStore } from '@/store/useAttitudesStore';
+import { useActivitesStore } from '@/store/useActivitesStore';
 import { getMaitreByIdFromStore } from '@/store/useUtilisateursStore';
+import { modeEffectif } from '@/lib/mode-evaluation';
 import { referentielEvaluable } from '@/lib/limite-referentiel';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
 import { formationCapCuisine } from '@/fixtures/formations';
@@ -32,6 +35,11 @@ export interface DonneesLivretPdf {
   etablissement?: Etablissement;
   entreprise?: Entreprise;
   attitudes: AttitudeProfessionnelle[];
+  /**
+   * Modèle d'activités de la formation quand elle est en mode ACTIVITÉS
+   * (juillet 2026 — chantier #4) : fiches par activités + Synthèse projetée.
+   */
+  modeleActivites?: ModeleActivites;
 }
 
 /**
@@ -50,6 +58,7 @@ export function useDonneesLivretPdf(): DonneesLivretPdf | null {
   const etablissements = useEtablissementsStore((s) => s.etablissements);
   const entreprises = useEntreprisesStore((s) => s.entreprises);
   const attitudesMap = useAttitudesStore((s) => s.attitudes);
+  const modeles = useActivitesStore((s) => s.modeles);
   const ctx = useApprentiActif();
 
   if (!ctx) return null;
@@ -66,6 +75,10 @@ export function useDonneesLivretPdf(): DonneesLivretPdf | null {
   const maitreSecond = apprenti.maitreApprentissageSecondId
     ? getMaitreByIdFromStore(apprenti.maitreApprentissageSecondId)
     : undefined;
+  const modeleActivites =
+    modeEffectif(formation) === 'activites' && formation.modeleActivitesId
+      ? modeles[formation.modeleActivitesId]
+      : undefined;
 
   return {
     apprenti,
@@ -78,5 +91,6 @@ export function useDonneesLivretPdf(): DonneesLivretPdf | null {
     etablissement,
     entreprise,
     attitudes: Object.values(attitudesMap),
+    modeleActivites,
   };
 }

@@ -46,6 +46,11 @@ const livretBase = (fiches: FicheSuiviPeriode[], cloture: ClotureLivret | null =
     modifieLe: '2025-09-01T08:00:00.000Z',
     historiqueInvalidations: [],
   },
+  selectionActivitesEntreprise: {
+    ids: [],
+    modifieLe: '2025-09-01T08:00:00.000Z',
+    historiqueInvalidations: [],
+  },
   cloture,
   creeLe: '2025-09-01T08:00:00.000Z',
   modifieLe: '2025-09-01T08:00:00.000Z',

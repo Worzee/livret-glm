@@ -41,6 +41,11 @@ function fabriquerLivret(overrides: Partial<Livret> = {}): Livret {
       modifieLe: '2025-09-01T00:00:00.000Z',
       historiqueInvalidations: [],
     },
+    selectionActivitesEntreprise: {
+      ids: [],
+      modifieLe: '2025-09-01T00:00:00.000Z',
+      historiqueInvalidations: [],
+    },
     cloture: null,
     creeLe: '2025-09-01T00:00:00.000Z',
     modifieLe: '2025-09-01T00:00:00.000Z',

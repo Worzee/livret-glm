@@ -189,7 +189,8 @@ export interface RapportImport {
   avertissements: string[];
 }
 
-function slugifier(s: string): string {
+/** Slug kebab-case sans accents — partagé avec l'import des modèles d'activités. */
+export function slugifier(s: string): string {
   return s
     .toLowerCase()
     .normalize('NFD')

@@ -11,6 +11,7 @@ import type {
   LigneEvaluationFinaleCompetence,
   LigneSuiviEntreprise,
   Livret,
+  ModeleActivites,
   MotifOrganisationSuivi,
   NiveauAppreciation,
   NiveauMaitriseEntreprise,
@@ -32,6 +33,7 @@ import {
   realignerSurReferentiel,
   toggleCompetence,
 } from '@/lib/selection-competences-entreprise';
+import { realignerSurModele } from '@/lib/selection-activites-entreprise';
 import { useUtilisateursStore } from './useUtilisateursStore';
 
 /**
@@ -131,7 +133,15 @@ import { useUtilisateursStore } from './useUtilisateursStore';
 //        `LigneEvaluationFinaleCompetence.acquisCentre` supprimée (grille
 //        « Synthèse » = colonne entreprise seule, restreinte à la sélection).
 //        Reset pour recharger les fixtures.
-const VERSION_SCHEMA = 24;
+//   v25 — 6 juillet 2026 : évaluation par activités (chantier
+//        référentiels/compétences #4, arbitrages pilote Q1..Q9). Nouveau
+//        sous-objet `Livret.selectionActivitesEntreprise` (miroir de la
+//        sélection de compétences, validé lui aussi à la 3ᵉ signature de
+//        l'entretien) ; `LigneSuiviEntreprise.activiteId` ; les fiches
+//        entreprise de la promo CAP Cuisine (mode activités) portent des
+//        lignes d'ACTIVITÉS du modèle `act-cap-cuisine`, projetées vers les
+//        compétences dans la grille « Synthèse ». Reset pour recharger.
+const VERSION_SCHEMA = 25;
 
 interface LivretStore {
   livrets: Record<string, Livret>;
@@ -186,6 +196,19 @@ interface LivretStore {
     livretId: string,
     ficheId: string,
     competenceId: string | null,
+    libelleLibre?: string,
+  ) => string;
+
+  /**
+   * Ajoute une ligne d'ACTIVITÉ au suivi entreprise (juillet 2026 — chantier
+   * #4, formations en mode activités). `activiteId` null + `libelleLibre` =
+   * activité libre hors modèle (arbitrage Q5 — évaluée sur la fiche, non
+   * projetée vers la Synthèse).
+   */
+  ajouterLigneActiviteEntreprise: (
+    livretId: string,
+    ficheId: string,
+    activiteId: string | null,
     libelleLibre?: string,
   ) => string;
 
@@ -331,6 +354,35 @@ interface LivretStore {
   realignerSelectionsFormation: (formationId: string, referentiel: Referentiel) => void;
   /** Variante ciblée sur un seul livret (changement de formation d'un·e apprenti·e). */
   realignerSelectionLivret: (livretId: string, referentiel: Referentiel) => void;
+
+  // ── Sélection des activités prévues en entreprise (chantier #4) ──────────
+  // Miroir exact de la sélection de compétences : tout coché par défaut,
+  // maître / formateur décochent, validée à la 3ᵉ signature de l'entretien,
+  // invalidation R10 motivée pour rouvrir.
+  toggleSelectionActiviteEntreprise: (livretId: string, activiteId: string) => void;
+  setSelectionActivitesEntreprise: (livretId: string, ids: string[]) => void;
+  invaliderSelectionActivitesEntreprise: (
+    livretId: string,
+    auteurId: string,
+    auteurNom: string,
+    auteurRole: Role,
+    motif: string,
+  ) => void;
+  /**
+   * Réaligne « tout coché » les sélections d'activités NON validées des
+   * livrets d'une formation sur son modèle (réimport du modèle, passage en
+   * mode activités, rattachement d'un modèle). `modele` absent (détachement)
+   * → sélections vidées.
+   */
+  realignerSelectionsActivitesFormation: (
+    formationId: string,
+    modele: ModeleActivites | undefined,
+  ) => void;
+  /** Variante ciblée sur un seul livret (changement de formation d'un·e apprenti·e). */
+  realignerSelectionActivitesLivret: (
+    livretId: string,
+    modele: ModeleActivites | undefined,
+  ) => void;
 
   // ── Mutations sur les grilles d'évaluation finales (CDC §5.4 / §5.5) ─────
   setLigneCompetenceFinale: (
@@ -522,6 +574,27 @@ export const useLivretStore = create<LivretStore>()(
               {
                 id: nouvelId,
                 competenceId,
+                libelleLibre,
+                evaluationEntreprise: null,
+                retourApprenti: '',
+              },
+            ],
+          })),
+        );
+        return nouvelId;
+      },
+
+      ajouterLigneActiviteEntreprise: (livretId, ficheId, activiteId, libelleLibre) => {
+        const nouvelId = `se-${crypto.randomUUID()}`;
+        set((s) =>
+          muterFiche(s, livretId, ficheId, 'entreprise', (f) => ({
+            ...f,
+            suiviEntreprise: [
+              ...f.suiviEntreprise,
+              {
+                id: nouvelId,
+                competenceId: null,
+                ...(activiteId ? { activiteId } : {}),
                 libelleLibre,
                 evaluationEntreprise: null,
                 retourApprenti: '',
@@ -748,28 +821,41 @@ export const useLivretStore = create<LivretStore>()(
             const entretienMaj: EntretienTripartite = { ...e, signatures };
             const livretAvecEntretien = ecrireEntretien(l, entretienMaj);
 
-            // Auto-marquage de la sélection des compétences abordées en
-            // entreprise (CDC v1.5 §12) : la 3ᵉ signature de l'entretien
-            // fige la sélection.
+            // Auto-marquage des sélections « entreprise » (CDC v1.5 §12 +
+            // chantier #4) : la 3ᵉ signature de l'entretien fige la sélection
+            // de compétences ET la sélection d'activités (mode activités).
             const toutesSignees =
               signatures.apprenti.signe && signatures.maitre.signe && signatures.formateur.signe;
             let selection =
               livretAvecEntretien.selectionCompetencesEntreprise ??
               creerSelectionVierge(maintenant);
-            if (toutesSignees && selection.validePar === undefined) {
+            let selectionActivites =
+              livretAvecEntretien.selectionActivitesEntreprise ?? creerSelectionVierge(maintenant);
+            if (toutesSignees) {
               const apprenti = useUtilisateursStore.getState().apprentis[l.apprentiId];
               if (apprenti) {
-                selection = marquerValidee(
-                  selection,
-                  apprenti.formateurReferentId,
-                  apprenti.maitreApprentissageId,
-                  maintenant,
-                );
+                if (selection.validePar === undefined) {
+                  selection = marquerValidee(
+                    selection,
+                    apprenti.formateurReferentId,
+                    apprenti.maitreApprentissageId,
+                    maintenant,
+                  );
+                }
+                if (selectionActivites.validePar === undefined) {
+                  selectionActivites = marquerValidee(
+                    selectionActivites,
+                    apprenti.formateurReferentId,
+                    apprenti.maitreApprentissageId,
+                    maintenant,
+                  );
+                }
               }
             }
             return {
               ...livretAvecEntretien,
               selectionCompetencesEntreprise: selection,
+              selectionActivitesEntreprise: selectionActivites,
             };
           }),
         ),
@@ -854,6 +940,88 @@ export const useLivretStore = create<LivretStore>()(
           return muterLivret(s, livretId, (liv) => ({
             ...liv,
             selectionCompetencesEntreprise: realignee,
+          }));
+        }),
+
+      // ── Sélection des activités prévues en entreprise (chantier #4) ───────
+      toggleSelectionActiviteEntreprise: (livretId, activiteId) =>
+        set((s) =>
+          muterLivret(s, livretId, (l) => {
+            const sel = l.selectionActivitesEntreprise ?? creerSelectionVierge();
+            if (sel.validePar !== undefined) return l;
+            return {
+              ...l,
+              // `toggleCompetence` est générique sur les ids — la sélection
+              // d'activités partage la forme de celle des compétences.
+              selectionActivitesEntreprise: toggleCompetence(sel, activiteId),
+            };
+          }),
+        ),
+
+      setSelectionActivitesEntreprise: (livretId, ids) =>
+        set((s) =>
+          muterLivret(s, livretId, (l) => {
+            const sel = l.selectionActivitesEntreprise ?? creerSelectionVierge();
+            if (sel.validePar !== undefined) return l;
+            return {
+              ...l,
+              selectionActivitesEntreprise: {
+                ...sel,
+                ids,
+                modifieLe: new Date().toISOString(),
+              },
+            };
+          }),
+        ),
+
+      invaliderSelectionActivitesEntreprise: (livretId, auteurId, auteurNom, auteurRole, motif) =>
+        set((s) =>
+          muterLivret(s, livretId, (l) => ({
+            ...l,
+            selectionActivitesEntreprise: invaliderSelection(
+              l.selectionActivitesEntreprise ?? creerSelectionVierge(),
+              {
+                id: `inv-${crypto.randomUUID()}`,
+                auteurId,
+                auteurNom,
+                auteurRole,
+                motif,
+              },
+            ),
+          })),
+        ),
+
+      realignerSelectionsActivitesFormation: (formationId, modele) =>
+        set((s) => {
+          const livrets = { ...s.livrets };
+          let modifie = false;
+          for (const [id, l] of Object.entries(livrets)) {
+            if (l.formationId !== formationId) continue;
+            const sel = l.selectionActivitesEntreprise ?? creerSelectionVierge();
+            const realignee = realignerSurModele(sel, modele);
+            if (realignee !== sel) {
+              livrets[id] = {
+                ...l,
+                selectionActivitesEntreprise: realignee,
+                modifieLe: new Date().toISOString(),
+              };
+              modifie = true;
+            }
+          }
+          if (!modifie) return s;
+          return { livrets, derniereModification: new Date().toISOString() };
+        }),
+
+      realignerSelectionActivitesLivret: (livretId, modele) =>
+        set((s) => {
+          const l = s.livrets[livretId];
+          if (!l) return s;
+          const sel = l.selectionActivitesEntreprise ?? creerSelectionVierge();
+          const realignee = realignerSurModele(sel, modele);
+          if (realignee === sel) return s;
+          return muterLivret(s, livretId, (liv) => ({
+            ...liv,
+            selectionActivitesEntreprise: realignee,
           }));
         }),
 

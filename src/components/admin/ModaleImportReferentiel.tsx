@@ -23,6 +23,7 @@ import {
   peutAgregerAuNiveauSuperieur,
 } from '@/lib/limite-referentiel';
 import { grouperParSousFamille } from '@/lib/grouper-competences';
+import { modeEffectif } from '@/lib/mode-evaluation';
 import {
   type SaisieImportReferentiel,
   genererNomReferentiel,
@@ -251,7 +252,10 @@ export function ModaleImportReferentiel({
   const resolutionNecessaire = referentielBase
     ? compterCompetencesEvaluables(referentielBase) > seuil
     : false;
-  const importBloque = nbEvaluables > seuil || nbEvaluables < 1;
+  // Chantier #4 (juillet 2026) : le référentiel d'une formation en mode
+  // activités est figé (mapping du modèle) — import bloqué (arbitrage Q6).
+  const bloqueParModeActivites = !!formationCible && modeEffectif(formationCible) === 'activites';
+  const importBloque = nbEvaluables > seuil || nbEvaluables < 1 || bloqueParModeActivites;
 
   function basculerExclusion(competenceId: string) {
     setExclusions((prec) => {
@@ -264,14 +268,20 @@ export function ModaleImportReferentiel({
 
   function importer() {
     if (!referentielFinal || importBloque) return;
-    const ref = ajouter(referentielFinal);
+    const resultat = ajouter(referentielFinal);
+    if (!resultat.ok) {
+      // Garde du store (réimport bloqué en mode activités — chantier #4) :
+      // surface la raison dans la zone d'aperçu.
+      setApercu({ type: 'erreur', message: resultat.raison ?? 'Import refusé.' });
+      return;
+    }
     // Rattache la formation au nouveau référentiel — uniquement si une
     // formation a été choisie. Sinon le référentiel reste « orphelin » et
     // sera rattaché plus tard depuis la page Formations.
     if (formationCible) {
-      modifierFormation(formationCible.id, { referentielId: ref.id });
+      modifierFormation(formationCible.id, { referentielId: referentielFinal.id });
     }
-    onValide?.(ref.id);
+    onValide?.(referentielFinal.id);
     onAnnuler();
   }
 
@@ -346,6 +356,17 @@ export function ModaleImportReferentiel({
             {erreurs.formationId && (
               <p role="alert" className="text-xs text-red-700">
                 {erreurs.formationId}
+              </p>
+            )}
+            {bloqueParModeActivites && (
+              <p
+                role="alert"
+                data-testid="import-ref-bloque-mode-activites"
+                className="rounded border border-red-300 bg-red-50 px-2 py-1 text-xs text-red-800"
+              >
+                Cette formation est en <strong>mode activités</strong> : son référentiel est figé
+                (le mapping du modèle d’activités porte sur lui). Repassez d’abord la formation en
+                mode compétences — possible tant que rien n’est signé.
               </p>
             )}
             {formationCible ? (
@@ -479,9 +500,11 @@ export function ModaleImportReferentiel({
               disabled={importBloque}
               data-testid="import-ref-importer"
               title={
-                importBloque
-                  ? `Réduisez à ${seuil} lignes évaluables maximum avant d'importer.`
-                  : undefined
+                bloqueParModeActivites
+                  ? 'Formation en mode activités : référentiel figé.'
+                  : importBloque
+                    ? `Réduisez à ${seuil} lignes évaluables maximum avant d'importer.`
+                    : undefined
               }
               className={cn(
                 'inline-flex items-center gap-1.5 rounded-md px-4 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',

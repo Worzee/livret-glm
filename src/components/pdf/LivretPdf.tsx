@@ -16,6 +16,7 @@ import type {
   LieuFiche,
   Livret,
   Maitre,
+  ModeleActivites,
   NiveauAppreciation,
   NiveauMaitrise,
   NiveauMaitriseEntreprise,
@@ -35,6 +36,8 @@ import {
   creerSelectionVierge,
   restreindreReferentielALaSelection,
 } from '@/lib/selection-competences-entreprise';
+import { restreindreReferentielAuxActivitesRetenues } from '@/lib/selection-activites-entreprise';
+import { projeterActivites, type ProjectionCompetenceEntree } from '@/lib/projection-activites';
 import { COULEURS, COULEURS_APPRECIATION, styles } from './styles';
 import {
   couleurEtatFiche,
@@ -85,6 +88,13 @@ export interface LivretPdfProps {
    * par le maître lors de l'entretien, synthétisées en évaluation finale.
    */
   attitudes: ReadonlyArray<AttitudeProfessionnelle>;
+  /**
+   * Modèle d'activités de la formation en mode ACTIVITÉS (juillet 2026 —
+   * chantier #4) : les pages de fiches entreprise listent des activités, la
+   * Synthèse par compétences est alimentée par leur projection (provenance
+   * « via activité X — Période N »). Absent en mode compétences.
+   */
+  modeleActivites?: ModeleActivites;
   /** ISO de la date d'export (test injectable). */
   dateExport?: string;
 }
@@ -100,6 +110,7 @@ export function LivretPdf({
   etablissement,
   entreprise,
   attitudes,
+  modeleActivites,
   dateExport,
 }: LivretPdfProps) {
   const date = dateExport ?? new Date().toISOString();
@@ -144,6 +155,7 @@ export function LivretPdf({
           maitre={maitre}
           formateur={formateur}
           attitudes={attitudesDuLivret}
+          modeleActivites={modeleActivites}
         />
       ))}
       {(livret.fichesSuiviCentre ?? []).map((fiche) => (
@@ -161,6 +173,7 @@ export function LivretPdf({
         livret={livret}
         referentiel={referentiel}
         attitudes={attitudesDuLivret}
+        modeleActivites={modeleActivites}
       />
       <PageAnnexes livret={livret} />
     </Document>
@@ -186,6 +199,7 @@ export function PeriodePdf({
   etablissement,
   entreprise,
   attitudes,
+  modeleActivites,
   dateExport,
   lieu = 'entreprise',
 }: LivretPdfProps & { fiche: FicheSuiviPeriode; lieu?: LieuFiche }) {
@@ -220,6 +234,7 @@ export function PeriodePdf({
         attitudes={
           estCentre ? undefined : attitudesRetenues(attitudes, livret.attitudesSelectionnees ?? [])
         }
+        modeleActivites={estCentre ? undefined : modeleActivites}
       />
     </Document>
   );
@@ -807,6 +822,7 @@ export function PageFiche({
   formateur,
   lieu = 'entreprise',
   attitudes,
+  modeleActivites,
 }: {
   fiche: FicheSuiviPeriode;
   referentiel: Referentiel;
@@ -819,10 +835,14 @@ export function PageFiche({
    * maître / tuteur à chaque période en entreprise. Ignoré au centre.
    */
   attitudes?: ReadonlyArray<AttitudeProfessionnelle>;
+  /** Modèle d'activités (mode activités — chantier #4) : lignes d'activités. */
+  modeleActivites?: ModeleActivites;
 }) {
   const competencesById = new Map(
     referentiel.blocs.flatMap((b) => b.competences.map((c) => [c.id, c])),
   );
+  const activitesById = new Map((modeleActivites?.activites ?? []).map((a) => [a.id, a]));
+  const enModeActivites = !!modeleActivites;
   const estCentre = lieu === 'centre';
 
   return (
@@ -852,11 +872,15 @@ export function PageFiche({
           <>
             <Text style={styles.h2}>Activités et évaluations</Text>
             {fiche.suiviEntreprise.length === 0 ? (
-              <Text style={styles.vide}>Aucune compétence évaluée.</Text>
+              <Text style={styles.vide}>
+                {enModeActivites ? 'Aucune activité évaluée.' : 'Aucune compétence évaluée.'}
+              </Text>
             ) : (
               <View style={styles.tableau}>
                 <View style={[styles.tableauLigne, styles.tableauEnTete]}>
-                  <Text style={[styles.tableauCellule, { width: '40%' }]}>Compétence</Text>
+                  <Text style={[styles.tableauCellule, { width: '40%' }]}>
+                    {enModeActivites ? 'Activité' : 'Compétence'}
+                  </Text>
                   <Text style={[styles.tableauCellule, { width: '25%' }]}>
                     Évaluation entreprise
                   </Text>
@@ -865,10 +889,15 @@ export function PageFiche({
                   </Text>
                 </View>
                 {fiche.suiviEntreprise.map((l, idx) => {
+                  // Chantier #4 : une ligne d'activité se résout dans le
+                  // modèle ; une ligne de compétence dans le référentiel.
+                  const act = l.activiteId ? activitesById.get(l.activiteId) : null;
                   const comp = l.competenceId ? competencesById.get(l.competenceId) : null;
-                  const libelleC = comp
-                    ? comp.libelle
-                    : (l.libelleLibre ?? 'Activité hors référentiel');
+                  const libelleC =
+                    act?.libelle ??
+                    comp?.libelle ??
+                    l.libelleLibre ??
+                    (enModeActivites ? 'Activité hors modèle' : 'Activité hors référentiel');
                   return (
                     <View
                       key={l.id}
@@ -979,17 +1008,30 @@ function PageEvaluationFinale({
   livret,
   referentiel,
   attitudes,
+  modeleActivites,
 }: {
   livret: Livret;
   referentiel: Referentiel;
   /** Catalogue global des attitudes professionnelles (juin 2026). */
   attitudes: ReadonlyArray<AttitudeProfessionnelle>;
+  /** Modèle d'activités (mode activités — chantier #4) : Synthèse projetée. */
+  modeleActivites?: ModeleActivites;
 }) {
-  // Juillet 2026 : la Synthèse ne présente QUE les compétences abordées en
-  // stage (sélection entreprise) — colonne unique « Acquis en entreprise ».
-  const selection = livret.selectionCompetencesEntreprise ?? creerSelectionVierge();
-  const referentielSelectionne = restreindreReferentielALaSelection(referentiel, selection);
-  const synthese = synthetiserCompetences(livret.fichesSuivi, referentielSelectionne);
+  // Juillet 2026 : la Synthèse ne présente QUE ce qui est prévu en stage —
+  // sélection de compétences, ou compétences couvertes par les activités
+  // retenues (mode activités, chantier #4) — colonne « Acquis en entreprise ».
+  const selection = modeleActivites
+    ? (livret.selectionActivitesEntreprise ?? creerSelectionVierge())
+    : (livret.selectionCompetencesEntreprise ?? creerSelectionVierge());
+  const referentielSelectionne = modeleActivites
+    ? restreindreReferentielAuxActivitesRetenues(referentiel, modeleActivites, selection)
+    : restreindreReferentielALaSelection(referentiel, selection);
+  // Héritage : last-write-wins direct, ou projection des activités évaluées
+  // (provenance « via activité X — Période N »).
+  const synthese: Map<string, ProjectionCompetenceEntree> = modeleActivites
+    ? projeterActivites(livret.fichesSuivi, modeleActivites, referentielSelectionne)
+    : synthetiserCompetences(livret.fichesSuivi, referentielSelectionne);
+  const activitesById = new Map((modeleActivites?.activites ?? []).map((a) => [a.id, a]));
   const lignes = livret.evaluationFinaleCompetences.lignes;
   const stats = calculerStatsParBloc(referentielSelectionne, lignes, synthese);
   // 3 juillet 2026 : 4 attitudes obligatoires (appréciation du maître) en
@@ -1016,15 +1058,28 @@ function PageEvaluationFinale({
           </View>
         ))}
 
-        <Text style={styles.h2}>Compétences abordées en entreprise</Text>
+        <Text style={styles.h2}>
+          {modeleActivites
+            ? 'Compétences couvertes par les activités en entreprise'
+            : 'Compétences abordées en entreprise'}
+        </Text>
         {referentielSelectionne.blocs.map((bloc) => (
           <View key={bloc.id} style={{ marginBottom: 8 }} wrap={false}>
             <Text style={styles.h3}>{bloc.libelle}</Text>
             <View style={styles.tableau}>
               <View style={[styles.tableauLigne, styles.tableauEnTete]}>
-                <Text style={[styles.tableauCellule, { width: '60%' }]}>Compétence</Text>
+                <Text style={[styles.tableauCellule, { width: modeleActivites ? '45%' : '60%' }]}>
+                  Compétence
+                </Text>
                 <Text style={[styles.tableauCellule, { width: '25%' }]}>Acquis entreprise</Text>
-                <Text style={[styles.tableauCelluleDerniere, { width: '15%' }]}>Source</Text>
+                <Text
+                  style={[
+                    styles.tableauCelluleDerniere,
+                    { width: modeleActivites ? '30%' : '15%' },
+                  ]}
+                >
+                  Source
+                </Text>
               </View>
               {construireLignesGrillePdf(bloc).map((row, idx, rows) => {
                 const styleLigne =
@@ -1044,12 +1099,32 @@ function PageEvaluationFinale({
                   acquisEntreprise: null,
                 };
                 const ent = valeurEffective(ligne, synthese);
+                // Provenance de la projection (mode activités — chantier #4).
+                const activiteId = synthese.get(c.id)?.activiteId;
+                const libelleActivite = activiteId
+                  ? activitesById.get(activiteId)?.libelle
+                  : undefined;
+                const sourceTexte =
+                  ent.source === 'synthese'
+                    ? libelleActivite
+                      ? `via « ${libelleActivite} »${
+                          ent.numeroPeriode !== undefined ? ` — Période ${ent.numeroPeriode}` : ''
+                        }`
+                      : ent.numeroPeriode !== undefined
+                        ? `Période ${ent.numeroPeriode}`
+                        : 'fiches'
+                    : ent.source === 'manuelle'
+                      ? 'final'
+                      : '-';
                 return (
                   <View key={c.id} style={styleLigne}>
                     <Text
                       style={[
                         styles.tableauCellule,
-                        { width: '60%', paddingLeft: row.indente ? 10 : 0 },
+                        {
+                          width: modeleActivites ? '45%' : '60%',
+                          paddingLeft: row.indente ? 10 : 0,
+                        },
                       ]}
                     >
                       {c.libelle}
@@ -1057,14 +1132,13 @@ function PageEvaluationFinale({
                     <Text style={[styles.tableauCellule, { width: '25%' }]}>
                       <Text style={styleNiveau(ent.valeur)}>{libelleNiveau(ent.valeur)}</Text>
                     </Text>
-                    <Text style={[styles.tableauCelluleDerniere, { width: '15%', fontSize: 8 }]}>
-                      {ent.source === 'synthese'
-                        ? ent.numeroPeriode !== undefined
-                          ? `Période ${ent.numeroPeriode}`
-                          : 'fiches'
-                        : ent.source === 'manuelle'
-                          ? 'final'
-                          : '-'}
+                    <Text
+                      style={[
+                        styles.tableauCelluleDerniere,
+                        { width: modeleActivites ? '30%' : '15%', fontSize: 8 },
+                      ]}
+                    >
+                      {sourceTexte}
                     </Text>
                   </View>
                 );

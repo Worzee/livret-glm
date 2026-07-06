@@ -103,6 +103,13 @@ const LIENS_ADMIN: Array<LienItem & { ressource: Ressource }> = [
     ressource: 'admin.referentiels.gerer',
   },
   {
+    // Chantier #4 (juillet 2026) : modèles d'activités + mode d'évaluation.
+    to: '/admin/activites',
+    label: 'Modèles d’activités',
+    Icon: ClipboardList,
+    ressource: 'admin.activites.gerer',
+  },
+  {
     to: '/admin/etablissements',
     label: 'Établissements',
     Icon: Building2,

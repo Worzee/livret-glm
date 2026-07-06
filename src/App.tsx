@@ -12,6 +12,7 @@ import { ImportUtilisateurs } from '@/pages/admin/ImportUtilisateurs';
 import { GestionFormations } from '@/pages/admin/GestionFormations';
 import { GestionAffectations } from '@/pages/admin/GestionAffectations';
 import { GestionReferentiels } from '@/pages/admin/GestionReferentiels';
+import { GestionActivites } from '@/pages/admin/GestionActivites';
 import { GestionEtablissements } from '@/pages/admin/GestionEtablissements';
 import { GestionEntreprises } from '@/pages/admin/GestionEntreprises';
 import { GestionAttitudes } from '@/pages/admin/GestionAttitudes';
@@ -60,6 +61,7 @@ export function App() {
         <Route path="admin/affectations" element={<GestionAffectations />} />
         <Route path="admin/entreprises" element={<GestionEntreprises />} />
         <Route path="admin/referentiels" element={<GestionReferentiels />} />
+        <Route path="admin/activites" element={<GestionActivites />} />
         <Route path="admin/etablissements" element={<GestionEtablissements />} />
         <Route path="admin/attitudes" element={<GestionAttitudes />} />
 

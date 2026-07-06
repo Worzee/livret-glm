@@ -12,7 +12,10 @@ import { EntretienHeader } from '@/components/entretien/EntretienHeader';
 import { BandeauAlerteR7 } from '@/components/entretien/BandeauAlerteR7';
 import { SectionTrameEntretien } from '@/components/entretien/SectionTrameEntretien';
 import { SectionSelectionCompetences } from '@/components/entretien/SectionSelectionCompetences';
+import { SectionSelectionActivites } from '@/components/entretien/SectionSelectionActivites';
 import { SectionSelectionAttitudes } from '@/components/entretien/SectionSelectionAttitudes';
+import { useActivitesStore } from '@/store/useActivitesStore';
+import { modeEffectif } from '@/lib/mode-evaluation';
 import { BlocSignaturesEntretien } from '@/components/entretien/BlocSignaturesEntretien';
 import { BoutonExportPdf } from '@/components/pdf/BoutonExportPdf';
 import { useDonneesLivretPdf } from '@/components/pdf/useDonneesLivretPdf';
@@ -37,11 +40,18 @@ export function EntretienTripartite() {
   const initialiser = useLivretStore((s) => s.initialiserEntretien);
   const roleActif = useUserStore((s) => s.roleActif);
   const formations = useFormationsStore((s) => s.formations);
+  const modeles = useActivitesStore((s) => s.modeles);
   const donneesPdf = useDonneesLivretPdf();
 
   if (!ctx) return <AucunApprentiSelectionne />;
   const { apprenti, livret } = ctx;
   const formation = formations[apprenti.formationId] ?? formationCapCuisine;
+  // Chantier #4 : en mode activités, la sélection §12 porte sur les
+  // ACTIVITÉS du modèle de la formation (mêmes règles de validation).
+  const modeleActivites =
+    modeEffectif(formation) === 'activites' && formation.modeleActivitesId
+      ? modeles[formation.modeleActivitesId]
+      : undefined;
   const entretien = livret.entretien;
   // Initialisation ouverte au formateur référent, au coordo et à l'admin
   // (18 juin 2026 — la coordination peut amorcer un entretien).
@@ -168,14 +178,25 @@ export function EntretienTripartite() {
           ficheVerrouillee={ficheVerrouillee}
         />
 
-        {/* Sélection des compétences abordées en entreprise (CDC v1.5 §12 —
-            décision conjointe figée à la 3ᵉ signature de l'entretien). */}
-        <SectionSelectionCompetences
-          livretId={livret.id}
-          apprenti={apprenti}
-          selection={livret.selectionCompetencesEntreprise ?? creerSelectionVierge()}
-          entretienVerrouille={ficheVerrouillee}
-        />
+        {/* Sélection « entreprise » (CDC v1.5 §12 — décision conjointe figée
+            à la 3ᵉ signature de l'entretien). En mode activités (chantier
+            #4), la section porte sur les activités du modèle. */}
+        {modeleActivites ? (
+          <SectionSelectionActivites
+            livretId={livret.id}
+            apprenti={apprenti}
+            modele={modeleActivites}
+            selection={livret.selectionActivitesEntreprise ?? creerSelectionVierge()}
+            entretienVerrouille={ficheVerrouillee}
+          />
+        ) : (
+          <SectionSelectionCompetences
+            livretId={livret.id}
+            apprenti={apprenti}
+            selection={livret.selectionCompetencesEntreprise ?? creerSelectionVierge()}
+            entretienVerrouille={ficheVerrouillee}
+          />
+        )}
 
         {/* Choix des attitudes professionnelles (13 juin 2026) : maître +
             formateur retiennent les attitudes évaluées pendant l'entretien ;

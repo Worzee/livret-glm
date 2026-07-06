@@ -1,9 +1,9 @@
 # Chantier — Refonte des référentiels et des compétences
 
 **Créé le** : 2026-07-06, à l'issue de la réunion direction (très positive)
-**Statut** : en cours — modifications #1 à #3 livrées le 2026-07-06 ; **#4 (évaluation
-par activités) cadrée en préliminaire, à implémenter dans une session dédiée — cf. §0,
-lire le cadrage AVANT de coder**
+**Statut** : modifications #1 à #3 livrées le 2026-07-06 ; **#4 (évaluation par
+activités) implémentée le 2026-07-07** — les 9 questions de cadrage ont été tranchées
+par le pilote en début de session #4 (cf. arbitrages en §0)
 **Objet** : une « énorme phase de modification » est annoncée sur les référentiels et les
 compétences. Ce document est la **carte complète du sous-système** telle qu'elle existe
 aujourd'hui — à lire avant toute modification, pour ne pas ré-explorer le code et ne rien
@@ -149,7 +149,7 @@ attitudes à l'entretien et le tableau de compétences des fiches centre ont
 disparu avec la #3. Les invariants purement référentiels (feuilles non
 exclues, sélection « tout coché », réimport = remplacement) restent exacts.
 
-### Modification #4 — évaluation par ACTIVITÉS (CADRAGE PRÉLIMINAIRE, non implémentée)
+### Modification #4 — évaluation par ACTIVITÉS (implémentée le 2026-07-07)
 
 **Principe (pilote, 2026-07-06)** : certaines formations ne sont pas adaptées à une
 évaluation en « compétences » mais en « **activités** ». Le référentiel de compétences
@@ -257,6 +257,72 @@ nouveau store `livret-activites` v1, `livret-formations` v9 (mode + modeleActivi
 7. **Seuil** : limite du nombre d'activités par modèle (équivalent des 40 lignes) ?
 8. **Échelle** : mêmes 4 niveaux entreprise pour évaluer une activité ?
 9. **Démo** : quelle promo de démo passe en mode activités (existante ou nouvelle) ?
+
+#### Arbitrages du pilote (2026-07-06, début de session #4 — les 9 questions tranchées)
+
+1. **Fichier** : activités seules (code, libellé, description) — le **mapping se fait
+   entièrement dans l'UI** post-import (option recommandée). Pas de fichier d'exemple
+   réel fourni ; formats CSV + XLSX via le pipeline existant (`parser-xlsx`).
+2. **Bascule du mode** : **verrouillée dès la première saisie signée** dans la promo,
+   dans les deux sens ; libre tant que rien n'est signé (pattern verrou maison).
+3. **Projection** : **last-write-wins chronologique toutes activités confondues**,
+   provenance « via activité X — Période N » affichée ; l'écrasement manuel dans la
+   grille Synthèse (avec modale de confirmation) **reste permis**.
+4. **Entretien** : la sélection §12 devient une **sélection d'activités prévues en
+   entreprise, mêmes règles** (tout coché par défaut, le maître décoche, validée à la
+   3ᵉ signature, R10 pour rouvrir) ; la grille Synthèse se restreint aux compétences
+   couvertes par les activités retenues ; **attitudes par période (modif #3) inchangées**.
+5. **Activité libre** : **autorisée** (équivalent `libelleLibre`) — évaluée sur la
+   fiche, sans projection vers la Synthèse.
+6. **Balayage redevenant incomplet** : **action bloquée** (réimport du référentiel,
+   réactivation d'une compétence exclue, changement de référentiel de la formation)
+   tant que la formation est en mode activités — pattern `referentiel-verrou`,
+   message explicite au coordo/admin.
+7. **Seuil** : **pas de limite** du nombre d'activités par modèle.
+8. **Échelle** : **mêmes 4 niveaux** entreprise (Maîtrisé / Partiel / Non maîtrisé /
+   Non fait) — réutilise `NiveauMaitriseEntreprise`, projection directe.
+9. **Démo** : la promo **CAP Cuisine** passe en mode activités (fixtures existantes
+   converties, périmètres E2E préservés au mieux).
+
+#### Implémentation (2026-07-07) — repères pour les vagues suivantes
+
+- **Types** : `ModeleActivites` / `Activite` (mapping `competenceIds` par activité,
+  `referentielId` porté par le modèle), `Formation.modeEvaluation` +
+  `modeleActivitesId`, `LigneSuiviEntreprise.activiteId?` (exclusif de
+  `competenceId` ; `libelleLibre` = activité libre non projetée),
+  `Livret.selectionActivitesEntreprise` (type partagé avec la sélection de
+  compétences — mêmes helpers).
+- **Libs pures (TDD)** : `import-modele-activites` (CSV/XLSX, 1-3 colonnes,
+  libellé maître), `balayage-referentiel` (jauge + manquantes + orphelines),
+  `projection-activites` (LWW chronologique, provenance `activiteId` +
+  `periodeEntreprise`, compatible `valeurEffective`), `mode-evaluation`
+  (verrou de bascule « première saisie signée », gardes réimport / changement
+  de référentiel / réactivation d'exclue), `modele-activites-verrou`,
+  `selection-activites-entreprise` (réalignement sur le MODÈLE + restriction
+  de la Synthèse aux compétences couvertes), `validation-import-modele-activites`.
+- **Droits** : `admin.activites.gerer` (coordo + admin), `fiche.activites`
+  (maître — évaluation des lignes d'activités).
+- **Stores** : `useActivitesStore` (`livret-activites` v1, fixture
+  `act-cap-cuisine` 6 activités / balayage 10/10) ; `livret-formations` v9 ;
+  `livret-donnees` v25 ; `ajouterReferentiel` retourne désormais un
+  `ResultatValidation` (réimport bloqué en mode activités) ; validation des
+  DEUX sélections à la 3ᵉ signature de l'entretien ; cascades de réalignement
+  des sélections d'activités (réimport modèle, rattachement, changement de
+  formation d'un·e apprenti·e, création d'apprenti·e).
+- **UI** : page `/admin/activites` (import + éditeur de mapping + jauge +
+  bascule du mode par formation), badge mode sur les cartes formation,
+  `SectionSelectionActivites` à l'entretien, `TableauTriColonnes` mode-aware
+  (« Ajouter une activité », activité libre), Synthèse projetée avec
+  provenance « Via activité X — Période N » (écrasement manuel conservé).
+- **PDF** : `LivretPdfProps.modeleActivites?` — fiches entreprise par
+  activités, Synthèse avec colonne Source « via “activité” — Période N ».
+- **Fixtures** : lignes des fiches CAP converties en activités (collision
+  Luca P3 c2-3/c2-4 → a4 résolue par une activité libre « Inventaire de fin
+  de mois »), sélections d'activités validées (a6 écartée chez Léa/Minh/Aya),
+  Sofia « tout coché » non validé ; BTS inchangé (mode compétences).
+- **Non fait (hors périmètre arbitré)** : alerte « balayage incomplet » au
+  centre d'alertes (inutile tant que les gardes imposent le balayage complet
+  en mode activités) ; seuil d'activités par modèle (Q7 : pas de limite).
 
 ---
 
@@ -390,6 +456,9 @@ Références aux compétences ailleurs dans le modèle (couplages par `competenc
   `sprint4-evaluation-finale.spec.ts`, `fiches-periodes*.spec.ts`, `pilotage-alertes.spec.ts`
   (compte sur les fixtures BTS)
 - Total projet au 2026-07-06 (après modification #3) : **611 unitaires / 196 E2E — tous verts**
+- Total projet au 2026-07-07 (après modification #4) : **673 unitaires / 204 E2E — tous verts**
+  (+58 unitaires sur les 7 libs du chantier #4, +3 droits, +2 validation-signature ;
+  nouveau spec `admin-activites.spec.ts`, refonte `entretien-selection-competences.spec.ts`)
 
 ## 9. Checklist de la procédure de modification type (rituel maison)
 

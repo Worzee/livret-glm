@@ -2,7 +2,9 @@ import { CheckCircle2, GraduationCap, HardHat, UserCog } from 'lucide-react';
 import type { FicheSuiviPeriode, LieuFiche, Role } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
+import { useFormationsStore } from '@/store/useFormationsStore';
 import { libelleRole } from '@/lib/droits';
+import { modeEffectif } from '@/lib/mode-evaluation';
 import { validerSignature } from '@/lib/validation-signature';
 import { BoutonSigner } from '@/components/common/BoutonSigner';
 import { cn } from '@/lib/utils';
@@ -67,6 +69,11 @@ export function BlocSignatures({ livretId, fiche, lieu = 'entreprise' }: BlocSig
   // Juillet 2026 : R20 maître exige que TOUTES les attitudes retenues soient
   // évaluées sur la fiche entreprise — la sélection est passée à la validation.
   const attitudesSelectionnees = useLivretStore((s) => s.livrets[livretId]?.attitudesSelectionnees);
+  // Chantier #4 : en mode activités, le message R20 du maître parle
+  // d'activités (même prédicat sur les lignes de la fiche).
+  const formationId = useLivretStore((s) => s.livrets[livretId]?.formationId);
+  const formations = useFormationsStore((s) => s.formations);
+  const modeEvaluation = modeEffectif(formationId ? formations[formationId] : undefined);
 
   const ficheVerrouillee = fiche.etat === 'verrouillee';
 
@@ -97,7 +104,7 @@ export function BlocSignatures({ livretId, fiche, lieu = 'entreprise' }: BlocSig
           const estSonRole = roleActif === role;
           const validation =
             estSonRole && !ficheVerrouillee
-              ? validerSignature(fiche, role, lieu, attitudesSelectionnees ?? [])
+              ? validerSignature(fiche, role, lieu, attitudesSelectionnees ?? [], modeEvaluation)
               : null;
 
           return (

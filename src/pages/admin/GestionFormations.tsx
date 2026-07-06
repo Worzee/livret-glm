@@ -18,6 +18,8 @@ import { useEtablissementsStore } from '@/store/useEtablissementsStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
 import { evaluerVerrouFormation } from '@/lib/formation-verrou';
+import { modeEffectif } from '@/lib/mode-evaluation';
+import { BadgeMode } from '@/pages/admin/GestionActivites';
 import { ModaleFormation } from '@/components/admin/ModaleFormation';
 import { ModalePlanningPeriodes } from '@/components/admin/ModalePlanningPeriodes';
 import { cn } from '@/lib/utils';
@@ -170,6 +172,11 @@ export function GestionFormations() {
                     <p className="text-sm text-muted-foreground">
                       {f.niveau} · Année {f.annee}
                     </p>
+                    {/* Chantier #4 : badge du mode d'évaluation (le choix se
+                        fait sur la page « Modèles d'activités »). */}
+                    <div className="mt-1">
+                      <BadgeMode mode={modeEffectif(f)} formationId={f.id} />
+                    </div>
                   </div>
                   <div className="inline-flex items-center gap-1">
                     {editable && (

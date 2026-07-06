@@ -124,6 +124,14 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('formateur', 'fiche.evaluation-entreprise')).toBe(false);
     });
 
+    it('seul le maître évalue les activités sur la fiche de période (mode activités, chantier #4)', () => {
+      expect(peutEditer('maitre', 'fiche.activites')).toBe(true);
+      expect(peutEditer('apprenti', 'fiche.activites')).toBe(false);
+      expect(peutEditer('formateur', 'fiche.activites')).toBe(false);
+      expect(peutEditer('coordo', 'fiche.activites')).toBe(false);
+      expect(peutEditer('admin', 'fiche.activites')).toBe(false);
+    });
+
     it('seul le maître évalue les attitudes sur la fiche de période entreprise (juillet 2026)', () => {
       expect(peutEditer('maitre', 'fiche.attitudes')).toBe(true);
       expect(peutEditer('apprenti', 'fiche.attitudes')).toBe(false);
@@ -379,6 +387,14 @@ describe('Administration — droits du rôle coordo', () => {
     expect(peutEditer('formateur', 'admin.parametres.gerer')).toBe(false);
     expect(peutEditer('maitre', 'admin.parametres.gerer')).toBe(false);
     expect(peutEditer('apprenti', 'admin.parametres.gerer')).toBe(false);
+  });
+
+  it("les modèles d'activités (import, mapping, mode) : coordo + admin (chantier #4)", () => {
+    expect(peutEditer('coordo', 'admin.activites.gerer')).toBe(true);
+    expect(peutEditer('admin', 'admin.activites.gerer')).toBe(true);
+    expect(peutEditer('formateur', 'admin.activites.gerer')).toBe(false);
+    expect(peutEditer('maitre', 'admin.activites.gerer')).toBe(false);
+    expect(peutEditer('apprenti', 'admin.activites.gerer')).toBe(false);
   });
 });
 

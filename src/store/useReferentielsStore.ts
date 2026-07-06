@@ -4,6 +4,8 @@ import type { Referentiel } from '@/types';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
 import { referentielBtsMhr } from '@/fixtures/referentiel-bts-mhr';
 import { peutBasculerExclusion, type ResultatValidation } from '@/lib/limite-referentiel';
+import { peutReactiverCompetence, peutReimporterReferentiel } from '@/lib/mode-evaluation';
+import { useActivitesStore } from './useActivitesStore';
 import { useFormationsStore } from './useFormationsStore';
 import { useLivretStore } from './useLivretStore';
 import { useParametresStore } from './useParametresStore';
@@ -33,9 +35,11 @@ interface ReferentielsStore {
   /**
    * Ajoute (ou écrase) un référentiel. Si l'id existe déjà, le précédent est
    * remplacé — utile pour réimporter une version corrigée du même CSV.
-   * @returns le référentiel persisté.
+   * Juillet 2026 (chantier #4) : le remplacement est **refusé** si une
+   * formation rattachée est en mode activités (le mapping du modèle
+   * deviendrait orphelin — arbitrage pilote Q6).
    */
-  ajouterReferentiel: (referentiel: Referentiel) => Referentiel;
+  ajouterReferentiel: (referentiel: Referentiel) => ResultatValidation;
   /** Met à jour partiellement un référentiel existant (rare en pratique). */
   modifierReferentiel: (id: string, patch: Partial<Omit<Referentiel, 'id'>>) => void;
   /**
@@ -86,6 +90,14 @@ export const useReferentielsStore = create<ReferentielsStore>()(
 
       ajouterReferentiel: (referentiel) => {
         const remplace = !!get().referentiels[referentiel.id];
+        const formations = Object.values(useFormationsStore.getState().formations);
+        // Chantier #4 (juillet 2026) : réimport bloqué tant qu'une formation
+        // rattachée est en mode activités (mapping orphelin → balayage
+        // incomplet — arbitrage pilote Q6).
+        if (remplace) {
+          const garde = peutReimporterReferentiel(referentiel.id, formations);
+          if (!garde.ok) return garde;
+        }
         set({
           referentiels: { ...get().referentiels, [referentiel.id]: referentiel },
         });
@@ -95,14 +107,13 @@ export const useReferentielsStore = create<ReferentielsStore>()(
         // Un id inédit n'a pas encore de formation rattachée : le réalignement
         // se fera au rattachement (cf. `modifierFormation`).
         if (remplace) {
-          const formations = Object.values(useFormationsStore.getState().formations);
           for (const f of formations) {
             if (f.referentielId === referentiel.id) {
               useLivretStore.getState().realignerSelectionsFormation(f.id, referentiel);
             }
           }
         }
-        return referentiel;
+        return { ok: true };
       },
 
       modifierReferentiel: (id, patch) =>
@@ -130,6 +141,22 @@ export const useReferentielsStore = create<ReferentielsStore>()(
         const seuil = useParametresStore.getState().seuilCompetencesEvaluables;
         const garde = peutBasculerExclusion(referentiel, competenceId, seuil);
         if (!garde.ok) return garde;
+        // Chantier #4 (juillet 2026) : la RÉACTIVATION d'une compétence non
+        // couverte par le mapping est bloquée quand une formation rattachée
+        // est en mode activités (le balayage redeviendrait incomplet — Q6).
+        // L'exclusion, elle, ne peut que compléter le balayage.
+        const feuille = referentiel.blocs
+          .flatMap((b) => b.competences)
+          .find((c) => c.id === competenceId);
+        if (feuille?.exclue) {
+          const gardeMode = peutReactiverCompetence(
+            competenceId,
+            referentielId,
+            Object.values(useFormationsStore.getState().formations),
+            useActivitesStore.getState().modeles,
+          );
+          if (!gardeMode.ok) return gardeMode;
+        }
         const maj: Referentiel = {
           ...referentiel,
           blocs: referentiel.blocs.map((b) => ({

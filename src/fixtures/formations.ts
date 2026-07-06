@@ -69,6 +69,12 @@ export const formationCapCuisine: Formation = {
   lieuId: etablissementSiteDiderot.id,
   periodes: periodesCapCuisine,
   periodesCentre: periodesCentreCapCuisine,
+  // Chantier #4 (juillet 2026) : la promo CAP Cuisine vit en mode
+  // d'évaluation « activités » (arbitrage pilote Q9) — le tuteur évalue les
+  // activités du modèle `act-cap-cuisine`, projetées vers les compétences
+  // dans la grille « Synthèse ». Le BTS MHR reste en mode compétences.
+  modeEvaluation: 'activites',
+  modeleActivitesId: 'act-cap-cuisine',
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -12,6 +12,8 @@ import { useLivretStore } from './useLivretStore';
 import { useApprentiActifStore } from './useApprentiActifStore';
 import { useFormationsStore } from './useFormationsStore';
 import { useReferentielsStore } from './useReferentielsStore';
+import { useActivitesStore } from './useActivitesStore';
+import { modeEffectif } from '@/lib/mode-evaluation';
 import { creerLivretVierge } from '@/lib/creation-livret';
 import { maitresIdsDeLApprenti } from '@/lib/maitres-apprenti';
 import {
@@ -162,6 +164,15 @@ export const useUtilisateursStore = create<UtilisateursStore>()(
           livrets: { ...s.livrets, [livret.id]: livret },
           derniereModification: new Date().toISOString(),
         }));
+        // Chantier #4 (juillet 2026) : si la formation est en mode activités,
+        // la sélection d'activités du nouveau livret part « tout coché » sur
+        // le modèle de la formation (miroir de la sélection de compétences).
+        if (formation && modeEffectif(formation) === 'activites' && formation.modeleActivitesId) {
+          const modele = useActivitesStore.getState().modeles[formation.modeleActivitesId];
+          if (modele) {
+            useLivretStore.getState().realignerSelectionActivitesLivret(livret.id, modele);
+          }
+        }
         // Ajoute l'apprenti·e aux `apprentiIds` de ses maîtres désignés
         // (principal + second éventuel — juin 2026).
         const nouveauxMaitres = { ...get().maitres };
@@ -261,6 +272,20 @@ export const useUtilisateursStore = create<UtilisateursStore>()(
             if (livret) {
               useLivretStore.getState().realignerSelectionLivret(livret.id, referentiel);
             }
+          }
+          // Chantier #4 (juillet 2026) : le modèle d'activités effectif change
+          // aussi avec la formation — sélection d'activités réalignée sur le
+          // modèle de la nouvelle formation (vidée si mode compétences, cas
+          // du changement entre promos de modes différents — angle mort A).
+          const livretActivites = Object.values(useLivretStore.getState().livrets).find(
+            (l) => l.apprentiId === id,
+          );
+          if (livretActivites) {
+            const modele =
+              formation && modeEffectif(formation) === 'activites' && formation.modeleActivitesId
+                ? useActivitesStore.getState().modeles[formation.modeleActivitesId]
+                : undefined;
+            useLivretStore.getState().realignerSelectionActivitesLivret(livretActivites.id, modele);
           }
         }
       },

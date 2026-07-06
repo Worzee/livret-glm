@@ -261,7 +261,12 @@ function CompetenceCase({ competence, cochee, editable, onToggle }: CompetenceCa
   );
 }
 
-function HistoriqueInvalidations({ selection }: { selection: SelectionCompetencesEntreprise }) {
+/** Exporté (chantier #4) : réutilisé par `SectionSelectionActivites`. */
+export function HistoriqueInvalidations({
+  selection,
+}: {
+  selection: SelectionCompetencesEntreprise;
+}) {
   return (
     <details className="rounded-md border border-border bg-secondary/30 p-3 text-xs">
       <summary className="cursor-pointer font-medium text-muted-foreground hover:text-foreground">
@@ -295,12 +300,16 @@ interface DialogInvaliderSelectionProps {
   ouvert: boolean;
   onAnnuler: () => void;
   onConfirmer: (motif: string) => void;
+  /** Titre de la modale — surchargé par la sélection d'activités (chantier #4). */
+  titre?: string;
 }
 
-function DialogInvaliderSelection({
+/** Exporté (chantier #4) : réutilisé par `SectionSelectionActivites`. */
+export function DialogInvaliderSelection({
   ouvert,
   onAnnuler,
   onConfirmer,
+  titre = 'Modifier la sélection des compétences en entreprise',
 }: DialogInvaliderSelectionProps) {
   const [motif, setMotif] = useState('');
   const [tentativeSoumission, setTentativeSoumission] = useState(false);
@@ -359,7 +368,7 @@ function DialogInvaliderSelection({
             <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />
             <div>
               <h2 id={titreId} className="text-lg font-semibold">
-                Modifier la sélection des compétences en entreprise
+                {titre}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Un motif explicite est obligatoire pour la traçabilité.

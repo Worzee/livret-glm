@@ -188,6 +188,32 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
     });
   });
 
+  describe("Maître d'apprentissage — mode activités (chantier #4, juillet 2026)", () => {
+    it('en mode activités, le message parle d’activité (même prédicat sur les lignes)', () => {
+      const f = ficheBase();
+      f.observations.maitre = 'RAS';
+      const r = validerSignature(f, 'maitre', 'entreprise', [], 'activites');
+      expect(r.peutSigner).toBe(false);
+      expect(r.raisons[0]).toMatch(/au moins une activité/i);
+    });
+
+    it('une ligne d’activité évaluée satisfait l’exigence', () => {
+      const f = ficheBase();
+      f.observations.maitre = 'RAS';
+      f.suiviEntreprise = [
+        {
+          id: 'l1',
+          competenceId: null,
+          activiteId: 'a1',
+          evaluationEntreprise: 'maitrise',
+          retourApprenti: '',
+        },
+      ];
+      const r = validerSignature(f, 'maitre', 'entreprise', [], 'activites');
+      expect(r.peutSigner).toBe(true);
+    });
+  });
+
   describe("Maître d'apprentissage — attitudes professionnelles (juillet 2026)", () => {
     /** Fiche entreprise minimale déjà valide hors attitudes. */
     const ficheValide = (): FicheSuiviPeriode => {

@@ -58,6 +58,7 @@ function livret(apprentiId: string, sur: Partial<Livret> = {}): Livret {
     fichesSuiviCentre: [],
     evaluationFinaleCompetences: { lignes: [], modifieLe: '' },
     selectionCompetencesEntreprise: { ids: [], modifieLe: '', historiqueInvalidations: [] },
+    selectionActivitesEntreprise: { ids: [], modifieLe: '', historiqueInvalidations: [] },
     attitudesSelectionnees: [],
     cloture: null,
     creeLe: '',
