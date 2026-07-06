@@ -118,6 +118,9 @@ export type Ressource =
   | 'grille-competences.centre'
   // Export et opérations administratives (CDC §5.6)
   | 'export-pdf'
+  // Page « Accès mobile » (3 juillet 2026) : QR code de l'application à faire
+  // scanner (tuteur en visite, présentation) — réservé à l'encadrement.
+  | 'acces-mobile'
   | 'cloturer-livret'
   // ── Administration (rôle coordo, hors CDC v1.3 — extension métier) ────────
   | 'admin.utilisateurs.creer-apprenti'
@@ -228,6 +231,10 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   // au formateur référent, au coordo et à l'admin (16 juin 2026) — c'est une
   // sortie/consultation, pas du contenu pédagogique. Apprenti·e et maître exclus.
   'export-pdf': ['formateur', 'coordo', 'admin'],
+  // Accès mobile (3 juillet 2026) : afficher le QR code d'accès à l'app pour
+  // le faire scanner (tuteur en visite, démo direction). Pas de contenu
+  // pédagogique — même trio que l'export PDF.
+  'acces-mobile': ['formateur', 'coordo', 'admin'],
   'cloturer-livret': ['formateur'],
 
   // ── Administration (rôles coordo, admin et formateur partiel) ──────────

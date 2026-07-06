@@ -228,6 +228,14 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('maitre', 'export-pdf')).toBe(false);
     });
 
+    it("l'accès mobile (QR code) est réservé à l'encadrement (3 juillet 2026)", () => {
+      expect(peutEditer('formateur', 'acces-mobile')).toBe(true);
+      expect(peutEditer('coordo', 'acces-mobile')).toBe(true);
+      expect(peutEditer('admin', 'acces-mobile')).toBe(true);
+      expect(peutEditer('apprenti', 'acces-mobile')).toBe(false);
+      expect(peutEditer('maitre', 'acces-mobile')).toBe(false);
+    });
+
     it('seul le formateur peut clôturer le livret (R22)', () => {
       expect(peutEditer('formateur', 'cloturer-livret')).toBe(true);
       expect(peutEditer('apprenti', 'cloturer-livret')).toBe(false);

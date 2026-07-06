@@ -121,6 +121,17 @@ Ordre recommandé :
 
 ---
 
+## 2026-07-03 — Accès mobile (QR code)
+
+- **Lien d'invitation à jeton pour l'accès mobile** — la page « Accès mobile » (QR code de
+  l'URL de l'application, réservée formateur/coordo/admin) affiche aujourd'hui l'URL publique
+  derrière le Basic Auth partagé. Avec l'authentification réelle (chantiers 2.1-2.3), le QR
+  devra porter un **lien d'invitation à jeton** (courte durée, usage unique ou limité) qui
+  connecte le tuteur directement sur son compte — plus de mot de passe dicté à l'oral.
+  Motif : dépend du backend d'auth (étape 2) ; la page actuelle est le socle UX.
+
+---
+
 ## Étape 2 — autres pistes structurelles
 
 - **Notifications email métier** (entretien à programmer, fiche à signer, alerte R7, invalidation R10, livret clôturé…)

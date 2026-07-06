@@ -17,6 +17,7 @@ import { GestionEtablissements } from '@/pages/admin/GestionEtablissements';
 import { GestionEntreprises } from '@/pages/admin/GestionEntreprises';
 import { GestionAttitudes } from '@/pages/admin/GestionAttitudes';
 import { PronoteWeb } from '@/pages/PronoteWeb';
+import { AccesMobile } from '@/pages/AccesMobile';
 
 /**
  * Composition des routes de l'application.
@@ -45,6 +46,7 @@ export function App() {
         />
         <Route path="livret/evaluation-finale" element={<EvaluationFinale />} />
         <Route path="livret/pronote" element={<PronoteWeb />} />
+        <Route path="livret/acces-mobile" element={<AccesMobile />} />
 
         {/* ── Administration (rôle coordo) ──────────────────────────────── */}
         <Route path="admin/utilisateurs" element={<GestionUtilisateurs />} />

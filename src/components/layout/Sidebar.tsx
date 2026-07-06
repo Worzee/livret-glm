@@ -15,6 +15,7 @@ import {
   ListChecks,
   Menu,
   Notebook,
+  QrCode,
   Target,
   Users,
   X,
@@ -192,6 +193,12 @@ function NavContenu({ onNavigate }: { onNavigate?: () => void }) {
     ...liensEntretiens,
     ...LIENS_LIVRET.slice(2),
   ];
+
+  // Accès mobile (3 juillet 2026) : QR code d'accès à l'application — réservé
+  // à l'encadrement (formateur / coordo / admin, ressource `acces-mobile`).
+  if (peutEditer(roleActif, 'acces-mobile')) {
+    liensLivret.push({ to: '/livret/acces-mobile', label: 'Accès mobile', Icon: QrCode });
+  }
 
   return (
     <nav aria-label="Navigation du livret" className="p-3 space-y-6">
