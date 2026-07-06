@@ -189,7 +189,6 @@ describe('calculerResumeLivret — transitions de cas', () => {
             {
               id: 'se-minh-1-1',
               competenceId: 'c1-1',
-              evaluationGreta: null,
               evaluationEntreprise: null,
               retourApprenti: '',
             },

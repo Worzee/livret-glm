@@ -383,14 +383,11 @@ export interface CommentairesEntretien {
 export interface EntretienTripartite {
   dateEntretien?: string;
   /**
-   * Évaluations des attitudes professionnelles par le maître / tuteur
-   * (retours coordos juin 2026). Au moins une évaluation est exigée pour
-   * que le maître signe (extension R20).
-   */
-  evaluationsAttitudes: EvaluationsAttitudes;
-  /**
    * Réponses à la trame officielle (« première visite », refonte GRETA
    * juin 2026), indexées par id de question de `TRAME_ENTRETIEN`.
+   * (Juillet 2026 : l'évaluation des attitudes professionnelles a quitté
+   * l'entretien — elle se fait désormais sur chaque fiche de période
+   * entreprise ; l'entretien conserve le CHOIX des attitudes.)
    */
   reponsesTrame: ReponsesEntretien;
   appreciationMaitre: AppreciationMaitre;
@@ -403,9 +400,9 @@ export type EtatFiche = 'brouillon' | 'en-cours' | 'signee' | 'verrouillee';
 /**
  * Lieu d'une fiche de suivi par période (17 juin 2026). Détermine la
  * collection du livret (`fichesSuivi` vs `fichesSuiviCentre`), les signataires
- * attendus (entreprise : apprenti·e + maître + formateur ; centre :
- * apprenti·e + formateur) et la colonne d'évaluation éditée
- * (`evaluationEntreprise` vs `evaluationGreta`).
+ * attendus (entreprise : apprenti·e + maître ; centre : apprenti·e +
+ * formateur) et le contenu (juillet 2026 — entreprise : tableau de
+ * compétences + attitudes + observations ; centre : observations seules).
  *
  * Convention transverse : les helpers de logique et les mutations du store
  * prennent `lieu` en paramètre **optionnel, défaut `'entreprise'`** — les
@@ -448,13 +445,13 @@ export interface LigneSuiviEntreprise {
   competenceId: string | null; // null si activité ad hoc
   libelleLibre?: string; // si hors référentiel
   /**
-   * Évaluation côté CFA. Accepte les 4 niveaux entreprise (incl. `'non-fait'`)
-   * pour signaler une compétence non abordée pendant la période côté centre,
-   * par symétrie avec l'évaluation entreprise. La grille finale n'utilise
-   * que les 3 vrais niveaux (`NiveauMaitrise`) — `'non-fait'` est ignoré au
-   * niveau de la synthèse last-write-wins.
+   * Évaluation par le maître / tuteur. `'non-fait'` signale une compétence
+   * non abordée pendant la période — ignorée par la synthèse last-write-wins
+   * de la grille « Synthèse » qui n'utilise que les 3 vrais niveaux.
+   * (Juillet 2026 : `evaluationGreta` a été supprimée avec le tableau de
+   * compétences des fiches centre — les lignes de suivi n'existent plus
+   * qu'en entreprise.)
    */
-  evaluationGreta: NiveauMaitriseEntreprise | null;
   evaluationEntreprise: NiveauMaitriseEntreprise | null;
   retourApprenti: string;
 }
@@ -488,7 +485,22 @@ export interface FicheSuiviPeriode {
   dateDebut: string;
   dateFin: string;
   suiviGretaCfa: SuiviGretaCfa;
+  /**
+   * Lignes de suivi des compétences — **fiches entreprise uniquement**
+   * (juillet 2026 : les fiches centre n'ont plus de tableau de compétences,
+   * seules restent les observations de fin de période — le tableau reste
+   * vide `[]` sur les fiches centre).
+   */
   suiviEntreprise: LigneSuiviEntreprise[];
+  /**
+   * Évaluations des attitudes professionnelles retenues pour le livret,
+   * par le maître / tuteur, **à chaque période en entreprise** (juillet
+   * 2026 — l'évaluation quitte l'entretien tripartite). Indexées par
+   * `attitudeId` du catalogue global. Entrée manquante ou `null` = non
+   * évaluée. R20 : TOUTES les attitudes retenues doivent être évaluées
+   * pour que le maître signe la fiche. Absent sur les fiches centre.
+   */
+  evaluationsAttitudes?: EvaluationsAttitudes;
   observations: ObservationsFiche;
   signatures: SignaturesTripartite;
   etat: EtatFiche;
@@ -500,10 +512,16 @@ export interface FicheSuiviPeriode {
   historiqueDeverrouillages: EntreeDeverrouillage[];
 }
 
+/**
+ * Ligne de la grille de synthèse des compétences (menu « Synthèse »,
+ * anciennement « Évaluation finale » — juillet 2026). Une seule colonne
+ * subsiste : « Acquis en entreprise » (la colonne centre a disparu avec le
+ * tableau de compétences des fiches centre). La grille ne présente que les
+ * compétences de la sélection entreprise.
+ */
 export interface LigneEvaluationFinaleCompetence {
   competenceId: string;
   acquisEntreprise: NiveauMaitrise | null;
-  acquisCentre: NiveauMaitrise | null;
   commentaire?: string;
 }
 
@@ -513,12 +531,12 @@ export interface EvaluationFinaleCompetences {
 }
 
 /**
- * Évaluations des attitudes professionnelles d'un entretien tripartite
- * (retours coordos juin 2026) : les attitudes sont évaluées par le
- * **maître / tuteur** lors de l'entretien tripartite (échelle ++/+/-/--),
- * indexées par `attitudeId` du catalogue global (`useAttitudesStore`). Une
- * entrée manquante ou `null` = non évaluée. L'onglet « Attitudes » de
- * l'évaluation finale est une synthèse en lecture seule de ces évaluations.
+ * Évaluations des attitudes professionnelles (échelle ++/+/-/--), indexées
+ * par `attitudeId` du catalogue global (`useAttitudesStore`). Une entrée
+ * manquante ou `null` = non évaluée. Juillet 2026 : portées par **chaque
+ * fiche de période entreprise** (`FicheSuiviPeriode.evaluationsAttitudes`,
+ * saisies par le maître / tuteur) — l'onglet « Attitudes » de la Synthèse
+ * en est une agrégation last-write-wins en lecture seule.
  */
 export type EvaluationsAttitudes = Record<string, NiveauAppreciation | null>;
 
@@ -526,8 +544,9 @@ export type EvaluationsAttitudes = Record<string, NiveauAppreciation | null>;
  * Ids des attitudes professionnelles retenues pour un livret (13 juin 2026).
  * Le choix se fait **lors de l'entretien tripartite** (maître / tuteur +
  * formateur référent), se fige à sa 3ᵉ signature (pattern sélection des
- * compétences), puis ces attitudes y sont évaluées par le maître.
- * Vide tant que le choix n'a pas été fait.
+ * compétences), puis ces attitudes sont évaluées par le maître **à chaque
+ * période en entreprise** (juillet 2026). Vide tant que le choix n'a pas
+ * été fait.
  */
 export type AttitudesSelectionnees = string[];
 
@@ -616,12 +635,13 @@ export interface Livret {
   entretien: EntretienTripartite | null;
   fichesSuivi: FicheSuiviPeriode[];
   /**
-   * Fiches des **périodes en centre de formation** (17 juin 2026) — miroir de
-   * `fichesSuivi` (entreprise), héritées du planning `Formation.periodesCentre`.
-   * Mêmes structure et règles (séquencement, déverrouillage) ; côté contenu,
-   * les compétences sont évaluées par le formateur (`evaluationGreta` de chaque
-   * ligne) et l'apprenti·e renseigne son retour. Signatures : formateur +
-   * apprenti·e (le maître / tuteur n'est pas concerné par le centre).
+   * Fiches des **périodes en centre de formation** (17 juin 2026, simplifiées
+   * en juillet 2026) — héritées du planning `Formation.periodesCentre`. Mêmes
+   * règles de cycle de vie que l'entreprise (séquencement, déverrouillage R10) ;
+   * côté contenu, il ne reste que les **observations de fin de période**
+   * (apprenti·e : bloquante pour sa signature ; formateur : non bloquante) —
+   * plus aucune évaluation de compétence ni retour apprenti. Signatures :
+   * formateur + apprenti·e (le maître / tuteur n'est pas concerné).
    */
   fichesSuiviCentre: FicheSuiviPeriode[];
   /**

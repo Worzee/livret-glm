@@ -35,7 +35,6 @@ function fiche(
 
 function entretienSigne(complet: boolean): EntretienTripartite {
   return {
-    evaluationsAttitudes: {},
     reponsesTrame: {},
     appreciationMaitre: {},
     commentaires: {},

@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import type {
   Competence,
   FicheSuiviPeriode,
-  LieuFiche,
   LigneSuiviEntreprise,
   Referentiel,
   SelectionCompetencesEntreprise,
@@ -24,21 +23,18 @@ import { BoutonSupprimer } from '@/components/common/BoutonSupprimer';
 import { cn } from '@/lib/utils';
 
 /**
- * Tableau tri-colonnes — cœur de la co-édition.
+ * Tableau tri-colonnes — cœur de la co-édition des fiches ENTREPRISE.
  * Référence : cahier des charges v1.3, sections 5.3 et 11.3.
+ * (Juillet 2026 : les fiches centre n'ont plus de tableau de compétences —
+ * ce composant n'est plus paramétré par `lieu`.)
  *
  * Colonnes :
  *   1. Activité (compétence) — affichage seul, vient du référentiel
- *   2. Évaluation — éditable par le maître (entreprise) ou le formateur (centre)
+ *   2. Évaluation entreprise — éditable par le maître / tuteur
  *   3. Retour apprenti·e — éditable par l'apprenti·e
  *
- * Paramétrage par `lieu` (17 juin 2026) :
- *   - entreprise : colonne `evaluationEntreprise` (maître / tuteur) ; ajout de
- *     compétence ouvert au formateur + maître, restreint à la sélection validée
- *     à l'entretien tripartite.
- *   - centre : colonne `evaluationGreta` (formateur référent) ; ajout réservé au
- *     formateur, libre sur tout le référentiel (le CFA couvre potentiellement
- *     tout le programme — pas de gate « sélection validée »).
+ * Ajout de compétence ouvert au formateur + maître, restreint à la sélection
+ * validée à l'entretien tripartite.
  *
  * Affichage :
  *   - Desktop (≥ md) : tableau classique
@@ -48,14 +44,9 @@ import { cn } from '@/lib/utils';
 interface TableauTriColonnesProps {
   livretId: string;
   fiche: FicheSuiviPeriode;
-  lieu?: LieuFiche;
 }
 
-export function TableauTriColonnes({
-  livretId,
-  fiche,
-  lieu = 'entreprise',
-}: TableauTriColonnesProps) {
+export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps) {
   const roleActif = useUserStore((s) => s.roleActif);
   const setEval = useLivretStore((s) => s.setEvaluationLigne);
   const ajouter = useLivretStore((s) => s.ajouterLigneSuiviEntreprise);
@@ -65,15 +56,7 @@ export function TableauTriColonnes({
   const formations = useFormationsStore((s) => s.formations);
   const referentiels = useReferentielsStore((s) => s.referentiels);
 
-  const estCentre = lieu === 'centre';
-  // Colonne d'évaluation ciblée selon le lieu : `evaluationGreta` (formateur,
-  // centre) ou `evaluationEntreprise` (maître, entreprise).
-  const champEval: 'evaluationEntreprise' | 'evaluationGreta' = estCentre
-    ? 'evaluationGreta'
-    : 'evaluationEntreprise';
-
-  // Sélection des compétences abordées en entreprise (CDC v1.5 addendum) — ne
-  // s'applique QU'À l'entreprise. Au centre, le formateur pioche librement.
+  // Sélection des compétences abordées en entreprise (CDC v1.5 addendum).
   const selection: SelectionCompetencesEntreprise | undefined =
     livretCourant?.selectionCompetencesEntreprise;
   const selectionValidee = selection ? estValidee(selection) : false;
@@ -99,41 +82,27 @@ export function TableauTriColonnes({
 
   // R21 : chaque colonne se ferme dès que le rôle propriétaire a signé.
   // Réouvrable uniquement via un déverrouillage R10.
-  const peutEditerEval = estCentre
-    ? peutEditer(roleActif, 'fiche.evaluation-greta') && peutEncoreEditerFiche(fiche, 'formateur')
-    : peutEditer(roleActif, 'fiche.evaluation-entreprise') &&
-      peutEncoreEditerFiche(fiche, 'maitre');
+  const peutEditerEval =
+    peutEditer(roleActif, 'fiche.evaluation-entreprise') && peutEncoreEditerFiche(fiche, 'maitre');
   const peutEditerRetour =
     peutEditer(roleActif, 'fiche.retour-apprenti') && peutEncoreEditerFiche(fiche, 'apprenti');
 
-  // Ajout / retrait d'une compétence sur la fiche.
-  //  - entreprise : formateur + maître / tuteur (17 juin 2026), filtré par la
-  //    sélection validée à l'entretien tripartite.
-  //  - centre : formateur seul, libre sur tout le référentiel.
+  // Ajout / retrait d'une compétence sur la fiche : formateur + maître /
+  // tuteur (17 juin 2026), filtré par la sélection validée à l'entretien.
   const roleProprietaireAjout = roleActif === 'maitre' ? 'maitre' : 'formateur';
-  const peutAjouterLigne = estCentre
-    ? peutEditer(roleActif, 'fiche.evaluation-greta') && peutEncoreEditerFiche(fiche, 'formateur')
-    : peutEditer(roleActif, 'fiche.ajouter-competence') &&
-      peutEncoreEditerFiche(fiche, roleProprietaireAjout);
+  const peutAjouterLigne =
+    peutEditer(roleActif, 'fiche.ajouter-competence') &&
+    peutEncoreEditerFiche(fiche, roleProprietaireAjout);
 
-  // Au centre, le sélecteur propose tout le référentiel (selection = undefined).
-  const selectionAjout = estCentre ? undefined : selection;
-  const sectionAjoutVisible = estCentre
-    ? peutAjouterLigne
-    : peutAjouterLigne && selectionValidee && !!selection;
+  const sectionAjoutVisible = peutAjouterLigne && selectionValidee && !!selection;
 
-  // Libellés et teintes dérivés du lieu.
-  const titreSection = estCentre
-    ? 'Suivi de la formation en centre'
-    : 'Suivi de la formation en entreprise';
-  const sousTitreSection = estCentre
-    ? 'Compétences travaillées au CFA, évaluées par le formateur référent.'
-    : 'Co-édition tripartite par compétence du référentiel.';
-  const libelleEval = estCentre ? 'Évaluation centre' : 'Évaluation entreprise';
-  const emojiEval = estCentre ? '🎓 Centre' : '🏭 Entreprise';
-  const classeTexteEval = estCentre ? 'text-role-formateur' : 'text-role-maitre';
-  const bordureEval = estCentre ? 'border-l-role-formateur/20' : 'border-l-role-maitre/20';
-  const bordureEvalCarte = estCentre ? 'border-l-role-formateur/30' : 'border-l-role-maitre/30';
+  const titreSection = 'Suivi de la formation en entreprise';
+  const sousTitreSection = 'Co-édition tripartite par compétence du référentiel.';
+  const libelleEval = 'Évaluation entreprise';
+  const emojiEval = '🏭 Entreprise';
+  const classeTexteEval = 'text-role-maitre';
+  const bordureEval = 'border-l-role-maitre/20';
+  const bordureEvalCarte = 'border-l-role-maitre/30';
 
   return (
     <section className="space-y-3">
@@ -145,8 +114,8 @@ export function TableauTriColonnes({
         {sectionAjoutVisible && (
           <AjouterCompetence
             referentiel={referentiel}
-            selection={selectionAjout}
-            onAjouter={(id) => ajouter(livretId, fiche.id, id, undefined, lieu)}
+            selection={selection}
+            onAjouter={(id) => ajouter(livretId, fiche.id, id)}
             competencesPresentes={
               fiche.suiviEntreprise.map((l) => l.competenceId).filter(Boolean) as string[]
             }
@@ -154,8 +123,8 @@ export function TableauTriColonnes({
         )}
       </header>
 
-      {/* Bandeau « sélection non validée » — entreprise uniquement. */}
-      {!estCentre && !selectionValidee && (
+      {/* Bandeau « sélection non validée ». */}
+      {!selectionValidee && (
         <div
           role="status"
           className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
@@ -205,19 +174,18 @@ export function TableauTriColonnes({
                 key={l.id}
                 ligne={l}
                 competencesParId={competencesParId}
-                champEval={champEval}
                 libelleEval={libelleEval}
                 bordureEval={bordureEval}
                 peutEditerEval={peutEditerEval}
                 peutEditerRetour={peutEditerRetour}
                 peutSupprimer={peutAjouterLigne}
                 onChangeEval={(v) =>
-                  setEval(livretId, fiche.id, l.id, { type: champEval, valeur: v }, lieu)
+                  setEval(livretId, fiche.id, l.id, { type: 'evaluationEntreprise', valeur: v })
                 }
                 onChangeRetour={(v) =>
-                  setEval(livretId, fiche.id, l.id, { type: 'retourApprenti', valeur: v }, lieu)
+                  setEval(livretId, fiche.id, l.id, { type: 'retourApprenti', valeur: v })
                 }
-                onSupprimer={() => supprimer(livretId, fiche.id, l.id, lieu)}
+                onSupprimer={() => supprimer(livretId, fiche.id, l.id)}
               />
             ))}
           </tbody>
@@ -236,7 +204,6 @@ export function TableauTriColonnes({
             key={l.id}
             ligne={l}
             competencesParId={competencesParId}
-            champEval={champEval}
             emojiEval={emojiEval}
             classeTexteEval={classeTexteEval}
             bordureEvalCarte={bordureEvalCarte}
@@ -244,12 +211,12 @@ export function TableauTriColonnes({
             peutEditerRetour={peutEditerRetour}
             peutSupprimer={peutAjouterLigne}
             onChangeEval={(v) =>
-              setEval(livretId, fiche.id, l.id, { type: champEval, valeur: v }, lieu)
+              setEval(livretId, fiche.id, l.id, { type: 'evaluationEntreprise', valeur: v })
             }
             onChangeRetour={(v) =>
-              setEval(livretId, fiche.id, l.id, { type: 'retourApprenti', valeur: v }, lieu)
+              setEval(livretId, fiche.id, l.id, { type: 'retourApprenti', valeur: v })
             }
-            onSupprimer={() => supprimer(livretId, fiche.id, l.id, lieu)}
+            onSupprimer={() => supprimer(livretId, fiche.id, l.id)}
           />
         ))}
       </div>
@@ -264,7 +231,6 @@ export function TableauTriColonnes({
 interface CelluleProps {
   ligne: LigneSuiviEntreprise;
   competencesParId: ReadonlyMap<string, Competence>;
-  champEval: 'evaluationEntreprise' | 'evaluationGreta';
   peutEditerEval: boolean;
   peutEditerRetour: boolean;
   peutSupprimer: boolean;
@@ -296,7 +262,7 @@ function libelleCompetence(
 }
 
 function LigneTableau(props: LigneTableauProps) {
-  const { ligne, competencesParId, champEval, libelleEval, bordureEval } = props;
+  const { ligne, competencesParId, libelleEval, bordureEval } = props;
   const libelle = libelleCompetence(ligne, competencesParId);
 
   return (
@@ -308,7 +274,7 @@ function LigneTableau(props: LigneTableauProps) {
         <SelecteurNiveau
           editable={props.peutEditerEval}
           mode="entreprise"
-          valeur={ligne[champEval]}
+          valeur={ligne.evaluationEntreprise}
           onChange={(v) => props.onChangeEval(v as LigneSuiviEntreprise['evaluationEntreprise'])}
           ariaLabel={`${libelleEval} pour ${libelle}`}
         />
@@ -343,8 +309,7 @@ function LigneTableau(props: LigneTableauProps) {
 }
 
 function CarteCompetence(props: CarteCompetenceProps) {
-  const { ligne, competencesParId, champEval, emojiEval, classeTexteEval, bordureEvalCarte } =
-    props;
+  const { ligne, competencesParId, emojiEval, classeTexteEval, bordureEvalCarte } = props;
   const libelle = libelleCompetence(ligne, competencesParId);
 
   return (
@@ -354,7 +319,7 @@ function CarteCompetence(props: CarteCompetenceProps) {
           <div className="text-sm font-medium">{libelle}</div>
         </div>
         <div className="flex items-center gap-1">
-          <Pastille valeur={ligne[champEval]} title={emojiEval} />
+          <Pastille valeur={ligne.evaluationEntreprise} title={emojiEval} />
           <Pastille
             valeur={ligne.retourApprenti ? 'rempli' : 'vide'}
             title="Retour apprenti·e"
@@ -368,7 +333,7 @@ function CarteCompetence(props: CarteCompetenceProps) {
         <SelecteurNiveau
           editable={props.peutEditerEval}
           mode="entreprise"
-          valeur={ligne[champEval]}
+          valeur={ligne.evaluationEntreprise}
           onChange={(v) => props.onChangeEval(v as LigneSuiviEntreprise['evaluationEntreprise'])}
           ariaLabel={`${emojiEval} pour ${libelle}`}
         />
@@ -406,7 +371,7 @@ function CarteCompetence(props: CarteCompetenceProps) {
 }
 
 interface PastilleProps {
-  valeur: LigneSuiviEntreprise['evaluationGreta'] | string | null;
+  valeur: LigneSuiviEntreprise['evaluationEntreprise'] | string | null;
   title: string;
   mode?: 'standard' | 'binaire';
 }
@@ -435,10 +400,7 @@ function Pastille({ valeur, title, mode = 'standard' }: PastilleProps) {
 interface AjouterCompetenceProps {
   /** Référentiel courant — résolu côté parent depuis la formation de l'apprenti·e. */
   referentiel: Referentiel;
-  /**
-   * Sélection validée des compétences abordées en entreprise. `undefined` au
-   * centre : tout le référentiel est proposé.
-   */
+  /** Sélection validée des compétences abordées en entreprise. */
   selection?: SelectionCompetencesEntreprise;
   onAjouter: (competenceId: string | null) => void;
   competencesPresentes: string[];
@@ -467,9 +429,8 @@ function AjouterCompetence({
         + Ajouter une compétence…
       </option>
       {referentiel.blocs.flatMap((bloc) => {
-        // Filtrage : à l'entreprise, seules les compétences de la sélection
-        // validée apparaissent (CDC v1.5 addendum). Au centre (`selection`
-        // absente), tout le bloc est proposé.
+        // Filtrage : seules les compétences de la sélection validée
+        // apparaissent (CDC v1.5 addendum).
         const competencesAbordees = selection
           ? bloc.competences.filter((c) => estSelectionnee(selection, c.id))
           : bloc.competences;

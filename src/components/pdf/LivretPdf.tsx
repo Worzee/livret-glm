@@ -31,6 +31,10 @@ import { libelleEvenement } from '@/lib/organisation-suivi';
 import { TRAME_ENTRETIEN, pointsAlerteTrame } from '@/lib/trame-entretien';
 import { ATTITUDES_OBLIGATOIRES, lignesSyntheseAttitudes } from '@/lib/attitudes';
 import { attitudesRetenues } from '@/lib/selection-attitudes';
+import {
+  creerSelectionVierge,
+  restreindreReferentielALaSelection,
+} from '@/lib/selection-competences-entreprise';
 import { COULEURS, COULEURS_APPRECIATION, styles } from './styles';
 import {
   couleurEtatFiche,
@@ -129,7 +133,6 @@ export function LivretPdf({
           apprenti={apprenti}
           maitre={maitre}
           formateur={formateur}
-          attitudes={attitudesDuLivret}
         />
       )}
       {livret.fichesSuivi.map((fiche) => (
@@ -140,6 +143,7 @@ export function LivretPdf({
           apprenti={apprenti}
           maitre={maitre}
           formateur={formateur}
+          attitudes={attitudesDuLivret}
         />
       ))}
       {(livret.fichesSuiviCentre ?? []).map((fiche) => (
@@ -181,6 +185,7 @@ export function PeriodePdf({
   referentiel,
   etablissement,
   entreprise,
+  attitudes,
   dateExport,
   lieu = 'entreprise',
 }: LivretPdfProps & { fiche: FicheSuiviPeriode; lieu?: LieuFiche }) {
@@ -212,6 +217,9 @@ export function PeriodePdf({
         maitre={maitre}
         formateur={formateur}
         lieu={lieu}
+        attitudes={
+          estCentre ? undefined : attitudesRetenues(attitudes, livret.attitudesSelectionnees ?? [])
+        }
       />
     </Document>
   );
@@ -227,13 +235,11 @@ export function EntretienPdf({
   formation,
   etablissement,
   entreprise,
-  attitudes,
   dateExport,
 }: LivretPdfProps) {
   const date = dateExport ?? new Date().toISOString();
   const nomComplet = `${apprenti.prenom} ${apprenti.nom}`;
   const entretien = livret.entretien;
-  const attitudesDuLivret = attitudesRetenues(attitudes, livret.attitudesSelectionnees ?? []);
   return (
     <Document
       title={`Entretien tripartite - ${nomComplet}`}
@@ -258,7 +264,6 @@ export function EntretienPdf({
           apprenti={apprenti}
           maitre={maitre}
           formateur={formateur}
-          attitudes={attitudesDuLivret}
         />
       )}
     </Document>
@@ -700,13 +705,11 @@ export function PageEntretien({
   apprenti,
   maitre,
   formateur,
-  attitudes,
 }: {
   entretien: EntretienTripartite;
   apprenti: Apprenti;
   maitre: Maitre;
   formateur: Formateur;
-  attitudes: ReadonlyArray<AttitudeProfessionnelle>;
 }) {
   const ap = entretien.appreciationMaitre;
   const c = entretien.commentaires;
@@ -758,19 +761,12 @@ export function PageEntretien({
           </View>
         )}
 
-        {/* Attitudes professionnelles évaluées à l'entretien (juin 2026).
-            3 juillet 2026 : les 4 obligatoires (appréciation générale du
-            maître) ouvrent la liste, au-dessus des optionnelles retenues. */}
-        <Text style={styles.h3}>Attitudes professionnelles (maître)</Text>
+        {/* Appréciation générale du maître = 4 attitudes obligatoires de la
+            trame officielle. Juillet 2026 : les attitudes RETENUES s'évaluent
+            désormais sur chaque fiche de période entreprise (cf. PageFiche). */}
+        <Text style={styles.h3}>Attitudes professionnelles obligatoires (maître)</Text>
         {ATTITUDES_OBLIGATOIRES.map((o) => (
-          <ChampAppreciation key={o.cle} label={`${o.libelle} (obligatoire)`} niveau={ap[o.cle]} />
-        ))}
-        {attitudes.map((a) => (
-          <ChampAppreciation
-            key={a.id}
-            label={a.libelle}
-            niveau={entretien.evaluationsAttitudes[a.id]}
-          />
+          <ChampAppreciation key={o.cle} label={o.libelle} niveau={ap[o.cle]} />
         ))}
         {ap.commentaires && (
           <ParagrapheLibre titre="Commentaires du maître" valeur={ap.commentaires} />
@@ -810,6 +806,7 @@ export function PageFiche({
   maitre,
   formateur,
   lieu = 'entreprise',
+  attitudes,
 }: {
   fiche: FicheSuiviPeriode;
   referentiel: Referentiel;
@@ -817,6 +814,11 @@ export function PageFiche({
   maitre: Maitre;
   formateur: Formateur;
   lieu?: LieuFiche;
+  /**
+   * Attitudes RETENUES pour le livret (juillet 2026) — évaluées par le
+   * maître / tuteur à chaque période en entreprise. Ignoré au centre.
+   */
+  attitudes?: ReadonlyArray<AttitudeProfessionnelle>;
 }) {
   const competencesById = new Map(
     referentiel.blocs.flatMap((b) => b.competences.map((c) => [c.id, c])),
@@ -840,50 +842,73 @@ export function PageFiche({
         </Text>
 
         {/* La zone « Suivi GRETA CFA » a été retirée partout (1ᵉʳ juillet
-            2026) : tout se rédige dans les observations de fin de période. */}
+            2026) : tout se rédige dans les observations de fin de période.
+            Juillet 2026 : la fiche centre n'a plus de tableau de compétences
+            ni d'attitudes — observations et signatures uniquement. */}
 
-        {/* Tableau tri-colonnes (compétences + évaluations + retour apprenti) */}
-        <Text style={styles.h2}>Activités et évaluations</Text>
-        {fiche.suiviEntreprise.length === 0 ? (
-          <Text style={styles.vide}>Aucune compétence évaluée.</Text>
-        ) : (
-          <View style={styles.tableau}>
-            <View style={[styles.tableauLigne, styles.tableauEnTete]}>
-              <Text style={[styles.tableauCellule, { width: '40%' }]}>Compétence</Text>
-              <Text style={[styles.tableauCellule, { width: '25%' }]}>
-                {estCentre ? 'Évaluation centre' : 'Évaluation entreprise'}
-              </Text>
-              <Text style={[styles.tableauCelluleDerniere, { width: '35%' }]}>
-                Retour {apprenti.prenom}
-              </Text>
-            </View>
-            {fiche.suiviEntreprise.map((l, idx) => {
-              const comp = l.competenceId ? competencesById.get(l.competenceId) : null;
-              const libelleC = comp
-                ? comp.libelle
-                : (l.libelleLibre ?? 'Activité hors référentiel');
-              const evaluation = estCentre ? l.evaluationGreta : l.evaluationEntreprise;
-              return (
-                <View
-                  key={l.id}
-                  style={
-                    idx === fiche.suiviEntreprise.length - 1
-                      ? styles.tableauLigneSansBordure
-                      : styles.tableauLigne
-                  }
-                  wrap={false}
-                >
-                  <Text style={[styles.tableauCellule, { width: '40%' }]}>{libelleC}</Text>
+        {/* Tableau tri-colonnes (compétences + évaluations + retour apprenti)
+            — fiches ENTREPRISE uniquement. */}
+        {!estCentre && (
+          <>
+            <Text style={styles.h2}>Activités et évaluations</Text>
+            {fiche.suiviEntreprise.length === 0 ? (
+              <Text style={styles.vide}>Aucune compétence évaluée.</Text>
+            ) : (
+              <View style={styles.tableau}>
+                <View style={[styles.tableauLigne, styles.tableauEnTete]}>
+                  <Text style={[styles.tableauCellule, { width: '40%' }]}>Compétence</Text>
                   <Text style={[styles.tableauCellule, { width: '25%' }]}>
-                    <Text style={styleNiveau(evaluation)}>{libelleNiveau(evaluation)}</Text>
+                    Évaluation entreprise
                   </Text>
                   <Text style={[styles.tableauCelluleDerniere, { width: '35%' }]}>
-                    {l.retourApprenti || '—'}
+                    Retour {apprenti.prenom}
                   </Text>
                 </View>
-              );
-            })}
-          </View>
+                {fiche.suiviEntreprise.map((l, idx) => {
+                  const comp = l.competenceId ? competencesById.get(l.competenceId) : null;
+                  const libelleC = comp
+                    ? comp.libelle
+                    : (l.libelleLibre ?? 'Activité hors référentiel');
+                  return (
+                    <View
+                      key={l.id}
+                      style={
+                        idx === fiche.suiviEntreprise.length - 1
+                          ? styles.tableauLigneSansBordure
+                          : styles.tableauLigne
+                      }
+                      wrap={false}
+                    >
+                      <Text style={[styles.tableauCellule, { width: '40%' }]}>{libelleC}</Text>
+                      <Text style={[styles.tableauCellule, { width: '25%' }]}>
+                        <Text style={styleNiveau(l.evaluationEntreprise)}>
+                          {libelleNiveau(l.evaluationEntreprise)}
+                        </Text>
+                      </Text>
+                      <Text style={[styles.tableauCelluleDerniere, { width: '35%' }]}>
+                        {l.retourApprenti || '—'}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </>
+        )}
+
+        {/* Attitudes professionnelles de la période (juillet 2026) — retenues
+            à l'entretien, évaluées par le maître / tuteur à chaque période. */}
+        {!estCentre && attitudes && attitudes.length > 0 && (
+          <>
+            <Text style={styles.h2}>Attitudes professionnelles (maître / tuteur)</Text>
+            {attitudes.map((a) => (
+              <ChampAppreciation
+                key={a.id}
+                label={a.libelle}
+                niveau={fiche.evaluationsAttitudes?.[a.id] ?? undefined}
+              />
+            ))}
+          </>
         )}
 
         {/* Observations — au centre, pas de zone maître / tuteur. */}
@@ -960,46 +985,46 @@ function PageEvaluationFinale({
   /** Catalogue global des attitudes professionnelles (juin 2026). */
   attitudes: ReadonlyArray<AttitudeProfessionnelle>;
 }) {
-  const synthese = synthetiserCompetences(
-    livret.fichesSuivi,
-    livret.fichesSuiviCentre ?? [],
-    referentiel,
-  );
+  // Juillet 2026 : la Synthèse ne présente QUE les compétences abordées en
+  // stage (sélection entreprise) — colonne unique « Acquis en entreprise ».
+  const selection = livret.selectionCompetencesEntreprise ?? creerSelectionVierge();
+  const referentielSelectionne = restreindreReferentielALaSelection(referentiel, selection);
+  const synthese = synthetiserCompetences(livret.fichesSuivi, referentielSelectionne);
   const lignes = livret.evaluationFinaleCompetences.lignes;
-  const stats = calculerStatsParBloc(referentiel, lignes, synthese);
+  const stats = calculerStatsParBloc(referentielSelectionne, lignes, synthese);
   // 3 juillet 2026 : 4 attitudes obligatoires (appréciation du maître) en
-  // tête du tableau, puis les optionnelles retenues pour le livret.
+  // tête du tableau, puis les retenues — agrégées last-write-wins depuis les
+  // fiches de période entreprise (juillet 2026).
   const lignesAttitudes = lignesSyntheseAttitudes(
     attitudes,
     livret.attitudesSelectionnees ?? [],
     livret.entretien,
+    livret.fichesSuivi,
   );
 
   return (
     <Page size="A4" style={styles.page}>
       <PiedDePage dateExport={new Date().toISOString()} />
       <View>
-        <Text style={styles.h1}>Évaluation finale</Text>
+        <Text style={styles.h1}>Synthèse</Text>
 
         <Text style={styles.h2}>Synthèse par bloc de compétences</Text>
         {stats.map((s) => (
           <View key={s.bloc.id} style={[styles.encart, { marginBottom: 6 }]}>
             <Text style={styles.encartTitre}>{s.bloc.libelle}</Text>
             <LigneStats titre="Entreprise" stats={s.entreprise} />
-            <LigneStats titre="Centre" stats={s.centre} />
           </View>
         ))}
 
-        <Text style={styles.h2}>Compétences (entreprise / centre)</Text>
-        {referentiel.blocs.map((bloc) => (
+        <Text style={styles.h2}>Compétences abordées en entreprise</Text>
+        {referentielSelectionne.blocs.map((bloc) => (
           <View key={bloc.id} style={{ marginBottom: 8 }} wrap={false}>
             <Text style={styles.h3}>{bloc.libelle}</Text>
             <View style={styles.tableau}>
               <View style={[styles.tableauLigne, styles.tableauEnTete]}>
-                <Text style={[styles.tableauCellule, { width: '50%' }]}>Compétence</Text>
-                <Text style={[styles.tableauCellule, { width: '20%' }]}>Acquis entreprise</Text>
-                <Text style={[styles.tableauCellule, { width: '20%' }]}>Acquis centre</Text>
-                <Text style={[styles.tableauCelluleDerniere, { width: '10%' }]}>Source</Text>
+                <Text style={[styles.tableauCellule, { width: '60%' }]}>Compétence</Text>
+                <Text style={[styles.tableauCellule, { width: '25%' }]}>Acquis entreprise</Text>
+                <Text style={[styles.tableauCelluleDerniere, { width: '15%' }]}>Source</Text>
               </View>
               {construireLignesGrillePdf(bloc).map((row, idx, rows) => {
                 const styleLigne =
@@ -1017,28 +1042,29 @@ function PageEvaluationFinale({
                 const ligne = lignes.find((l) => l.competenceId === c.id) ?? {
                   competenceId: c.id,
                   acquisEntreprise: null,
-                  acquisCentre: null,
                 };
-                const ent = valeurEffective(ligne, synthese, 'acquisEntreprise');
-                const cen = valeurEffective(ligne, synthese, 'acquisCentre');
+                const ent = valeurEffective(ligne, synthese);
                 return (
                   <View key={c.id} style={styleLigne}>
                     <Text
                       style={[
                         styles.tableauCellule,
-                        { width: '50%', paddingLeft: row.indente ? 10 : 0 },
+                        { width: '60%', paddingLeft: row.indente ? 10 : 0 },
                       ]}
                     >
                       {c.libelle}
                     </Text>
-                    <Text style={[styles.tableauCellule, { width: '20%' }]}>
+                    <Text style={[styles.tableauCellule, { width: '25%' }]}>
                       <Text style={styleNiveau(ent.valeur)}>{libelleNiveau(ent.valeur)}</Text>
                     </Text>
-                    <Text style={[styles.tableauCellule, { width: '20%' }]}>
-                      <Text style={styleNiveau(cen.valeur)}>{libelleNiveau(cen.valeur)}</Text>
-                    </Text>
-                    <Text style={[styles.tableauCelluleDerniere, { width: '10%', fontSize: 8 }]}>
-                      {ent.source === 'synthese' || cen.source === 'synthese' ? 'fiches' : 'final'}
+                    <Text style={[styles.tableauCelluleDerniere, { width: '15%', fontSize: 8 }]}>
+                      {ent.source === 'synthese'
+                        ? ent.numeroPeriode !== undefined
+                          ? `Période ${ent.numeroPeriode}`
+                          : 'fiches'
+                        : ent.source === 'manuelle'
+                          ? 'final'
+                          : '-'}
                     </Text>
                   </View>
                 );
@@ -1047,15 +1073,15 @@ function PageEvaluationFinale({
           </View>
         ))}
 
-        {/* Synthèse des attitudes professionnelles (juin 2026) : évaluées
-            par le maître / tuteur lors de l'entretien tripartite. */}
-        <Text style={styles.h2}>Attitudes professionnelles (synthèse de l'entretien)</Text>
+        {/* Synthèse des attitudes professionnelles (juillet 2026) : évaluées
+            par le maître / tuteur à chaque période en entreprise —
+            last-write-wins ; les 4 obligatoires viennent de l'entretien. */}
+        <Text style={styles.h2}>Attitudes professionnelles</Text>
         <View style={styles.tableau}>
           <View style={[styles.tableauLigne, styles.tableauEnTete]}>
-            <Text style={[styles.tableauCellule, { width: '70%' }]}>Attitude</Text>
-            <Text style={[styles.tableauCelluleDerniere, { width: '30%' }]}>
-              Entretien tripartite
-            </Text>
+            <Text style={[styles.tableauCellule, { width: '60%' }]}>Attitude</Text>
+            <Text style={[styles.tableauCellule, { width: '20%' }]}>Dernier niveau</Text>
+            <Text style={[styles.tableauCelluleDerniere, { width: '20%' }]}>Source</Text>
           </View>
           {lignesAttitudes.map((ligne, idx) => (
             <View
@@ -1066,10 +1092,10 @@ function PageEvaluationFinale({
                   : styles.tableauLigne
               }
             >
-              <Text style={[styles.tableauCellule, { width: '70%' }]}>
+              <Text style={[styles.tableauCellule, { width: '60%' }]}>
                 {ligne.obligatoire ? `${ligne.libelle} (obligatoire)` : ligne.libelle}
               </Text>
-              <Text style={[styles.tableauCelluleDerniere, { width: '30%' }]}>
+              <Text style={[styles.tableauCellule, { width: '20%' }]}>
                 <Text
                   style={
                     ligne.niveau
@@ -1082,6 +1108,15 @@ function PageEvaluationFinale({
                 >
                   {libelleAppreciation(ligne.niveau)}
                 </Text>
+              </Text>
+              <Text style={[styles.tableauCelluleDerniere, { width: '20%', fontSize: 8 }]}>
+                {ligne.niveau === null
+                  ? '-'
+                  : ligne.obligatoire
+                    ? 'Entretien'
+                    : ligne.numeroPeriode !== undefined
+                      ? `Période ${ligne.numeroPeriode}`
+                      : '-'}
               </Text>
             </View>
           ))}

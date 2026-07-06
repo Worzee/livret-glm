@@ -6,37 +6,33 @@ import type {
 } from '@/types';
 
 /** Une entrée de synthèse par compétence : la dernière éval connue côté
- *  centre et côté entreprise, accompagnée du numéro de période d'origine
- *  pour permettre à l'UI d'afficher « Vu en Période N ». */
+ *  entreprise, accompagnée du numéro de période d'origine pour permettre à
+ *  l'UI d'afficher « Vu en Période N ». (Juillet 2026 : la source centre a
+ *  disparu avec le tableau de compétences des fiches centre.) */
 export interface SyntheseCompetenceEntree {
   acquisEntreprise: NiveauMaitrise | null;
-  acquisCentre: NiveauMaitrise | null;
   /** Numéro de la dernière période où la cellule entreprise a été évaluée. */
   periodeEntreprise?: number;
-  /** Numéro de la dernière période où la cellule centre a été évaluée. */
-  periodeCentre?: number;
 }
 
 /**
- * Synthèse de l'évaluation finale à partir des fiches de suivi par période.
- * Référence : cahier des charges v1.3, section 5.4.
+ * Synthèse de la grille « Synthèse » (anciennement « Évaluation finale ») à
+ * partir des fiches de suivi par période.
+ * Référence : cahier des charges v1.3, section 5.4 + simplification des
+ * fiches centre (juillet 2026 — source unique : les fiches ENTREPRISE).
  *
- * Deux sources distinctes depuis le 17 juin 2026 (périodes en centre) :
- * - `acquisEntreprise` <-- dernière `evaluationEntreprise` non-nulle des
- *   **fiches entreprise** (`Livret.fichesSuivi`, évaluées par le tuteur) ;
- * - `acquisCentre` <-- dernière `evaluationGreta` non-nulle des **fiches
- *   centre** (`Livret.fichesSuiviCentre`, évaluées par le formateur référent).
+ * `acquisEntreprise` <-- dernière `evaluationEntreprise` non-nulle des
+ * fiches entreprise (`Livret.fichesSuivi`, évaluées par le tuteur).
  *
- * Pour chaque source, on parcourt les fiches dans l'ordre chronologique et on
- * retient la DERNIÈRE évaluation non-nulle (last-write-wins). La valeur
- * 'non-fait' est ignorée (compétence non abordée — pas un acquis).
+ * On parcourt les fiches dans l'ordre chronologique et on retient la DERNIÈRE
+ * évaluation non-nulle (last-write-wins). La valeur 'non-fait' est ignorée
+ * (compétence non abordée — pas un acquis).
  *
  * Cette fonction NE mute PAS le livret : elle retourne une suggestion affichée
  * à côté des saisies manuelles (héritage transparent).
  */
 export function synthetiserCompetences(
   fichesEntreprise: FicheSuiviPeriode[],
-  fichesCentre: FicheSuiviPeriode[],
   referentiel: Referentiel,
 ): Map<string, SyntheseCompetenceEntree> {
   const synthese = new Map<string, SyntheseCompetenceEntree>();
@@ -44,11 +40,11 @@ export function synthetiserCompetences(
   // Initialiser à null pour toutes les compétences du référentiel
   for (const bloc of referentiel.blocs) {
     for (const c of bloc.competences) {
-      synthese.set(c.id, { acquisEntreprise: null, acquisCentre: null });
+      synthese.set(c.id, { acquisEntreprise: null });
     }
   }
 
-  // Entreprise : dernière `evaluationEntreprise` non-nulle (last-write-wins).
+  // Dernière `evaluationEntreprise` non-nulle (last-write-wins).
   for (const fiche of [...fichesEntreprise].sort((a, b) => a.numeroPeriode - b.numeroPeriode)) {
     for (const ligne of fiche.suiviEntreprise) {
       if (!ligne.competenceId) continue;
@@ -61,24 +57,11 @@ export function synthetiserCompetences(
     }
   }
 
-  // Centre : dernière `evaluationGreta` non-nulle (last-write-wins).
-  for (const fiche of [...fichesCentre].sort((a, b) => a.numeroPeriode - b.numeroPeriode)) {
-    for (const ligne of fiche.suiviEntreprise) {
-      if (!ligne.competenceId) continue;
-      const cible = synthese.get(ligne.competenceId);
-      if (!cible) continue;
-      if (ligne.evaluationGreta !== null && ligne.evaluationGreta !== 'non-fait') {
-        cible.acquisCentre = ligne.evaluationGreta;
-        cible.periodeCentre = fiche.numeroPeriode;
-      }
-    }
-  }
-
   return synthese;
 }
 
 /**
- * Récupère la valeur effective d'une cellule de la grille finale :
+ * Récupère la valeur effective d'une cellule de la grille de synthèse :
  * - la saisie manuelle si elle existe (non-null)
  * - sinon la valeur héritée des fiches via la synthèse
  *
@@ -88,26 +71,27 @@ export function synthetiserCompetences(
 export function valeurEffective(
   ligne: LigneEvaluationFinaleCompetence,
   synthese: Map<string, SyntheseCompetenceEntree>,
-  colonne: 'acquisEntreprise' | 'acquisCentre',
 ): {
   valeur: NiveauMaitrise | null;
   source: 'manuelle' | 'synthese' | 'aucune';
   numeroPeriode?: number;
 } {
-  if (ligne[colonne] !== null) {
-    return { valeur: ligne[colonne], source: 'manuelle' };
+  if (ligne.acquisEntreprise !== null) {
+    return { valeur: ligne.acquisEntreprise, source: 'manuelle' };
   }
   const heritage = synthese.get(ligne.competenceId);
-  if (heritage && heritage[colonne] !== null) {
-    const numeroPeriode =
-      colonne === 'acquisEntreprise' ? heritage.periodeEntreprise : heritage.periodeCentre;
-    return { valeur: heritage[colonne], source: 'synthese', numeroPeriode };
+  if (heritage && heritage.acquisEntreprise !== null) {
+    return {
+      valeur: heritage.acquisEntreprise,
+      source: 'synthese',
+      numeroPeriode: heritage.periodeEntreprise,
+    };
   }
   return { valeur: null, source: 'aucune' };
 }
 
 /**
- * Garde-fou de la grille finale (retours coordos juin 2026) : une valeur
+ * Garde-fou de la grille de synthèse (retours coordos juin 2026) : une valeur
  * héritée des fiches de période ne doit pas être écrasée d'un simple clic.
  * Retourne `true` si la saisie `nouvelleValeur` remplacerait un héritage —
  * l'UI doit alors demander une confirmation explicite.
@@ -123,9 +107,8 @@ export function valeurEffective(
 export function confirmationRequisePourEcraserHeritage(
   ligne: LigneEvaluationFinaleCompetence,
   synthese: Map<string, SyntheseCompetenceEntree>,
-  colonne: 'acquisEntreprise' | 'acquisCentre',
   nouvelleValeur: NiveauMaitrise | null,
 ): boolean {
   if (nouvelleValeur === null) return false;
-  return valeurEffective(ligne, synthese, colonne).source === 'synthese';
+  return valeurEffective(ligne, synthese).source === 'synthese';
 }

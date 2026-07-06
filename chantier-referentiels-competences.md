@@ -1,7 +1,7 @@
 # Chantier — Refonte des référentiels et des compétences
 
 **Créé le** : 2026-07-06, à l'issue de la réunion direction (très positive)
-**Statut** : en cours — modification #1 livrée le 2026-07-06
+**Statut** : en cours — modifications #1 et #2 livrées le 2026-07-06, #3 en cours
 **Objet** : une « énorme phase de modification » est annoncée sur les référentiels et les
 compétences. Ce document est la **carte complète du sous-système** telle qu'elle existe
 aujourd'hui — à lire avant toute modification, pour ne pas ré-explorer le code et ne rien
@@ -70,6 +70,82 @@ devient « sur les feuilles **non exclues** » — consommer le référentiel vi
 ⚠ Les sections ci-dessous (§2, §7…) décrivent l'état AVANT cette modification pour ce qui
 concerne les entretiens (E1..E4, `nombreEntretiens`) — les invariants référentiels /
 compétences restent exacts.
+
+### Modification #3 — périodes en centre simplifiées + menu « Synthèse » (2026-07-06)
+
+Décision pilote : **les périodes en centre ne portent plus aucune évaluation de
+compétences ni retour apprenti** — seules restent les deux observations de fin de
+période (celle de l'apprenti·e, bloquante pour sa signature ; celle du formateur
+référent, non bloquante). Conséquence directe : le menu « Évaluation finale »
+devient « **Synthèse** » et ne présente plus que les compétences abordées en stage
+et les attitudes professionnelles, **désormais évaluées à chaque période de
+stage** ; la notion de « compétences abordées en centre » disparaît entièrement.
+
+Arbitrages validés par le pilote en séance :
+
+1. **Attitudes évaluées sur les périodes de stage uniquement** — l'évaluation
+   (échelle ++/+/-/--) quitte l'entretien tripartite et se fait par le maître /
+   tuteur sur chaque fiche de période entreprise. L'entretien conserve la
+   **sélection** des attitudes (figée à la 3ᵉ signature) qui définit la liste à
+   évaluer, ainsi que l'appréciation générale du maître (4 critères de la trame
+   officielle).
+2. **Signature du tuteur bloquée tant que TOUTES les attitudes retenues ne sont
+   pas évaluées** sur la fiche de période entreprise (en plus des exigences R20
+   existantes : ≥ 1 compétence abordée + observation non vide).
+3. **Grille de synthèse limitée à la sélection entreprise** — seules les
+   compétences cochées « abordées en entreprise » apparaissent, avec la colonne
+   unique « Acquis en entreprise » ; héritage last-write-wins depuis les fiches
+   conservé (badge « Vue en Période N »). `acquisCentre` disparaît du modèle.
+4. **Fiches centre : 2 signatures conservées** (apprenti·e + formateur référent) —
+   l'apprenti·e est bloqué·e si son observation est vide, le formateur signe même
+   sans la sienne. Séquencement des périodes et déverrouillage R10 inchangés.
+
+Décisions d'implémentation (sans consultation, dérivées de la demande) :
+
+- **Modèle** : `LigneSuiviEntreprise.evaluationGreta` supprimée (elle n'était
+  éditée qu'au centre) ; `LigneEvaluationFinaleCompetence.acquisCentre`
+  supprimée ; `EntretienTripartite.evaluationsAttitudes` déplacée vers
+  `FicheSuiviPeriode.evaluationsAttitudes?` (optionnelle — absente des fiches
+  centre) ; les fiches centre gardent le type partagé avec
+  `suiviEntreprise: []`.
+- **Libs** : `synthetiserCompetences(fichesEntreprise, referentiel)` (source
+  centre retirée), `valeurEffective`/`confirmationRequisePourEcraserHeritage`
+  sans paramètre `colonne` ; `stats-bloc` entreprise seul ; nouveaux helpers
+  `attitudesNonEvaluees`, `synthetiserAttitudes` (last-write-wins + période
+  d'origine) et `restreindreReferentielALaSelection` (grille Synthèse) ;
+  `lignesSyntheseAttitudes(catalogue, selection, entretien, fichesEntreprise)` ;
+  `attitudeEstUtilisee` lit désormais les fiches ; `ficheEstVide` compte une
+  évaluation d'attitude comme contenu.
+- **R20 entretien** : le maître doit toujours avoir ≥ 1 critère d'appréciation
+  ET une sélection d'attitudes non vide (le CHOIX reste l'exigence — c'est lui
+  qui alimente l'évaluation par période) ; l'exigence « ≥ 1 attitude évaluée »
+  disparaît de l'entretien.
+- **Droits** : `fiche.attitudes` (maître seul) remplace `entretien.attitudes` ;
+  `fiche.evaluation-greta` et `grille-competences.centre` supprimées.
+- **Store** : mutations de lignes sans paramètre `lieu` (entreprise
+  uniquement), `setEvaluationAttitudeFiche` (garde : attitude retenue),
+  bump `livret-donnees` v24 (reset fixtures). `useAttitudesStore` bloque la
+  suppression sur les évaluations des fiches.
+- **Route** : `/livret/evaluation-finale` → `/livret/synthese`
+  (redirection conservée), page `Synthese.tsx`, libellé menu « Synthèse ».
+- **Fixtures** : fiches entreprise signées par le maître → TOUTES les
+  attitudes retenues évaluées (cohérence R20) ; Léa P3 et Camille P3
+  partiellement évaluées (cas démo du blocage) ; fiches centre réduites aux
+  observations ; Camille a10 « - » en P1 puis « + » en P2 (démo
+  last-write-wins avec période d'origine).
+- **UI/PDF** : nouveau composant `SectionAttitudesFiche` (compteur « il
+  reste N attitudes ») ; `TableauTriColonnes` déparamétré de `lieu` ;
+  fiches centre = observations + signatures (PDF idem) ; grille Synthèse à
+  colonne unique restreinte à la sélection (les non-sélectionnées
+  disparaissent — l'ancien affichage grisé « saisie historique » disparaît
+  avec elles) ; PDF : attitudes par période sur chaque page de fiche
+  entreprise, synthèse avec colonne « Source » (Entretien / Période N).
+
+⚠ Les sections ci-dessous (§2 à §8) décrivent l'état AVANT les modifications
+#1 à #3 — en particulier `evaluationGreta`, `acquisCentre`, l'évaluation des
+attitudes à l'entretien et le tableau de compétences des fiches centre ont
+disparu avec la #3. Les invariants purement référentiels (feuilles non
+exclues, sélection « tout coché », réimport = remplacement) restent exacts.
 
 ---
 
@@ -202,7 +278,7 @@ Références aux compétences ailleurs dans le modèle (couplages par `competenc
   `entretien-selection-competences.spec.ts`, `sprint2-coedition.spec.ts` (fiches),
   `sprint4-evaluation-finale.spec.ts`, `fiches-periodes*.spec.ts`, `pilotage-alertes.spec.ts`
   (compte sur les fixtures BTS)
-- Total projet au 2026-07-06 : **636 unitaires / 204 E2E — tous verts**
+- Total projet au 2026-07-06 (après modification #3) : **611 unitaires / 196 E2E — tous verts**
 
 ## 9. Checklist de la procédure de modification type (rituel maison)
 

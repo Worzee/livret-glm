@@ -9,10 +9,8 @@ import {
 import type { EntretienTripartite, NiveauAppreciation } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
-import { useAttitudesStore } from '@/store/useAttitudesStore';
 import { peutEditer, type Ressource } from '@/lib/droits';
 import { peutEncoreEditer } from '@/lib/regles-entretien';
-import { attitudesRetenues } from '@/lib/selection-attitudes';
 import {
   CRITERES_APPRECIATION,
   TRAME_ENTRETIEN,
@@ -22,7 +20,6 @@ import {
 } from '@/lib/trame-entretien';
 import { cn } from '@/lib/utils';
 import { CaseOuiNon } from './CaseOuiNon';
-import { SelecteurAppreciation } from '@/components/common/SelecteurAppreciation';
 
 /**
  * Trame officielle de l'entretien tripartite (« première visite »).
@@ -90,17 +87,10 @@ export function SectionTrameEntretien({
   const setReponseTrame = useLivretStore((s) => s.setReponseTrameEntretien);
   const setAppreciation = useLivretStore((s) => s.setAppreciationMaitre);
   const setCommentaire = useLivretStore((s) => s.setCommentaireEntretien);
-  const setEvaluationAttitude = useLivretStore((s) => s.setEvaluationAttitude);
-  const attitudesSelectionnees = useLivretStore((s) => s.livrets[livretId]?.attitudesSelectionnees);
-  const attitudesMap = useAttitudesStore((s) => s.attitudes);
 
   const editableTrame = peutEditer(roleActif, 'entretien.trame') && !entretienVerrouille;
   const editableGrille =
     peutEditer(roleActif, 'entretien.appreciation-maitre') && !entretienVerrouille;
-  // Attitudes : choisies à l'entretien, évaluées par le maître / tuteur.
-  const editableAttitudes =
-    peutEditer(roleActif, 'entretien.attitudes') && peutEncoreEditer('maitre', entretien);
-  const attitudes = attitudesRetenues(Object.values(attitudesMap), attitudesSelectionnees ?? []);
 
   const reponses = entretien.reponsesTrame;
   const alertes = pointsAlerteTrame(reponses);
@@ -156,45 +146,10 @@ export function SectionTrameEntretien({
         ))}
       </section>
 
-      {/* Attitudes professionnelles (choisies à l'entretien) — évaluées
-          par le maître / tuteur ; au moins une requise pour sa signature. */}
-      <section
-        data-testid="attitudes-entretien"
-        className="rounded-lg border border-border bg-card p-4 space-y-3"
-      >
-        <h2 className="text-base font-semibold">Attitudes professionnelles</h2>
-        <p className="text-xs text-muted-foreground">
-          Retenues à l'entretien, évaluées par le maître / tuteur (au moins une requise pour
-          signer).
-        </p>
-        {attitudes.length === 0 ? (
-          <p className="text-sm italic text-muted-foreground">
-            Aucune attitude retenue — voir la section « Choix des attitudes professionnelles ».
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {attitudes.map((a) => (
-              <div
-                key={a.id}
-                className="flex items-center justify-between gap-3 rounded-md border border-border bg-background px-3 py-2"
-              >
-                <span className="text-sm">
-                  {a.libelle}
-                  {a.description && (
-                    <span className="block text-xs text-muted-foreground">{a.description}</span>
-                  )}
-                </span>
-                <SelecteurAppreciation
-                  editable={editableAttitudes}
-                  valeur={entretien.evaluationsAttitudes[a.id] ?? null}
-                  onChange={(v) => setEvaluationAttitude(livretId, a.id, v)}
-                  ariaLabel={`Attitude — ${a.libelle}`}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+      {/* Juillet 2026 : l'évaluation des attitudes professionnelles a quitté
+          l'entretien — elle se fait sur chaque fiche de période entreprise
+          (cf. SectionAttitudesFiche). L'entretien conserve le CHOIX des
+          attitudes (section « Choix des attitudes professionnelles »). */}
 
       {/* Récapitulatif des points d'alerte (réponses « Non »). */}
       <RecapAlertes alertes={alertes} />

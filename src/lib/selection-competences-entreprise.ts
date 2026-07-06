@@ -206,6 +206,27 @@ export function nettoyerApresMajReferentiel(
 }
 
 /**
+ * Restreint un référentiel aux compétences de la sélection entreprise
+ * (juillet 2026 — la grille « Synthèse » ne présente plus que les
+ * compétences abordées en stage). Les blocs sans compétence sélectionnée
+ * disparaissent. À appliquer APRÈS `referentielEvaluable` (les exclusions de
+ * la limite des lignes évaluables sont filtrées en amont). Retourne la même
+ * référence si rien n'est filtré.
+ */
+export function restreindreReferentielALaSelection(
+  referentiel: Referentiel,
+  sel: SelectionCompetencesEntreprise,
+): Referentiel {
+  const ids = new Set(sel.ids);
+  const toutSelectionne = referentiel.blocs.every((b) => b.competences.every((c) => ids.has(c.id)));
+  if (toutSelectionne) return referentiel;
+  const blocs = referentiel.blocs
+    .map((b) => ({ ...b, competences: b.competences.filter((c) => ids.has(c.id)) }))
+    .filter((b) => b.competences.length > 0);
+  return { ...referentiel, blocs };
+}
+
+/**
  * Pour l'option a1 (cf. CDC v1.5 addendum) : identifie les compétences qui
  * ont une saisie historique « Acquis en entreprise » mais qui ne sont plus
  * dans la sélection actuelle. La cellule doit alors être affichée en lecture

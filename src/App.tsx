@@ -6,7 +6,7 @@ import { OrganisationSuivi } from '@/pages/OrganisationSuivi';
 import { EntretienTripartite } from '@/pages/EntretienTripartite';
 import { FicheSuiviPeriodes } from '@/pages/FicheSuiviPeriodes';
 import { FicheSuiviPeriodeDetail } from '@/pages/FicheSuiviPeriodeDetail';
-import { EvaluationFinale } from '@/pages/EvaluationFinale';
+import { Synthese } from '@/pages/Synthese';
 import { GestionUtilisateurs } from '@/pages/admin/GestionUtilisateurs';
 import { ImportUtilisateurs } from '@/pages/admin/ImportUtilisateurs';
 import { GestionFormations } from '@/pages/admin/GestionFormations';
@@ -43,7 +43,13 @@ export function App() {
           path="livret/fiches-suivi-centre/:ficheId"
           element={<FicheSuiviPeriodeDetail lieu="centre" />}
         />
-        <Route path="livret/evaluation-finale" element={<EvaluationFinale />} />
+        {/* « Synthèse » (juillet 2026 — anciennement « Évaluation finale ») ;
+            l'ancienne URL redirige pour ne casser aucun favori. */}
+        <Route path="livret/synthese" element={<Synthese />} />
+        <Route
+          path="livret/evaluation-finale"
+          element={<Navigate to="/livret/synthese" replace />}
+        />
         <Route path="livret/pronote" element={<PronoteWeb />} />
         <Route path="livret/acces-mobile" element={<AccesMobile />} />
 

@@ -36,14 +36,11 @@ export type Ressource =
    */
   | 'entretien.gestion'
   /**
-   * Évaluation des attitudes professionnelles dans l'entretien (retours
-   * coordos juin 2026) — réservée au maître / tuteur, comme l'appréciation.
-   */
-  | 'entretien.attitudes'
-  /**
    * Choix des attitudes retenues pour le livret, fait lors de l'entretien
    * (13 juin 2026) — décision collective actée par le maître / tuteur ET le
    * formateur référent ; figée à la 3ᵉ signature de l'entretien.
+   * (Juillet 2026 : l'ÉVALUATION des attitudes a quitté l'entretien — cf.
+   * `fiche.attitudes`.)
    */
   | 'entretien.attitudes-selection'
   | 'entretien.appreciation-maitre'
@@ -86,7 +83,12 @@ export type Ressource =
    */
   | 'fiche.suivi-greta-cfa-formateur'
   | 'fiche.evaluation-entreprise' // colonne entreprise
-  | 'fiche.evaluation-greta' // colonne centre
+  /**
+   * Évaluation des attitudes professionnelles retenues, sur chaque fiche de
+   * période ENTREPRISE (juillet 2026 — l'évaluation quitte l'entretien
+   * tripartite). Réservée au maître / tuteur, comme la colonne entreprise.
+   */
+  | 'fiche.attitudes'
   /**
    * Ajout / retrait d'une compétence à évaluer sur une fiche de période
    * (sélection des compétences travaillées pendant le stage). Ouvert au
@@ -105,12 +107,12 @@ export type Ressource =
   // d'une période passe désormais par le planning de la formation
   // (`admin.formations.modifier`) ; plus de gestion individuelle par fiche.
   | 'fiche.deverrouiller' // R10
-  // Grilles d'évaluation finales (CDC §5.4-5.5). Les ressources
-  // `grille-attitudes.*` ont été retirées (juin 2026) : les attitudes sont
-  // évaluées dans chaque entretien (`entretien.attitudes`) et l'onglet de
-  // l'évaluation finale est une synthèse en lecture seule.
+  // Grille de synthèse des compétences (menu « Synthèse », CDC §5.4-5.5).
+  // Juillet 2026 : la colonne centre a disparu avec le tableau de compétences
+  // des fiches centre — seule reste la colonne entreprise. L'onglet
+  // « Attitudes » reste une synthèse en lecture seule (évaluations portées
+  // par les fiches de période entreprise, cf. `fiche.attitudes`).
   | 'grille-competences.entreprise'
-  | 'grille-competences.centre'
   // Export et opérations administratives (CDC §5.6)
   | 'export-pdf'
   // Page « Accès mobile » (3 juillet 2026) : QR code de l'application à faire
@@ -174,7 +176,6 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   // (1ᵉʳ juillet 2026 — réunion direction : il tient souvent le clavier en
   // séance). Les champs restent figés à la signature du MAÎTRE, et sa
   // signature reste exclusive.
-  'entretien.attitudes': ['maitre', 'formateur'],
   'entretien.attitudes-selection': ['maitre', 'formateur'],
   'entretien.appreciation-maitre': ['maitre', 'formateur'],
   'entretien.commentaires-apprenti': ['apprenti'],
@@ -195,7 +196,9 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'fiche.suivi-greta-cfa-apprenti': ['apprenti'],
   'fiche.suivi-greta-cfa-formateur': ['formateur'],
   'fiche.evaluation-entreprise': ['maitre'],
-  'fiche.evaluation-greta': ['formateur'],
+  // Attitudes professionnelles par période entreprise (juillet 2026) :
+  // le maître / tuteur seul, comme la colonne d'évaluation entreprise.
+  'fiche.attitudes': ['maitre'],
   // Ajout / retrait d'une compétence sur la fiche de période : formateur +
   // maître / tuteur (17 juin 2026)
   'fiche.ajouter-competence': ['formateur', 'maitre'],
@@ -208,12 +211,9 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'fiche.signature-formateur': ['formateur'],
   'fiche.deverrouiller': ['formateur'],
 
-  // Grilles d'évaluation finales
+  // Grille de synthèse des compétences (menu « Synthèse »)
   // Compétences entreprise : maître éditable, formateur lecture seule (CDC §5.4)
   'grille-competences.entreprise': ['maitre'],
-  // Compétences centre : formateur uniquement
-  'grille-competences.centre': ['formateur'],
-  // Attitudes : maître + formateur
 
   // Opérations administratives sur le livret
   // Export PDF (livret complet, période, entretien, fiches de suivi) : ouvert

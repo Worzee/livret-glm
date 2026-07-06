@@ -2,6 +2,8 @@ import type {
   AppreciationMaitre,
   AttitudeProfessionnelle,
   EntretienTripartite,
+  EvaluationsAttitudes,
+  FicheSuiviPeriode,
   NiveauAppreciation,
 } from '@/types';
 import { CRITERES_APPRECIATION } from './trame-entretien';
@@ -9,13 +11,16 @@ import { attitudesRetenues } from './selection-attitudes';
 
 /**
  * Attitudes professionnelles — catalogue global + helpers.
- * Référence : retours coordos juin 2026.
+ * Référence : retours coordos juin 2026 + chantier référentiels/compétences
+ * juillet 2026 (modification #3).
  *
  * Les attitudes sortent du référentiel de compétences pour devenir un
  * **catalogue central unique** géré par l'admin (`/admin/attitudes`).
- * Elles sont évaluées par le maître / tuteur **lors de l'entretien
- * tripartite** (échelle ++/+/-/--) ; l'onglet « Attitudes » de l'évaluation
- * finale en est une synthèse en lecture seule.
+ * Depuis juillet 2026, elles sont évaluées par le maître / tuteur **à chaque
+ * période en entreprise** (échelle ++/+/-/--, sur la fiche de suivi) — le
+ * choix des attitudes retenues reste fait à l'entretien tripartite. L'onglet
+ * « Attitudes » de la Synthèse est une agrégation last-write-wins en lecture
+ * seule de ces évaluations.
  *
  * Pures fonctions — pas d'effet de bord.
  */
@@ -96,29 +101,60 @@ export const ATTITUDES_INITIALES: ReadonlyArray<AttitudeProfessionnelle> = [
 ];
 
 /**
- * Indique si une attitude est évaluée dans au moins un entretien existant
- * (un par livret — on passe la liste des entretiens de tous les livrets).
- * Utilisé pour bloquer la suppression depuis le catalogue (cohérence
- * référentielle).
+ * Indique si une attitude est évaluée dans au moins une fiche de période
+ * entreprise (juillet 2026 — les évaluations d'attitudes sont portées par
+ * les fiches ; on passe l'ensemble des fiches entreprise de tous les
+ * livrets). Utilisé pour bloquer la suppression depuis le catalogue
+ * (cohérence référentielle).
  */
 export function attitudeEstUtilisee(
   attitudeId: string,
-  entretiens: ReadonlyArray<EntretienTripartite | null>,
+  fiches: ReadonlyArray<FicheSuiviPeriode>,
 ): boolean {
-  for (const e of entretiens) {
-    if (!e) continue;
-    const valeur = e.evaluationsAttitudes[attitudeId];
+  for (const f of fiches) {
+    const valeur = f.evaluationsAttitudes?.[attitudeId];
     if (valeur !== undefined && valeur !== null) return true;
   }
   return false;
 }
 
 /**
- * Au moins une attitude évaluée dans l'entretien ? Extension R20 (juin
- * 2026) : exigée pour que le maître / tuteur puisse signer.
+ * Ids des attitudes retenues qui n'ont PAS encore été évaluées sur une fiche
+ * de période entreprise (entrée absente ou `null`), dans l'ordre de la
+ * sélection. R20 (juillet 2026) : la liste doit être vide pour que le
+ * maître / tuteur signe la fiche.
  */
-export function auMoinsUneAttitudeEvaluee(entretien: EntretienTripartite): boolean {
-  return Object.values(entretien.evaluationsAttitudes).some((v) => v !== null && v !== undefined);
+export function attitudesNonEvaluees(
+  selection: ReadonlyArray<string>,
+  evaluations: EvaluationsAttitudes | undefined,
+): string[] {
+  return selection.filter((id) => evaluations?.[id] === undefined || evaluations[id] === null);
+}
+
+/** Dernière évaluation connue d'une attitude + sa période d'origine. */
+export interface SyntheseAttitudeEntree {
+  niveau: NiveauAppreciation;
+  numeroPeriode: number;
+}
+
+/**
+ * Agrège les évaluations d'attitudes des fiches de période entreprise en
+ * last-write-wins (même mécanique que `synthetiserCompetences`) : pour chaque
+ * attitude, la DERNIÈRE évaluation non-nulle dans l'ordre chronologique des
+ * périodes, avec le numéro de période d'origine (« Vu en Période N »).
+ * Les attitudes jamais évaluées sont absentes de la map.
+ */
+export function synthetiserAttitudes(
+  fiches: ReadonlyArray<FicheSuiviPeriode>,
+): Map<string, SyntheseAttitudeEntree> {
+  const synthese = new Map<string, SyntheseAttitudeEntree>();
+  for (const fiche of [...fiches].sort((a, b) => a.numeroPeriode - b.numeroPeriode)) {
+    for (const [attitudeId, niveau] of Object.entries(fiche.evaluationsAttitudes ?? {})) {
+      if (niveau === null || niveau === undefined) continue;
+      synthese.set(attitudeId, { niveau, numeroPeriode: fiche.numeroPeriode });
+    }
+  }
+  return synthese;
 }
 
 /**
@@ -168,8 +204,8 @@ export const ATTITUDES_OBLIGATOIRES: ReadonlyArray<AttitudeObligatoire> = CRITER
 );
 
 /**
- * Ligne du tableau de synthèse des attitudes (UI de l'évaluation finale et
- * PDF) : une attitude × son niveau à l'entretien tripartite.
+ * Ligne du tableau de synthèse des attitudes (UI de la Synthèse et PDF) :
+ * une attitude × son dernier niveau connu.
  */
 export interface LigneSyntheseAttitudes {
   /** `oblig-<cle>` pour un critère d'appréciation, id du catalogue sinon. */
@@ -177,20 +213,32 @@ export interface LigneSyntheseAttitudes {
   libelle: string;
   description?: string;
   obligatoire: boolean;
-  /** Niveau évalué à l'entretien — `null` si non évalué ou entretien absent. */
+  /**
+   * Dernier niveau connu — appréciation de l'entretien pour les
+   * obligatoires, last-write-wins des fiches entreprise pour les
+   * optionnelles. `null` si jamais évalué.
+   */
   niveau: NiveauAppreciation | null;
+  /**
+   * Période d'origine de l'évaluation (« Vu en Période N ») — optionnelles
+   * évaluées sur une fiche uniquement ; absent pour les obligatoires
+   * (évaluées à l'entretien) et les attitudes jamais évaluées.
+   */
+  numeroPeriode?: number;
 }
 
 /**
  * Construit les lignes de la synthèse des attitudes : les 4 **obligatoires**
- * d'abord (lues dans l'appréciation générale du maître), puis les
- * optionnelles retenues pour le livret (lues dans `evaluationsAttitudes`),
- * dans l'ordre du catalogue.
+ * d'abord (lues dans l'appréciation générale du maître à l'entretien), puis
+ * les optionnelles retenues pour le livret (agrégées last-write-wins depuis
+ * les fiches de période entreprise — juillet 2026), dans l'ordre du
+ * catalogue.
  */
 export function lignesSyntheseAttitudes(
   catalogue: ReadonlyArray<AttitudeProfessionnelle>,
   selection: ReadonlyArray<string>,
   entretien: EntretienTripartite | null,
+  fichesEntreprise: ReadonlyArray<FicheSuiviPeriode>,
 ): LigneSyntheseAttitudes[] {
   const obligatoires = ATTITUDES_OBLIGATOIRES.map(
     (o): LigneSyntheseAttitudes => ({
@@ -202,15 +250,18 @@ export function lignesSyntheseAttitudes(
     }),
   );
 
-  const optionnelles = attitudesRetenues(catalogue, selection).map(
-    (a): LigneSyntheseAttitudes => ({
+  const synthese = synthetiserAttitudes(fichesEntreprise);
+  const optionnelles = attitudesRetenues(catalogue, selection).map((a): LigneSyntheseAttitudes => {
+    const entree = synthese.get(a.id);
+    return {
       id: a.id,
       libelle: a.libelle,
       description: a.description,
       obligatoire: false,
-      niveau: entretien ? (entretien.evaluationsAttitudes[a.id] ?? null) : null,
-    }),
-  );
+      niveau: entree?.niveau ?? null,
+      numeroPeriode: entree?.numeroPeriode,
+    };
+  });
 
   return [...obligatoires, ...optionnelles];
 }

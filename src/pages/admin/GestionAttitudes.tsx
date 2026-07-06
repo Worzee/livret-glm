@@ -42,7 +42,9 @@ export function GestionAttitudes() {
   }
 
   const attitudes = Object.values(attitudesMap);
-  const entretiens = Object.values(livrets).map((l) => l.entretien);
+  // Juillet 2026 : les évaluations d'attitudes sont portées par les fiches
+  // de période entreprise (plus par l'entretien).
+  const fichesEntreprise = Object.values(livrets).flatMap((l) => l.fichesSuivi);
   // 13 juin 2026 : une attitude RETENUE dans un livret (choix fait à
   // l'entretien) est également protégée, même si elle n'est pas encore évaluée.
   const selections = Object.values(livrets).map((l) => l.attitudesSelectionnees ?? []);
@@ -103,7 +105,7 @@ export function GestionAttitudes() {
               {attitudes.map((a) => {
                 const enConfirmation = confirmationSuppression === a.id;
                 const utilisee =
-                  attitudeEstUtilisee(a.id, entretiens) ||
+                  attitudeEstUtilisee(a.id, fichesEntreprise) ||
                   attitudeEstSelectionnee(a.id, selections);
                 return (
                   <tr

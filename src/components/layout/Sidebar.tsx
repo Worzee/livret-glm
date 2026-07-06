@@ -53,7 +53,9 @@ const LIENS_LIVRET: LienItem[] = [
   // dans l'organisation du suivi.
   { to: '/livret/fiches-suivi', label: 'Période en Entreprise', Icon: Notebook },
   { to: '/livret/fiches-suivi-centre', label: 'Période en Centre', Icon: GraduationCap },
-  { to: '/livret/evaluation-finale', label: 'Évaluation finale', Icon: Target },
+  // « Synthèse » (juillet 2026 — anciennement « Évaluation finale ») :
+  // compétences abordées en stage + attitudes professionnelles.
+  { to: '/livret/synthese', label: 'Synthèse', Icon: Target },
   { to: '/livret/pronote', label: 'Pronote WEB', Icon: ExternalLink },
 ];
 

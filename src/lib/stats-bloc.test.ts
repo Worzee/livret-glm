@@ -25,14 +25,9 @@ const referentiel: Referentiel = {
   ],
 };
 
-const ligne = (
-  id: string,
-  ent: NiveauMaitrise | null,
-  cen: NiveauMaitrise | null,
-): LigneEvaluationFinaleCompetence => ({
+const ligne = (id: string, ent: NiveauMaitrise | null): LigneEvaluationFinaleCompetence => ({
   competenceId: id,
   acquisEntreprise: ent,
-  acquisCentre: cen,
 });
 
 describe('calculerStatsParBloc', () => {
@@ -51,11 +46,7 @@ describe('calculerStatsParBloc', () => {
   });
 
   it('compte correctement les niveaux (saisie manuelle)', () => {
-    const lignes = [
-      ligne('c1', 'maitrise', 'maitrise'),
-      ligne('c2', 'partiel', 'maitrise'),
-      ligne('c3', 'non-maitrise', null),
-    ];
+    const lignes = [ligne('c1', 'maitrise'), ligne('c2', 'partiel'), ligne('c3', 'non-maitrise')];
     const stats = calculerStatsParBloc(referentiel, lignes, new Map());
     expect(stats[0].entreprise).toEqual({
       maitrise: 1,
@@ -64,30 +55,18 @@ describe('calculerStatsParBloc', () => {
       nonEvalue: 0,
       total: 3,
     });
-    expect(stats[0].centre).toEqual({
-      maitrise: 2,
-      partiel: 0,
-      nonMaitrise: 0,
-      nonEvalue: 1,
-      total: 3,
-    });
   });
 
   it('hérite de la synthèse quand la saisie manuelle est null', () => {
-    const synthese = new Map([
-      ['c1', { acquisEntreprise: 'partiel' as const, acquisCentre: 'maitrise' as const }],
-    ]);
-    const lignes = [ligne('c1', null, null)];
+    const synthese = new Map([['c1', { acquisEntreprise: 'partiel' as const }]]);
+    const lignes = [ligne('c1', null)];
     const stats = calculerStatsParBloc(referentiel, lignes, synthese);
     expect(stats[0].entreprise.partiel).toBe(1);
-    expect(stats[0].centre.maitrise).toBe(1);
   });
 
   it('la saisie manuelle prime sur la synthèse', () => {
-    const synthese = new Map([
-      ['c1', { acquisEntreprise: 'partiel' as const, acquisCentre: 'partiel' as const }],
-    ]);
-    const lignes = [ligne('c1', 'maitrise', 'maitrise')];
+    const synthese = new Map([['c1', { acquisEntreprise: 'partiel' as const }]]);
+    const lignes = [ligne('c1', 'maitrise')];
     const stats = calculerStatsParBloc(referentiel, lignes, synthese);
     expect(stats[0].entreprise.maitrise).toBe(1);
     expect(stats[0].entreprise.partiel).toBe(0);

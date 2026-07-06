@@ -21,20 +21,22 @@ import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelec
 import { cn } from '@/lib/utils';
 
 /**
- * Page Évaluation finale (CDC §5.4 et §5.5).
+ * Page Synthèse (CDC §5.4 et §5.5 — anciennement « Évaluation finale »,
+ * renommée en juillet 2026, chantier référentiels/compétences #3).
  *
  * Deux onglets :
- *   - Compétences (avec synthèse graphique par bloc)
- *   - Attitudes professionnelles — synthèse en lecture seule des
- *     évaluations portées à chaque entretien tripartite (juin 2026)
+ *   - Compétences abordées en stage (sélection entreprise, avec synthèse
+ *     graphique par bloc — colonne unique « Acquis en entreprise »)
+ *   - Attitudes professionnelles — agrégation en lecture seule des
+ *     évaluations portées à chaque période en entreprise (juillet 2026)
  *
  * R24 : consultable par tous les rôles, mode lecture si non-éditeur (la seule
- * différence est l'édition des cellules, gérée par chaque grille).
+ * différence est l'édition des cellules, gérée par la grille).
  */
 
 type Onglet = 'competences' | 'attitudes';
 
-export function EvaluationFinale() {
+export function Synthese() {
   const [onglet, setOnglet] = useState<Onglet>('competences');
   const roleActif = useUserStore((s) => s.roleActif);
   const formations = useFormationsStore((s) => s.formations);
@@ -59,21 +61,18 @@ export function EvaluationFinale() {
     ? getMaitreByIdFromStore(apprenti.maitreApprentissageSecondId)
     : undefined;
 
-  // Les attitudes ne se saisissent plus ici (synthèse lecture seule depuis
-  // juin 2026) — seules les grilles de compétences restent éditables.
-  const aDroitEdition =
-    peutEditer(roleActif, 'grille-competences.entreprise') ||
-    peutEditer(roleActif, 'grille-competences.centre');
+  // Les attitudes ne se saisissent plus ici (synthèse lecture seule) — seule
+  // la grille des compétences entreprise reste éditable (maître / tuteur).
+  const aDroitEdition = peutEditer(roleActif, 'grille-competences.entreprise');
 
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-2">
-          <h1 className="text-2xl font-semibold">Évaluation finale</h1>
+          <h1 className="text-2xl font-semibold">Synthèse</h1>
           <p className="text-muted-foreground">
-            Bilan de fin de formation — synthèse des compétences acquises et des attitudes
-            professionnelles. Les valeurs non saisies héritent des évaluations des fiches de suivi
-            par période.
+            Synthèse des compétences abordées en stage et des attitudes professionnelles. Les
+            valeurs non saisies héritent des évaluations des fiches de suivi par période.
           </p>
           <p className="text-xs text-muted-foreground">
             Apprenti·e :{' '}
@@ -103,11 +102,7 @@ export function EvaluationFinale() {
 
       <BandeauCloture livret={livret} />
 
-      <div
-        role="tablist"
-        aria-label="Sections de l'évaluation finale"
-        className="border-b border-border"
-      >
+      <div role="tablist" aria-label="Sections de la synthèse" className="border-b border-border">
         <Onglet
           titre="Compétences"
           Icon={Target}

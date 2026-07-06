@@ -16,6 +16,7 @@ import {
   nettoyerApresMajReferentiel,
   peutEtreEditee,
   realignerSurReferentiel,
+  restreindreReferentielALaSelection,
   toggleCompetence,
 } from './selection-competences-entreprise';
 
@@ -373,7 +374,6 @@ describe('competencesNonSelectionneesAvecSaisie', () => {
   ): LigneEvaluationFinaleCompetence => ({
     competenceId,
     acquisEntreprise,
-    acquisCentre: null,
   });
 
   it('retourne les compétences non sélectionnées qui ont une saisie historique', () => {
@@ -399,5 +399,53 @@ describe('competencesNonSelectionneesAvecSaisie', () => {
       ligne('c2', null),
     ]);
     expect(ids).toEqual([]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+describe('restreindreReferentielALaSelection (grille « Synthèse », juillet 2026)', () => {
+  const referentielDeuxBlocs: Referentiel = {
+    id: 'r1',
+    formation: 'CAP Test',
+    blocs: [
+      {
+        id: 'b1',
+        code: 'B1',
+        libelle: 'Bloc 1',
+        competences: [
+          { id: 'c1', code: 'C1', libelle: 'Lib c1' },
+          { id: 'c2', code: 'C2', libelle: 'Lib c2' },
+        ],
+      },
+      {
+        id: 'b2',
+        code: 'B2',
+        libelle: 'Bloc 2',
+        competences: [{ id: 'c3', code: 'C3', libelle: 'Lib c3' }],
+      },
+    ],
+  };
+
+  it('ne conserve que les compétences de la sélection', () => {
+    const r = restreindreReferentielALaSelection(referentielDeuxBlocs, sel({ ids: ['c2', 'c3'] }));
+    expect(r.blocs.map((b) => b.competences.map((c) => c.id))).toEqual([['c2'], ['c3']]);
+  });
+
+  it('retire les blocs dont aucune compétence n’est sélectionnée', () => {
+    const r = restreindreReferentielALaSelection(referentielDeuxBlocs, sel({ ids: ['c1'] }));
+    expect(r.blocs.map((b) => b.id)).toEqual(['b1']);
+  });
+
+  it('retourne la même référence quand toutes les compétences sont sélectionnées', () => {
+    const r = restreindreReferentielALaSelection(
+      referentielDeuxBlocs,
+      sel({ ids: ['c1', 'c2', 'c3'] }),
+    );
+    expect(r).toBe(referentielDeuxBlocs);
+  });
+
+  it('sélection vide → aucun bloc (rien à présenter dans la grille)', () => {
+    const r = restreindreReferentielALaSelection(referentielDeuxBlocs, sel({ ids: [] }));
+    expect(r.blocs).toEqual([]);
   });
 });

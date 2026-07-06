@@ -119,7 +119,19 @@ import { useUtilisateursStore } from './useUtilisateursStore';
 //        aidesDemandees disparaissent), de la modalité présentiel/distanciel
 //        et des motifs `entretien-tripartite-2/3/4` (motif unique
 //        `entretien-tripartite`). Reset pour recharger les fixtures.
-const VERSION_SCHEMA = 23;
+//   v24 — 6 juillet 2026 : périodes en centre simplifiées + menu « Synthèse »
+//        (chantier référentiels/compétences #3, décision pilote). Les fiches
+//        centre perdent leur tableau de compétences et le retour apprenti
+//        (`LigneSuiviEntreprise.evaluationGreta` supprimée — observations de
+//        fin de période seules ; apprenti·e bloquante, formateur non).
+//        L'évaluation des attitudes quitte l'entretien
+//        (`EntretienTripartite.evaluationsAttitudes` →
+//        `FicheSuiviPeriode.evaluationsAttitudes`, à CHAQUE période
+//        entreprise, toutes exigées pour la signature du tuteur — R20).
+//        `LigneEvaluationFinaleCompetence.acquisCentre` supprimée (grille
+//        « Synthèse » = colonne entreprise seule, restreinte à la sélection).
+//        Reset pour recharger les fixtures.
+const VERSION_SCHEMA = 24;
 
 interface LivretStore {
   livrets: Record<string, Livret>;
@@ -135,16 +147,17 @@ interface LivretStore {
   // dernier paramètre un `lieu?: LieuFiche` (défaut `'entreprise'`). Il cible
   // la collection (`fichesSuivi` vs `fichesSuiviCentre`) et le critère
   // « signée » associé. Les appels historiques (entreprise) restent inchangés.
-  /** Met à jour une cellule du tableau tri-colonnes pour une compétence donnée. */
+  // Juillet 2026 : les mutations du tableau de compétences (lignes de suivi)
+  // et des attitudes ne prennent PAS de `lieu` — elles n'existent qu'en
+  // entreprise (les fiches centre n'ont plus que les observations).
+  /** Met à jour une cellule du tableau de suivi pour une compétence donnée (entreprise). */
   setEvaluationLigne: (
     livretId: string,
     ficheId: string,
     ligneId: string,
     champ:
-      | { type: 'evaluationGreta'; valeur: NiveauMaitriseEntreprise | null }
       | { type: 'evaluationEntreprise'; valeur: NiveauMaitriseEntreprise | null }
       | { type: 'retourApprenti'; valeur: string },
-    lieu?: LieuFiche,
   ) => void;
 
   /** Met à jour la zone d'observation d'un rôle pour la fiche. */
@@ -174,15 +187,21 @@ interface LivretStore {
     ficheId: string,
     competenceId: string | null,
     libelleLibre?: string,
-    lieu?: LieuFiche,
   ) => string;
 
   /** Supprime une ligne du suivi entreprise. */
-  supprimerLigneSuiviEntreprise: (
+  supprimerLigneSuiviEntreprise: (livretId: string, ficheId: string, ligneId: string) => void;
+
+  /**
+   * Évalue une attitude professionnelle retenue sur une fiche de période
+   * ENTREPRISE (juillet 2026 — maître / tuteur, échelle ++/+/-/--, null =
+   * effacer). No-op si l'attitude n'est pas retenue pour le livret.
+   */
+  setEvaluationAttitudeFiche: (
     livretId: string,
     ficheId: string,
-    ligneId: string,
-    lieu?: LieuFiche,
+    attitudeId: string,
+    niveau: NiveauAppreciation | null,
   ) => void;
 
   /** Appose ou retire la signature d'un rôle. La validation R18/R20 est faite côté UI. */
@@ -319,15 +338,6 @@ interface LivretStore {
     competenceId: string,
     patch: Partial<Omit<LigneEvaluationFinaleCompetence, 'competenceId'>>,
   ) => void;
-  /**
-   * Évalue une attitude professionnelle dans l'entretien (retours coordos
-   * juin 2026 — maître / tuteur, échelle ++/+/-/--, null = effacer).
-   */
-  setEvaluationAttitude: (
-    livretId: string,
-    attitudeId: string,
-    niveau: NiveauAppreciation | null,
-  ) => void;
 
   /**
    * Coche/décoche une attitude retenue pour le livret (13 juin 2026 — choix
@@ -400,7 +410,6 @@ function ecrireEntretien(livret: Livret, entretien: EntretienTripartite): Livret
  */
 export function entretienVierge(): EntretienTripartite {
   return {
-    evaluationsAttitudes: {},
     reponsesTrame: {},
     appreciationMaitre: {},
     commentaires: {},
@@ -464,13 +473,12 @@ export const useLivretStore = create<LivretStore>()(
           (f) => f.id === ficheId,
         ),
 
-      setEvaluationLigne: (livretId, ficheId, ligneId, champ, lieu = 'entreprise') =>
+      setEvaluationLigne: (livretId, ficheId, ligneId, champ) =>
         set((s) =>
-          muterFiche(s, livretId, ficheId, lieu, (f) => {
+          muterFiche(s, livretId, ficheId, 'entreprise', (f) => {
             const ligneIdx = f.suiviEntreprise.findIndex((l) => l.id === ligneId);
             if (ligneIdx === -1) return f;
             const nouvelleLigne: LigneSuiviEntreprise = { ...f.suiviEntreprise[ligneIdx] };
-            if (champ.type === 'evaluationGreta') nouvelleLigne.evaluationGreta = champ.valeur;
             if (champ.type === 'evaluationEntreprise')
               nouvelleLigne.evaluationEntreprise = champ.valeur;
             if (champ.type === 'retourApprenti') nouvelleLigne.retourApprenti = champ.valeur;
@@ -504,16 +512,10 @@ export const useLivretStore = create<LivretStore>()(
           })),
         ),
 
-      ajouterLigneSuiviEntreprise: (
-        livretId,
-        ficheId,
-        competenceId,
-        libelleLibre,
-        lieu = 'entreprise',
-      ) => {
+      ajouterLigneSuiviEntreprise: (livretId, ficheId, competenceId, libelleLibre) => {
         const nouvelId = `se-${crypto.randomUUID()}`;
         set((s) =>
-          muterFiche(s, livretId, ficheId, lieu, (f) => ({
+          muterFiche(s, livretId, ficheId, 'entreprise', (f) => ({
             ...f,
             suiviEntreprise: [
               ...f.suiviEntreprise,
@@ -521,7 +523,6 @@ export const useLivretStore = create<LivretStore>()(
                 id: nouvelId,
                 competenceId,
                 libelleLibre,
-                evaluationGreta: null,
                 evaluationEntreprise: null,
                 retourApprenti: '',
               },
@@ -531,13 +532,27 @@ export const useLivretStore = create<LivretStore>()(
         return nouvelId;
       },
 
-      supprimerLigneSuiviEntreprise: (livretId, ficheId, ligneId, lieu = 'entreprise') =>
+      supprimerLigneSuiviEntreprise: (livretId, ficheId, ligneId) =>
         set((s) =>
-          muterFiche(s, livretId, ficheId, lieu, (f) => ({
+          muterFiche(s, livretId, ficheId, 'entreprise', (f) => ({
             ...f,
             suiviEntreprise: f.suiviEntreprise.filter((l) => l.id !== ligneId),
           })),
         ),
+
+      setEvaluationAttitudeFiche: (livretId, ficheId, attitudeId, niveau) =>
+        set((s) => {
+          // 13 juin 2026 : seules les attitudes RETENUES pour le livret
+          // (choix fait à l'entretien) sont évaluables — garde no-op.
+          const livret = s.livrets[livretId];
+          if (!livret || !livret.attitudesSelectionnees.includes(attitudeId)) {
+            return { livrets: s.livrets, derniereModification: s.derniereModification };
+          }
+          return muterFiche(s, livretId, ficheId, 'entreprise', (f) => ({
+            ...f,
+            evaluationsAttitudes: { ...f.evaluationsAttitudes, [attitudeId]: niveau },
+          }));
+        }),
 
       signer: (livretId, ficheId, role, trace, lieu = 'entreprise') =>
         set((s) =>
@@ -854,7 +869,6 @@ export const useLivretStore = create<LivretStore>()(
               lignes.push({
                 competenceId,
                 acquisEntreprise: null,
-                acquisCentre: null,
                 ...patch,
               });
             }
@@ -865,21 +879,6 @@ export const useLivretStore = create<LivretStore>()(
                 modifieLe: new Date().toISOString(),
               },
             };
-          }),
-        ),
-
-      setEvaluationAttitude: (livretId, attitudeId, niveau) =>
-        set((s) =>
-          muterLivret(s, livretId, (l) => {
-            const e = l.entretien;
-            if (!e) return l;
-            // 13 juin 2026 : seules les attitudes RETENUES pour le livret
-            // (choix fait à l'entretien) sont évaluables — garde no-op.
-            if (!l.attitudesSelectionnees.includes(attitudeId)) return l;
-            return ecrireEntretien(l, {
-              ...e,
-              evaluationsAttitudes: { ...e.evaluationsAttitudes, [attitudeId]: niveau },
-            });
           }),
         ),
 

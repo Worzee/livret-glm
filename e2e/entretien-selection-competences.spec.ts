@@ -41,12 +41,12 @@ test('Sofia : la fiche de période affiche le bandeau « sélection non validée
   await expect(page.getByLabel(/Ajouter une compétence à la fiche/i)).toHaveCount(0);
 });
 
-test("Sofia : la grille d'évaluation finale est masquée tant que la sélection n'est pas validée", async ({
+test("Sofia : la grille de synthèse est masquée tant que la sélection n'est pas validée", async ({
   page,
 }) => {
   await selectRole(page, 'Formateur référent');
   await page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }).click();
-  await page.goto('/livret/evaluation-finale');
+  await page.goto('/livret/synthese');
   await expect(
     page.getByText(/Sélection des compétences abordées en entreprise non validée/i),
   ).toBeVisible();
@@ -76,16 +76,17 @@ test("Léa : la section dans l'entretien affiche le badge « Sélection validée
   await expect(page.getByTestId('selection-comp-c2-4')).not.toBeChecked();
 });
 
-test('Léa : la grille finale grise la colonne « Acquis en entreprise » pour c2-4 (non sélectionnée)', async ({
+test('Léa : la grille de synthèse ne présente PAS c2-4 (non sélectionnée — juillet 2026)', async ({
   page,
 }) => {
   await selectRole(page, 'Maître / Tuteur');
-  await page.goto('/livret/evaluation-finale');
-  // Cellule entreprise pour c2-4 (non sélectionnée) → texte « — » + aria-label dédié.
-  // Affichage « libellé seul » depuis le 18 juin 2026 : l'aria-label porte le libellé.
+  await page.goto('/livret/synthese');
+  // Juillet 2026 : la grille est restreinte à la sélection entreprise — la
+  // compétence non sélectionnée disparaît entièrement (plus de ligne grisée).
   await expect(
-    page.getByLabel(/Compétence Communiquer en situation professionnelle non abordée en entreprise/i),
-  ).toBeVisible();
+    page.getByLabel(/Acquis en entreprise pour Communiquer en situation professionnelle/i),
+  ).toHaveCount(0);
+  await expect(page.getByText('Communiquer en situation professionnelle')).toHaveCount(0);
   // Cellule entreprise pour c1-1 (sélectionnée) → SelecteurNiveau éditable.
   await expect(
     page.getByLabel(/^Acquis en entreprise pour Réceptionner et stocker la marchandise$/i).first(),

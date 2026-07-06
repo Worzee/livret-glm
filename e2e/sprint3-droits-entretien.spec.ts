@@ -55,7 +55,9 @@ test('le formateur co-saisit les champs du maître sur un entretien non signé (
   await page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }).click();
   await page.goto('/livret/entretien');
   await page.getByTestId('init-entretien').click();
-  await expect(page.getByTestId('attitudes-entretien')).toBeVisible();
+  // (Juillet 2026 : l'évaluation des attitudes a quitté l'entretien — la
+  // section de choix reste le marqueur d'initialisation.)
+  await expect(page.getByTestId('selection-attitudes')).toBeVisible();
 
   // En formateur, la grille d'appréciation du maître (trame enrichie) est
   // éditable (co-saisie).

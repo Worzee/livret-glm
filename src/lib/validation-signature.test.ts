@@ -20,7 +20,7 @@ const ficheBase = (): FicheSuiviPeriode => ({
 });
 
 describe('validerSignature — R20 (champs requis par rôle)', () => {
-  describe('Apprenti·e', () => {
+  describe('Apprenti·e — entreprise', () => {
     it('interdit la signature si aucun retour apprenti et observation vide', () => {
       const f = ficheBase();
       const r = validerSignature(f, 'apprenti');
@@ -34,7 +34,6 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
         {
           id: 'l1',
           competenceId: 'c1',
-          evaluationGreta: null,
           evaluationEntreprise: null,
           retourApprenti: 'Acquis sur la mise en place.',
         },
@@ -53,7 +52,6 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
         {
           id: 'l1',
           competenceId: 'c1',
-          evaluationGreta: null,
           evaluationEntreprise: null,
           retourApprenti: 'OK',
         },
@@ -68,7 +66,6 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
         {
           id: 'l1',
           competenceId: 'c1',
-          evaluationGreta: null,
           evaluationEntreprise: null,
           retourApprenti: 'OK',
         },
@@ -77,6 +74,33 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
       const r = validerSignature(f, 'apprenti');
       expect(r.peutSigner).toBe(false);
       expect(r.raisons.some((m) => m.includes('observation apprenti'))).toBe(true);
+    });
+  });
+
+  describe('Apprenti·e — centre (fiches simplifiées, juillet 2026)', () => {
+    it("au centre, seule l'observation est exigée (plus de retour par compétence)", () => {
+      // La fiche centre n'a plus de tableau de compétences : l'exigence
+      // « ≥ 1 retour apprenti·e » ne s'applique qu'en entreprise.
+      const f = ficheBase();
+      f.observations.apprenti = 'Regroupement dense mais utile.';
+      expect(validerSignature(f, 'apprenti', 'centre')).toEqual({
+        peutSigner: true,
+        raisons: [],
+      });
+    });
+
+    it("au centre, l'observation vide bloque la signature de l'apprenti·e", () => {
+      const f = ficheBase();
+      const r = validerSignature(f, 'apprenti', 'centre');
+      expect(r.peutSigner).toBe(false);
+      expect(r.raisons).toHaveLength(1);
+      expect(r.raisons[0]).toContain('observation apprenti');
+    });
+
+    it("au centre, une observation d'espaces seulement reste bloquante", () => {
+      const f = ficheBase();
+      f.observations.apprenti = '  \n ';
+      expect(validerSignature(f, 'apprenti', 'centre').peutSigner).toBe(false);
     });
   });
 
@@ -95,7 +119,6 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
         {
           id: 'l1',
           competenceId: 'c1',
-          evaluationGreta: null,
           evaluationEntreprise: 'maitrise',
           retourApprenti: '',
         },
@@ -110,7 +133,6 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
         {
           id: 'l1',
           competenceId: 'c1',
-          evaluationGreta: null,
           evaluationEntreprise: 'partiel',
           retourApprenti: '',
         },
@@ -128,14 +150,12 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
         {
           id: 'l1',
           competenceId: 'c1',
-          evaluationGreta: null,
           evaluationEntreprise: 'non-fait',
           retourApprenti: '',
         },
         {
           id: 'l2',
           competenceId: 'c2',
-          evaluationGreta: null,
           evaluationEntreprise: 'non-fait',
           retourApprenti: '',
         },
@@ -153,14 +173,12 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
         {
           id: 'l1',
           competenceId: 'c1',
-          evaluationGreta: null,
           evaluationEntreprise: 'non-fait',
           retourApprenti: '',
         },
         {
           id: 'l2',
           competenceId: 'c2',
-          evaluationGreta: null,
           evaluationEntreprise: 'maitrise',
           retourApprenti: '',
         },
@@ -170,89 +188,76 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
     });
   });
 
+  describe("Maître d'apprentissage — attitudes professionnelles (juillet 2026)", () => {
+    /** Fiche entreprise minimale déjà valide hors attitudes. */
+    const ficheValide = (): FicheSuiviPeriode => {
+      const f = ficheBase();
+      f.suiviEntreprise = [
+        {
+          id: 'l1',
+          competenceId: 'c1',
+          evaluationEntreprise: 'maitrise',
+          retourApprenti: '',
+        },
+      ];
+      f.observations.maitre = 'Bon travail.';
+      return f;
+    };
+
+    it('bloque la signature tant que TOUTES les attitudes retenues ne sont pas évaluées', () => {
+      const f = ficheValide();
+      f.evaluationsAttitudes = { a5: 'plus' };
+      const r = validerSignature(f, 'maitre', 'entreprise', ['a5', 'a6', 'a7']);
+      expect(r.peutSigner).toBe(false);
+      expect(r.raisons.some((m) => /attitudes professionnelles/.test(m))).toBe(true);
+      expect(r.raisons.some((m) => m.includes('2 restantes'))).toBe(true);
+    });
+
+    it('bloque la signature quand aucune attitude retenue n’est évaluée', () => {
+      const f = ficheValide();
+      const r = validerSignature(f, 'maitre', 'entreprise', ['a5']);
+      expect(r.peutSigner).toBe(false);
+      expect(r.raisons.some((m) => m.includes('1 restante'))).toBe(true);
+    });
+
+    it('une évaluation à null ne compte pas comme évaluée', () => {
+      const f = ficheValide();
+      f.evaluationsAttitudes = { a5: null };
+      expect(validerSignature(f, 'maitre', 'entreprise', ['a5']).peutSigner).toBe(false);
+    });
+
+    it('autorise la signature quand toutes les attitudes retenues sont évaluées', () => {
+      const f = ficheValide();
+      f.evaluationsAttitudes = { a5: 'plusplus', a6: 'moins' };
+      expect(validerSignature(f, 'maitre', 'entreprise', ['a5', 'a6'])).toEqual({
+        peutSigner: true,
+        raisons: [],
+      });
+    });
+
+    it("sans attitude retenue (sélection vide ou absente), pas d'exigence supplémentaire", () => {
+      // Tant que le choix des attitudes n'a pas été fait à l'entretien,
+      // la fiche reste signable selon les règles historiques.
+      const f = ficheValide();
+      expect(validerSignature(f, 'maitre', 'entreprise', []).peutSigner).toBe(true);
+      expect(validerSignature(f, 'maitre').peutSigner).toBe(true);
+    });
+  });
+
   describe('Formateur référent', () => {
-    it("au centre, la zone « Suivi GRETA CFA » n'est plus exigée (1ᵉʳ juillet 2026)", () => {
-      // La zone a été retirée partout : tout se rédige dans les observations.
-      // Éval + observation suffisent pour signer, sans aucun suiviGretaCfa.
+    it('au centre, signe sans aucune exigence de saisie (fiches simplifiées, juillet 2026)', () => {
+      // La fiche centre n'a plus de tableau de compétences ; l'observation du
+      // formateur est souhaitée mais NON bloquante (décision pilote).
       const f = ficheBase();
-      f.suiviEntreprise = [
-        {
-          id: 'l1',
-          competenceId: 'c1',
-          evaluationGreta: 'maitrise',
-          evaluationEntreprise: null,
-          retourApprenti: '',
-        },
-      ];
-      f.observations.formateur = 'Bilan positif.';
-      expect(validerSignature(f, 'formateur', 'centre').peutSigner).toBe(true);
+      expect(validerSignature(f, 'formateur', 'centre')).toEqual({
+        peutSigner: true,
+        raisons: [],
+      });
     });
 
-    it("au centre, interdit la signature sans évaluation d'au moins une compétence", () => {
+    it('au centre, signe aussi bien avec son observation renseignée', () => {
       const f = ficheBase();
-      f.suiviGretaCfa = { formateur: 'Contenus abordés.' };
-      f.observations.formateur = 'OK';
-      const r = validerSignature(f, 'formateur', 'centre');
-      expect(r.peutSigner).toBe(false);
-      expect(r.raisons.some((m) => m.includes('Évaluation centre'))).toBe(true);
-    });
-
-    it("au centre, l'observation est requise en plus de l'évaluation", () => {
-      const f = ficheBase();
-      f.suiviEntreprise = [
-        {
-          id: 'l1',
-          competenceId: 'c1',
-          evaluationGreta: 'maitrise',
-          evaluationEntreprise: null,
-          retourApprenti: '',
-        },
-      ];
-      const r = validerSignature(f, 'formateur', 'centre');
-      expect(r.peutSigner).toBe(false);
-      expect(r.raisons.some((m) => m.includes('observation'))).toBe(true);
-    });
-
-    it('rejette la signature si la seule éval centre est « Non fait »', () => {
-      // Par symétrie avec la règle maître : « Non fait » ne compte pas comme
-      // une éval utilisable, il faut au moins une vraie évaluation.
-      const f = ficheBase();
-      f.suiviGretaCfa = { formateur: 'Contenus abordés.' };
-      f.suiviEntreprise = [
-        {
-          id: 'l1',
-          competenceId: 'c1',
-          evaluationGreta: 'non-fait',
-          evaluationEntreprise: null,
-          retourApprenti: '',
-        },
-      ];
-      f.observations.formateur = 'OK';
-      const r = validerSignature(f, 'formateur', 'centre');
-      expect(r.peutSigner).toBe(false);
-      expect(r.raisons.some((m) => /abord[ée]e/i.test(m))).toBe(true);
-    });
-
-    it("autorise la signature dès qu'une éval centre est autre que « Non fait »", () => {
-      const f = ficheBase();
-      f.suiviGretaCfa = { formateur: 'Contenus abordés.' };
-      f.suiviEntreprise = [
-        {
-          id: 'l1',
-          competenceId: 'c1',
-          evaluationGreta: 'non-fait',
-          evaluationEntreprise: null,
-          retourApprenti: '',
-        },
-        {
-          id: 'l2',
-          competenceId: 'c2',
-          evaluationGreta: 'maitrise',
-          evaluationEntreprise: null,
-          retourApprenti: '',
-        },
-      ];
-      f.observations.formateur = 'Une compétence acquise, une non abordée.';
+      f.observations.formateur = 'Regroupement productif.';
       expect(validerSignature(f, 'formateur', 'centre').peutSigner).toBe(true);
     });
 
@@ -278,7 +283,6 @@ describe('validerSignature — R20 (champs requis par rôle)', () => {
         {
           id: 'l1',
           competenceId: 'c1',
-          evaluationGreta: 'maitrise',
           evaluationEntreprise: 'maitrise',
           retourApprenti: 'OK',
         },

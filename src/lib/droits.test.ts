@@ -101,16 +101,14 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
     it('le formateur référent co-saisit les champs du maître — hors signature (1ᵉʳ juillet 2026)', () => {
       expect(peutEditer('formateur', 'entretien.appreciation-maitre')).toBe(true);
       expect(peutEditer('formateur', 'entretien.commentaires-maitre')).toBe(true);
-      expect(peutEditer('formateur', 'entretien.attitudes')).toBe(true);
       // La signature du maître / tuteur reste exclusive.
       expect(peutEditer('formateur', 'entretien.signature-maitre')).toBe(false);
     });
   });
 
   describe('Fiche de suivi par période (CDC §5.3)', () => {
-    it("formateur édite sa zone du suivi GRETA CFA et l'évaluation centre", () => {
+    it('formateur édite sa zone du suivi GRETA CFA', () => {
       expect(peutEditer('formateur', 'fiche.suivi-greta-cfa-formateur')).toBe(true);
-      expect(peutEditer('formateur', 'fiche.evaluation-greta')).toBe(true);
     });
 
     it('apprenti·e édite sa zone du suivi GRETA CFA (refonte mai 2026)', () => {
@@ -124,6 +122,14 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('maitre', 'fiche.evaluation-entreprise')).toBe(true);
       expect(peutEditer('apprenti', 'fiche.evaluation-entreprise')).toBe(false);
       expect(peutEditer('formateur', 'fiche.evaluation-entreprise')).toBe(false);
+    });
+
+    it('seul le maître évalue les attitudes sur la fiche de période entreprise (juillet 2026)', () => {
+      expect(peutEditer('maitre', 'fiche.attitudes')).toBe(true);
+      expect(peutEditer('apprenti', 'fiche.attitudes')).toBe(false);
+      expect(peutEditer('formateur', 'fiche.attitudes')).toBe(false);
+      expect(peutEditer('coordo', 'fiche.attitudes')).toBe(false);
+      expect(peutEditer('admin', 'fiche.attitudes')).toBe(false);
     });
 
     it('ajout d’une compétence à la fiche : formateur ET maître / tuteur (17 juin 2026)', () => {
@@ -174,28 +180,16 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
     });
   });
 
-  describe("Grilles d'évaluation finales (CDC §5.4-5.5)", () => {
+  describe('Grille de synthèse des compétences (CDC §5.4-5.5, « Synthèse » juillet 2026)', () => {
     it('seul le maître édite la grille compétences entreprise', () => {
       expect(peutEditer('maitre', 'grille-competences.entreprise')).toBe(true);
       expect(peutEditer('formateur', 'grille-competences.entreprise')).toBe(false);
       expect(peutEditer('apprenti', 'grille-competences.entreprise')).toBe(false);
     });
 
-    it('seul le formateur édite la grille compétences centre', () => {
-      expect(peutEditer('formateur', 'grille-competences.centre')).toBe(true);
-      expect(peutEditer('maitre', 'grille-competences.centre')).toBe(false);
-      expect(peutEditer('apprenti', 'grille-competences.centre')).toBe(false);
-    });
-
-    it("apprenti·e ne peut éditer aucune grille d'évaluation ni les attitudes", () => {
+    it('apprenti·e ne peut éditer ni la grille de synthèse ni les attitudes', () => {
       expect(peutEditer('apprenti', 'grille-competences.entreprise')).toBe(false);
-      expect(peutEditer('apprenti', 'grille-competences.centre')).toBe(false);
-      expect(peutEditer('apprenti', 'entretien.attitudes')).toBe(false);
-    });
-
-    it('le maître et le formateur évaluent les attitudes professionnelles en entretien (1ᵉʳ juillet 2026)', () => {
-      expect(peutEditer('maitre', 'entretien.attitudes')).toBe(true);
-      expect(peutEditer('formateur', 'entretien.attitudes')).toBe(true);
+      expect(peutEditer('apprenti', 'fiche.attitudes')).toBe(false);
     });
 
     it("le choix des attitudes à l'E1 est partagé maître + formateur (13 juin 2026)", () => {
@@ -248,7 +242,7 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       const RESSOURCES_LIVRET: Ressource[] = [
         'entretien.commentaires-apprenti',
         'fiche.evaluation-entreprise',
-        'fiche.evaluation-greta',
+        'fiche.attitudes',
         'fiche.retour-apprenti',
       ];
       RESSOURCES_LIVRET.forEach((r) => {
@@ -272,7 +266,7 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
         'fiche.suivi-greta-cfa-apprenti',
         'fiche.suivi-greta-cfa-formateur',
         'fiche.evaluation-entreprise',
-        'fiche.evaluation-greta',
+        'fiche.attitudes',
         'fiche.ajouter-competence',
         'fiche.retour-apprenti',
         'fiche.observation-apprenti',
@@ -288,8 +282,6 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
         // du formateur référent).
         'fiche.deverrouiller',
         'grille-competences.entreprise',
-        'grille-competences.centre',
-        'entretien.attitudes',
         'entretien.attitudes-selection',
         'entretien.trame',
         'entretien.signature-representant-legal',
@@ -454,7 +446,7 @@ describe('Admin — droits administratifs uniquement (pas de pédagogie)', () =>
 
   it("admin n'a AUCUN droit sur les évaluations / commentaires / observations", () => {
     expect(peutEditer('admin', 'fiche.evaluation-entreprise')).toBe(false);
-    expect(peutEditer('admin', 'fiche.evaluation-greta')).toBe(false);
+    expect(peutEditer('admin', 'fiche.attitudes')).toBe(false);
     expect(peutEditer('admin', 'fiche.retour-apprenti')).toBe(false);
     expect(peutEditer('admin', 'fiche.observation-apprenti')).toBe(false);
     expect(peutEditer('admin', 'fiche.observation-maitre')).toBe(false);
@@ -462,7 +454,6 @@ describe('Admin — droits administratifs uniquement (pas de pédagogie)', () =>
     expect(peutEditer('admin', 'entretien.trame')).toBe(false);
     expect(peutEditer('admin', 'entretien.appreciation-maitre')).toBe(false);
     expect(peutEditer('admin', 'grille-competences.entreprise')).toBe(false);
-    expect(peutEditer('admin', 'entretien.attitudes')).toBe(false);
   });
 
   it('rolesAutorises liste correctement les rôles admin par ressource', () => {

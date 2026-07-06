@@ -3,9 +3,11 @@ import { pourcent } from '@/lib/stats-bloc';
 import { cn } from '@/lib/utils';
 
 /**
- * Synthèse visuelle d'un bloc de compétences — barres empilées (CDC §5.4).
+ * Synthèse visuelle d'un bloc de compétences — barre empilée (CDC §5.4).
  *
- * Une barre par colonne (entreprise / centre), 4 segments empilés :
+ * Une barre « Acquis en entreprise » (juillet 2026 : la barre centre a
+ * disparu avec le tableau de compétences des fiches centre), 4 segments
+ * empilés :
  *   - Maîtrisé (vert)
  *   - Partiel (ambre)
  *   - Non maîtrisé (rouge)
@@ -25,12 +27,12 @@ export function SyntheseBloc({ stats }: SyntheseBlocProps) {
         <h3 className="font-medium">{stats.bloc.libelle}</h3>
         <p className="text-xs text-muted-foreground">
           {stats.bloc.competences.length} compétence
-          {stats.bloc.competences.length > 1 ? 's' : ''}
+          {stats.bloc.competences.length > 1 ? 's' : ''} abordée
+          {stats.bloc.competences.length > 1 ? 's' : ''} en entreprise
         </p>
       </header>
 
       <BarreEmpilee titre="Acquis en entreprise" stats={stats.entreprise} />
-      <BarreEmpilee titre="Acquis en centre" stats={stats.centre} />
 
       <Legende />
     </article>

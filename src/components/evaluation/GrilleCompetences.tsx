@@ -9,8 +9,8 @@ import { peutEditer } from '@/lib/droits';
 import { estCloture } from '@/lib/cloture-livret';
 import {
   creerSelectionVierge,
-  estSelectionnee,
   estValidee,
+  restreindreReferentielALaSelection,
 } from '@/lib/selection-competences-entreprise';
 import {
   confirmationRequisePourEcraserHeritage,
@@ -24,11 +24,14 @@ import { SyntheseBloc } from './SyntheseBloc';
 import { cn } from '@/lib/utils';
 
 /**
- * Grille d'évaluation finale des compétences en entreprise (CDC §5.4).
+ * Grille de synthèse des compétences abordées en stage (CDC §5.4 — menu
+ * « Synthèse », anciennement « Évaluation finale », juillet 2026).
  *
- * Vue par bloc, deux colonnes :
+ * Vue par bloc, restreinte aux compétences de la sélection entreprise
+ * (validée à l'entretien tripartite), une seule colonne d'évaluation :
  *   - Acquis en entreprise (saisie maître d'apprentissage)
- *   - Acquis en centre (saisie formateur référent)
+ * (La colonne « Acquis en centre » a disparu avec le tableau de compétences
+ * des fiches centre — juillet 2026.)
  *
  * Les valeurs non saisies héritent par défaut de la synthèse calculée à partir
  * des fiches de suivi (last-write-wins). Le badge "Vue en Période N" signale
@@ -65,23 +68,21 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
   const livretFige = estCloture(livret);
   const peutEditerEntreprise =
     !livretFige && peutEditer(roleActif, 'grille-competences.entreprise');
-  const peutEditerCentre = !livretFige && peutEditer(roleActif, 'grille-competences.centre');
 
-  // Synthèse héritée des fiches (R23 — recalculée à chaque render).
-  // Deux sources (17 juin 2026) : « acquis en entreprise » depuis les fiches
-  // entreprise, « acquis en centre » depuis les fiches centre.
-  const synthese = synthetiserCompetences(
-    livret.fichesSuivi,
-    livret.fichesSuiviCentre ?? [],
-    referentiel,
-  );
-  const lignes = livret.evaluationFinaleCompetences.lignes;
-  const stats = calculerStatsParBloc(referentiel, lignes, synthese);
   // Fallback défensif : un livret persisté avant le bump v7→v8 peut ne pas
   // avoir le sous-objet `selectionCompetencesEntreprise`. La migration store
   // est censée reset, mais on protège quand même la chaîne de rendu.
   const selection = livret.selectionCompetencesEntreprise ?? creerSelectionVierge();
   const selectionValidee = estValidee(selection);
+
+  // Juillet 2026 : la grille ne présente QUE les compétences abordées en
+  // stage (sélection entreprise) — blocs sans compétence retenue masqués.
+  const referentielSelectionne = restreindreReferentielALaSelection(referentiel, selection);
+
+  // Synthèse héritée des fiches ENTREPRISE (R23 — recalculée à chaque render).
+  const synthese = synthetiserCompetences(livret.fichesSuivi, referentielSelectionne);
+  const lignes = livret.evaluationFinaleCompetences.lignes;
+  const stats = calculerStatsParBloc(referentielSelectionne, lignes, synthese);
 
   // CDC v1.5 addendum — Q2(b) : tant que la sélection n'est pas validée à
   // l'entretien tripartite, la grille finale n'est pas affichée. Un message
@@ -98,7 +99,7 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
             Sélection des compétences abordées en entreprise non validée
           </p>
           <p>
-            La grille d'évaluation finale s'affichera dès que le formateur référent et le maître
+            La grille de synthèse s'affichera dès que le formateur référent et le maître
             d'apprentissage auront validé conjointement la liste des compétences travaillées en
             entreprise pour cet·te apprenti·e. Cette décision se prend à l'
             <Link className="underline hover:no-underline" to="/livret/entretien">
@@ -123,11 +124,12 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
         </div>
       </section>
 
-      {/* ── Grilles éditables détaillées ─────────────────────────────────── */}
-      {referentiel.blocs.map((bloc) => {
+      {/* ── Grilles éditables détaillées (compétences de la sélection) ───── */}
+      {referentielSelectionne.blocs.map((bloc) => {
         const groupes = grouperParSousFamille(bloc);
         const aDesSousFamilles =
-          referentiel.niveauxColonnes === 3 && groupes.some((g) => g.sousFamille !== undefined);
+          referentielSelectionne.niveauxColonnes === 3 &&
+          groupes.some((g) => g.sousFamille !== undefined);
         return (
           <section key={bloc.id} className="space-y-3">
             <h2 className="text-lg font-medium">{bloc.libelle}</h2>
@@ -135,9 +137,8 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
               <table className="w-full text-sm">
                 <thead className="bg-secondary/50 text-xs uppercase tracking-wider text-muted-foreground">
                   <tr>
-                    <th className="px-3 py-2 text-left w-1/3">Compétence</th>
+                    <th className="px-3 py-2 text-left w-1/2">Compétence</th>
                     <th className="px-3 py-2 text-left">Acquis en entreprise</th>
-                    <th className="px-3 py-2 text-left">Acquis en centre</th>
                     <th className="px-3 py-2 text-left">Commentaire</th>
                   </tr>
                 </thead>
@@ -149,7 +150,7 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
                     {aDesSousFamilles && g.sousFamille && (
                       <tr className="bg-secondary/20">
                         <td
-                          colSpan={4}
+                          colSpan={3}
                           className="px-3 py-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground"
                         >
                           {g.sousFamille}
@@ -162,9 +163,7 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
                         ({
                           competenceId: c.id,
                           acquisEntreprise: null,
-                          acquisCentre: null,
                         } satisfies LigneEvaluationFinaleCompetence);
-                      const competenceEnEntreprise = estSelectionnee(selection, c.id);
 
                       return (
                         <tr key={c.id} className="align-top">
@@ -172,64 +171,35 @@ export function GrilleCompetences({ referentiel }: GrilleCompetencesProps) {
                             <div className="text-sm">{c.libelle}</div>
                           </td>
                           <td className="px-3 py-3 border-l-2 border-l-role-maitre/20">
-                            {competenceEnEntreprise ? (
-                              <CelluleNiveau
-                                ligne={ligne}
-                                synthese={synthese}
-                                colonne="acquisEntreprise"
-                                editable={peutEditerEntreprise}
-                                onChange={(v) => {
-                                  // Garde-fou : remplacer une valeur héritée
-                                  // des périodes exige une confirmation.
-                                  if (
-                                    confirmationRequisePourEcraserHeritage(
-                                      ligne,
-                                      synthese,
-                                      'acquisEntreprise',
-                                      v,
-                                    )
-                                  ) {
-                                    const heritage = valeurEffective(
-                                      ligne,
-                                      synthese,
-                                      'acquisEntreprise',
-                                    );
-                                    setEcrasement({
-                                      competenceId: c.id,
-                                      libelleCompetence: c.libelle,
-                                      nouvelleValeur: v as NiveauMaitrise,
-                                      valeurHeritee: heritage.valeur as NiveauMaitrise,
-                                      numeroPeriode: heritage.numeroPeriode,
-                                    });
-                                  } else {
-                                    setLigne(livret.id, c.id, { acquisEntreprise: v });
-                                  }
-                                }}
-                                ariaLabel={`Acquis en entreprise pour ${c.libelle}`}
-                              />
-                            ) : (
-                              <CelluleNonSelectionnee
-                                valeurHistorique={ligne.acquisEntreprise}
-                                libelleCompetence={c.libelle}
-                              />
-                            )}
-                          </td>
-                          <td className="px-3 py-3 border-l-2 border-l-role-formateur/20">
                             <CelluleNiveau
                               ligne={ligne}
                               synthese={synthese}
-                              colonne="acquisCentre"
-                              editable={peutEditerCentre}
-                              onChange={(v) => setLigne(livret.id, c.id, { acquisCentre: v })}
-                              ariaLabel={`Acquis en centre pour ${c.libelle}`}
+                              editable={peutEditerEntreprise}
+                              onChange={(v) => {
+                                // Garde-fou : remplacer une valeur héritée
+                                // des périodes exige une confirmation.
+                                if (confirmationRequisePourEcraserHeritage(ligne, synthese, v)) {
+                                  const heritage = valeurEffective(ligne, synthese);
+                                  setEcrasement({
+                                    competenceId: c.id,
+                                    libelleCompetence: c.libelle,
+                                    nouvelleValeur: v as NiveauMaitrise,
+                                    valeurHeritee: heritage.valeur as NiveauMaitrise,
+                                    numeroPeriode: heritage.numeroPeriode,
+                                  });
+                                } else {
+                                  setLigne(livret.id, c.id, { acquisEntreprise: v });
+                                }
+                              }}
+                              ariaLabel={`Acquis en entreprise pour ${c.libelle}`}
                             />
                           </td>
-                          {/* Séparateur neutre : le commentaire est partagé
-                              maître + formateur, pas de teinte de rôle. */}
+                          {/* Séparateur neutre : le commentaire reste partagé,
+                              pas de teinte de rôle. */}
                           <td className="px-3 py-3 min-w-[200px] border-l-2 border-l-border">
                             <CelluleCommentaire
                               valeur={ligne.commentaire ?? ''}
-                              editable={peutEditerEntreprise || peutEditerCentre}
+                              editable={peutEditerEntreprise}
                               onChange={(v) => setLigne(livret.id, c.id, { commentaire: v })}
                             />
                           </td>
@@ -324,13 +294,14 @@ function ModaleConfirmationHeritage({
         <div className="space-y-3 p-4 text-sm">
           <p>
             L'évaluation « <strong>{LIBELLE_NIVEAU[ecrasement.valeurHeritee]}</strong> » de{' '}
-            <strong>{ecrasement.libelleCompetence}</strong> provient {provenance} (report automatique).
+            <strong>{ecrasement.libelleCompetence}</strong> provient {provenance} (report
+            automatique).
           </p>
           <p>
             Confirmez-vous son remplacement par «{' '}
-            <strong>{LIBELLE_NIVEAU[ecrasement.nouvelleValeur]}</strong> » dans l'évaluation finale
-            ? La cellule ne suivra plus les fiches de période. Le bouton « Non renseigné » permettra
-            de revenir au report automatique.
+            <strong>{LIBELLE_NIVEAU[ecrasement.nouvelleValeur]}</strong> » dans la synthèse ? La
+            cellule ne suivra plus les fiches de période. Le bouton « Non renseigné » permettra de
+            revenir au report automatique.
           </p>
         </div>
 
@@ -360,21 +331,13 @@ function ModaleConfirmationHeritage({
 interface CelluleNiveauProps {
   ligne: LigneEvaluationFinaleCompetence;
   synthese: ReturnType<typeof synthetiserCompetences>;
-  colonne: 'acquisEntreprise' | 'acquisCentre';
   editable: boolean;
   onChange: (v: NiveauMaitrise | null) => void;
   ariaLabel: string;
 }
 
-function CelluleNiveau({
-  ligne,
-  synthese,
-  colonne,
-  editable,
-  onChange,
-  ariaLabel,
-}: CelluleNiveauProps) {
-  const eff = valeurEffective(ligne, synthese, colonne);
+function CelluleNiveau({ ligne, synthese, editable, onChange, ariaLabel }: CelluleNiveauProps) {
+  const eff = valeurEffective(ligne, synthese);
   return (
     <div className="flex flex-col items-start gap-1">
       <SelecteurNiveau
@@ -393,48 +356,6 @@ function CelluleNiveau({
             : 'Vue dans les fiches'}
         </span>
       )}
-    </div>
-  );
-}
-
-/**
- * Cellule « Acquis en entreprise » d'une compétence **non sélectionnée** pour
- * ce livret. Toujours en lecture seule (cf. CDC v1.5 addendum, Q3 option a).
- *
- * - Pas de saisie historique → affiche « — » + tooltip explicatif.
- * - Saisie historique présente (compétence cochée puis décochée via R10) →
- *   affiche la valeur en lecture seule grisée pour préserver la traçabilité
- *   (cf. Q3 option a1).
- */
-function CelluleNonSelectionnee({
-  valeurHistorique,
-  libelleCompetence,
-}: {
-  valeurHistorique: NiveauMaitrise | null;
-  libelleCompetence: string;
-}) {
-  if (valeurHistorique === null) {
-    return (
-      <span
-        className="inline-flex items-center text-muted-foreground italic"
-        title={`Compétence ${libelleCompetence} non abordée en entreprise pour cet·te apprenti·e.`}
-        aria-label={`Compétence ${libelleCompetence} non abordée en entreprise`}
-      >
-        —
-      </span>
-    );
-  }
-  return (
-    <div
-      className="opacity-60"
-      title={`Saisie historique conservée — la compétence ${libelleCompetence} a été décochée depuis (R10).`}
-    >
-      <SelecteurNiveau
-        editable={false}
-        mode="greta"
-        valeur={valeurHistorique}
-        ariaLabel={`Acquis en entreprise pour ${libelleCompetence} (saisie historique, lecture seule)`}
-      />
     </div>
   );
 }

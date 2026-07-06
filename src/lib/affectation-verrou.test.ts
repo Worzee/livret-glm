@@ -66,7 +66,6 @@ const FICHE_VIDE: FicheSuiviPeriode = {
 };
 
 const ENTRETIEN_VIDE: EntretienTripartite = {
-  evaluationsAttitudes: {},
   reponsesTrame: {},
   appreciationMaitre: {},
   commentaires: {},

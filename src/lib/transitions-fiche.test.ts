@@ -80,6 +80,18 @@ describe('ficheEstVide', () => {
     f.signatures.apprenti.signe = true;
     expect(ficheEstVide(f)).toBe(false);
   });
+
+  it("retourne false dès qu'une attitude est évaluée (juillet 2026)", () => {
+    const f = ficheVide();
+    f.evaluationsAttitudes = { a5: 'plus' };
+    expect(ficheEstVide(f)).toBe(false);
+  });
+
+  it('des évaluations d’attitudes toutes à null laissent la fiche vide', () => {
+    const f = ficheVide();
+    f.evaluationsAttitudes = { a5: null };
+    expect(ficheEstVide(f)).toBe(true);
+  });
 });
 
 describe('deduireEtat (R15, R16)', () => {

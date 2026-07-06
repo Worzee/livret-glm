@@ -22,7 +22,7 @@ const PAGES_PRINCIPALES = [
   { url: '/livret/organisation-suivi', titre: /Fiches de suivi/i },
   { url: '/livret/entretien', titre: /Entretien tripartite/i },
   { url: '/livret/fiches-suivi', titre: /Période en Entreprise/i },
-  { url: '/livret/evaluation-finale', titre: /Évaluation finale/i },
+  { url: '/livret/synthese', titre: /Synthèse/i },
 ];
 
 test.describe('aucun débordement horizontal', () => {
@@ -69,9 +69,9 @@ test('navigation mobile : clic sur un lien du drawer change la page et ferme le 
   await page.getByRole('button', { name: /Ouvrir le menu de navigation/i }).click();
 
   const drawer = page.getByRole('dialog', { name: /Menu de navigation/i });
-  await drawer.getByRole('link', { name: /Évaluation finale/i }).click();
+  await drawer.getByRole('link', { name: /Synthèse/i }).click();
 
-  await expect(page).toHaveURL(/\/livret\/evaluation-finale/);
+  await expect(page).toHaveURL(/\/livret\/synthese/);
   // Le drawer doit s'être fermé automatiquement après la navigation.
   await expect(page.getByRole('dialog', { name: /Menu de navigation/i })).toHaveCount(0);
 });

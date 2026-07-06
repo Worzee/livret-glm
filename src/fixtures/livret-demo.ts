@@ -56,7 +56,7 @@ const signaturesCompletes = (date: string): SignaturesTripartite => ({
   formateur: { signe: true, dateSignature: date },
 });
 
-/** Initialise les lignes vides de l'évaluation finale depuis le référentiel. */
+/** Initialise les lignes vides de la grille de synthèse depuis le référentiel. */
 function lignesEvaluationFinaleVides(referentiel: Referentiel = referentielCapCuisine) {
   return {
     competences: referentiel.blocs
@@ -64,15 +64,15 @@ function lignesEvaluationFinaleVides(referentiel: Referentiel = referentielCapCu
       .map((c) => ({
         competenceId: c.id,
         acquisEntreprise: null,
-        acquisCentre: null,
       })),
   };
 }
 
 /**
- * Évaluations d'attitudes pour un entretien signé (retours coordos juin
- * 2026 : le maître évalue les attitudes lors de l'entretien — R20 exige au
- * moins une évaluation pour signer). Les 6 attitudes du catalogue initial.
+ * Évaluations d'attitudes d'une fiche de période ENTREPRISE signée par le
+ * maître (juillet 2026 : les attitudes s'évaluent à chaque période — R20
+ * exige que TOUTES les attitudes retenues le soient pour signer). Les
+ * livrets CAP de démo retiennent a5 / a6 / a9.
  */
 function evaluationsAttitudesDemo(
   dominante: 'plus' | 'plusplus' = 'plus',
@@ -80,6 +80,7 @@ function evaluationsAttitudesDemo(
   return {
     a5: dominante,
     a6: 'plusplus',
+    a9: 'plus',
   };
 }
 
@@ -244,7 +245,6 @@ const entretienLea: EntretienTripartite = {
   // Trame officielle E1 (juin 2026) — 2 points d'alerte pour la démo :
   // absences non signalées selon les procédures + difficulté de logement.
   reponsesTrame: reponsesTrameDemo(['e1-org-absences', 'e1-diff-logement']),
-  evaluationsAttitudes: evaluationsAttitudesDemo(),
   appreciationMaitre: {
     ponctualite: 'plusplus',
     comprehensionConsignes: 'plus',
@@ -282,7 +282,6 @@ const leaPeriode1: FicheSuiviPeriode = {
     {
       id: 'se-lea-1-1',
       competenceId: 'c1-1',
-      evaluationGreta: 'maitrise',
       evaluationEntreprise: 'maitrise',
       retourApprenti:
         "J'ai appris à contrôler les bons de livraison et à respecter le FIFO en chambre froide.",
@@ -290,7 +289,6 @@ const leaPeriode1: FicheSuiviPeriode = {
     {
       id: 'se-lea-1-2',
       competenceId: 'c1-2',
-      evaluationGreta: 'maitrise',
       evaluationEntreprise: 'partiel',
       retourApprenti:
         "Mise en place rapide pour le service de midi. Je manque encore d'autonomie en fin de service.",
@@ -298,12 +296,13 @@ const leaPeriode1: FicheSuiviPeriode = {
     {
       id: 'se-lea-1-3',
       competenceId: 'c2-1',
-      evaluationGreta: 'partiel',
       evaluationEntreprise: 'partiel',
       retourApprenti:
         'Cuissons à la poêle bien acquises. Les fonds bruns demandent encore de la pratique.',
     },
   ],
+  // Attitudes retenues (a5/a6/a9) toutes évaluées — le maître a signé (R20).
+  evaluationsAttitudes: evaluationsAttitudesDemo(),
   observations: {
     apprenti: "Période très formatrice, équipe accueillante. J'ai pris confiance progressivement.",
     maitre:
@@ -332,25 +331,24 @@ const leaPeriode2: FicheSuiviPeriode = {
     {
       id: 'se-lea-2-1',
       competenceId: 'c2-2',
-      evaluationGreta: 'maitrise',
       evaluationEntreprise: 'maitrise',
       retourApprenti: "J'ai dressé seule plusieurs entrées du menu déjeuner.",
     },
     {
       id: 'se-lea-2-2',
       competenceId: 'c2-3',
-      evaluationGreta: 'partiel',
       evaluationEntreprise: 'partiel',
       retourApprenti: "Le dressage demande de la précision, je m'améliore.",
     },
     {
       id: 'se-lea-2-3',
       competenceId: 'c3-1',
-      evaluationGreta: 'maitrise',
       evaluationEntreprise: 'non-fait',
       retourApprenti: "Pas encore eu l'occasion de réaliser de la pâtisserie en service.",
     },
   ],
+  // Attitudes toutes réévaluées sur la période (progression sur a5).
+  evaluationsAttitudes: evaluationsAttitudesDemo('plusplus'),
   observations: {
     apprenti: "Période plus dense. J'ai gagné en vitesse mais je dois soigner les finitions.",
     maitre: 'Progression nette. Léa prend des initiatives sur la mise en place.',
@@ -377,7 +375,6 @@ const leaPeriode3: FicheSuiviPeriode = {
     {
       id: 'se-lea-3-1',
       competenceId: 'c2-2',
-      evaluationGreta: 'maitrise',
       evaluationEntreprise: 'maitrise',
       retourApprenti:
         "J'ai pu réaliser plusieurs plats principaux du menu. Très satisfaite du résultat.",
@@ -385,18 +382,19 @@ const leaPeriode3: FicheSuiviPeriode = {
     {
       id: 'se-lea-3-2',
       competenceId: 'c2-3',
-      evaluationGreta: null,
       evaluationEntreprise: 'partiel',
       retourApprenti: "Le dressage à l'assiette me prend encore beaucoup de temps en service.",
     },
     {
       id: 'se-lea-3-3',
       competenceId: 'c3-2',
-      evaluationGreta: null,
       evaluationEntreprise: null,
       retourApprenti: '',
     },
   ],
+  // Période en cours : le maître n'a pas signé — a6 et a9 restent à évaluer
+  // (cas démo du blocage R20 « toutes les attitudes »).
+  evaluationsAttitudes: { a5: 'plusplus' },
   observations: {
     apprenti: "Beaucoup de progrès cette période sur l'autonomie. J'ai hâte de la suite.",
     maitre: 'Léa monte clairement en compétence. Bonne gestion du stress en coup de feu.',
@@ -413,8 +411,9 @@ const leaPeriode3: FicheSuiviPeriode = {
   historiqueDeverrouillages: [],
 };
 
-// Périodes EN CENTRE de Léa (17 juin 2026) — évaluées par le formateur
-// référent, signées par l'apprenti·e + le formateur (pas de maître au CFA).
+// Périodes EN CENTRE de Léa (17 juin 2026, simplifiées en juillet 2026 —
+// observations de fin de période seules, plus de tableau de compétences),
+// signées par l'apprenti·e + le formateur (pas de maître au CFA).
 //   C1 (Regroupement d'automne, oct. 2025) : signée 2/2
 //   C2 (Regroupement d'hiver, janv. 2026)  : EN COURS (formateur pas signé)
 const leaCentre1: FicheSuiviPeriode = {
@@ -424,31 +423,13 @@ const leaCentre1: FicheSuiviPeriode = {
   titre: "Regroupement d'automne",
   dateDebut: '2025-10-06',
   dateFin: '2025-10-17',
-  suiviGretaCfa: {
-    apprenti:
-      "Deux semaines intenses au CFA. J'ai consolidé les taillages et découvert les fonds de sauce.",
-    formateur:
-      "Regroupement d'automne : approfondissement de l'hygiène HACCP, taillages, fonds de base. Travaux pratiques quotidiens, contrôle continu 14/20.",
-  },
-  suiviEntreprise: [
-    {
-      id: 'sc-lea-c1-1',
-      competenceId: 'c1-1',
-      evaluationGreta: 'maitrise',
-      evaluationEntreprise: null,
-      retourApprenti: 'Les contrôles de réception sont maintenant un réflexe.',
-    },
-    {
-      id: 'sc-lea-c1-2',
-      competenceId: 'c2-1',
-      evaluationGreta: 'partiel',
-      evaluationEntreprise: null,
-      retourApprenti: "Les fonds bruns me demandent encore de l'attention.",
-    },
-  ],
+  suiviGretaCfa: {},
+  suiviEntreprise: [],
   observations: {
-    apprenti: 'Regroupement très formateur, bonne dynamique de groupe.',
-    formateur: 'Léa progresse bien au centre. À consolider sur les fonds.',
+    apprenti:
+      "Regroupement très formateur, bonne dynamique de groupe. J'ai consolidé les taillages et découvert les fonds de sauce.",
+    formateur:
+      "Regroupement d'automne : approfondissement de l'hygiène HACCP, taillages, fonds de base. Léa progresse bien au centre — à consolider sur les fonds.",
   },
   signatures: {
     apprenti: { signe: true, dateSignature: '2025-10-17T16:00:00.000Z' },
@@ -466,30 +447,13 @@ const leaCentre2: FicheSuiviPeriode = {
   titre: "Regroupement d'hiver",
   dateDebut: '2026-01-19',
   dateFin: '2026-01-30',
-  suiviGretaCfa: {
-    apprenti:
-      'Regroupement axé pâtisserie. La crème pâtissière reste un point que je dois consolider.',
-    formateur:
-      "Regroupement d'hiver : pâtisserie de base (pâtes, crèmes), desserts à l'assiette. Évaluation en cours.",
-  },
-  suiviEntreprise: [
-    {
-      id: 'sc-lea-c2-1',
-      competenceId: 'c2-2',
-      evaluationGreta: 'maitrise',
-      evaluationEntreprise: null,
-      retourApprenti: "J'ai bien réussi les dressages d'entrées en atelier.",
-    },
-    {
-      id: 'sc-lea-c2-2',
-      competenceId: 'c2-3',
-      evaluationGreta: 'partiel',
-      evaluationEntreprise: null,
-      retourApprenti: 'La précision du dressage progresse régulièrement.',
-    },
-  ],
+  suiviGretaCfa: {},
+  suiviEntreprise: [],
   observations: {
-    apprenti: 'Beaucoup de pratique, je gagne en régularité.',
+    apprenti:
+      'Regroupement axé pâtisserie — beaucoup de pratique, je gagne en régularité. La crème pâtissière reste un point que je dois consolider.',
+    // Observation formateur vide : NON bloquante pour sa signature (juillet
+    // 2026) — la fiche reste « en cours » car il n'a simplement pas signé.
     formateur: '',
   },
   signatures: {
@@ -566,7 +530,8 @@ const livretLea: Livret = {
   fichesSuivi: [leaPeriode1, leaPeriode2, leaPeriode3],
   // Périodes en centre (17 juin 2026) : C1 signée, C2 en cours.
   fichesSuiviCentre: [leaCentre1, leaCentre2],
-  // Attitudes retenues à l'entretien (13 juin 2026) — a9 pas encore évaluée.
+  // Attitudes retenues à l'entretien (13 juin 2026) — évaluées à chaque
+  // période en entreprise depuis juillet 2026.
   attitudesSelectionnees: ['a5', 'a6', 'a9'],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiLeaMartin,
@@ -585,7 +550,6 @@ const livretLea: Livret = {
 const entretienTheo: EntretienTripartite = {
   dateEntretien: '2025-10-15',
   reponsesTrame: reponsesTrameDemo(),
-  evaluationsAttitudes: evaluationsAttitudesDemo(),
   appreciationMaitre: {
     ponctualite: 'plusplus',
     comprehensionConsignes: 'plusplus',
@@ -632,21 +596,18 @@ const theoFiche = (
           {
             id: `se-theo-${numero}-1`,
             competenceId: 'c1-1',
-            evaluationGreta: 'maitrise',
             evaluationEntreprise: 'maitrise',
             retourApprenti: "Très à l'aise avec les contrôles de réception.",
           },
           {
             id: `se-theo-${numero}-2`,
             competenceId: 'c1-2',
-            evaluationGreta: 'maitrise',
             evaluationEntreprise: 'maitrise',
             retourApprenti: 'Mise en place rapide et propre.',
           },
           {
             id: `se-theo-${numero}-3`,
             competenceId: 'c2-1',
-            evaluationGreta: 'maitrise',
             evaluationEntreprise: 'maitrise',
             retourApprenti: 'Les techniques de base sont acquises.',
           },
@@ -656,14 +617,12 @@ const theoFiche = (
             {
               id: `se-theo-${numero}-1`,
               competenceId: 'c2-2',
-              evaluationGreta: 'maitrise',
               evaluationEntreprise: 'maitrise',
               retourApprenti: 'Production complète sur le menu déjeuner.',
             },
             {
               id: `se-theo-${numero}-2`,
               competenceId: 'c3-1',
-              evaluationGreta: 'maitrise',
               evaluationEntreprise: 'maitrise',
               retourApprenti: 'Pâtes de base maîtrisées rapidement.',
             },
@@ -672,18 +631,18 @@ const theoFiche = (
             {
               id: `se-theo-${numero}-1`,
               competenceId: 'c2-3',
-              evaluationGreta: 'maitrise',
               evaluationEntreprise: 'maitrise',
               retourApprenti: 'Dressage soigné, tempo rapide en service.',
             },
             {
               id: `se-theo-${numero}-2`,
               competenceId: 'c3-2',
-              evaluationGreta: 'maitrise',
               evaluationEntreprise: 'maitrise',
               retourApprenti: 'Crèmes et mousses très bien réussies.',
             },
           ],
+  // Attitudes retenues (a5/a6/a9) toutes évaluées à chaque période (R20).
+  evaluationsAttitudes: evaluationsAttitudesDemo('plusplus'),
   observations: {
     apprenti: 'Période très satisfaisante.',
     maitre: 'Progression rapide et constante.',
@@ -702,7 +661,8 @@ const livretTheo: Livret = {
     theoFiche(2, '2026-01-06', '2026-02-14', '2026-02-16T10:30:00.000Z'),
     theoFiche(3, '2026-03-02', '2026-04-11', '2026-04-13T09:00:00.000Z'),
   ],
-  // Attitudes retenues à l'entretien (13 juin 2026) — a9 pas encore évaluée.
+  // Attitudes retenues à l'entretien (13 juin 2026) — évaluées à chaque
+  // période en entreprise depuis juillet 2026.
   attitudesSelectionnees: ['a5', 'a6', 'a9'],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiTheoDubois,
@@ -735,14 +695,12 @@ const sofiaPeriode1: FicheSuiviPeriode = {
     {
       id: 'se-sofia-1-1',
       competenceId: 'c1-1',
-      evaluationGreta: 'partiel',
       evaluationEntreprise: 'partiel',
       retourApprenti: 'Encore en apprentissage des contrôles de réception.',
     },
     {
       id: 'se-sofia-1-2',
       competenceId: 'c1-2',
-      evaluationGreta: null,
       evaluationEntreprise: 'partiel',
       retourApprenti: '',
     },
@@ -813,7 +771,6 @@ const livretSofia: Livret = {
 const entretienMinh: EntretienTripartite = {
   dateEntretien: '2026-04-20',
   reponsesTrame: reponsesTrameDemo(),
-  evaluationsAttitudes: evaluationsAttitudesDemo(),
   appreciationMaitre: {
     ponctualite: 'plus',
     comprehensionConsignes: 'plus',
@@ -875,7 +832,8 @@ const livretMinh: Livret = {
   // Périodes héritées du planning de la formation (chantier #1) — encore
   // vierges : Minh vient de démarrer et n'a rempli aucune fiche.
   fichesSuivi: periodesCapCuisine.map((p) => creerFichePeriodeVierge(p, `fp-minh-${p.numero}`)),
-  // Attitudes retenues à l'entretien (13 juin 2026) — a9 pas encore évaluée.
+  // Attitudes retenues à l'entretien (13 juin 2026) — évaluées à chaque
+  // période en entreprise depuis juillet 2026.
   attitudesSelectionnees: ['a5', 'a6', 'a9'],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiMinhNguyen,
@@ -907,18 +865,18 @@ const ayaPeriode1: FicheSuiviPeriode = {
     {
       id: 'se-aya-1-1',
       competenceId: 'c1-1',
-      evaluationGreta: 'maitrise',
       evaluationEntreprise: 'maitrise',
       retourApprenti: 'OK sur les contrôles.',
     },
     {
       id: 'se-aya-1-2',
       competenceId: 'c2-1',
-      evaluationGreta: 'maitrise',
       evaluationEntreprise: 'maitrise',
       retourApprenti: 'Techniques de base acquises.',
     },
   ],
+  // Attitudes retenues (a5/a6/a9) toutes évaluées — fiche signée puis verrouillée.
+  evaluationsAttitudes: evaluationsAttitudesDemo(),
   observations: {
     apprenti: 'Période OK.',
     maitre: 'Progression correcte.',
@@ -955,19 +913,20 @@ const ayaPeriode2: FicheSuiviPeriode = {
     {
       id: 'se-aya-2-1',
       competenceId: 'c2-2',
-      evaluationGreta: 'maitrise',
       evaluationEntreprise: 'maitrise',
       retourApprenti: 'Production OK sur le menu midi.',
     },
     {
       id: 'se-aya-2-2',
       competenceId: 'c2-3',
-      evaluationGreta: 'partiel',
       evaluationEntreprise: 'non-maitrise',
       retourApprenti:
         "Je ne suis pas d'accord avec l'évaluation de l'entreprise sur le dressage. Plusieurs services sans retour négatif.",
     },
   ],
+  // Évaluations saisies avant le déverrouillage R10 — conservées (seules les
+  // signatures sont invalidées).
+  evaluationsAttitudes: evaluationsAttitudesDemo(),
   observations: {
     apprenti:
       "L'évaluation entreprise sur le dressage me semble injuste. Je demande à en discuter lors de la visite.",
@@ -1006,7 +965,8 @@ const livretAya: Livret = {
     ayaPeriode2,
     creerFichePeriodeVierge(periodesCapCuisine[2], 'fp-aya-3'),
   ],
-  // Attitudes retenues à l'entretien (13 juin 2026) — a9 pas encore évaluée.
+  // Attitudes retenues à l'entretien (13 juin 2026) — évaluées à chaque
+  // période en entreprise depuis juillet 2026.
   attitudesSelectionnees: ['a5', 'a6', 'a9'],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiAyaKouame,
@@ -1024,7 +984,6 @@ const livretAya: Livret = {
 const entretienLuca: EntretienTripartite = {
   dateEntretien: '2025-10-30',
   reponsesTrame: reponsesTrameDemo(),
-  evaluationsAttitudes: evaluationsAttitudesDemo(),
   appreciationMaitre: {
     ponctualite: 'plus',
     comprehensionConsignes: 'plus',
@@ -1056,25 +1015,24 @@ const lucaPeriode1: FicheSuiviPeriode = {
     {
       id: 'se-luca-1-1',
       competenceId: 'c1-1',
-      evaluationGreta: 'maitrise',
       evaluationEntreprise: 'maitrise',
       retourApprenti: 'Contrôles de réception OK.',
     },
     {
       id: 'se-luca-1-2',
       competenceId: 'c1-2',
-      evaluationGreta: 'maitrise',
       evaluationEntreprise: 'partiel',
       retourApprenti: 'Mise en place propre, gain de vitesse en cours.',
     },
     {
       id: 'se-luca-1-3',
       competenceId: 'c2-1',
-      evaluationGreta: 'partiel',
       evaluationEntreprise: 'partiel',
       retourApprenti: 'Cuissons à consolider.',
     },
   ],
+  // Attitudes retenues (a5/a6/a9) toutes évaluées — le maître a signé (R20).
+  evaluationsAttitudes: evaluationsAttitudesDemo(),
   observations: {
     apprenti: 'Première période formatrice, je gagne en confiance.',
     maitre: 'Bon démarrage, progression régulière.',
@@ -1100,18 +1058,18 @@ const lucaPeriode2: FicheSuiviPeriode = {
     {
       id: 'se-luca-2-1',
       competenceId: 'c2-2',
-      evaluationGreta: 'maitrise',
       evaluationEntreprise: 'maitrise',
       retourApprenti: 'Production complète sur le menu déjeuner.',
     },
     {
       id: 'se-luca-2-2',
       competenceId: 'c3-1',
-      evaluationGreta: 'partiel',
       evaluationEntreprise: 'non-fait',
       retourApprenti: "Pas encore d'occasion en service de pâtisserie.",
     },
   ],
+  // Attitudes toutes réévaluées sur la période (R20).
+  evaluationsAttitudes: evaluationsAttitudesDemo(),
   observations: {
     apprenti: 'Période plus dense.',
     maitre: 'Progression nette en production salée.',
@@ -1138,14 +1096,12 @@ const lucaPeriode3: FicheSuiviPeriode = {
     {
       id: 'se-luca-3-1',
       competenceId: 'c2-3',
-      evaluationGreta: null,
       evaluationEntreprise: 'partiel',
       retourApprenti: 'Dressage en progression, vitesse à améliorer.',
     },
     {
       id: 'se-luca-3-2',
       competenceId: 'c2-4',
-      evaluationGreta: null,
       evaluationEntreprise: 'partiel',
       retourApprenti: '',
     },
@@ -1164,7 +1120,8 @@ const livretLuca: Livret = {
   ...livretVierge(apprentiLucaBianchi, 'livret-luca'),
   entretien: entretienLuca,
   fichesSuivi: [lucaPeriode1, lucaPeriode2, lucaPeriode3],
-  // Attitudes retenues à l'entretien (13 juin 2026) — a9 pas encore évaluée.
+  // Attitudes retenues à l'entretien (13 juin 2026) — évaluées à chaque
+  // période en entreprise depuis juillet 2026.
   attitudesSelectionnees: ['a5', 'a6', 'a9'],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiLucaBianchi,
@@ -1216,9 +1173,6 @@ const TEXTES_TRAME_CAMILLE: Record<string, string> = {
 const entretienCamille: EntretienTripartite = {
   dateEntretien: '2025-10-21',
   reponsesTrame: reponsesTrameDemo([], TEXTES_TRAME_CAMILLE),
-  // Attitudes retenues à l'entretien : hygiène/tenue exclues au profit du
-  // relationnel.
-  evaluationsAttitudes: { a7: 'plus', a9: 'plusplus', a10: 'moins', a12: 'plus' },
   appreciationMaitre: {
     ponctualite: 'plus',
     comprehensionConsignes: 'plus',
@@ -1250,25 +1204,25 @@ const camillePeriode1: FicheSuiviPeriode = {
     {
       id: 'se-camille-1-1',
       competenceId: 'mhr1-1',
-      evaluationGreta: null,
       evaluationEntreprise: 'maitrise',
       retourApprenti: "L'accueil et le placement des clients sont devenus naturels.",
     },
     {
       id: 'se-camille-1-2',
       competenceId: 'mhr1-3',
-      evaluationGreta: null,
       evaluationEntreprise: 'partiel',
       retourApprenti: 'Le service au guéridon demande encore de la pratique.',
     },
     {
       id: 'se-camille-1-3',
       competenceId: 'mhr1-5',
-      evaluationGreta: null,
       evaluationEntreprise: 'maitrise',
       retourApprenti: "Les affichages allergènes n'ont plus de secret pour moi.",
     },
   ],
+  // Attitudes retenues (a7/a9/a10/a12) toutes évaluées — le maître a signé
+  // (R20). La rigueur (a10) reste un point de progression en P1.
+  evaluationsAttitudes: { a7: 'plus', a9: 'plusplus', a10: 'moins', a12: 'plus' },
   observations: {
     apprenti: 'Première période dense : les services du soir sont exigeants mais formateurs.',
     maitre:
@@ -1291,25 +1245,25 @@ const camillePeriode2: FicheSuiviPeriode = {
     {
       id: 'se-camille-2-1',
       competenceId: 'mhr1-2',
-      evaluationGreta: null,
       evaluationEntreprise: 'maitrise',
       retourApprenti: 'Ventes additionnelles régulières sur les suggestions du chef.',
     },
     {
       id: 'se-camille-2-2',
       competenceId: 'mhr1-4',
-      evaluationGreta: null,
       evaluationEntreprise: 'partiel',
       retourApprenti: 'Les accords mets-vins progressent grâce aux dégustations du mardi.',
     },
     {
       id: 'se-camille-2-3',
       competenceId: 'mhr3-1',
-      evaluationGreta: null,
       evaluationEntreprise: 'partiel',
       retourApprenti: 'Je participe au calcul des ratios du restaurant chaque fin de mois.',
     },
   ],
+  // Attitudes toutes réévaluées en P2 — progression visible sur la rigueur
+  // (a10 : « - » en P1 → « + » ici, la Synthèse affichera « Période 2 »).
+  evaluationsAttitudes: { a7: 'plus', a9: 'plusplus', a10: 'plus', a12: 'plus' },
   observations: {
     apprenti: 'Période riche : banquets, séminaires et premiers calculs de ratios.',
     maitre: 'Autonomie confirmée sur un rang. Camille encadre ponctuellement un commis.',
@@ -1331,18 +1285,19 @@ const camillePeriode3: FicheSuiviPeriode = {
     {
       id: 'se-camille-3-1',
       competenceId: 'mhr2-1',
-      evaluationGreta: null,
       evaluationEntreprise: 'partiel',
       retourApprenti: "J'anime le briefing du midi une semaine sur deux.",
     },
     {
       id: 'se-camille-3-2',
       competenceId: 'mhr2-2',
-      evaluationGreta: null,
       evaluationEntreprise: null,
       retourApprenti: "Tutorat des extras de l'été en cours.",
     },
   ],
+  // Période en cours : seule a7 est évaluée pour l'instant (blocage R20
+  // visible côté tuteur tant que a9/a10/a12 ne sont pas évaluées).
+  evaluationsAttitudes: { a7: 'plusplus' },
   observations: {
     apprenti: 'Période en cours — gros volume avec la saison des terrasses.',
     maitre: '',
@@ -1361,25 +1316,12 @@ const camilleCentre1: FicheSuiviPeriode = {
   dateDebut: '2025-11-03',
   dateFin: '2025-11-14',
   suiviGretaCfa: {},
-  suiviEntreprise: [
-    {
-      id: 'sc-camille-c1-1',
-      competenceId: 'mhr1-1',
-      evaluationGreta: 'maitrise',
-      evaluationEntreprise: null,
-      retourApprenti: 'Ateliers accueil en anglais très utiles pour la clientèle étrangère.',
-    },
-    {
-      id: 'sc-camille-c1-2',
-      competenceId: 'mhr1-4',
-      evaluationGreta: 'partiel',
-      evaluationEntreprise: null,
-      retourApprenti: 'Initiation sommellerie : les accords classiques sont acquis.',
-    },
-  ],
+  suiviEntreprise: [],
   observations: {
-    apprenti: 'Regroupement intense, beaucoup de mises en situation.',
-    formateur: 'Très bonne participation. Anglais professionnel en net progrès.',
+    apprenti:
+      'Regroupement intense, beaucoup de mises en situation. Les ateliers accueil en anglais sont très utiles pour la clientèle étrangère.',
+    formateur:
+      'Très bonne participation. Anglais professionnel en net progrès, initiation sommellerie bien engagée.',
   },
   signatures: signaturesCentre('2025-11-14T16:30:00.000Z'),
   etat: 'signee',
@@ -1394,24 +1336,10 @@ const camilleCentre2: FicheSuiviPeriode = {
   dateDebut: '2026-02-09',
   dateFin: '2026-02-20',
   suiviGretaCfa: {},
-  suiviEntreprise: [
-    {
-      id: 'sc-camille-c2-1',
-      competenceId: 'mhr2-1',
-      evaluationGreta: 'partiel',
-      evaluationEntreprise: null,
-      retourApprenti: 'Jeux de rôle de briefing : à retravailler sur la concision.',
-    },
-    {
-      id: 'sc-camille-c2-2',
-      competenceId: 'mhr3-1',
-      evaluationGreta: 'maitrise',
-      evaluationEntreprise: null,
-      retourApprenti: 'Les calculs de coûts matière sont maîtrisés sur tableur.',
-    },
-  ],
+  suiviEntreprise: [],
   observations: {
-    apprenti: 'Regroupement gestion très concret, directement réutilisable en entreprise.',
+    apprenti:
+      'Regroupement gestion très concret, directement réutilisable en entreprise. Les calculs de coûts matière sont maîtrisés sur tableur.',
     formateur: '',
   },
   signatures: {
@@ -1491,7 +1419,6 @@ const yanisPeriode1: FicheSuiviPeriode = {
     {
       id: 'se-yanis-1-1',
       competenceId: 'mhr1-1',
-      evaluationGreta: null,
       evaluationEntreprise: 'partiel',
       retourApprenti: 'Je commence à prendre les réservations téléphoniques.',
     },

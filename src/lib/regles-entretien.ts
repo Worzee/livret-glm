@@ -1,5 +1,4 @@
 import type { Apprenti, EntretienTripartite, Role } from '@/types';
-import { auMoinsUneAttitudeEvaluee } from './attitudes';
 
 /**
  * Règles métier de l'entretien tripartite.
@@ -140,16 +139,19 @@ export function peutInitialiserEntretien(
  * périodique. La trame officielle (« première visite ») est co-saisie par le
  * formateur et le maître : l'apprenti·e et le formateur signent sans
  * exigence de saisie ; le maître doit avoir évalué au moins un critère
- * d'appréciation et une attitude professionnelle.
+ * d'appréciation et choisi les attitudes à évaluer (juillet 2026 :
+ * l'ÉVALUATION des attitudes a quitté l'entretien — elle se fait sur chaque
+ * fiche de période entreprise ; l'entretien conserve le CHOIX).
  */
 export function validerSignatureEntretien(
   entretien: EntretienTripartite,
   role: Role,
   /**
    * Ids des attitudes retenues pour le livret (13 juin 2026 — choisies à
-   * l'entretien). Quand fourni et vide, la raison côté maître oriente vers le
-   * CHOIX plutôt que vers l'évaluation (rien à évaluer tant que rien n'est
-   * retenu). Optionnel pour la rétrocompatibilité des appels existants.
+   * l'entretien). Quand fourni et vide, le maître est orienté vers le CHOIX
+   * des attitudes : la sélection alimente l'évaluation par période, la figer
+   * vide priverait tout le suivi. Optionnel pour la rétrocompatibilité des
+   * appels existants.
    */
   attitudesSelectionnees?: ReadonlyArray<string>,
 ): { peutSigner: boolean; raisons: string[] } {
@@ -173,16 +175,13 @@ export function validerSignatureEntretien(
     if (!auMoinsUnCritere) {
       raisons.push("Évaluez au moins un critère d'appréciation (++, +, -, --).");
     }
-    // Retours coordos juin 2026 : les attitudes professionnelles sont
-    // évaluées à l'entretien — au moins une est exigée pour signer.
     // 13 juin 2026 : les attitudes se CHOISISSENT à l'entretien — tant que la
-    // sélection est vide, la raison oriente vers le choix.
+    // sélection est vide, la signature du maître est bloquée (juillet 2026 :
+    // l'évaluation, elle, se fait désormais sur les fiches de période).
     if (attitudesSelectionnees !== undefined && attitudesSelectionnees.length === 0) {
       raisons.push(
         "Choisissez les attitudes professionnelles à évaluer (section « Choix des attitudes » de l'entretien).",
       );
-    } else if (!auMoinsUneAttitudeEvaluee(entretien)) {
-      raisons.push('Évaluez au moins une attitude professionnelle.');
     }
   }
 

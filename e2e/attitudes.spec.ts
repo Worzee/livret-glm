@@ -2,13 +2,16 @@ import { expect, test } from '@playwright/test';
 import { resetState, selectRole } from './helpers';
 
 /**
- * Attitudes professionnelles (retours coordos juin 2026).
+ * Attitudes professionnelles (retours coordos juin 2026, refonte juillet
+ * 2026 — chantier référentiels/compétences #3).
  *
  * - Catalogue global géré par l'admin uniquement (/admin/attitudes).
- * - Évaluées par le maître / tuteur à CHAQUE entretien tripartite.
- * - R20 : au moins une attitude évaluée pour que le maître signe.
- * - L'évaluation finale présente une synthèse en lecture seule (cf.
- *   sprint4-evaluation-finale.spec.ts).
+ * - CHOISIES à l'entretien tripartite (figées à la 3ᵉ signature), puis
+ *   évaluées par le maître / tuteur à CHAQUE période en entreprise.
+ * - R20 : TOUTES les attitudes retenues évaluées pour que le maître signe
+ *   la fiche de période.
+ * - La Synthèse présente une agrégation last-write-wins en lecture seule
+ *   (cf. sprint4-evaluation-finale.spec.ts).
  */
 
 test.beforeEach(async ({ page }) => {
@@ -55,12 +58,13 @@ test('suppression : libre pour une attitude non utilisée, bloquée sinon', asyn
   await selectRole(page, 'Admin');
   await page.goto('/admin/attitudes');
 
-  // a5 est évaluée dans les entretiens des fixtures → suppression bloquée.
+  // a5 est évaluée dans les fiches de période entreprise des fixtures
+  // (juillet 2026) → suppression bloquée.
   const ligneA5 = page.locator('[data-testid="attitude-row-a5"]');
   await expect(ligneA5.getByRole('button', { name: /Supprimer l'attitude/i })).toBeDisabled();
   await expect(ligneA5.getByText(/Évaluée ou retenue dans au moins un livret/i)).toBeVisible();
 
-  // a9 est RETENUE (choix fait à l'entretien, fixtures) sans être évaluée → bloquée aussi
+  // a9 est RETENUE (choix fait à l'entretien, fixtures) → bloquée aussi
   // (13 juin 2026 : une attitude référencée par un livret est protégée).
   const ligneA9 = page.locator('[data-testid="attitude-row-a9"]');
   await expect(ligneA9.getByRole('button', { name: /Supprimer l'attitude/i })).toBeDisabled();
@@ -76,7 +80,7 @@ test('suppression : libre pour une attitude non utilisée, bloquée sinon', asyn
   await expect(page.getByText('Attitude éphémère de test')).toHaveCount(0);
 });
 
-test("le choix des attitudes se fait à l'entretien et filtre la grille du maître (13 juin 2026)", async ({
+test("le choix des attitudes se fait à l'entretien et alimente la fiche de période du maître (juillet 2026)", async ({
   page,
 }) => {
   // Sofia : entretien pas encore initialisé — le formateur l'initialise.
@@ -94,9 +98,16 @@ test("le choix des attitudes se fait à l'entretien et filtre la grille du maît
   await page.getByTestId('selection-attitude-a9').check();
   await expect(section.getByText(/2 attitudes retenues sur 12/i)).toBeVisible();
 
-  // Côté maître : la grille d'évaluation ne montre QUE les 2 retenues.
+  // Côté maître, sur la fiche de période ENTREPRISE : la section
+  // « Attitudes professionnelles » ne montre QUE les 2 retenues
+  // (juillet 2026 — l'évaluation a quitté l'entretien).
   await selectRole(page, 'Maître / Tuteur');
-  const grille = page.getByTestId('attitudes-entretien');
+  await page.goto('/livret/fiches-suivi');
+  await page
+    .getByRole('link', { name: /Période 1/i })
+    .first()
+    .click();
+  const grille = page.getByTestId('attitudes-fiche');
   await expect(grille.getByRole('radiogroup')).toHaveCount(2);
   await expect(
     grille.getByRole('radiogroup', { name: "Attitude — Prise d'initiative et autonomie" }),
@@ -111,26 +122,46 @@ test("le choix est figé dès que l'entretien est signé par les 3 parties", asy
   await expect(page.getByTestId('selection-attitude-a5')).toBeDisabled();
 });
 
-test("le maître évalue les attitudes dans l'entretien — R20 bloque la signature sans évaluation", async ({
+test('le maître évalue les attitudes sur la fiche de période — R20 exige TOUTES les retenues (juillet 2026)', async ({
   page,
 }) => {
-  // 1. Le formateur initialise l'entretien de Sofia et retient une attitude.
+  // 1. Le formateur initialise l'entretien de Sofia et retient 2 attitudes.
   await page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }).click();
   await page.goto('/livret/entretien');
   await page.getByTestId('init-entretien').click();
-  await expect(page.getByTestId('attitudes-entretien')).toBeVisible();
   await page.getByTestId('selection-attitude-a5').check();
+  await page.getByTestId('selection-attitude-a9').check();
 
-  // 2. Côté maître : appréciation remplie mais aucune attitude → signature
-  //    bloquée avec la raison R20 dédiée (grille enrichie de la trame).
+  // 2. Côté maître, sur la fiche P1 (éval entreprise + observation déjà
+  //    remplies dans la fixture) : la signature reste bloquée tant que les
+  //    2 attitudes retenues ne sont pas toutes évaluées.
   await selectRole(page, 'Maître / Tuteur');
-  await page.getByTestId('appreciation-ponctualite-plus').click();
-  await expect(page.getByText(/Évaluez au moins une attitude professionnelle/i)).toBeVisible();
-
-  // 3. Évalue l'attitude retenue → la raison disparaît.
+  await page.goto('/livret/fiches-suivi');
   await page
+    .getByRole('link', { name: /Période 1/i })
+    .first()
+    .click();
+  const grille = page.getByTestId('attitudes-fiche');
+  await expect(grille.getByText(/Il reste 2 attitudes à évaluer/i)).toBeVisible();
+  await expect(
+    page.getByText(/Évaluez toutes les attitudes professionnelles retenues \(2 restantes\)/i),
+  ).toBeVisible();
+
+  // 3. Évalue la 1ʳᵉ attitude → il en reste une seule.
+  await grille
     .getByRole('radiogroup', { name: "Attitude — Prise d'initiative et autonomie" })
     .getByRole('radio', { name: '+', exact: true })
     .click();
-  await expect(page.getByText(/Évaluez au moins une attitude professionnelle/i)).toHaveCount(0);
+  await expect(
+    page.getByText(/Évaluez toutes les attitudes professionnelles retenues \(1 restante\)/i),
+  ).toBeVisible();
+
+  // 4. Évalue la 2ᵉ → la raison R20 disparaît.
+  await grille
+    .getByRole('radiogroup', { name: 'Attitude — Motivation et implication' })
+    .getByRole('radio', { name: '++', exact: true })
+    .click();
+  await expect(
+    page.getByText(/Évaluez toutes les attitudes professionnelles retenues/i),
+  ).toHaveCount(0);
 });

@@ -1,20 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import type { EntretienTripartite } from '@/types';
+import type { EntretienTripartite, EvaluationsAttitudes, FicheSuiviPeriode } from '@/types';
 import {
   ATTITUDES_INITIALES,
   ATTITUDES_OBLIGATOIRES,
   attitudeEstUtilisee,
-  auMoinsUneAttitudeEvaluee,
+  attitudesNonEvaluees,
   lignesSyntheseAttitudes,
+  synthetiserAttitudes,
 } from './attitudes';
 import { CRITERES_APPRECIATION } from './trame-entretien';
 
 // Helper local — entretien minimal pour les tests.
-function entretien(
-  evaluationsAttitudes: EntretienTripartite['evaluationsAttitudes'] = {},
-): EntretienTripartite {
+function entretien(): EntretienTripartite {
   return {
-    evaluationsAttitudes,
     reponsesTrame: {},
     appreciationMaitre: {},
     commentaires: {},
@@ -23,6 +21,27 @@ function entretien(
       maitre: { signe: false },
       formateur: { signe: false },
     },
+  };
+}
+
+// Helper local — fiche entreprise minimale portant des évaluations d'attitudes.
+function fiche(num: number, evaluationsAttitudes?: EvaluationsAttitudes): FicheSuiviPeriode {
+  return {
+    id: `f${num}`,
+    numeroPeriode: num,
+    dateDebut: '2026-01-01',
+    dateFin: '2026-02-01',
+    suiviGretaCfa: {},
+    suiviEntreprise: [],
+    evaluationsAttitudes,
+    observations: {},
+    signatures: {
+      apprenti: { signe: false },
+      maitre: { signe: false },
+      formateur: { signe: false },
+    },
+    etat: 'brouillon',
+    historiqueDeverrouillages: [],
   };
 }
 
@@ -62,38 +81,62 @@ describe('ATTITUDES_INITIALES', () => {
   });
 });
 
-describe('attitudeEstUtilisee', () => {
-  it('détecte une évaluation dans un entretien', () => {
-    const e = entretien({ a1: 'plus' });
-    expect(attitudeEstUtilisee('a1', [e])).toBe(true);
+describe('attitudeEstUtilisee (juillet 2026 — évaluations portées par les fiches entreprise)', () => {
+  it('détecte une évaluation dans une fiche de période entreprise', () => {
+    expect(attitudeEstUtilisee('a5', [fiche(1, { a5: 'plus' })])).toBe(true);
   });
 
   it('une entrée null ne compte pas comme utilisée', () => {
-    const e = entretien({ a1: null });
-    expect(attitudeEstUtilisee('a1', [e])).toBe(false);
+    expect(attitudeEstUtilisee('a5', [fiche(1, { a5: null })])).toBe(false);
   });
 
-  it("retourne false si aucun entretien n'évalue l'attitude", () => {
-    const e = entretien({ a2: 'moins' });
-    expect(attitudeEstUtilisee('a1', [e])).toBe(false);
+  it("retourne false si aucune fiche n'évalue l'attitude", () => {
+    expect(attitudeEstUtilisee('a5', [fiche(1, { a6: 'moins' })])).toBe(false);
   });
 
-  it('ignore les entretiens null (non initialisés)', () => {
-    expect(attitudeEstUtilisee('a1', [null, null])).toBe(false);
+  it('tolère les fiches sans évaluations (champ absent — fiches centre, anciennes fiches)', () => {
+    expect(attitudeEstUtilisee('a5', [fiche(1), fiche(2)])).toBe(false);
   });
 });
 
-describe('auMoinsUneAttitudeEvaluee', () => {
-  it('false sur un entretien sans aucune évaluation', () => {
-    expect(auMoinsUneAttitudeEvaluee(entretien())).toBe(false);
+describe('attitudesNonEvaluees (R20 fiche entreprise — juillet 2026)', () => {
+  it('retourne les ids retenus sans évaluation, dans l’ordre de la sélection', () => {
+    expect(attitudesNonEvaluees(['a5', 'a6', 'a9'], { a6: 'plus' })).toEqual(['a5', 'a9']);
   });
 
-  it('false si toutes les entrées sont null', () => {
-    expect(auMoinsUneAttitudeEvaluee(entretien({ a1: null, a2: null }))).toBe(false);
+  it('une entrée null reste non évaluée', () => {
+    expect(attitudesNonEvaluees(['a5'], { a5: null })).toEqual(['a5']);
   });
 
-  it("true dès qu'une attitude est évaluée (même « -- »)", () => {
-    expect(auMoinsUneAttitudeEvaluee(entretien({ a1: 'moinsmoins' }))).toBe(true);
+  it('retourne [] quand tout est évalué', () => {
+    expect(attitudesNonEvaluees(['a5', 'a6'], { a5: 'moinsmoins', a6: 'plusplus' })).toEqual([]);
+  });
+
+  it('retourne [] sur une sélection vide et tolère des évaluations absentes', () => {
+    expect(attitudesNonEvaluees([], undefined)).toEqual([]);
+    expect(attitudesNonEvaluees(['a5'], undefined)).toEqual(['a5']);
+  });
+});
+
+describe('synthetiserAttitudes (last-write-wins sur les périodes entreprise)', () => {
+  it('retient la dernière évaluation chronologique avec sa période d’origine', () => {
+    const s = synthetiserAttitudes([fiche(1, { a5: 'moins' }), fiche(2, { a5: 'plus' })]);
+    expect(s.get('a5')).toEqual({ niveau: 'plus', numeroPeriode: 2 });
+  });
+
+  it('trie les fiches par numéro de période avant agrégation', () => {
+    const s = synthetiserAttitudes([fiche(2, { a5: 'plus' }), fiche(1, { a5: 'moins' })]);
+    expect(s.get('a5')).toEqual({ niveau: 'plus', numeroPeriode: 2 });
+  });
+
+  it('une entrée null ne remplace pas une évaluation antérieure', () => {
+    const s = synthetiserAttitudes([fiche(1, { a5: 'plusplus' }), fiche(2, { a5: null })]);
+    expect(s.get('a5')).toEqual({ niveau: 'plusplus', numeroPeriode: 1 });
+  });
+
+  it('ignore les fiches sans évaluations et retourne une map vide sans donnée', () => {
+    expect(synthetiserAttitudes([fiche(1), fiche(2)]).size).toBe(0);
+    expect(synthetiserAttitudes([]).size).toBe(0);
   });
 });
 
@@ -121,7 +164,7 @@ describe('lignesSyntheseAttitudes', () => {
   ];
 
   it('place les 4 obligatoires avant les optionnelles retenues (ordre du catalogue)', () => {
-    const lignes = lignesSyntheseAttitudes(catalogue, ['a9', 'a5'], null);
+    const lignes = lignesSyntheseAttitudes(catalogue, ['a9', 'a5'], null, []);
     expect(lignes.map((l) => l.id)).toEqual([
       'oblig-ponctualite',
       'oblig-comprehensionConsignes',
@@ -134,32 +177,37 @@ describe('lignesSyntheseAttitudes', () => {
     expect(lignes.slice(4).every((l) => !l.obligatoire)).toBe(true);
   });
 
-  it("lit les obligatoires dans l'appréciation du maître et les optionnelles dans les évaluations", () => {
-    const e = entretien({ a5: 'plus' });
+  it("lit les obligatoires dans l'appréciation du maître (entretien) et les optionnelles dans les fiches entreprise", () => {
+    const e = entretien();
     e.appreciationMaitre = { ponctualite: 'plusplus', qualiteTravail: 'moins' };
-    const lignes = lignesSyntheseAttitudes(catalogue, ['a5'], e);
+    const fiches = [fiche(1, { a5: 'moins' }), fiche(3, { a5: 'plus' })];
+    const lignes = lignesSyntheseAttitudes(catalogue, ['a5'], e, fiches);
 
     const parId = new Map(lignes.map((l) => [l.id, l]));
     expect(parId.get('oblig-ponctualite')?.niveau).toBe('plusplus');
     expect(parId.get('oblig-qualiteTravail')?.niveau).toBe('moins');
     // Critère non renseigné dans l'appréciation → null.
     expect(parId.get('oblig-integration')?.niveau).toBeNull();
+    // Optionnelle : last-write-wins des périodes + période d'origine.
     expect(parId.get('a5')?.niveau).toBe('plus');
+    expect(parId.get('a5')?.numeroPeriode).toBe(3);
+    // Les obligatoires ne portent pas de période (évaluées à l'entretien).
+    expect(parId.get('oblig-ponctualite')?.numeroPeriode).toBeUndefined();
   });
 
-  it('retourne null pour un entretien absent ou une valeur non renseignée', () => {
-    const lignesSansEntretien = lignesSyntheseAttitudes(catalogue, ['a5'], null);
-    expect(lignesSansEntretien.every((l) => l.niveau === null)).toBe(true);
+  it('retourne null pour un entretien absent ou une attitude jamais évaluée', () => {
+    const lignesSansRien = lignesSyntheseAttitudes(catalogue, ['a5'], null, []);
+    expect(lignesSansRien.every((l) => l.niveau === null)).toBe(true);
 
-    const e = entretien({ a5: null });
-    const lignes = lignesSyntheseAttitudes(catalogue, ['a5'], e);
+    const lignes = lignesSyntheseAttitudes(catalogue, ['a5'], null, [fiche(1, { a5: null })]);
     const parId = new Map(lignes.map((l) => [l.id, l]));
-    // Évaluation explicitement null → null.
+    // Évaluation explicitement null → null, sans période.
     expect(parId.get('a5')?.niveau).toBeNull();
+    expect(parId.get('a5')?.numeroPeriode).toBeUndefined();
   });
 
   it('ignore les ids orphelins de la sélection et conserve toujours les 4 obligatoires', () => {
-    const lignes = lignesSyntheseAttitudes(catalogue, ['a-supprimee'], null);
+    const lignes = lignesSyntheseAttitudes(catalogue, ['a-supprimee'], null, []);
     expect(lignes).toHaveLength(4);
     expect(lignes.every((l) => l.obligatoire)).toBe(true);
   });

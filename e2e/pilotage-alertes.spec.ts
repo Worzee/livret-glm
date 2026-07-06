@@ -121,9 +121,9 @@ test("BTS MHR : référentiel 3 niveaux (sous-familles) et entretien accessibles
   await lienEntretien.click();
   await expect(page.getByRole('heading', { name: /Entretien tripartite/i }).first()).toBeVisible();
 
-  // Évaluation finale : la hiérarchie du référentiel 3 niveaux s'affiche par
+  // Synthèse : la hiérarchie du référentiel 3 niveaux s'affiche par
   // sous-familles (regroupements non évaluables).
-  await page.getByRole('link', { name: /Évaluation finale/i }).click();
+  await page.getByRole('link', { name: /Synthèse/i }).click();
   await expect(page.getByText('Relation client et commercialisation').first()).toBeVisible();
   await expect(page.getByText('Pilotage économique').first()).toBeVisible();
 });

@@ -25,7 +25,6 @@ const apprenti = (contratDebut: string): Apprenti => ({
 });
 
 const entretienVide = (): EntretienTripartite => ({
-  evaluationsAttitudes: {},
   reponsesTrame: {},
   appreciationMaitre: {},
   commentaires: {},
@@ -165,7 +164,9 @@ describe('validerSignatureEntretien', () => {
   });
 
   // Refonte mai 2026 : la signature maître exige uniquement au moins un
-  // critère d'appréciation (+ une attitude évaluée, juin 2026).
+  // critère d'appréciation. Juillet 2026 : l'ÉVALUATION des attitudes a
+  // quitté l'entretien (elle se fait sur les fiches de période entreprise) —
+  // l'entretien conserve le CHOIX des attitudes, toujours exigé.
   it("maître ne peut pas signer sans aucun critère d'appréciation", () => {
     const e = entretienVide();
     const r = validerSignatureEntretien(e, 'maitre');
@@ -173,19 +174,10 @@ describe('validerSignatureEntretien', () => {
     expect(r.raisons.some((m) => m.includes('appréciation'))).toBe(true);
   });
 
-  it("maître peut signer avec un critère d'appréciation ET une attitude évaluée (juin 2026)", () => {
+  it("maître peut signer avec un critère d'appréciation, sans évaluation d'attitude (juillet 2026)", () => {
     const e = entretienVide();
     e.appreciationMaitre.qualiteTravail = 'plusplus';
-    e.evaluationsAttitudes = { a5: 'plus' };
     expect(validerSignatureEntretien(e, 'maitre').peutSigner).toBe(true);
-  });
-
-  it('maître bloqué sans aucune attitude évaluée, même avec appréciation (extension R20 juin 2026)', () => {
-    const e = entretienVide();
-    e.appreciationMaitre.qualiteTravail = 'plusplus';
-    const r = validerSignatureEntretien(e, 'maitre');
-    expect(r.peutSigner).toBe(false);
-    expect(r.raisons.some((m) => m.includes('attitude professionnelle'))).toBe(true);
   });
 
   it('maître orienté vers le CHOIX des attitudes tant que la sélection du livret est vide (13 juin 2026)', () => {
@@ -196,10 +188,9 @@ describe('validerSignatureEntretien', () => {
     expect(r.raisons.some((m) => m.includes('Choisissez les attitudes'))).toBe(true);
   });
 
-  it('maître signe quand la sélection est faite et une attitude retenue est évaluée', () => {
+  it('maître signe quand la sélection des attitudes est faite (l’évaluation se fera par période)', () => {
     const e = entretienVide();
     e.appreciationMaitre.qualiteTravail = 'plus';
-    e.evaluationsAttitudes = { a5: 'plus' };
     expect(validerSignatureEntretien(e, 'maitre', ['a5']).peutSigner).toBe(true);
   });
 

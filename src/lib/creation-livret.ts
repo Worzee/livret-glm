@@ -74,7 +74,6 @@ export function creerLivretVierge(
     .map((c) => ({
       competenceId: c.id,
       acquisEntreprise: null,
-      acquisCentre: null,
     }));
   return {
     id: livretId,

@@ -53,6 +53,11 @@ export function ficheEstVide(fiche: FicheSuiviPeriode): boolean {
   if (fiche.suiviGretaCfa.apprenti?.trim()) return false;
   if (fiche.suiviGretaCfa.formateur?.trim()) return false;
   if (fiche.suiviEntreprise.length > 0) return false;
+  // Juillet 2026 : les attitudes s'évaluent sur la fiche entreprise — une
+  // évaluation suffit à sortir du brouillon.
+  if (Object.values(fiche.evaluationsAttitudes ?? {}).some((v) => v !== null && v !== undefined)) {
+    return false;
+  }
   if (fiche.observations.apprenti) return false;
   if (fiche.observations.maitre) return false;
   if (fiche.observations.formateur) return false;

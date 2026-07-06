@@ -42,14 +42,14 @@ test('parcours formateur : navigation complète + signature R10/R22 visibles', a
   await page.getByRole('link', { name: /Période 1/i }).click();
   await expect(page.getByRole('button', { name: /Déverrouiller/i })).toBeVisible();
 
-  // 6. Évaluation finale — bandeau R22 et bouton Export PDF présents
-  await page.getByRole('link', { name: /Évaluation finale/i }).click();
+  // 6. Synthèse — bandeau R22 et bouton Export PDF présents
+  await page.getByRole('link', { name: /Synthèse/i }).click();
   await expect(page.getByText(/Clôture du livret indisponible/i)).toBeVisible();
   await expect(page.getByRole('button', { name: /Exporter le livret/i })).toBeVisible();
 });
 
 test("export PDF : le téléchargement est déclenché et le fichier est non vide", async ({ page }) => {
-  await page.goto('/livret/evaluation-finale');
+  await page.goto('/livret/synthese');
 
   // Clic sur "Exporter le livret" → l'app charge le chunk lazy et expose un
   // PDFDownloadLink dont l'aria-label est « Télécharger le livret au format PDF ».
@@ -84,7 +84,7 @@ test("export PDF : le téléchargement est déclenché et le fichier est non vid
 
 test("le bouton d'export n'est PAS visible côté apprenti·e (matrice droits)", async ({ page }) => {
   await page.getByRole('radio', { name: 'Apprenti·e' }).click();
-  await page.goto('/livret/evaluation-finale');
+  await page.goto('/livret/synthese');
   // CDC §6 : seul le formateur référent a le droit `export-pdf`.
   await expect(page.getByRole('button', { name: /Exporter le livret/i })).toHaveCount(0);
 });

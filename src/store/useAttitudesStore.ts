@@ -10,12 +10,13 @@ import { useLivretStore } from './useLivretStore';
  *
  * CRUD réservé au rôle `admin` (matrice §6 — ressource
  * `admin.attitudes.gerer`, comme les établissements). Les attitudes sont
- * évaluées par le maître / tuteur à chaque entretien tripartite ;
- * l'évaluation finale en présente une synthèse en lecture seule.
+ * évaluées par le maître / tuteur à chaque période en entreprise (juillet
+ * 2026 — l'évaluation a quitté l'entretien) ; l'onglet « Attitudes » de la
+ * Synthèse en présente une agrégation en lecture seule.
  *
  * Cohérence référentielle : la suppression d'une attitude est bloquée si
- * elle est évaluée dans au moins un entretien existant (cf. helper
- * `attitudeEstUtilisee`). Pattern aligné avec la banque de questions.
+ * elle est évaluée dans au moins une fiche de période entreprise (cf.
+ * helper `attitudeEstUtilisee`).
  *
  * Note import croisé : on lit `useLivretStore.getState()` au runtime depuis
  * `supprimerAttitude` — le cycle ESM est résolu (cohérent avec les autres
@@ -30,8 +31,8 @@ interface AttitudesStore {
   /** Met à jour le libellé / la description d'une attitude existante. */
   modifierAttitude: (id: string, patch: Partial<Omit<AttitudeProfessionnelle, 'id'>>) => void;
   /**
-   * Supprime une attitude. Bloquée si elle est évaluée dans au moins un
-   * entretien existant.
+   * Supprime une attitude. Bloquée si elle est évaluée dans au moins une
+   * fiche de période entreprise ou retenue dans un livret.
    * @returns true si supprimée, false si bloquée.
    */
   supprimerAttitude: (id: string) => boolean;
@@ -80,8 +81,10 @@ export const useAttitudesStore = create<AttitudesStore>()(
         const a = get().attitudes[id];
         if (!a) return false;
         const livrets = Object.values(useLivretStore.getState().livrets);
-        const entretiens = livrets.map((l) => l.entretien);
-        if (attitudeEstUtilisee(id, entretiens)) return false;
+        // Juillet 2026 : les évaluations d'attitudes sont portées par les
+        // fiches de période entreprise.
+        const fiches = livrets.flatMap((l) => l.fichesSuivi);
+        if (attitudeEstUtilisee(id, fiches)) return false;
         // 13 juin 2026 : une attitude retenue dans un livret (choix fait à
         // l'entretien) est également protégée, même non encore évaluée.
         if (

@@ -11,6 +11,7 @@ import { estPeriodeVisible } from '@/lib/regles-periode';
 import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelectionne';
 import { BadgeEtatFiche } from '@/components/common/BadgeEtatFiche';
 import { TableauTriColonnes } from '@/components/livret/TableauTriColonnes';
+import { SectionAttitudesFiche } from '@/components/livret/SectionAttitudesFiche';
 import { ZoneObservation } from '@/components/livret/ZoneObservation';
 import { BlocSignatures } from '@/components/livret/BlocSignatures';
 import { DialogDeverrouillage } from '@/components/livret/DialogDeverrouillage';
@@ -152,8 +153,12 @@ export function FicheSuiviPeriodeDetail({ lieu = 'entreprise' }: FicheSuiviPerio
 
       {/* La zone « Suivi de la formation au GRETA CFA » a été retirée partout
           (entreprise puis centre — 1ᵉʳ juillet 2026) : tout se rédige dans les
-          « Observations de fin de période ». */}
-      <TableauTriColonnes livretId={livret.id} fiche={fiche} lieu={lieu} />
+          « Observations de fin de période ». Juillet 2026 : la fiche centre
+          n'a plus ni tableau de compétences ni attitudes — seules restent les
+          observations de fin de période (apprenti·e bloquante, formateur non)
+          et les signatures. */}
+      {!estCentre && <TableauTriColonnes livretId={livret.id} fiche={fiche} />}
+      {!estCentre && <SectionAttitudesFiche livretId={livret.id} fiche={fiche} />}
       <ZoneObservation livretId={livret.id} fiche={fiche} lieu={lieu} />
       <BlocSignatures livretId={livret.id} fiche={fiche} lieu={lieu} />
 

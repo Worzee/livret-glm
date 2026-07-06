@@ -40,7 +40,6 @@ function fiche(sur: Partial<FicheSuiviPeriode>): FicheSuiviPeriode {
 
 function entretien(signatures: Partial<SignaturesTripartite> = {}): EntretienTripartite {
   return {
-    evaluationsAttitudes: {},
     reponsesTrame: {},
     appreciationMaitre: {},
     commentaires: {},

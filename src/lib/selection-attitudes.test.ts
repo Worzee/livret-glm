@@ -9,7 +9,6 @@ import {
 /** Entretien minimal avec n signatures apposées (0 à 3). */
 function entretien(nbSignatures: number): EntretienTripartite {
   return {
-    evaluationsAttitudes: {},
     reponsesTrame: {},
     appreciationMaitre: {},
     commentaires: {},

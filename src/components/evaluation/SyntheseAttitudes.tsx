@@ -5,15 +5,17 @@ import { lignesSyntheseAttitudes } from '@/lib/attitudes';
 import { cn } from '@/lib/utils';
 
 /**
- * Synthèse des attitudes professionnelles (retours coordos juin 2026).
+ * Synthèse des attitudes professionnelles (retours coordos juin 2026,
+ * refonte juillet 2026 — chantier référentiels/compétences #3).
  *
- * Les attitudes sont évaluées par le maître / tuteur **lors de l'entretien
- * tripartite**. Cet onglet de l'évaluation finale en présente le résultat en
- * **lecture seule** : une ligne par attitude, le niveau évalué à l'entretien.
+ * Les attitudes retenues sont évaluées par le maître / tuteur **à chaque
+ * période en entreprise** (fiches de suivi). Cet onglet de la Synthèse en
+ * présente l'agrégation **last-write-wins en lecture seule** : une ligne par
+ * attitude, le dernier niveau connu + sa période d'origine.
  *
  * 3 juillet 2026 : les 4 attitudes **obligatoires** (critères de
- * l'appréciation générale du maître, trame officielle) ouvrent le tableau,
- * au-dessus des attitudes optionnelles retenues à l'entretien.
+ * l'appréciation générale du maître, trame officielle — évaluées à
+ * l'entretien) ouvrent le tableau, au-dessus des attitudes optionnelles.
  */
 
 const LIBELLE_APPRECIATION: Record<NiveauAppreciation, string> = {
@@ -38,11 +40,13 @@ export function SyntheseAttitudes() {
   const { livret } = ctx;
 
   // 3 juillet 2026 : 4 obligatoires (appréciation du maître) en tête, puis
-  // les attitudes RETENUES pour ce livret (choix fait à l'entretien).
+  // les attitudes RETENUES pour ce livret — agrégées depuis les fiches de
+  // période entreprise (last-write-wins, juillet 2026).
   const lignes = lignesSyntheseAttitudes(
     Object.values(attitudesMap),
     livret.attitudesSelectionnees ?? [],
     livret.entretien,
+    livret.fichesSuivi,
   );
   const aucuneOptionnelle = lignes.every((l) => l.obligatoire);
 
@@ -51,10 +55,10 @@ export function SyntheseAttitudes() {
       <header>
         <h2 className="text-lg font-medium">Attitudes professionnelles</h2>
         <p className="text-xs text-muted-foreground">
-          Synthèse en lecture seule des évaluations portées par le maître / tuteur lors de
-          l'entretien tripartite. Les 4 premières attitudes (obligatoires) reprennent son
-          appréciation générale ; les suivantes sont les attitudes optionnelles retenues à
-          l'entretien. La saisie se fait dans la page « Entretien tripartite ».
+          Synthèse en lecture seule. Les 4 premières attitudes (obligatoires) reprennent
+          l'appréciation générale du maître / tuteur portée à l'entretien tripartite ; les suivantes
+          sont les attitudes retenues, évaluées par le maître / tuteur à chaque période en
+          entreprise — le dernier niveau connu est affiché avec sa période d'origine.
         </p>
       </header>
 
@@ -63,7 +67,7 @@ export function SyntheseAttitudes() {
           <thead className="bg-secondary/50 text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
               <th className="px-3 py-2 text-left w-1/2">Attitude</th>
-              <th className="px-3 py-2 text-center">Entretien tripartite</th>
+              <th className="px-3 py-2 text-center">Dernier niveau évalué</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -88,19 +92,28 @@ export function SyntheseAttitudes() {
                 </td>
                 <td
                   className="px-3 py-3 text-center border-l-2 border-l-border"
-                  aria-label={`Entretien tripartite — ${ligne.libelle} : ${
+                  aria-label={`${ligne.libelle} : ${
                     ligne.niveau ? LIBELLE_APPRECIATION[ligne.niveau] : 'non évaluée'
                   }`}
                 >
                   {ligne.niveau ? (
-                    <span
-                      className={cn(
-                        'inline-block rounded px-2 py-0.5 text-xs font-semibold',
-                        CLASSE_APPRECIATION[ligne.niveau],
-                      )}
-                    >
-                      {LIBELLE_APPRECIATION[ligne.niveau]}
-                    </span>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span
+                        className={cn(
+                          'inline-block rounded px-2 py-0.5 text-xs font-semibold',
+                          CLASSE_APPRECIATION[ligne.niveau],
+                        )}
+                      >
+                        {LIBELLE_APPRECIATION[ligne.niveau]}
+                      </span>
+                      <span className="text-xs italic text-muted-foreground">
+                        {ligne.obligatoire
+                          ? 'Entretien tripartite'
+                          : ligne.numeroPeriode !== undefined
+                            ? `Période ${ligne.numeroPeriode}`
+                            : ''}
+                      </span>
+                    </div>
                   ) : (
                     <span className="text-muted-foreground">—</span>
                   )}
@@ -114,7 +127,8 @@ export function SyntheseAttitudes() {
       {aucuneOptionnelle && (
         <p className="rounded-md border border-dashed border-border bg-secondary/30 p-3 text-sm text-muted-foreground">
           Aucune attitude optionnelle retenue pour ce livret — le choix se fait à l'entretien
-          tripartite (maître / tuteur + formateur référent), qui les évalue pendant l'entretien.
+          tripartite (maître / tuteur + formateur référent) ; elles sont ensuite évaluées à chaque
+          période en entreprise.
         </p>
       )}
     </section>

@@ -40,7 +40,9 @@ async function initialiserEntretienSofia(page: Page) {
   await page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }).click();
   await page.goto('/livret/entretien');
   await page.getByTestId('init-entretien').click();
-  await expect(page.getByTestId('attitudes-entretien')).toBeVisible();
+  // L'entretien initialisé affiche la section de choix des attitudes
+  // (juillet 2026 : leur ÉVALUATION vit désormais sur les fiches de période).
+  await expect(page.getByTestId('selection-attitudes')).toBeVisible();
 }
 
 /**

@@ -64,6 +64,9 @@ export function BlocSignatures({ livretId, fiche, lieu = 'entreprise' }: BlocSig
   const roleActif = useUserStore((s) => s.roleActif);
   const utilisateurActif = useUserStore((s) => s.utilisateurActif);
   const signer = useLivretStore((s) => s.signer);
+  // Juillet 2026 : R20 maître exige que TOUTES les attitudes retenues soient
+  // évaluées sur la fiche entreprise — la sélection est passée à la validation.
+  const attitudesSelectionnees = useLivretStore((s) => s.livrets[livretId]?.attitudesSelectionnees);
 
   const ficheVerrouillee = fiche.etat === 'verrouillee';
 
@@ -93,7 +96,9 @@ export function BlocSignatures({ livretId, fiche, lieu = 'entreprise' }: BlocSig
           const sig = fiche.signatures[cleSig];
           const estSonRole = roleActif === role;
           const validation =
-            estSonRole && !ficheVerrouillee ? validerSignature(fiche, role, lieu) : null;
+            estSonRole && !ficheVerrouillee
+              ? validerSignature(fiche, role, lieu, attitudesSelectionnees ?? [])
+              : null;
 
           return (
             <article

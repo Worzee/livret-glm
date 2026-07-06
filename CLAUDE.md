@@ -21,8 +21,8 @@ https://livret-glm.duckdns.org (Basic Auth). Pilote métier : Guillaume FERRERI.
 
 ```bash
 npm run dev            # Vite sur :5173
-npm test               # Vitest (602 tests au 2026-07-06)
-npm run e2e            # build + Playwright (193 tests) — c'est LA validation de référence
+npm test               # Vitest (611 tests au 2026-07-06)
+npm run e2e            # build + Playwright (196 tests) — c'est LA validation de référence
 npm run typecheck      # tsc --noEmit — ⚠ le build prod (tsc -b) voit PLUS que lui
 npm run build          # à passer avant tout push
 npm run lint && npm run format

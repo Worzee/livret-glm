@@ -19,8 +19,8 @@ test('le bandeau de démonstration a été retiré (retours coordos juin 2026)',
   ).toBeVisible();
   // …sans le bandeau, ni à l'accueil ni sur une page intérieure.
   await expect(page.getByText(/MAQUETTE DE DÉMONSTRATION/i)).toHaveCount(0);
-  await page.getByRole('link', { name: /Évaluation finale/i }).click();
-  await expect(page).toHaveURL(/\/livret\/evaluation-finale/);
+  await page.getByRole('link', { name: /Synthèse/i }).click();
+  await expect(page).toHaveURL(/\/livret\/synthese/);
   await expect(page.getByText(/MAQUETTE DE DÉMONSTRATION/i)).toHaveCount(0);
 });
 

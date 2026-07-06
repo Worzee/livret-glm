@@ -281,11 +281,7 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
             Icon={GraduationCap}
             onClick={() => aller('/livret/fiches-suivi-centre')}
           />
-          <AccesRapide
-            label="Évaluation finale"
-            Icon={Target}
-            onClick={() => aller('/livret/evaluation-finale')}
-          />
+          <AccesRapide label="Synthèse" Icon={Target} onClick={() => aller('/livret/synthese')} />
         </div>
       </section>
     </div>
