@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { AlertTriangle, Building2, MessagesSquare, School, Users } from 'lucide-react';
-import type { Apprenti, Formation, Livret } from '@/types';
+import type { Apprenti, Livret } from '@/types';
 import { pourcentageSignees, statsPilotage } from '@/lib/pilotage';
 import { cn } from '@/lib/utils';
 
@@ -15,14 +15,10 @@ import { cn } from '@/lib/utils';
 interface BandeauPilotageProps {
   apprentis: Apprenti[];
   livrets: Record<string, Livret>;
-  formations: Record<string, Formation>;
 }
 
-export function BandeauPilotage({ apprentis, livrets, formations }: BandeauPilotageProps) {
-  const stats = useMemo(
-    () => statsPilotage(apprentis, livrets, formations),
-    [apprentis, livrets, formations],
-  );
+export function BandeauPilotage({ apprentis, livrets }: BandeauPilotageProps) {
+  const stats = useMemo(() => statsPilotage(apprentis, livrets), [apprentis, livrets]);
 
   if (apprentis.length === 0) return null;
 

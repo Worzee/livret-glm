@@ -3,10 +3,8 @@ import type {
   AttitudeProfessionnelle,
   EntretienTripartite,
   NiveauAppreciation,
-  NumeroEntretien,
 } from '@/types';
-import { NUMEROS_ENTRETIEN } from '@/types';
-import { CRITERES_APPRECIATION_E1 } from './trame-entretien-1';
+import { CRITERES_APPRECIATION } from './trame-entretien';
 import { attitudesRetenues } from './selection-attitudes';
 
 /**
@@ -14,11 +12,10 @@ import { attitudesRetenues } from './selection-attitudes';
  * Référence : retours coordos juin 2026.
  *
  * Les attitudes sortent du référentiel de compétences pour devenir un
- * **catalogue central unique** géré par l'admin (`/admin/attitudes`,
- * pattern banque de questions). Elles sont évaluées par le maître / tuteur
- * **à chaque entretien tripartite** (échelle ++/+/-/--) ; l'onglet
- * « Attitudes » de l'évaluation finale en devient une synthèse en lecture
- * seule (E1..E4).
+ * **catalogue central unique** géré par l'admin (`/admin/attitudes`).
+ * Elles sont évaluées par le maître / tuteur **lors de l'entretien
+ * tripartite** (échelle ++/+/-/--) ; l'onglet « Attitudes » de l'évaluation
+ * finale en est une synthèse en lecture seule.
  *
  * Pures fonctions — pas d'effet de bord.
  */
@@ -31,7 +28,7 @@ import { attitudesRetenues } from './selection-attitudes';
  * 18 juin 2026 : a1..a4 (ponctualité, respect des consignes, qualité du
  * travail, intégration) retirées — elles doublonnaient les 4 critères de
  * l'appréciation du maître / tuteur (« Synthèse de la période »), évalués par
- * défaut à chaque entretien tripartite. Les ids restants (a5..a16) sont
+ * défaut lors de l'entretien tripartite. Les ids restants (a5..a16) sont
  * conservés stables (référencés par les fixtures de démo). L'admin élague ou
  * complète librement depuis `/admin/attitudes`.
  */
@@ -99,9 +96,10 @@ export const ATTITUDES_INITIALES: ReadonlyArray<AttitudeProfessionnelle> = [
 ];
 
 /**
- * Indique si une attitude est évaluée dans au moins un entretien existant.
+ * Indique si une attitude est évaluée dans au moins un entretien existant
+ * (un par livret — on passe la liste des entretiens de tous les livrets).
  * Utilisé pour bloquer la suppression depuis le catalogue (cohérence
- * référentielle), comme pour les questions de la banque.
+ * référentielle).
  */
 export function attitudeEstUtilisee(
   attitudeId: string,
@@ -140,12 +138,12 @@ export function attitudeEstSelectionnee(
  * Attitudes professionnelles **obligatoires** (3 juillet 2026).
  *
  * Les 4 critères de l'appréciation générale du maître / tuteur (grille
- * standardisée, évaluée à chaque entretien — trame officielle E1) sont des
- * attitudes évaluées d'office : ce sont les anciennes a1..a4 retirées du
- * catalogue le 18 juin 2026. Les synthèses (onglet « Attitudes » de
- * l'évaluation finale + PDF) doivent les récapituler AU-DESSUS des attitudes
- * optionnelles retenues à l'E1. Les libellés suivent la trame officielle
- * (`CRITERES_APPRECIATION_E1`).
+ * standardisée de la trame officielle de l'entretien) sont des attitudes
+ * évaluées d'office : ce sont les anciennes a1..a4 retirées du catalogue le
+ * 18 juin 2026. Les synthèses (onglet « Attitudes » de l'évaluation finale +
+ * PDF) doivent les récapituler AU-DESSUS des attitudes optionnelles retenues
+ * à l'entretien. Les libellés suivent la trame officielle
+ * (`CRITERES_APPRECIATION`).
  */
 export interface AttitudeObligatoire {
   /** Clé du critère dans `AppreciationMaitre`. */
@@ -161,16 +159,17 @@ const DESCRIPTIONS_ATTITUDES_OBLIGATOIRES: Record<AttitudeObligatoire['cle'], st
   integration: "S'intègre dans l'équipe de l'entreprise.",
 };
 
-export const ATTITUDES_OBLIGATOIRES: ReadonlyArray<AttitudeObligatoire> =
-  CRITERES_APPRECIATION_E1.map((c) => ({
+export const ATTITUDES_OBLIGATOIRES: ReadonlyArray<AttitudeObligatoire> = CRITERES_APPRECIATION.map(
+  (c) => ({
     cle: c.cle,
     libelle: c.libelle,
     description: DESCRIPTIONS_ATTITUDES_OBLIGATOIRES[c.cle],
-  }));
+  }),
+);
 
 /**
  * Ligne du tableau de synthèse des attitudes (UI de l'évaluation finale et
- * PDF) : une attitude × son niveau à chaque entretien.
+ * PDF) : une attitude × son niveau à l'entretien tripartite.
  */
 export interface LigneSyntheseAttitudes {
   /** `oblig-<cle>` pour un critère d'appréciation, id du catalogue sinon. */
@@ -178,39 +177,28 @@ export interface LigneSyntheseAttitudes {
   libelle: string;
   description?: string;
   obligatoire: boolean;
-  /** Niveau par entretien — `null` si non évalué ou entretien absent. */
-  niveaux: Record<NumeroEntretien, NiveauAppreciation | null>;
+  /** Niveau évalué à l'entretien — `null` si non évalué ou entretien absent. */
+  niveau: NiveauAppreciation | null;
 }
 
 /**
  * Construit les lignes de la synthèse des attitudes : les 4 **obligatoires**
- * d'abord (lues dans l'appréciation générale du maître de chaque entretien),
- * puis les optionnelles retenues pour le livret (lues dans
- * `evaluationsAttitudes`), dans l'ordre du catalogue.
+ * d'abord (lues dans l'appréciation générale du maître), puis les
+ * optionnelles retenues pour le livret (lues dans `evaluationsAttitudes`),
+ * dans l'ordre du catalogue.
  */
 export function lignesSyntheseAttitudes(
   catalogue: ReadonlyArray<AttitudeProfessionnelle>,
   selection: ReadonlyArray<string>,
-  entretiens: Readonly<Record<NumeroEntretien, EntretienTripartite | null>>,
+  entretien: EntretienTripartite | null,
 ): LigneSyntheseAttitudes[] {
-  const niveauxDepuis = (
-    lire: (e: EntretienTripartite) => NiveauAppreciation | null | undefined,
-  ): Record<NumeroEntretien, NiveauAppreciation | null> => {
-    const niveaux = {} as Record<NumeroEntretien, NiveauAppreciation | null>;
-    for (const n of NUMEROS_ENTRETIEN) {
-      const e = entretiens[n];
-      niveaux[n] = e ? (lire(e) ?? null) : null;
-    }
-    return niveaux;
-  };
-
   const obligatoires = ATTITUDES_OBLIGATOIRES.map(
     (o): LigneSyntheseAttitudes => ({
       id: `oblig-${o.cle}`,
       libelle: o.libelle,
       description: o.description,
       obligatoire: true,
-      niveaux: niveauxDepuis((e) => e.appreciationMaitre[o.cle]),
+      niveau: entretien ? (entretien.appreciationMaitre[o.cle] ?? null) : null,
     }),
   );
 
@@ -220,7 +208,7 @@ export function lignesSyntheseAttitudes(
       libelle: a.libelle,
       description: a.description,
       obligatoire: false,
-      niveaux: niveauxDepuis((e) => e.evaluationsAttitudes[a.id]),
+      niveau: entretien ? (entretien.evaluationsAttitudes[a.id] ?? null) : null,
     }),
   );
 

@@ -1,8 +1,7 @@
 import { CheckCircle2, GraduationCap, HardHat, Lock, UserCog, Users } from 'lucide-react';
-import type { EntretienTripartite, NumeroEntretien, Role } from '@/types';
+import type { EntretienTripartite, Role } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
-import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
 import { validerSignatureEntretien } from '@/lib/regles-entretien';
 import { BoutonSigner } from '@/components/common/BoutonSigner';
@@ -20,7 +19,6 @@ import { cn } from '@/lib/utils';
 
 interface BlocSignaturesEntretienProps {
   livretId: string;
-  numero: NumeroEntretien;
   entretien: EntretienTripartite;
   /** Vrai si la fiche est figée (R9 : 3 signatures complètes). */
   ficheVerrouillee: boolean;
@@ -62,7 +60,6 @@ const SIGNATAIRES: Array<{
 
 export function BlocSignaturesEntretien({
   livretId,
-  numero,
   entretien,
   ficheVerrouillee,
 }: BlocSignaturesEntretienProps) {
@@ -70,10 +67,8 @@ export function BlocSignaturesEntretien({
   const utilisateurActif = useUserStore((s) => s.utilisateurActif);
   const signer = useLivretStore((s) => s.signerEntretien);
   // 13 juin 2026 : la validation maître oriente vers le CHOIX des attitudes
-  // (fait à l'E1) tant que la sélection du livret est vide.
+  // (fait à l'entretien) tant que la sélection du livret est vide.
   const attitudesSelectionnees = useLivretStore((s) => s.livrets[livretId]?.attitudesSelectionnees);
-  // Banque indexée — nécessaire à la validation R20 des questions obligatoires.
-  const banque = useBanqueQuestionsStore((s) => s.questions);
 
   return (
     <section className="space-y-3">
@@ -97,7 +92,7 @@ export function BlocSignaturesEntretien({
           const estSonRole = roleActif === role;
           const validation =
             estSonRole && !ficheVerrouillee
-              ? validerSignatureEntretien(entretien, role, banque, attitudesSelectionnees)
+              ? validerSignatureEntretien(entretien, role, attitudesSelectionnees)
               : null;
 
           return (
@@ -150,7 +145,7 @@ export function BlocSignaturesEntretien({
                   libelleEngagement={`${libelleRole(role)} — ${utilisateurActif.prenom} ${utilisateurActif.nom}`}
                   disabled={!validation?.peutSigner}
                   raisonsBlocage={validation?.raisons}
-                  onConfirmer={(trace) => signer(livretId, numero, role, trace)}
+                  onConfirmer={(trace) => signer(livretId, role, trace)}
                 />
               ) : (
                 <p className={cn('text-xs italic opacity-70', classeTexte)}>
@@ -170,64 +165,63 @@ export function BlocSignaturesEntretien({
         })}
       </div>
 
-      {/* Représentant légal (E1 uniquement) — 4e signataire facultatif, apposé
-          par le formateur référent (apprenti·e mineur·e). Hors décompte R9. */}
-      {numero === 1 &&
-        (() => {
-          const sig = entretien.signatures.representantLegal;
-          const peutSigner =
-            peutEditer(roleActif, 'entretien.signature-representant-legal') && !ficheVerrouillee;
-          return (
-            <article className="rounded-lg border border-l-4 border-border border-l-muted-foreground/40 bg-card p-4 space-y-3 sm:max-w-sm">
-              <header className="flex items-center gap-2">
-                <Users className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                <span className="text-sm font-medium">Représentant légal</span>
-                <span className="text-xs text-muted-foreground">
-                  (facultatif — apprenti·e mineur·e)
-                </span>
-              </header>
-              {sig?.signe ? (
-                <div className="space-y-1">
-                  {sig.trace && (
-                    <img
-                      src={sig.trace}
-                      alt="Signature manuscrite — représentant légal"
-                      className="h-14 max-w-full rounded border border-border bg-white object-contain"
-                    />
-                  )}
-                  <div className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
-                    <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                    Signé
-                  </div>
-                  {sig.dateSignature && (
-                    <p className="text-xs text-muted-foreground">
-                      le{' '}
-                      <time dateTime={sig.dateSignature}>
-                        {new Date(sig.dateSignature).toLocaleString('fr-FR', {
-                          dateStyle: 'short',
-                          timeStyle: 'short',
-                        })}
-                      </time>
-                    </p>
-                  )}
+      {/* Représentant légal — 4e signataire facultatif, apposé par le
+          formateur référent (apprenti·e mineur·e). Hors décompte R9. */}
+      {(() => {
+        const sig = entretien.signatures.representantLegal;
+        const peutSigner =
+          peutEditer(roleActif, 'entretien.signature-representant-legal') && !ficheVerrouillee;
+        return (
+          <article className="rounded-lg border border-l-4 border-border border-l-muted-foreground/40 bg-card p-4 space-y-3 sm:max-w-sm">
+            <header className="flex items-center gap-2">
+              <Users className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+              <span className="text-sm font-medium">Représentant légal</span>
+              <span className="text-xs text-muted-foreground">
+                (facultatif — apprenti·e mineur·e)
+              </span>
+            </header>
+            {sig?.signe ? (
+              <div className="space-y-1">
+                {sig.trace && (
+                  <img
+                    src={sig.trace}
+                    alt="Signature manuscrite — représentant légal"
+                    className="h-14 max-w-full rounded border border-border bg-white object-contain"
+                  />
+                )}
+                <div className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
+                  <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                  Signé
                 </div>
-              ) : peutSigner ? (
-                <BoutonSigner
-                  role="formateur"
-                  nomCourt="le représentant légal"
-                  libelleEngagement="Représentant légal de l'apprenti·e"
-                  disabled={false}
-                  onConfirmer={(trace) => signer(livretId, numero, 'representantLegal', trace)}
-                />
-              ) : (
-                <p className="text-xs italic text-muted-foreground">
-                  Signature facultative — apposée par le formateur référent si le représentant légal
-                  est présent.
-                </p>
-              )}
-            </article>
-          );
-        })()}
+                {sig.dateSignature && (
+                  <p className="text-xs text-muted-foreground">
+                    le{' '}
+                    <time dateTime={sig.dateSignature}>
+                      {new Date(sig.dateSignature).toLocaleString('fr-FR', {
+                        dateStyle: 'short',
+                        timeStyle: 'short',
+                      })}
+                    </time>
+                  </p>
+                )}
+              </div>
+            ) : peutSigner ? (
+              <BoutonSigner
+                role="formateur"
+                nomCourt="le représentant légal"
+                libelleEngagement="Représentant légal de l'apprenti·e"
+                disabled={false}
+                onConfirmer={(trace) => signer(livretId, 'representantLegal', trace)}
+              />
+            ) : (
+              <p className="text-xs italic text-muted-foreground">
+                Signature facultative — apposée par le formateur référent si le représentant légal
+                est présent.
+              </p>
+            )}
+          </article>
+        );
+      })()}
     </section>
   );
 }

@@ -9,7 +9,7 @@ import {
   PlayCircle,
   UserX,
 } from 'lucide-react';
-import type { Apprenti, Formation, Livret, Role } from '@/types';
+import type { Apprenti, Livret, Role } from '@/types';
 import { alertesTableauBord, type AlerteTableauBord, type TypeAlerte } from '@/lib/alertes';
 
 /**
@@ -33,20 +33,13 @@ interface CentreAlertesProps {
   role: Role;
   apprentis: Apprenti[];
   livrets: Record<string, Livret>;
-  formations: Record<string, Formation>;
   onOuvrir: (alerte: AlerteTableauBord) => void;
 }
 
-export function CentreAlertes({
-  role,
-  apprentis,
-  livrets,
-  formations,
-  onOuvrir,
-}: CentreAlertesProps) {
+export function CentreAlertes({ role, apprentis, livrets, onOuvrir }: CentreAlertesProps) {
   const alertes = useMemo(
-    () => alertesTableauBord(role, apprentis, livrets, formations),
-    [role, apprentis, livrets, formations],
+    () => alertesTableauBord(role, apprentis, livrets),
+    [role, apprentis, livrets],
   );
 
   if (apprentis.length === 0) return null;

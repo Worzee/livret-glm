@@ -24,16 +24,8 @@ import type { Referentiel } from '@/types';
 import { referentielCapCuisine } from './referentiel-cap-cuisine';
 import { referentielBtsMhr } from './referentiel-bts-mhr';
 import { periodesCapCuisine, periodesCentreBtsMhr, periodesCentreCapCuisine } from './formations';
-import { QUESTIONS_BANQUE_INITIALE, idsQuestionsActives } from '@/lib/questions-entretien';
 import { creerFichePeriodeVierge } from '@/lib/creation-livret';
-import { questionsTrameE1 } from '@/lib/trame-entretien-1';
-
-// Snapshot des entretiens de démo (13 juin 2026) : la formation CAP Cuisine
-// ne retire aucune question → toutes les questions de la banque sont actives
-// et toutes obligatoires (réponse exigée pour signer).
-const QUESTIONS_E1_APPRENTI = idsQuestionsActives(QUESTIONS_BANQUE_INITIALE, [], 'apprenti');
-const QUESTIONS_E1_MAITRE = idsQuestionsActives(QUESTIONS_BANQUE_INITIALE, [], 'maitre');
-const QUESTIONS_E1_OBLIGATOIRES = [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE];
+import { questionsTrame } from '@/lib/trame-entretien';
 
 /**
  * Livrets de démonstration — 6 apprenti·e·s, un livret par cas pédagogique.
@@ -79,7 +71,7 @@ function lignesEvaluationFinaleVides(referentiel: Referentiel = referentielCapCu
 
 /**
  * Évaluations d'attitudes pour un entretien signé (retours coordos juin
- * 2026 : le maître évalue les attitudes à chaque entretien — R20 exige au
+ * 2026 : le maître évalue les attitudes lors de l'entretien — R20 exige au
  * moins une évaluation pour signer). Les 6 attitudes du catalogue initial.
  */
 function evaluationsAttitudesDemo(
@@ -116,7 +108,7 @@ function selectionValideeDemo(
 /**
  * Sélection initiale (13 juin 2026) pour les livrets sans entretien signé :
  * toutes les compétences du référentiel sont activées par défaut. Le maître /
- * tuteur décochera celles non abordées lors de l'E1.
+ * tuteur décochera celles non abordées lors de l'entretien.
  */
 function selectionInitialeDemo(
   dateIso: string,
@@ -172,20 +164,19 @@ function livretVierge(
         },
         {
           // Chantier #2 (mai 2026) : événement par défaut pour donner accès à
-          // l'Entretien Tripartite 1 depuis la sidebar. Sofia, qui override
+          // l'Entretien Tripartite depuis la sidebar. Sofia, qui override
           // entièrement son `organisationSuivi`, n'hérite pas de cet
           // événement et conserve son cas « alerte R7 ».
           id: 'evt-vierge-6',
-          motif: 'entretien-tripartite-1',
+          motif: 'entretien-tripartite',
           date: '2025-10-28',
-          modalite: 'presentiel',
-          commentaire: 'Entretien tripartite n° 1 — dans les 2 mois suivant le contrat (R7).',
+          commentaire: 'Entretien tripartite — dans les 2 mois suivant le contrat (R7).',
         },
       ],
       modifieLe: '2025-09-10T08:00:00.000Z',
       modifiePar: formatriceSophieDubois.id,
     },
-    entretiens: { 1: null, 2: null, 3: null, 4: null },
+    entretien: null,
     fichesSuivi: [],
     // Périodes en centre (17 juin 2026) — héritées du planning centre, vierges
     // par défaut ; les livrets démo peuvent les surcharger.
@@ -199,7 +190,7 @@ function livretVierge(
     // Démarre vierge par défaut ; les livrets démo dont l'entretien est signé
     // override ce champ avec `selectionValideeDemo(...)` plus bas.
     selectionCompetencesEntreprise: selectionInitialeDemo('2025-09-02T08:00:00.000Z', referentiel),
-    // Choix des attitudes : se fera à l'E1 (13 juin 2026).
+    // Choix des attitudes : se fera à l'entretien (13 juin 2026).
     attitudesSelectionnees: [],
     cloture: null,
     creeLe: '2025-09-02T08:00:00.000Z',
@@ -231,7 +222,7 @@ function reponsesTrameDemo(
 ): Record<string, string | boolean> {
   const non = new Set(idsNon);
   const out: Record<string, string | boolean> = {};
-  for (const q of questionsTrameE1()) {
+  for (const q of questionsTrame()) {
     if (q.type === 'oui-non') out[q.id] = !non.has(q.id);
     else out[q.id] = textes[q.id] ?? '';
   }
@@ -253,36 +244,7 @@ const entretienLea: EntretienTripartite = {
   // Trame officielle E1 (juin 2026) — 2 points d'alerte pour la démo :
   // absences non signalées selon les procédures + difficulté de logement.
   reponsesTrame: reponsesTrameDemo(['e1-org-absences', 'e1-diff-logement']),
-  questionsApprentiSelectionnees: [...QUESTIONS_E1_APPRENTI],
-  questionsMaitreSelectionnees: [...QUESTIONS_E1_MAITRE],
-  questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],
-  questionsObligatoires: [...QUESTIONS_E1_OBLIGATOIRES],
   evaluationsAttitudes: evaluationsAttitudesDemo(),
-  reponsesApprenti: {
-    'q-app-motivations':
-      "Devenir cuisinière dans la restauration traditionnelle, idéalement à mon compte d'ici 10 ans.",
-    'q-app-contact-entreprise':
-      "J'ai connu Le Gourmet via une journée portes ouvertes du GRETA, puis un stage de 2 jours en juin 2025.",
-    'q-app-connaissance-entreprise':
-      'Je connaissais le restaurant comme cliente avec mes parents depuis quelques années.',
-    'q-app-metier-representation':
-      "Plus exigeant en rythme que je ne l'imaginais, mais le travail d'équipe me plaît beaucoup.",
-    'q-app-difficultes-formation':
-      'La technologie culinaire (vocabulaire spécifique) demande de la mémorisation.',
-    'q-app-difficultes-autres':
-      "Réveil tôt pour les services du midi, je m'adapte progressivement.",
-    'q-app-ressenti-equipe':
-      'Très bien intégrée dans la brigade. Karim me fait confiance et me confie des tâches variées.',
-  },
-  reponsesMaitre: {
-    'q-mai-deja-forme': true,
-    'q-mai-diplomes-deja-formes':
-      'CAP Cuisine (3 apprenti·e·s formé·e·s sur les 8 dernières années).',
-    'q-mai-objectifs-embauche':
-      'Embauche envisagée à la fin du contrat si Léa confirme sa progression actuelle.',
-    'q-mai-organisation-tutorat':
-      'Tutorat réparti entre moi-même (Karim) et notre second de cuisine. Briefing hebdomadaire le lundi matin.',
-  },
   appreciationMaitre: {
     ponctualite: 'plusplus',
     comprehensionConsignes: 'plus',
@@ -290,25 +252,6 @@ const entretienLea: EntretienTripartite = {
     integration: 'plusplus',
     commentaires:
       "Très bonne disposition d'esprit. À encourager sur la prise d'initiative en fin de service.",
-  },
-  demarchesAdministratives: {
-    contratSigne: true,
-    visiteMedicale: true,
-    permisConduire: false,
-    voiture: false,
-    remarques: 'Visite médicale réalisée le 12/09/2025. Permis prévu en 2026.',
-  },
-  conditionsPratiques: {
-    hebergementCentre: 'Domicile parental — Lyon 8e (15 min en métro).',
-    hebergementEntreprise: 'Idem (domicile parental).',
-    transportCentre: 'Métro ligne D + tramway T1.',
-    transportEntreprise: 'Métro ligne D directe.',
-  },
-  aidesDemandees: {
-    logement: false,
-    premierEquipement: true,
-    permis: false,
-    autres: 'Aide premier équipement obtenue via la région (kit couteaux + tenue professionnelle).',
   },
   commentaires: {
     apprenti: "Merci à Karim et à l'équipe pour l'accueil. Hâte de progresser sur les 2 années.",
@@ -611,30 +554,19 @@ const livretLea: Livret = {
       },
       {
         id: 'evt-lea-9',
-        motif: 'entretien-tripartite-1',
+        motif: 'entretien-tripartite',
         date: '2025-10-28',
-        modalite: 'presentiel',
         commentaire: 'Réalisé le 28/10/2025 dans les locaux du restaurant Le Gourmet.',
-      },
-      {
-        id: 'evt-lea-10',
-        motif: 'entretien-tripartite-2',
-        date: '2026-05-15',
-        // E2 en distanciel (visio) — démontre la modalité au choix (15 juin 2026).
-        modalite: 'distanciel',
-        commentaire: 'Bilan mi-parcours — à initialiser et préparer (prévu en visio).',
       },
     ],
     modifieLe: '2025-09-10T08:00:00.000Z',
     modifiePar: formatriceSophieDubois.id,
   },
-  // Événement E2 créé mais entretien encore vide — démontre le cas
-  // « à initialiser » (E3/E4 hors périmètre : la formation est à 2 entretiens).
-  entretiens: { 1: entretienLea, 2: null, 3: null, 4: null },
+  entretien: entretienLea,
   fichesSuivi: [leaPeriode1, leaPeriode2, leaPeriode3],
   // Périodes en centre (17 juin 2026) : C1 signée, C2 en cours.
   fichesSuiviCentre: [leaCentre1, leaCentre2],
-  // Attitudes retenues à l'E1 (13 juin 2026) — a9 pas encore évaluée.
+  // Attitudes retenues à l'entretien (13 juin 2026) — a9 pas encore évaluée.
   attitudesSelectionnees: ['a5', 'a6', 'a9'],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiLeaMartin,
@@ -653,53 +585,13 @@ const livretLea: Livret = {
 const entretienTheo: EntretienTripartite = {
   dateEntretien: '2025-10-15',
   reponsesTrame: reponsesTrameDemo(),
-  questionsApprentiSelectionnees: [...QUESTIONS_E1_APPRENTI],
-  questionsMaitreSelectionnees: [...QUESTIONS_E1_MAITRE],
-  questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],
-  questionsObligatoires: [...QUESTIONS_E1_OBLIGATOIRES],
   evaluationsAttitudes: evaluationsAttitudesDemo(),
-  reponsesApprenti: {
-    'q-app-motivations':
-      'Reprendre la cuisine familiale italienne (mes grands-parents) en y ajoutant des techniques actuelles.',
-    'q-app-contact-entreprise': 'Mon oncle connaissait Karim. Première rencontre en juillet 2025.',
-    'q-app-connaissance-entreprise':
-      'Pas de visite préalable, mais bonne réputation auprès de mes proches.',
-    'q-app-metier-representation': 'Conforme à mes attentes. Je découvre le rythme du soir.',
-    'q-app-difficultes-formation': "Aucune particulière jusqu'ici.",
-    'q-app-difficultes-autres': '',
-    'q-app-ressenti-equipe': "Excellent. Karim et l'équipe sont très pédagogues.",
-  },
-  reponsesMaitre: {
-    'q-mai-deja-forme': true,
-    'q-mai-diplomes-deja-formes': 'CAP Cuisine.',
-    'q-mai-objectifs-embauche': 'Embauche très probable à la fin du contrat.',
-    'q-mai-organisation-tutorat': 'Mêmes modalités que pour Léa (briefing hebdo, tutorat partagé).',
-  },
   appreciationMaitre: {
     ponctualite: 'plusplus',
     comprehensionConsignes: 'plusplus',
     qualiteTravail: 'plusplus',
     integration: 'plusplus',
     commentaires: 'Profil exceptionnel. Très autonome dès les premiers jours.',
-  },
-  demarchesAdministratives: {
-    contratSigne: true,
-    visiteMedicale: true,
-    permisConduire: true,
-    voiture: false,
-    remarques: 'Tous documents en règle.',
-  },
-  conditionsPratiques: {
-    hebergementCentre: 'Studio en colocation Lyon 7e.',
-    hebergementEntreprise: 'Idem.',
-    transportCentre: 'Vélo + tramway T2.',
-    transportEntreprise: 'Vélo principalement.',
-  },
-  aidesDemandees: {
-    logement: true,
-    premierEquipement: true,
-    permis: false,
-    autres: 'Aide au logement APL en cours.',
   },
   commentaires: {
     apprenti: 'Très motivé pour les 2 prochaines années.',
@@ -804,13 +696,13 @@ const theoFiche = (
 
 const livretTheo: Livret = {
   ...livretVierge(apprentiTheoDubois, 'livret-theo'),
-  entretiens: { 1: entretienTheo, 2: null, 3: null, 4: null },
+  entretien: entretienTheo,
   fichesSuivi: [
     theoFiche(1, '2025-09-02', '2025-12-20', '2025-12-22T14:00:00.000Z'),
     theoFiche(2, '2026-01-06', '2026-02-14', '2026-02-16T10:30:00.000Z'),
     theoFiche(3, '2026-03-02', '2026-04-11', '2026-04-13T09:00:00.000Z'),
   ],
-  // Attitudes retenues à l'E1 (13 juin 2026) — a9 pas encore évaluée.
+  // Attitudes retenues à l'entretien (13 juin 2026) — a9 pas encore évaluée.
   attitudesSelectionnees: ['a5', 'a6', 'a9'],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiTheoDubois,
@@ -900,7 +792,7 @@ const livretSofia: Livret = {
     modifieLe: '2025-09-10T08:00:00.000Z',
     modifiePar: formatriceSophieDubois.id,
   },
-  entretiens: { 1: null, 2: null, 3: null, 4: null },
+  entretien: null,
   // P1 entamée (brouillon) ; P2 et P3 héritées du planning mais encore vierges.
   fichesSuivi: [
     sofiaPeriode1,
@@ -921,53 +813,13 @@ const livretSofia: Livret = {
 const entretienMinh: EntretienTripartite = {
   dateEntretien: '2026-04-20',
   reponsesTrame: reponsesTrameDemo(),
-  questionsApprentiSelectionnees: [...QUESTIONS_E1_APPRENTI],
-  questionsMaitreSelectionnees: [...QUESTIONS_E1_MAITRE],
-  questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],
-  questionsObligatoires: [...QUESTIONS_E1_OBLIGATOIRES],
   evaluationsAttitudes: evaluationsAttitudesDemo(),
-  reponsesApprenti: {
-    'q-app-motivations': 'Devenir cuisinier dans la restauration asiatique-fusion.',
-    'q-app-contact-entreprise':
-      "J'ai déposé une candidature spontanée au début du mois de février 2026.",
-    'q-app-connaissance-entreprise':
-      "J'ai mangé plusieurs fois à la Brasserie du Rhône. J'aime leur carte.",
-    'q-app-metier-representation': "Plus physique que je ne l'imaginais.",
-    'q-app-difficultes-formation': '',
-    'q-app-difficultes-autres': '',
-    'q-app-ressenti-equipe': 'Bonne intégration, équipe accueillante.',
-  },
-  reponsesMaitre: {
-    'q-mai-deja-forme': false,
-    'q-mai-diplomes-deja-formes': '',
-    'q-mai-objectifs-embauche': 'À évaluer en fin de contrat.',
-    'q-mai-organisation-tutorat': 'Tutorat par moi-même (Hélène) + sous-cheffe.',
-  },
   appreciationMaitre: {
     ponctualite: 'plus',
     comprehensionConsignes: 'plus',
     qualiteTravail: 'plus',
     integration: 'plusplus',
     commentaires: 'Très motivé, encore peu de recul vu la prise de poste récente.',
-  },
-  demarchesAdministratives: {
-    contratSigne: true,
-    visiteMedicale: true,
-    permisConduire: false,
-    voiture: false,
-    remarques: 'Visite médicale réalisée le 15/04/2026.',
-  },
-  conditionsPratiques: {
-    hebergementCentre: 'Domicile parental — Vénissieux.',
-    hebergementEntreprise: 'Idem.',
-    transportCentre: 'Métro D + bus.',
-    transportEntreprise: 'Métro D directe.',
-  },
-  aidesDemandees: {
-    logement: false,
-    premierEquipement: true,
-    permis: true,
-    autres: 'Demande de permis en cours auprès de la région.',
   },
   commentaires: {
     apprenti: 'Hâte de commencer concrètement les périodes de suivi.',
@@ -1011,20 +863,19 @@ const livretMinh: Livret = {
       },
       {
         id: 'evt-minh-6',
-        motif: 'entretien-tripartite-1',
+        motif: 'entretien-tripartite',
         date: '2026-04-20',
-        modalite: 'presentiel',
         commentaire: 'Réalisé en présentiel au CFA.',
       },
     ],
     modifieLe: '2026-04-20T16:00:00.000Z',
     modifiePar: formatriceSophieDubois.id,
   },
-  entretiens: { 1: entretienMinh, 2: null, 3: null, 4: null },
+  entretien: entretienMinh,
   // Périodes héritées du planning de la formation (chantier #1) — encore
   // vierges : Minh vient de démarrer et n'a rempli aucune fiche.
   fichesSuivi: periodesCapCuisine.map((p) => creerFichePeriodeVierge(p, `fp-minh-${p.numero}`)),
-  // Attitudes retenues à l'E1 (13 juin 2026) — a9 pas encore évaluée.
+  // Attitudes retenues à l'entretien (13 juin 2026) — a9 pas encore évaluée.
   attitudesSelectionnees: ['a5', 'a6', 'a9'],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiMinhNguyen,
@@ -1132,34 +983,22 @@ const ayaPeriode2: FicheSuiviPeriode = {
 
 const livretAya: Livret = {
   ...livretVierge(apprentiAyaKouame, 'livret-aya'),
-  entretiens: {
-    1: {
-      ...entretienTheo,
-      dateEntretien: '2025-10-22',
-      reponsesApprenti: {
-        ...entretienTheo.reponsesApprenti,
-        'q-app-motivations':
-          'Travailler dans la restauration de brigade, viser le Bac Pro à terme.',
-        'q-app-contact-entreprise':
-          "Candidature spontanée. Hélène a accepté après un essai d'une journée.",
-      },
-      appreciationMaitre: {
-        ponctualite: 'plus',
-        comprehensionConsignes: 'plus',
-        qualiteTravail: 'plus',
-        integration: 'plus',
-        commentaires: 'Profil sérieux, sait défendre ses idées.',
-      },
-      commentaires: {
-        apprenti: "Bonne ambiance d'équipe, je me sens à ma place.",
-        maitre: 'À surveiller sur la prise de feedback.',
-        formateur: 'Cohérence parcours/projet OK.',
-      },
-      signatures: signaturesCompletes('2025-10-22T17:30:00.000Z'),
+  entretien: {
+    ...entretienTheo,
+    dateEntretien: '2025-10-22',
+    appreciationMaitre: {
+      ponctualite: 'plus',
+      comprehensionConsignes: 'plus',
+      qualiteTravail: 'plus',
+      integration: 'plus',
+      commentaires: 'Profil sérieux, sait défendre ses idées.',
     },
-    2: null,
-    3: null,
-    4: null,
+    commentaires: {
+      apprenti: "Bonne ambiance d'équipe, je me sens à ma place.",
+      maitre: 'À surveiller sur la prise de feedback.',
+      formateur: 'Cohérence parcours/projet OK.',
+    },
+    signatures: signaturesCompletes('2025-10-22T17:30:00.000Z'),
   },
   // P1 verrouillée, P2 déverrouillée (R10) ; P3 héritée du planning, vierge.
   fichesSuivi: [
@@ -1167,7 +1006,7 @@ const livretAya: Livret = {
     ayaPeriode2,
     creerFichePeriodeVierge(periodesCapCuisine[2], 'fp-aya-3'),
   ],
-  // Attitudes retenues à l'E1 (13 juin 2026) — a9 pas encore évaluée.
+  // Attitudes retenues à l'entretien (13 juin 2026) — a9 pas encore évaluée.
   attitudesSelectionnees: ['a5', 'a6', 'a9'],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiAyaKouame,
@@ -1185,50 +1024,13 @@ const livretAya: Livret = {
 const entretienLuca: EntretienTripartite = {
   dateEntretien: '2025-10-30',
   reponsesTrame: reponsesTrameDemo(),
-  questionsApprentiSelectionnees: [...QUESTIONS_E1_APPRENTI],
-  questionsMaitreSelectionnees: [...QUESTIONS_E1_MAITRE],
-  questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],
-  questionsObligatoires: [...QUESTIONS_E1_OBLIGATOIRES],
   evaluationsAttitudes: evaluationsAttitudesDemo(),
-  reponsesApprenti: {
-    'q-app-motivations': 'Devenir cuisinier de bistrot, peut-être ouvrir mon affaire à terme.',
-    'q-app-contact-entreprise': "J'ai trouvé l'annonce sur le site du GRETA.",
-    'q-app-connaissance-entreprise': "Je connaissais l'enseigne par réputation.",
-    'q-app-metier-representation': 'Conforme à mes attentes, rythme soutenu mais gérable.',
-    'q-app-difficultes-formation': "La pâtisserie demande un peu plus d'attention.",
-    'q-app-difficultes-autres': '',
-    'q-app-ressenti-equipe': 'Bonne intégration progressive.',
-  },
-  reponsesMaitre: {
-    'q-mai-deja-forme': true,
-    'q-mai-diplomes-deja-formes': 'CAP Cuisine + Bac Pro.',
-    'q-mai-objectifs-embauche': "Possibilité d'embauche à confirmer.",
-    'q-mai-organisation-tutorat': 'Tutorat par moi-même, briefing de service.',
-  },
   appreciationMaitre: {
     ponctualite: 'plus',
     comprehensionConsignes: 'plus',
     qualiteTravail: 'plus',
     integration: 'plus',
     commentaires: 'Apprenti·e fiable, progression régulière.',
-  },
-  demarchesAdministratives: {
-    contratSigne: true,
-    visiteMedicale: true,
-    permisConduire: true,
-    voiture: true,
-    remarques: '',
-  },
-  conditionsPratiques: {
-    hebergementCentre: 'Domicile parental — Villeurbanne.',
-    hebergementEntreprise: 'Idem.',
-    transportCentre: 'Tramway T1.',
-    transportEntreprise: 'Voiture personnelle.',
-  },
-  aidesDemandees: {
-    logement: false,
-    premierEquipement: true,
-    permis: false,
   },
   commentaires: {
     apprenti: "Période d'adaptation passée, je me sens à l'aise.",
@@ -1360,9 +1162,9 @@ const lucaPeriode3: FicheSuiviPeriode = {
 
 const livretLuca: Livret = {
   ...livretVierge(apprentiLucaBianchi, 'livret-luca'),
-  entretiens: { 1: entretienLuca, 2: null, 3: null, 4: null },
+  entretien: entretienLuca,
   fichesSuivi: [lucaPeriode1, lucaPeriode2, lucaPeriode3],
-  // Attitudes retenues à l'E1 (13 juin 2026) — a9 pas encore évaluée.
+  // Attitudes retenues à l'entretien (13 juin 2026) — a9 pas encore évaluée.
   attitudesSelectionnees: ['a5', 'a6', 'a9'],
   selectionCompetencesEntreprise: selectionValideeDemo(
     apprentiLucaBianchi,
@@ -1374,12 +1176,13 @@ const livretLuca: Livret = {
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Promo BTS MHR 2025-2027 (3 juillet 2026) — 2ᵉ formation de démo.
-// Référentiel 3 niveaux, 4 entretiens tripartites, formateur Marc TISSIER.
-//   - Camille MOREAU : mi-parcours riche — E1 + E2 signés, E3 initialisé
-//     (apprentie signée), P1 verrouillée, P2 signée (à verrouiller), P3 en
-//     cours, C1 signée, C2 en cours (formateur pas signé)
-//   - Yanis BELKACEM : « retard » — aucun entretien (alerte R7), P1 entamée
-//     mais non signée alors que la période est terminée
+// Référentiel 3 niveaux, formateur Marc TISSIER.
+//   - Camille MOREAU : mi-parcours riche — entretien signé, P1 verrouillée,
+//     P2 signée (à verrouiller), P3 en cours, C1 signée, C2 en cours
+//     (formateur pas signé)
+//   - Yanis BELKACEM : « retard » — entretien jamais initialisé (alerte R7),
+//     événement planifié en attente (cas « à initialiser »), P1 entamée mais
+//     non signée alors que la période est terminée
 // ═════════════════════════════════════════════════════════════════════════════
 
 /** Signatures d'une fiche ENTREPRISE (2 parties depuis le 1ᵉʳ juillet 2026). */
@@ -1396,8 +1199,8 @@ const signaturesCentre = (date: string): SignaturesTripartite => ({
   formateur: { signe: true, dateSignature: date },
 });
 
-/** Textes de la trame E1 adaptés au contexte salle / hôtellerie du BTS MHR. */
-const TEXTES_TRAME_E1_CAMILLE: Record<string, string> = {
+/** Textes de la trame adaptés au contexte salle / hôtellerie du BTS MHR. */
+const TEXTES_TRAME_CAMILLE: Record<string, string> = {
   'e1-integ-accueil':
     "Accueil très structuré : journée d'intégration avec visite de l'hôtel et du restaurant.",
   'e1-integ-presentation':
@@ -1410,17 +1213,12 @@ const TEXTES_TRAME_E1_CAMILLE: Record<string, string> = {
     "L'anglais professionnel en situation de service reste à consolider - à travailler en centre.",
 };
 
-const entretienCamilleE1: EntretienTripartite = {
+const entretienCamille: EntretienTripartite = {
   dateEntretien: '2025-10-21',
-  reponsesTrame: reponsesTrameDemo([], TEXTES_TRAME_E1_CAMILLE),
-  questionsApprentiSelectionnees: [...QUESTIONS_E1_APPRENTI],
-  questionsMaitreSelectionnees: [...QUESTIONS_E1_MAITRE],
-  questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],
-  questionsObligatoires: [...QUESTIONS_E1_OBLIGATOIRES],
-  // Attitudes retenues à l'E1 : hygiène/tenue exclues au profit du relationnel.
+  reponsesTrame: reponsesTrameDemo([], TEXTES_TRAME_CAMILLE),
+  // Attitudes retenues à l'entretien : hygiène/tenue exclues au profit du
+  // relationnel.
   evaluationsAttitudes: { a7: 'plus', a9: 'plusplus', a10: 'moins', a12: 'plus' },
-  reponsesApprenti: {},
-  reponsesMaitre: {},
   appreciationMaitre: {
     ponctualite: 'plus',
     comprehensionConsignes: 'plus',
@@ -1429,14 +1227,6 @@ const entretienCamilleE1: EntretienTripartite = {
     commentaires:
       'Très bon relationnel client. La rigueur des mises en place doit encore progresser — normal à ce stade.',
   },
-  demarchesAdministratives: {
-    contratSigne: true,
-    visiteMedicale: true,
-    permisConduire: true,
-    voiture: false,
-  },
-  conditionsPratiques: {},
-  aidesDemandees: { logement: false, premierEquipement: true, permis: null },
   commentaires: {
     apprenti: "L'équipe m'a très bien intégrée, le rythme des services est soutenu mais motivant.",
     maitre: 'Profil prometteur pour la salle. Objectif : responsabiliser Camille sur un rang.',
@@ -1446,112 +1236,6 @@ const entretienCamilleE1: EntretienTripartite = {
     apprenti: { signe: true, dateSignature: '2025-10-21T14:30:00.000Z' },
     maitre: { signe: true, dateSignature: '2025-10-21T14:35:00.000Z' },
     formateur: { signe: true, dateSignature: '2025-10-21T14:40:00.000Z' },
-  },
-};
-
-const entretienCamilleE2: EntretienTripartite = {
-  dateEntretien: '2026-03-30',
-  questionsApprentiSelectionnees: [...QUESTIONS_E1_APPRENTI],
-  questionsMaitreSelectionnees: [...QUESTIONS_E1_MAITRE],
-  questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],
-  questionsObligatoires: [...QUESTIONS_E1_OBLIGATOIRES],
-  // Progression visible entre E1 et E2 sur les mêmes attitudes.
-  evaluationsAttitudes: { a7: 'plusplus', a9: 'plusplus', a10: 'plus', a12: 'plusplus' },
-  reponsesApprenti: {
-    'q-app-motivations':
-      "Confirmées : je vise un poste de cheffe de rang à l'issue du BTS, puis une assistance de direction.",
-    'q-app-contact-entreprise':
-      "Candidature spontanée après un forum de l'alternance au GRETA en mars 2025.",
-    'q-app-connaissance-entreprise':
-      "Je connaissais la réputation de l'hôtel ; j'ai découvert l'organisation interne depuis.",
-    'q-app-metier-representation':
-      'Le management de la salle est plus exigeant que je ne le pensais — coordination permanente avec la cuisine.',
-    'q-app-difficultes-formation':
-      'La gestion analytique (ratios, coûts) demande un vrai travail personnel.',
-    'q-app-difficultes-autres': "Les coupures en période de haute saison fatiguent, je m'organise.",
-    'q-app-ressenti-equipe':
-      'Très bonne entente avec la brigade de salle. On me confie désormais un rang complet.',
-  },
-  reponsesMaitre: {
-    'q-mai-deja-forme': true,
-    'q-mai-diplomes-deja-formes':
-      'BTS MHR (2 apprenti·e·s) et mentions complémentaires sommellerie.',
-    'q-mai-objectifs-embauche':
-      "CDI de cheffe de rang envisagé à l'issue du contrat, selon la saison 2027.",
-    'q-mai-organisation-tutorat':
-      "Tutorat assuré par moi-même avec délégation au maître d'hôtel les soirs de banquet.",
-  },
-  appreciationMaitre: {
-    ponctualite: 'plusplus',
-    comprehensionConsignes: 'plus',
-    qualiteTravail: 'plus',
-    integration: 'plusplus',
-    commentaires: 'Nette progression sur la rigueur. Camille anime déjà le briefing des extras.',
-  },
-  demarchesAdministratives: {
-    contratSigne: true,
-    visiteMedicale: true,
-    permisConduire: true,
-    voiture: true,
-  },
-  conditionsPratiques: {
-    hebergementCentre: 'Studio à Lyon 2e, à 10 minutes à pied du site Bellecour.',
-    hebergementEntreprise: 'Idem (hôtel dans le même quartier).',
-    transportCentre: 'À pied.',
-    transportEntreprise: 'À pied.',
-  },
-  aidesDemandees: { logement: true, premierEquipement: false, permis: false },
-  commentaires: {
-    apprenti: 'Mi-parcours très positif, je me sens à ma place sur ce métier.',
-    maitre: "Objectif jusqu'à l'été : autonomie complète sur les banquets.",
-    formateur: "Résultats solides au centre. Dossier de gestion à approfondir pour l'examen.",
-  },
-  signatures: {
-    apprenti: { signe: true, dateSignature: '2026-03-30T17:00:00.000Z' },
-    maitre: { signe: true, dateSignature: '2026-03-30T17:05:00.000Z' },
-    formateur: { signe: true, dateSignature: '2026-03-30T17:10:00.000Z' },
-  },
-};
-
-/**
- * E3 initialisé le 1ᵉʳ juillet 2026 : Camille a répondu et signé ; le maître
- * et le formateur pas encore → alimente le centre d'alertes (signatures
- * attendues) côté Nadia HAMDI et Marc TISSIER.
- */
-const entretienCamilleE3: EntretienTripartite = {
-  dateEntretien: '2026-07-01',
-  questionsApprentiSelectionnees: [...QUESTIONS_E1_APPRENTI],
-  questionsMaitreSelectionnees: [...QUESTIONS_E1_MAITRE],
-  questionsImposees: [...QUESTIONS_E1_APPRENTI, ...QUESTIONS_E1_MAITRE],
-  questionsObligatoires: [...QUESTIONS_E1_OBLIGATOIRES],
-  evaluationsAttitudes: {},
-  reponsesApprenti: {
-    'q-app-motivations': 'Toujours cap sur la salle — je prépare le concours général des métiers.',
-    'q-app-contact-entreprise': 'Sans changement depuis le dernier entretien.',
-    'q-app-connaissance-entreprise':
-      "Je participe désormais aux réunions d'exploitation mensuelles.",
-    'q-app-metier-representation': 'Vision plus complète avec la dimension gestion des coûts.',
-    'q-app-difficultes-formation': "L'épreuve de gestion reste mon chantier prioritaire.",
-    'q-app-difficultes-autres': 'Rien de particulier.',
-    'q-app-ressenti-equipe': "Excellente : je forme moi-même les extras de l'été.",
-  },
-  reponsesMaitre: {},
-  appreciationMaitre: {},
-  demarchesAdministratives: {
-    contratSigne: true,
-    visiteMedicale: true,
-    permisConduire: true,
-    voiture: true,
-  },
-  conditionsPratiques: {},
-  aidesDemandees: { logement: null, premierEquipement: null, permis: null },
-  commentaires: {
-    apprenti: "Fin de 1ʳᵉ année très encourageante, merci à l'équipe du Continental.",
-  },
-  signatures: {
-    apprenti: { signe: true, dateSignature: '2026-07-01T16:00:00.000Z' },
-    maitre: { signe: false },
-    formateur: { signe: false },
   },
 };
 
@@ -1757,10 +1441,9 @@ const livretCamille: Livret = {
       },
       {
         id: 'evt-camille-2',
-        motif: 'entretien-tripartite-1',
+        motif: 'entretien-tripartite',
         date: '2025-10-21',
-        modalite: 'presentiel',
-        commentaire: 'Entretien tripartite n° 1 — dans les 2 mois suivant le contrat (R7).',
+        commentaire: 'Entretien tripartite — dans les 2 mois suivant le contrat (R7).',
       },
       {
         id: 'evt-camille-3',
@@ -1771,28 +1454,20 @@ const livretCamille: Livret = {
       },
       {
         id: 'evt-camille-4',
-        motif: 'entretien-tripartite-2',
+        motif: 'bilan-formation',
         date: '2026-03-30',
-        modalite: 'distanciel',
-        commentaire: 'Bilan de mi-parcours de 1ʳᵉ année.',
-      },
-      {
-        id: 'evt-camille-5',
-        motif: 'entretien-tripartite-3',
-        date: '2026-07-01',
-        modalite: 'presentiel',
-        commentaire: 'Bilan de fin de 1ʳᵉ année.',
+        commentaire: 'Bilan de mi-parcours de 1ʳᵉ année (fiche de suivi dédiée).',
       },
       {
         id: 'evt-camille-6',
         motif: 'bilan-formation',
-        commentaire: 'Bilan final prévu en juin 2027 (entretien n° 4).',
+        commentaire: 'Bilan final prévu en juin 2027.',
       },
     ],
     modifieLe: '2026-06-25T09:00:00.000Z',
     modifiePar: formateurMarcTissier.id,
   },
-  entretiens: { 1: entretienCamilleE1, 2: entretienCamilleE2, 3: entretienCamilleE3, 4: null },
+  entretien: entretienCamille,
   fichesSuivi: [camillePeriode1, camillePeriode2, camillePeriode3],
   fichesSuiviCentre: [camilleCentre1, camilleCentre2],
   attitudesSelectionnees: ['a7', 'a9', 'a10', 'a12'],
@@ -1835,8 +1510,10 @@ const yanisPeriode1: FicheSuiviPeriode = {
 
 const livretYanis: Livret = {
   ...livretVierge(apprentiYanisBelkacem, 'livret-yanis', referentielBtsMhr, periodesCentreBtsMhr),
-  // Aucun événement « Entretien Tripartite 1 » : le contrat court depuis
-  // septembre 2025 → alerte R7 visible chez Marc TISSIER et Martine.
+  // Entretien jamais initialisé alors que le contrat court depuis septembre
+  // 2025 → alerte R7 visible chez Marc TISSIER et Martine. L'événement
+  // « Entretien Tripartite » existe (sans date) → cas « planifié : à
+  // initialiser » dans le centre d'alertes de Marc.
   organisationSuivi: {
     evenements: [
       {
@@ -1855,6 +1532,11 @@ const livretYanis: Livret = {
         id: 'evt-yanis-3',
         motif: 'entretien-individuel',
         commentaire: "À planifier d'urgence avec le tuteur.",
+      },
+      {
+        id: 'evt-yanis-4',
+        motif: 'entretien-tripartite',
+        commentaire: "À programmer d'urgence — délai R7 dépassé.",
       },
     ],
     modifieLe: '2025-09-22T10:00:00.000Z',

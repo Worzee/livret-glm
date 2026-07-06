@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { EntretienTripartite, FicheSuiviPeriode, Livret } from '@/types';
 import {
+  echeanceEntretien,
+  entretienTenu,
   joursRestants,
   periodeCourante,
-  prochainEntretien,
-  progressionEntretiens,
   progressionFiches,
 } from './recap-apprenti';
 
@@ -39,14 +39,14 @@ const entretien = (a: boolean, m: boolean, f: boolean): EntretienTripartite =>
     },
   }) as unknown as EntretienTripartite;
 
-// Livret minimal (casté) : seuls `entretiens` et `organisationSuivi.evenements`
-// sont lus par prochainEntretien / progressionEntretiens.
+// Livret minimal (casté) : seuls `entretien` et `organisationSuivi.evenements`
+// sont lus par echeanceEntretien / entretienTenu.
 const livret = (
-  entretiens: Partial<Record<1 | 2 | 3 | 4, EntretienTripartite | null>>,
+  e: EntretienTripartite | null,
   evenements: Array<{ motif: string; date?: string }> = [],
 ): Livret =>
   ({
-    entretiens: { 1: null, 2: null, 3: null, 4: null, ...entretiens },
+    entretien: e,
     organisationSuivi: { evenements, modifieLe: '', modifiePar: '' },
   }) as unknown as Livret;
 
@@ -76,40 +76,32 @@ describe('periodeCourante', () => {
   });
 });
 
-describe('prochainEntretien', () => {
-  it('retourne le premier entretien non signé avec sa date prévue', () => {
-    const l = livret({ 1: entretien(true, true, true) }, [
-      { motif: 'entretien-tripartite-1', date: '2025-10-28' },
-      { motif: 'entretien-tripartite-2', date: '2026-05-15' },
-    ]);
-    const e = prochainEntretien(l, 2);
-    expect(e?.numero).toBe(2);
-    expect(e?.datePrevue).toBe('2026-05-15');
+describe('echeanceEntretien', () => {
+  it("retourne l'échéance avec sa date prévue quand l'entretien n'est pas tenu", () => {
+    const l = livret(null, [{ motif: 'entretien-tripartite', date: '2025-10-28' }]);
+    const e = echeanceEntretien(l);
+    expect(e?.datePrevue).toBe('2025-10-28');
     expect(e?.initialise).toBe(false);
   });
 
-  it('retourne E1 quand il n’est pas signé', () => {
-    const l = livret({}, [{ motif: 'entretien-tripartite-1', date: '2025-10-28' }]);
-    const e = prochainEntretien(l, 2);
-    expect(e?.numero).toBe(1);
-    expect(e?.datePrevue).toBe('2025-10-28');
+  it("signale l'entretien initialisé mais non signé des 3 parties", () => {
+    const l = livret(entretien(true, false, true));
+    const e = echeanceEntretien(l);
+    expect(e?.initialise).toBe(true);
+    expect(e?.datePrevue).toBeUndefined();
   });
 
-  it('retourne null si tous les entretiens prévus sont signés', () => {
-    const l = livret({ 1: entretien(true, true, true), 2: entretien(true, true, true) });
-    expect(prochainEntretien(l, 2)).toBeNull();
-  });
-
-  it('ne regarde que les entretiens jusqu’à nombreEntretiens', () => {
-    const l = livret({ 1: entretien(true, true, true) });
-    expect(prochainEntretien(l, 1)).toBeNull();
+  it("retourne null quand l'entretien est signé des 3 parties", () => {
+    const l = livret(entretien(true, true, true));
+    expect(echeanceEntretien(l)).toBeNull();
   });
 });
 
-describe('progressionEntretiens', () => {
-  it('compte les entretiens signés sur le total prévu', () => {
-    const l = livret({ 1: entretien(true, true, true), 2: entretien(true, false, true) });
-    expect(progressionEntretiens(l, 2)).toEqual({ signes: 1, total: 2 });
+describe('entretienTenu', () => {
+  it("est vrai seulement quand les 3 parties ont signé l'entretien", () => {
+    expect(entretienTenu(livret(entretien(true, true, true)))).toBe(true);
+    expect(entretienTenu(livret(entretien(true, false, true)))).toBe(false);
+    expect(entretienTenu(livret(null))).toBe(false);
   });
 });
 

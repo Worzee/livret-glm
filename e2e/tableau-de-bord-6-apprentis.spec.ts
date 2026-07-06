@@ -208,10 +208,10 @@ test('accès direct à une période masquée : page « Période non accessible �
 
 test("Sofia (cas alerte R7) : la page Entretien affiche le bandeau d'alerte", async ({ page }) => {
   await page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }).click();
-  // Sofia n'a pas d'événement « Entretien Tripartite 1 » dans son organisation
+  // Sofia n'a pas d'événement « Entretien Tripartite » dans son organisation
   // du suivi → pas de lien sidebar (liens conditionnels, chantier #2). On passe
   // par l'URL directe.
-  await page.goto('/livret/entretien/1');
+  await page.goto('/livret/entretien');
   // L'entretien n'est pas initié → bouton « Initialiser l'entretien » visible
   // pour le formateur référent (rôle par défaut).
   await expect(page.getByRole('button', { name: /Initialiser l'entretien/i })).toBeVisible();

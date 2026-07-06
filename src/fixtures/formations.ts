@@ -69,18 +69,12 @@ export const formationCapCuisine: Formation = {
   lieuId: etablissementSiteDiderot.id,
   periodes: periodesCapCuisine,
   periodesCentre: periodesCentreCapCuisine,
-  // Retours coordos juin 2026 : nombre d'entretiens tripartites (1 à 4).
-  // Le CAP Cuisine reste au défaut historique de 2.
-  nombreEntretiens: 2,
-  // 13 juin 2026 : aucune question retirée par défaut — toutes les questions
-  // de la banque sont présentes et obligatoires dans les entretiens.
-  questionsRetirees: [],
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BTS MHR 2025-2027 (3 juillet 2026) — 2ᵉ formation de démo : promo sur 2 ans,
-// référentiel 3 niveaux, 2ᵉ site, 4 entretiens tripartites. Fait vivre le
-// groupement par formation, le tri par année et les périmètres coordo.
+// référentiel 3 niveaux, 2ᵉ site. Fait vivre le groupement par formation,
+// le tri par année et les périmètres coordo.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const periodesBtsMhr: PeriodeFormation[] = [
@@ -132,9 +126,6 @@ export const formationBtsMhr: Formation = {
   lieuId: etablissementSiteBellecour.id,
   periodes: periodesBtsMhr,
   periodesCentre: periodesCentreBtsMhr,
-  // Formation en 2 ans → le maximum de 4 entretiens tripartites.
-  nombreEntretiens: 4,
-  questionsRetirees: [],
 };
 
 /**

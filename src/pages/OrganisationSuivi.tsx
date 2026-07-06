@@ -4,33 +4,25 @@ import {
   CalendarDays,
   Lock,
   LockOpen,
-  MapPin,
   MessageSquare,
   Plus,
   Trash2,
-  Video,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
-import { useFormationsStore } from '@/store/useFormationsStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
 import {
+  estMotifEntretienTripartite,
   evenementFigeParSignature,
-  libelleModalite,
   metadonneesMotif,
-  modaliteEffective,
-  modaliteImposee,
-  motifAvecModalite,
   motifsProposablesPourRole,
-  numeroEntretienPourMotif,
   peutSupprimerEvenement,
 } from '@/lib/organisation-suivi';
 import type {
+  EntretienTripartite,
   EvenementOrganisationSuivi,
-  Livret,
-  ModaliteEntretien,
   MotifOrganisationSuivi,
 } from '@/types';
 import { cn } from '@/lib/utils';
@@ -45,7 +37,7 @@ import { useDonneesLivretPdf } from '@/components/pdf/useDonneesLivretPdf';
  * Le formateur référent, le coordo ou l'admin (retours coordos juin 2026)
  * ajoute à la demande chaque événement (réunion de rentrée, visites en
  * entreprise multiples, conseil de classe, etc.) en choisissant un motif
- * parmi le catalogue filtré par la formation (`motifsDisponibles`). Le
+ * du catalogue (filtré par rôle — `motifsProposablesPourRole`). Le
  * liseré des cartes suit la couleur du rôle actif.
  *
  * Lecture seule pour l'apprenti·e et le maître.
@@ -60,7 +52,6 @@ export function OrganisationSuivi() {
   const supprimerEvt = useLivretStore((s) => s.supprimerEvenementOrganisation);
   const roleActif = useUserStore((s) => s.roleActif);
   const utilisateurActif = useUserStore((s) => s.utilisateurActif);
-  const formations = useFormationsStore((s) => s.formations);
   const donneesPdf = useDonneesLivretPdf();
 
   // Le motif sélectionné dans le sélecteur d'ajout — réinitialisé après ajout.
@@ -83,11 +74,10 @@ export function OrganisationSuivi() {
   const org = livret.organisationSuivi;
   const evenements = org.evenements;
 
-  // Juin 2026 : motifs filtrés par formation (entretiens 1..N) ET par rôle —
-  // le formateur ne crée que les événements entretien tripartite, le coordo
-  // et l'admin créent tous les motifs.
-  const formation = formations[apprenti.formationId];
-  const motifsProposables = motifsProposablesPourRole(formation?.nombreEntretiens ?? 2, roleActif);
+  // Juin 2026 : motifs filtrés par rôle — le formateur ne crée que
+  // l'événement entretien tripartite, le coordo et l'admin créent tous
+  // les motifs.
+  const motifsProposables = motifsProposablesPourRole(roleActif);
 
   function ajouter() {
     if (!motifAAjouter) return;
@@ -192,7 +182,7 @@ export function OrganisationSuivi() {
             <CarteEvenement
               key={evt.id}
               evenement={evt}
-              entretiens={livret.entretiens}
+              entretien={livret.entretien}
               editable={editable}
               peutSupprimer={peutSupprimer}
               enConfirmationSuppression={confirmationSuppression === evt.id}
@@ -202,9 +192,6 @@ export function OrganisationSuivi() {
               onChangeDate={(date) => modifierEvt(livret.id, utilisateurActif.id, evt.id, { date })}
               onChangeCommentaire={(commentaire) =>
                 modifierEvt(livret.id, utilisateurActif.id, evt.id, { commentaire })
-              }
-              onChangeModalite={(modalite) =>
-                modifierEvt(livret.id, utilisateurActif.id, evt.id, { modalite })
               }
               onToggleVerrouille={() =>
                 modifierEvt(livret.id, utilisateurActif.id, evt.id, {
@@ -238,8 +225,8 @@ export function OrganisationSuivi() {
 
 interface CarteEvenementProps {
   evenement: EvenementOrganisationSuivi;
-  /** Entretiens du livret — la règle « entretien signé = fiche insupprimable ». */
-  entretiens: Livret['entretiens'];
+  /** Entretien du livret — la règle « entretien signé = fiche insupprimable ». */
+  entretien: EntretienTripartite | null;
   editable: boolean;
   /** Droit de supprimer l'événement — coordo / admin uniquement (15 juin 2026). */
   peutSupprimer: boolean;
@@ -247,21 +234,19 @@ interface CarteEvenementProps {
   onChangeTitre: (titre: string) => void;
   onChangeDate: (date: string) => void;
   onChangeCommentaire: (commentaire: string) => void;
-  onChangeModalite: (modalite: ModaliteEntretien) => void;
   onToggleVerrouille: () => void;
   onSupprimer: () => void;
 }
 
 function CarteEvenement({
   evenement,
-  entretiens,
+  entretien,
   editable,
   peutSupprimer,
   enConfirmationSuppression,
   onChangeTitre,
   onChangeDate,
   onChangeCommentaire,
-  onChangeModalite,
   onToggleVerrouille,
   onSupprimer,
 }: CarteEvenementProps) {
@@ -269,19 +254,15 @@ function CarteEvenement({
   const idTitre = `org-titre-${evenement.id}`;
   const idDate = `org-date-${evenement.id}`;
   const idCommentaire = `org-com-${evenement.id}`;
-  // Verrou « dur » par signature : dès que l'entretien tripartite correspondant
+  // Verrou « dur » par signature : dès que l'entretien tripartite
   // est signé par les 3 parties, toute la carte est figée (R9), sans
   // déverrouillage possible. Le verrou manuel (bouton) reste un verrou local
   // optionnel tant que l'entretien n'est pas signé.
-  const figeParSignature = evenementFigeParSignature(evenement, entretiens);
+  const figeParSignature = evenementFigeParSignature(evenement, entretien);
   const verrouille = evenement.verrouille === true || figeParSignature;
   const peutEditerChamp = editable && !verrouille;
-  const verrouSuppression = peutSupprimerEvenement(evenement, entretiens);
+  const verrouSuppression = peutSupprimerEvenement(evenement, entretien);
   const supprimable = verrouSuppression.supprimable;
-  // Modalité (présentiel / distanciel) — uniquement pour les entretiens.
-  const avecModalite = motifAvecModalite(evenement.motif);
-  const modaliteFigee = modaliteImposee(evenement.motif); // 'presentiel' pour E1, sinon null
-  const modaliteCourante = modaliteEffective(evenement);
 
   return (
     <article
@@ -345,84 +326,17 @@ function CarteEvenement({
         </div>
       )}
 
-      {/* Lien direct vers l'entretien correspondant — si motif entretien-tripartite */}
-      {(() => {
-        const numero = numeroEntretienPourMotif(evenement.motif);
-        if (numero === null) return null;
-        return (
-          <Link
-            to={`/livret/entretien/${numero}`}
-            data-testid={`ouvrir-entretien-${numero}`}
-            className="bouton-leger-couleur-role inline-flex w-fit items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium"
-          >
-            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-            Ouvrir cet entretien
-          </Link>
-        );
-      })()}
-
-      {/* Modalité de l'entretien (présentiel / distanciel) — 15 juin 2026.
-          E1 est imposé en présentiel ; E2..E4 sont au choix (sélecteur). */}
-      {avecModalite && (
-        <div className="space-y-1">
-          <span className="text-xs font-medium text-muted-foreground">Modalité</span>
-          {modaliteFigee ? (
-            // E1 — présentiel obligatoire, non modifiable.
-            <p
-              data-testid={`org-modalite-${evenement.id}`}
-              className="inline-flex w-fit items-center gap-1.5 rounded-md border border-input bg-muted px-2.5 py-1 text-sm font-medium"
-            >
-              <MapPin className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-              Présentiel{' '}
-              <span className="text-xs font-normal text-muted-foreground">(obligatoire)</span>
-            </p>
-          ) : peutEditerChamp ? (
-            // E2..E4 — sélecteur présentiel / distanciel.
-            <div
-              role="group"
-              aria-label="Modalité de l'entretien"
-              data-testid={`org-modalite-${evenement.id}`}
-              className="inline-flex overflow-hidden rounded-md border border-input"
-            >
-              {(['presentiel', 'distanciel'] as const).map((m) => {
-                const actif = modaliteCourante === m;
-                const Icone = m === 'presentiel' ? MapPin : Video;
-                return (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => onChangeModalite(m)}
-                    aria-pressed={actif}
-                    data-testid={`org-modalite-${m}-${evenement.id}`}
-                    className={cn(
-                      'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
-                      actif
-                        ? 'bouton-plein-couleur-role font-medium'
-                        : 'bg-background text-muted-foreground hover:bg-secondary',
-                    )}
-                  >
-                    <Icone className="h-3.5 w-3.5" aria-hidden="true" />
-                    {libelleModalite(m)}
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            // Lecture seule (rôle non éditeur, carte verrouillée ou figée).
-            <p
-              data-testid={`org-modalite-${evenement.id}`}
-              className="inline-flex w-fit items-center gap-1.5 text-sm font-medium"
-            >
-              {modaliteCourante === 'distanciel' ? (
-                <Video className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-              ) : (
-                <MapPin className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-              )}
-              {modaliteCourante ? libelleModalite(modaliteCourante) : '—'}
-            </p>
-          )}
-        </div>
+      {/* Lien direct vers l'entretien — si motif entretien-tripartite.
+          L'entretien se tient en présentiel (règle inchangée depuis E1). */}
+      {estMotifEntretienTripartite(evenement.motif) && (
+        <Link
+          to="/livret/entretien"
+          data-testid="ouvrir-entretien"
+          className="bouton-leger-couleur-role inline-flex w-fit items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium"
+        >
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+          Ouvrir cet entretien
+        </Link>
       )}
 
       {/* Titre custom — affiché en lecture seule pour les autres rôles si renseigné */}

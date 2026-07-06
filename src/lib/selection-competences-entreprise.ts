@@ -48,7 +48,7 @@ export function creerSelectionVierge(
 /**
  * Sélection initiale d'un nouveau livret (13 juin 2026) : **toutes** les
  * compétences du référentiel sont activées par défaut. Le maître / tuteur
- * décochera ensuite celles non abordées en entreprise lors de l'E1.
+ * décochera ensuite celles non abordées en entreprise lors de l'entretien.
  */
 export function creerSelectionInitiale(
   competenceIds: ReadonlyArray<string>,

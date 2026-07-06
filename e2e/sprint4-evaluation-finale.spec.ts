@@ -35,7 +35,7 @@ test('la synthèse hérite des fiches de période (last-write-wins)', async ({ p
   await expect(page.getByText(/Vue en Période \d+/i).first()).toBeVisible();
 });
 
-test("l'onglet Attitudes affiche la synthèse lecture seule des entretiens (juin 2026)", async ({
+test("l'onglet Attitudes affiche la synthèse lecture seule de l'entretien (juin 2026)", async ({
   page,
 }) => {
   await page.goto('/livret/evaluation-finale');
@@ -43,9 +43,9 @@ test("l'onglet Attitudes affiche la synthèse lecture seule des entretiens (juin
   await expect(
     page.getByRole('heading', { name: 'Attitudes professionnelles' }).first(),
   ).toBeVisible();
-  // Synthèse par entretien : la colonne « Entretien 1 » porte les évaluations
-  // de la fixture de Léa (E1 signé) — au moins un badge « ++ » visible.
-  await expect(page.getByRole('columnheader', { name: /Entretien 1/i })).toBeVisible();
+  // La colonne « Entretien tripartite » porte les évaluations de la fixture
+  // de Léa (entretien signé) — au moins un badge « ++ » visible.
+  await expect(page.getByRole('columnheader', { name: /Entretien tripartite/i })).toBeVisible();
   await expect(page.getByText('++', { exact: true }).first()).toBeVisible();
 });
 
@@ -56,7 +56,7 @@ test('la synthèse récapitule les 4 attitudes obligatoires au-dessus des option
   await page.getByRole('tab', { name: /Attitudes professionnelles/i }).click();
 
   // Les 4 obligatoires (critères de l'appréciation générale du maître, trame
-  // officielle E1) ouvrent le tableau, avec leur badge.
+  // officielle) ouvrent le tableau, avec leur badge.
   const lignes = page.locator('tbody tr');
   await expect(lignes.nth(0)).toHaveAttribute(
     'data-testid',
@@ -73,8 +73,8 @@ test('la synthèse récapitule les 4 attitudes obligatoires au-dessus des option
   await expect(lignes.nth(3)).toHaveAttribute('data-testid', 'synthese-attitude-oblig-integration');
   await expect(lignes.nth(0).getByText('Obligatoire', { exact: true })).toBeVisible();
 
-  // La colonne E1 reprend l'appréciation portée par Karim sur Léa (fixture :
-  // ponctualité « ++ »).
+  // La colonne « Entretien tripartite » reprend l'appréciation portée par
+  // Karim sur Léa (fixture : ponctualité « ++ »).
   await expect(lignes.nth(0).getByText('++', { exact: true })).toBeVisible();
 
   // Les attitudes optionnelles retenues suivent, sans badge « Obligatoire ».

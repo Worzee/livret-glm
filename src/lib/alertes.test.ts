@@ -40,22 +40,9 @@ function fiche(sur: Partial<FicheSuiviPeriode>): FicheSuiviPeriode {
 
 function entretien(signatures: Partial<SignaturesTripartite> = {}): EntretienTripartite {
   return {
-    questionsApprentiSelectionnees: [],
-    questionsMaitreSelectionnees: [],
-    questionsImposees: [],
-    questionsObligatoires: [],
     evaluationsAttitudes: {},
-    reponsesApprenti: {},
-    reponsesMaitre: {},
+    reponsesTrame: {},
     appreciationMaitre: {},
-    demarchesAdministratives: {
-      contratSigne: null,
-      visiteMedicale: null,
-      permisConduire: null,
-      voiture: null,
-    },
-    conditionsPratiques: {},
-    aidesDemandees: { logement: null, premierEquipement: null, permis: null },
     commentaires: {},
     signatures: { ...AUCUNE, ...signatures },
   };
@@ -67,7 +54,7 @@ function livret(apprentiId: string, sur: Partial<Livret> = {}): Livret {
     apprentiId,
     formationId: 'f-test',
     organisationSuivi: { evenements: [], modifieLe: '', modifiePar: '' },
-    entretiens: { 1: null, 2: null, 3: null, 4: null },
+    entretien: null,
     fichesSuivi: [],
     fichesSuiviCentre: [],
     evaluationFinaleCompetences: { lignes: [], modifieLe: '' },
@@ -92,14 +79,12 @@ function apprenti(id: string, sur: Partial<Apprenti> = {}): Apprenti {
   };
 }
 
-const FORMATIONS = { 'f-test': { nombreEntretiens: 2 } } as never;
-
 function alertesPour(
   role: 'apprenti' | 'maitre' | 'formateur' | 'coordo' | 'admin',
   l: Livret,
   a = apprenti('a1'),
 ) {
-  return alertesTableauBord(role, [a], { [l.id]: l }, FORMATIONS, MAINTENANT);
+  return alertesTableauBord(role, [a], { [l.id]: l }, MAINTENANT);
 }
 
 describe('alertesTableauBord — signatures de fiches', () => {
@@ -137,10 +122,10 @@ describe('alertesTableauBord — signatures de fiches', () => {
   });
 });
 
-describe('alertesTableauBord — entretiens', () => {
+describe('alertesTableauBord — entretien', () => {
   it('signale à chaque partie manquante un entretien initialisé non signé', () => {
     const l = livret('a1', {
-      entretiens: { 1: entretien({ apprenti: { signe: true } }), 2: null, 3: null, 4: null },
+      entretien: entretien({ apprenti: { signe: true } }),
     });
     expect(alertesPour('apprenti', l)).toHaveLength(0);
     expect(alertesPour('maitre', l).map((a) => a.type)).toContain('signature-entretien');
@@ -150,24 +135,24 @@ describe('alertesTableauBord — entretiens', () => {
   it('signale au formateur un entretien planifié (événement) prêt à initialiser', () => {
     const l = livret('a1', {
       organisationSuivi: {
-        evenements: [{ id: 'evt-1', motif: 'entretien-tripartite-1' }],
+        evenements: [{ id: 'evt-1', motif: 'entretien-tripartite' }],
         modifieLe: '',
         modifiePar: '',
       },
     });
     const r = alertesPour('formateur', l);
     expect(r.map((x) => x.type)).toContain('entretien-a-initialiser');
-    expect(r.find((x) => x.type === 'entretien-a-initialiser')?.lien).toBe('/livret/entretien/1');
+    expect(r.find((x) => x.type === 'entretien-a-initialiser')?.lien).toBe('/livret/entretien');
   });
 
-  it("ne propose pas d'initialiser E2 tant que E1 n'est pas signé des 3 parties (séquencement)", () => {
+  it("ne propose pas d'initialiser un entretien déjà initialisé", () => {
     const l = livret('a1', {
       organisationSuivi: {
-        evenements: [{ id: 'evt-2', motif: 'entretien-tripartite-2' }],
+        evenements: [{ id: 'evt-1', motif: 'entretien-tripartite' }],
         modifieLe: '',
         modifiePar: '',
       },
-      entretiens: { 1: entretien({ apprenti: { signe: true } }), 2: null, 3: null, 4: null },
+      entretien: entretien({ apprenti: { signe: true } }),
     });
     const types = alertesPour('formateur', l).map((x) => x.type);
     expect(types).not.toContain('entretien-a-initialiser');
@@ -196,7 +181,7 @@ describe('alertesTableauBord — verrouillage et R7', () => {
       l1: livret('a1', { fichesSuiviCentre: [fiche({ id: 'fc-a1' })] }),
       l2: livret('a2'),
     };
-    const r = alertesTableauBord('formateur', [a1, a2], livrets, FORMATIONS, MAINTENANT);
+    const r = alertesTableauBord('formateur', [a1, a2], livrets, MAINTENANT);
     expect(r.map((x) => x.type)).toEqual(['alerte-r7', 'alerte-r7', 'signature-fiche']);
     expect(r[0].apprentiNom).toContain('AUBRY');
   });
@@ -206,7 +191,7 @@ describe('alertesTableauBord — coordo / admin (sans droit pédagogique)', () =
   it("ne remonte jamais de signature ou d'initialisation au coordo", () => {
     const l = livret('a1', {
       fichesSuivi: [fiche({ etat: 'en-cours' }), fiche({ id: 'f-2', etat: 'signee' })],
-      entretiens: { 1: entretien(), 2: null, 3: null, 4: null },
+      entretien: entretien(),
     });
     const types = alertesPour('coordo', l).map((x) => x.type);
     expect(types).not.toContain('signature-fiche');
@@ -219,16 +204,11 @@ describe('alertesTableauBord — coordo / admin (sans droit pédagogique)', () =
     const r = alertesPour(
       'admin',
       livret('a1', {
-        entretiens: {
-          1: entretien({
-            apprenti: { signe: true },
-            maitre: { signe: true },
-            formateur: { signe: true },
-          }),
-          2: null,
-          3: null,
-          4: null,
-        },
+        entretien: entretien({
+          apprenti: { signe: true },
+          maitre: { signe: true },
+          formateur: { signe: true },
+        }),
       }),
       orphelin,
     );

@@ -14,14 +14,14 @@ test.beforeEach(async ({ page }) => {
   await resetState(page);
 });
 
-test('le formateur voit les événements scénarisés de Léa MARTIN (10 événements dont 3 visites)', async ({
+test('le formateur voit les événements scénarisés de Léa MARTIN (9 événements dont 3 visites)', async ({
   page,
 }) => {
   // Reset → rôle = formateur, apprenti·e actif·ve = Léa MARTIN.
   await page.goto('/livret/organisation-suivi');
-  // Léa a 10 événements dans la fixture (5 standards + 3 visites en entreprise
-  // + 2 entretiens tripartites — chantier #2).
-  await expect(page.locator('article[data-testid^="org-evt-"]')).toHaveCount(10);
+  // Léa a 9 événements dans la fixture (5 standards + 3 visites en entreprise
+  // + l'entretien tripartite — unique depuis juillet 2026).
+  await expect(page.locator('article[data-testid^="org-evt-"]')).toHaveCount(9);
   // Les 3 visites doivent porter chacune un titre custom (« Visite n°1/2/3 »).
   // Côté formateur, le titre est dans un <input> éditable → on lit `value`.
   const titres = await page
@@ -40,15 +40,14 @@ test("le sélecteur d'ajout est masqué pour l'apprenti·e (lecture seule)", asy
   await expect(page.getByText(/modification réservée au formateur référent/i)).toBeVisible();
 });
 
-test('le formateur ne peut créer QUE les motifs entretien tripartite (juin 2026)', async ({
+test('le formateur ne peut créer QUE le motif entretien tripartite (juin 2026)', async ({
   page,
 }) => {
-  // Rôle formateur par défaut : le sélecteur ne propose que les entretiens
-  // (1..N de la formation), les autres motifs relèvent du coordo.
+  // Rôle formateur par défaut : le sélecteur ne propose que l'entretien
+  // tripartite, les autres motifs relèvent du coordo.
   await page.goto('/livret/organisation-suivi');
   const select = page.getByTestId('org-motif-ajout');
-  await expect(select.locator('option[value="entretien-tripartite-1"]')).toHaveCount(1);
-  await expect(select.locator('option[value="entretien-tripartite-2"]')).toHaveCount(1);
+  await expect(select.locator('option[value="entretien-tripartite"]')).toHaveCount(1);
   await expect(select.locator('option[value="reunion-rentree"]')).toHaveCount(0);
   await expect(select.locator('option[value="visite-entreprise"]')).toHaveCount(0);
   await expect(select.locator('option[value="autre"]')).toHaveCount(0);
@@ -183,23 +182,22 @@ test("l'événement d'un entretien signé par au moins une partie est insupprima
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/livret/organisation-suivi');
 
-  // E1 de Léa est signé 3/3 dans les fixtures → la fiche de suivi
+  // L'entretien de Léa est signé 3/3 dans les fixtures → la fiche de suivi
   // correspondante est protégée (bouton désactivé + raison en infobulle).
-  const carteE1 = page
-    .locator('article[data-testid^="org-evt-"]', { hasText: 'Entretien Tripartite 1' })
+  const carteEntretien = page
+    .locator('article[data-testid^="org-evt-"]', { hasText: 'Entretien Tripartite' })
     .first();
-  const idE1 = (await carteE1.getAttribute('data-testid'))!.replace('org-evt-', '');
-  const boutonE1 = page.getByTestId(`org-supprimer-${idE1}`);
-  await expect(boutonE1).toBeDisabled();
-  await expect(boutonE1).toHaveAttribute('title', /signé par 3 parties/i);
+  const idEntretien = (await carteEntretien.getAttribute('data-testid'))!.replace('org-evt-', '');
+  const boutonEntretien = page.getByTestId(`org-supprimer-${idEntretien}`);
+  await expect(boutonEntretien).toBeDisabled();
+  await expect(boutonEntretien).toHaveAttribute('title', /signé par 3 parties/i);
 
-  // L'événement « Entretien Tripartite 2 » (entretien non initialisé, donc
-  // sans signature) reste supprimable.
-  const carteE2 = page
-    .locator('article[data-testid^="org-evt-"]', { hasText: 'Entretien Tripartite 2' })
+  // Un événement d'un autre motif (sans signature) reste supprimable.
+  const carteVisite = page
+    .locator('article[data-testid^="org-evt-"]', { hasText: 'Visites en entreprise' })
     .first();
-  const idE2 = (await carteE2.getAttribute('data-testid'))!.replace('org-evt-', '');
-  await expect(page.getByTestId(`org-supprimer-${idE2}`)).toBeEnabled();
+  const idVisite = (await carteVisite.getAttribute('data-testid'))!.replace('org-evt-', '');
+  await expect(page.getByTestId(`org-supprimer-${idVisite}`)).toBeEnabled();
 });
 
 test('le coordo peut gérer les événements de suivi (juin 2026)', async ({ page }) => {
@@ -237,11 +235,11 @@ test('le coordo peut initialiser un entretien (18 juin 2026 — amorçage par la
   await selectRole(page, 'Coordinateur·rice');
   // Sofia n'a pas d'entretien 1 initialisé — URL directe.
   await page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }).click();
-  await page.goto('/livret/entretien/1');
+  await page.goto('/livret/entretien');
   await expect(page.getByText(/n'a pas encore été initialisé/i)).toBeVisible();
   // Le bouton d'initialisation est désormais visible ET actif pour le coordo
-  // (E1 toujours initialisable — pas de séquencement à respecter).
-  const boutonInit = page.getByTestId('init-entretien-1');
+  // (l'entretien est toujours initialisable tant qu'il n'existe pas).
+  const boutonInit = page.getByTestId('init-entretien');
   await expect(boutonInit).toBeVisible();
   await expect(boutonInit).toBeEnabled();
   await boutonInit.click();
@@ -271,46 +269,20 @@ test('persistance après reload : un nouvel événement survit', async ({ page }
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Modalité présentiel / distanciel + verrou par signature (15 juin 2026)
+// Verrou par signature de l'entretien (15 juin 2026)
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("entretien tripartite 1 : présentiel imposé et fiche figée quand l'entretien est signé (Minh)", async ({
+test("entretien tripartite : fiche figée quand l'entretien est signé (Minh)", async ({
   page,
 }) => {
-  // Minh : E1 signé par les 3 parties → sa fiche de suivi E1 est figée (R9).
+  // Minh : entretien signé par les 3 parties → sa fiche de suivi est figée (R9).
   await page.getByRole('button', { name: /Ouvrir le livret de Minh NGUYEN/i }).click();
   await page.goto('/livret/organisation-suivi');
 
   const carte = page.getByTestId('org-evt-evt-minh-6');
-  // Modalité E1 : présentiel obligatoire, affiché sans sélecteur (non modifiable).
-  await expect(carte.getByTestId('org-modalite-evt-minh-6')).toContainText(/Présentiel/i);
-  await expect(carte.getByTestId('org-modalite-presentiel-evt-minh-6')).toHaveCount(0);
   // Verrou par signature : bandeau visible + champs en lecture seule.
   await expect(carte.getByTestId('org-evt-fige-evt-minh-6')).toBeVisible();
   await expect(carte.locator('input[type="date"]')).toBeDisabled();
   // Le bouton « Verrouiller » manuel est masqué (verrou imposé, non basculable).
   await expect(carte.getByRole('button', { name: /Verrouiller le champ/i })).toHaveCount(0);
-});
-
-test('entretien tripartite 2 : la modalité présentiel / distanciel est sélectionnable (Léa)', async ({
-  page,
-}) => {
-  // Léa, E2 non initialisé → carte éditable. Fixture : modalité « distanciel ».
-  await page.goto('/livret/organisation-suivi');
-
-  const presentiel = page.getByTestId('org-modalite-presentiel-evt-lea-10');
-  const distanciel = page.getByTestId('org-modalite-distanciel-evt-lea-10');
-  await expect(distanciel).toHaveAttribute('aria-pressed', 'true');
-  await expect(presentiel).toHaveAttribute('aria-pressed', 'false');
-
-  // Bascule vers présentiel → l'état suit et persiste au rechargement.
-  await presentiel.click();
-  await expect(presentiel).toHaveAttribute('aria-pressed', 'true');
-  await expect(distanciel).toHaveAttribute('aria-pressed', 'false');
-
-  await page.reload();
-  await expect(page.getByTestId('org-modalite-presentiel-evt-lea-10')).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
 });

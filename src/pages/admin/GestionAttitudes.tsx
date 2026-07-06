@@ -42,9 +42,9 @@ export function GestionAttitudes() {
   }
 
   const attitudes = Object.values(attitudesMap);
-  const entretiens = Object.values(livrets).flatMap((l) => Object.values(l.entretiens));
-  // 13 juin 2026 : une attitude RETENUE dans un livret (choix fait à l'E1)
-  // est également protégée, même si elle n'est pas encore évaluée.
+  const entretiens = Object.values(livrets).map((l) => l.entretien);
+  // 13 juin 2026 : une attitude RETENUE dans un livret (choix fait à
+  // l'entretien) est également protégée, même si elle n'est pas encore évaluée.
   const selections = Object.values(livrets).map((l) => l.attitudesSelectionnees ?? []);
 
   function declencherSuppression(a: AttitudeProfessionnelle) {
@@ -65,7 +65,7 @@ export function GestionAttitudes() {
             <h1 className="text-2xl font-semibold">Attitudes professionnelles</h1>
           </div>
           <p className="text-muted-foreground">
-            Catalogue des attitudes évaluées par le maître / tuteur à chaque entretien tripartite.
+            Catalogue des attitudes évaluées par le maître / tuteur lors de l'entretien tripartite.
             L'évaluation finale en présente la synthèse (lecture seule).
           </p>
           <p className="text-xs text-muted-foreground">

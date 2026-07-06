@@ -9,9 +9,8 @@ import { resetState, selectRole } from './helpers';
  * reste désactivé tant que le tracé n'est pas significatif (≥ 60 px). Le PNG
  * est stocké avec la signature et affiché dans la carte (R19/R21 inchangées).
  *
- * Terrain de jeu : l'entretien 2 de Léa, initialisable (E1 signé 3/3).
- * Depuis le 13 juin 2026, TOUTES les questions de la cible sont obligatoires
- * pour signer — le helper y répond toutes.
+ * Terrain de jeu : l'entretien de Sofia, non initialisé dans les fixtures
+ * (celui de Léa est déjà signé 3/3).
  */
 
 test.beforeEach(async ({ page }) => {
@@ -32,33 +31,33 @@ async function tracerSignature(page: Page) {
   await page.mouse.up();
 }
 
-async function initialiserE2CommeFormateur(page: Page) {
-  await page.goto('/livret/entretien/2');
-  await page.getByTestId('init-entretien-2').click();
+/**
+ * Initialise l'entretien de Sofia (non initialisé dans les fixtures) en
+ * formateur — l'entretien de Léa est déjà signé 3/3, donc inutilisable pour
+ * tester une signature fraîche.
+ */
+async function initialiserEntretienSofia(page: Page) {
+  await page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }).click();
+  await page.goto('/livret/entretien');
+  await page.getByTestId('init-entretien').click();
   await expect(page.getByTestId('attitudes-entretien')).toBeVisible();
 }
 
 /**
- * Bascule côté apprenti·e et débloque R20 : depuis le 13 juin 2026 toutes les
- * questions de l'apprenti·e sont obligatoires → on répond à tous les champs
- * (questions + commentaire) de la section apprenti·e.
+ * Bascule côté apprenti·e (incarne l'apprentie active — Sofia). Depuis
+ * juillet 2026, l'apprenti·e signe sans exigence de saisie (la trame est
+ * co-saisie par le formateur et le maître).
  */
 async function preparerSignatureApprenti(page: Page) {
   await selectRole(page, 'Apprenti·e');
-  const section = page.locator('section', {
-    has: page.getByRole('heading', { name: "Questions à l'apprenti·e" }),
-  });
-  const champs = section.locator('textarea, input[type="text"]');
-  const n = await champs.count();
-  for (let i = 0; i < n; i++) await champs.nth(i).fill('Réponse de test.');
 }
 
 test('le tracé manuscrit est exigé pour confirmer une signature', async ({ page }) => {
-  await initialiserE2CommeFormateur(page);
+  await initialiserEntretienSofia(page);
 
   // Côté apprenti·e : le 1er clic ouvre la zone de signature.
   await preparerSignatureApprenti(page);
-  await page.getByRole('button', { name: /Signer en tant que Léa/i }).click();
+  await page.getByRole('button', { name: /Signer en tant que Sofia/i }).click();
   await expect(page.getByTestId('zone-signature')).toBeVisible();
 
   // Sans tracé, « Confirmer » est désactivé.
@@ -82,9 +81,9 @@ test('le tracé manuscrit est exigé pour confirmer une signature', async ({ pag
 });
 
 test('la signature manuscrite persiste au rechargement (localStorage)', async ({ page }) => {
-  await initialiserE2CommeFormateur(page);
+  await initialiserEntretienSofia(page);
   await preparerSignatureApprenti(page);
-  await page.getByRole('button', { name: /Signer en tant que Léa/i }).click();
+  await page.getByRole('button', { name: /Signer en tant que Sofia/i }).click();
   await tracerSignature(page);
   await page.getByRole('button', { name: /^Confirmer$/ }).click();
   await expect(page.getByAltText(/Signature manuscrite — Apprenti·e/i)).toBeVisible();
@@ -92,29 +91,29 @@ test('la signature manuscrite persiste au rechargement (localStorage)', async ({
   await page.reload();
   await expect(page.getByAltText(/Signature manuscrite — Apprenti·e/i)).toBeVisible();
   // R21 : aucune action de retrait — le bouton « Signer » a disparu pour ce rôle.
-  await expect(page.getByRole('button', { name: /Signer en tant que Léa/i })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Signer en tant que Sofia/i })).toHaveCount(0);
 });
 
 test("« Annuler » abandonne le tracé sans signer (l'encart se referme)", async ({ page }) => {
-  await initialiserE2CommeFormateur(page);
+  await initialiserEntretienSofia(page);
   await preparerSignatureApprenti(page);
-  await page.getByRole('button', { name: /Signer en tant que Léa/i }).click();
+  await page.getByRole('button', { name: /Signer en tant que Sofia/i }).click();
   await tracerSignature(page);
   await page.getByRole('button', { name: /^Annuler$/ }).click();
 
   // Retour au bouton initial, rien n'est signé.
-  await expect(page.getByRole('button', { name: /Signer en tant que Léa/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Signer en tant que Sofia/i })).toBeVisible();
   await expect(page.getByAltText(/Signature manuscrite/i)).toHaveCount(0);
 
   // Et en rouvrant, le tracé précédent n'a pas survécu (Confirmer désactivé).
-  await page.getByRole('button', { name: /Signer en tant que Léa/i }).click();
+  await page.getByRole('button', { name: /Signer en tant que Sofia/i }).click();
   await expect(page.getByRole('button', { name: /^Confirmer$/ })).toBeDisabled();
 });
 
 test('les signatures historiques (fixtures) restent valides sans tracé', async ({ page }) => {
-  // E1 de Léa est signé 3/3 dans les fixtures, sans signature manuscrite :
-  // les cartes affichent « Signé » sans image — pas de régression.
-  await page.goto('/livret/entretien/1');
+  // L'entretien de Léa est signé 3/3 dans les fixtures, sans signature
+  // manuscrite : les cartes affichent « Signé » sans image — pas de régression.
+  await page.goto('/livret/entretien');
   await expect(page.getByText(/^Signé$/)).toHaveCount(3);
   await expect(page.getByAltText(/Signature manuscrite/i)).toHaveCount(0);
 });

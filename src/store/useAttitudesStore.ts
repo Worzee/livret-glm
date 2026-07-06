@@ -80,10 +80,10 @@ export const useAttitudesStore = create<AttitudesStore>()(
         const a = get().attitudes[id];
         if (!a) return false;
         const livrets = Object.values(useLivretStore.getState().livrets);
-        const entretiens = livrets.flatMap((l) => Object.values(l.entretiens));
+        const entretiens = livrets.map((l) => l.entretien);
         if (attitudeEstUtilisee(id, entretiens)) return false;
-        // 13 juin 2026 : une attitude retenue dans un livret (choix E1) est
-        // également protégée, même non encore évaluée.
+        // 13 juin 2026 : une attitude retenue dans un livret (choix fait à
+        // l'entretien) est également protégée, même non encore évaluée.
         if (
           attitudeEstSelectionnee(
             id,

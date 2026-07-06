@@ -12,7 +12,6 @@ import { ImportUtilisateurs } from '@/pages/admin/ImportUtilisateurs';
 import { GestionFormations } from '@/pages/admin/GestionFormations';
 import { GestionAffectations } from '@/pages/admin/GestionAffectations';
 import { GestionReferentiels } from '@/pages/admin/GestionReferentiels';
-import { GestionBanqueQuestions } from '@/pages/admin/GestionBanqueQuestions';
 import { GestionEtablissements } from '@/pages/admin/GestionEtablissements';
 import { GestionEntreprises } from '@/pages/admin/GestionEntreprises';
 import { GestionAttitudes } from '@/pages/admin/GestionAttitudes';
@@ -36,7 +35,7 @@ export function App() {
         />
 
         <Route path="livret/organisation-suivi" element={<OrganisationSuivi />} />
-        <Route path="livret/entretien/:numero" element={<EntretienTripartite />} />
+        <Route path="livret/entretien" element={<EntretienTripartite />} />
         <Route path="livret/fiches-suivi" element={<FicheSuiviPeriodes />} />
         <Route path="livret/fiches-suivi/:ficheId" element={<FicheSuiviPeriodeDetail />} />
         <Route path="livret/fiches-suivi-centre" element={<FicheSuiviPeriodes lieu="centre" />} />
@@ -55,7 +54,6 @@ export function App() {
         <Route path="admin/affectations" element={<GestionAffectations />} />
         <Route path="admin/entreprises" element={<GestionEntreprises />} />
         <Route path="admin/referentiels" element={<GestionReferentiels />} />
-        <Route path="admin/banque-questions" element={<GestionBanqueQuestions />} />
         <Route path="admin/etablissements" element={<GestionEtablissements />} />
         <Route path="admin/attitudes" element={<GestionAttitudes />} />
 

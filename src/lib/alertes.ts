@@ -1,27 +1,14 @@
-import type {
-  Apprenti,
-  FicheSuiviPeriode,
-  Formation,
-  LieuFiche,
-  Livret,
-  NumeroEntretien,
-  Role,
-} from '@/types';
-import { NUMEROS_ENTRETIEN } from '@/types';
-import {
-  calculerAlerteR7,
-  entretienSigneParTous,
-  peutInitialiserEntretien,
-} from './regles-entretien';
-import { numerosEntretiensDisponibles } from './nombre-entretiens';
+import type { Apprenti, FicheSuiviPeriode, LieuFiche, Livret, Role } from '@/types';
+import { calculerAlerteR7, entretienSigneParTous } from './regles-entretien';
+import { estMotifEntretienTripartite } from './organisation-suivi';
 
 /**
  * Centre d'alertes du tableau de bord (3 juillet 2026 — préparation démo
  * direction) : « qu'est-ce qui attend MON action ? », par rôle.
  *
  *   - apprenti / maître / formateur : signatures attendues (fiches dont la
- *     période est terminée, entretiens initialisés), et pour le formateur :
- *     fiches signées à verrouiller, entretiens à initialiser, alertes R7.
+ *     période est terminée, entretien initialisé), et pour le formateur :
+ *     fiches signées à verrouiller, entretien à initialiser, alertes R7.
  *   - coordo / admin : alertes R7 du périmètre + affectations incomplètes
  *     (aucun droit pédagogique — doctrine inchangée).
  *
@@ -76,7 +63,6 @@ export function alertesTableauBord(
   role: Role,
   apprentis: ReadonlyArray<Apprenti>,
   livrets: Readonly<Record<string, Livret>>,
-  formations: Readonly<Record<string, Formation>>,
   maintenant: Date = new Date(),
 ): AlerteTableauBord[] {
   const alertes: AlerteTableauBord[] = [];
@@ -87,16 +73,16 @@ export function alertesTableauBord(
     if (!livret) continue;
     const nom = `${apprenti.prenom} ${apprenti.nom}`;
 
-    // ── R7 : entretien 1 en retard (formateur / coordo / admin) ────────────
+    // ── R7 : entretien tripartite en retard (formateur / coordo / admin) ───
     if (role === 'formateur' || role === 'coordo' || role === 'admin') {
-      const r7 = calculerAlerteR7(apprenti, livret.entretiens[1], maintenant);
+      const r7 = calculerAlerteR7(apprenti, livret.entretien, maintenant);
       if (r7.declenchee) {
         alertes.push({
           id: `r7-${apprenti.id}`,
           type: 'alerte-r7',
           apprentiId: apprenti.id,
           apprentiNom: nom,
-          message: `Entretien tripartite 1 en retard de ${r7.joursDepasses} j (R7)`,
+          message: `Entretien tripartite en retard de ${r7.joursDepasses} j (R7)`,
           lien: '/livret/organisation-suivi',
         });
       }
@@ -122,18 +108,17 @@ export function alertesTableauBord(
       continue;
     }
 
-    // ── Signatures d'entretien attendues (apprenti / maître / formateur) ───
-    for (const numero of NUMEROS_ENTRETIEN) {
-      const entretien = livret.entretiens[numero];
-      if (!entretien || entretienSigneParTous(entretien)) continue;
+    // ── Signature d'entretien attendue (apprenti / maître / formateur) ─────
+    const entretien = livret.entretien;
+    if (entretien && !entretienSigneParTous(entretien)) {
       if (!entretien.signatures[role as 'apprenti' | 'maitre' | 'formateur'].signe) {
         alertes.push({
-          id: `sig-entretien-${numero}-${apprenti.id}`,
+          id: `sig-entretien-${apprenti.id}`,
           type: 'signature-entretien',
           apprentiId: apprenti.id,
           apprentiNom: nom,
-          message: `Entretien tripartite ${numero} : votre signature est attendue`,
-          lien: `/livret/entretien/${numero}`,
+          message: 'Entretien tripartite : votre signature est attendue',
+          lien: '/livret/entretien',
         });
       }
     }
@@ -176,24 +161,20 @@ export function alertesTableauBord(
       }
     }
 
-    // ── Entretiens à initialiser (formateur — `entretien.gestion`) ─────────
-    if (role === 'formateur') {
-      const nombreEntretiens = formations[apprenti.formationId]?.nombreEntretiens ?? 2;
-      for (const numero of numerosEntretiensDisponibles(nombreEntretiens as NumeroEntretien)) {
-        const evenementExiste = livret.organisationSuivi.evenements.some(
-          (evt) => evt.motif === `entretien-tripartite-${numero}`,
-        );
-        if (!evenementExiste || livret.entretiens[numero] !== null) continue;
-        if (peutInitialiserEntretien(numero, livret.entretiens).ok) {
-          alertes.push({
-            id: `init-entretien-${numero}-${apprenti.id}`,
-            type: 'entretien-a-initialiser',
-            apprentiId: apprenti.id,
-            apprentiNom: nom,
-            message: `Entretien tripartite ${numero} planifié : à initialiser`,
-            lien: `/livret/entretien/${numero}`,
-          });
-        }
+    // ── Entretien à initialiser (formateur — `entretien.gestion`) ──────────
+    if (role === 'formateur' && livret.entretien === null) {
+      const evenementExiste = livret.organisationSuivi.evenements.some((evt) =>
+        estMotifEntretienTripartite(evt.motif),
+      );
+      if (evenementExiste) {
+        alertes.push({
+          id: `init-entretien-${apprenti.id}`,
+          type: 'entretien-a-initialiser',
+          apprentiId: apprenti.id,
+          apprentiNom: nom,
+          message: 'Entretien tripartite planifié : à initialiser',
+          lien: '/livret/entretien',
+        });
       }
     }
   }

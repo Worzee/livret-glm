@@ -1,4 +1,4 @@
-import type { Apprenti, EntretienTripartite, Formation, NumeroEntretien } from '@/types';
+import type { Apprenti, EntretienTripartite, Formation } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { peutEditer } from '@/lib/droits';
@@ -12,7 +12,6 @@ import { formatriceSophieDubois, maitreKarimBenali } from '@/fixtures/utilisateu
 
 interface EntretienHeaderProps {
   livretId: string;
-  numero: NumeroEntretien;
   apprenti: Apprenti;
   formation: Formation;
   entretien: EntretienTripartite;
@@ -22,7 +21,6 @@ interface EntretienHeaderProps {
 
 export function EntretienHeader({
   livretId,
-  numero,
   apprenti,
   formation,
   entretien,
@@ -68,7 +66,7 @@ export function EntretienHeader({
               <input
                 type="date"
                 value={entretien.dateEntretien ?? ''}
-                onChange={(e) => setEntretienDate(livretId, numero, e.target.value)}
+                onChange={(e) => setEntretienDate(livretId, e.target.value)}
                 className="rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             ) : (

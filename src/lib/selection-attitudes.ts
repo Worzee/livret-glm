@@ -3,24 +3,24 @@ import type { AttitudeProfessionnelle, Livret } from '@/types';
 /**
  * Sélection des attitudes professionnelles d'un livret (13 juin 2026).
  *
- * Le choix se fait **lors de l'entretien tripartite 1** — par le maître /
+ * Le choix se fait **lors de l'entretien tripartite** — par le maître /
  * tuteur et le formateur référent (ressource `entretien.attitudes-selection`)
- * — puis se fige à la 3ᵉ signature de l'E1, comme la sélection des
- * compétences abordées en entreprise. Les attitudes retenues sont ensuite
- * évaluées par le maître **à chaque entretien** (E1 compris).
+ * — puis se fige à sa 3ᵉ signature, comme la sélection des compétences
+ * abordées en entreprise. Les attitudes retenues y sont ensuite évaluées
+ * par le maître.
  *
  * Pures fonctions — pas d'effet de bord.
  */
 
 /**
- * La sélection est figée dès que l'entretien 1 est signé par les 3 parties
- * (R9). Tant que l'E1 n'est pas initialisé ou pas complètement signé, le
- * choix reste modifiable.
+ * La sélection est figée dès que l'entretien est signé par les 3 parties
+ * (R9). Tant que l'entretien n'est pas initialisé ou pas complètement signé,
+ * le choix reste modifiable.
  */
 export function selectionAttitudesFigee(livret: Livret): boolean {
-  const e1 = livret.entretiens[1];
-  if (!e1) return false;
-  const s = e1.signatures;
+  const e = livret.entretien;
+  if (!e) return false;
+  const s = e.signatures;
   return s.apprenti.signe && s.maitre.signe && s.formateur.signe;
 }
 

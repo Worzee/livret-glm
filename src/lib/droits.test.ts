@@ -48,13 +48,12 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
   });
 
   describe('Entretien tripartite (CDC §5.2)', () => {
-    it('apprenti·e édite ses propres questions et zones', () => {
-      expect(peutEditer('apprenti', 'entretien.questions-apprenti')).toBe(true);
+    it('apprenti·e édite ses propres zones', () => {
       expect(peutEditer('apprenti', 'entretien.commentaires-apprenti')).toBe(true);
       expect(peutEditer('apprenti', 'entretien.signature-apprenti')).toBe(true);
     });
 
-    it('trame E1 : co-saisie formateur + maître ; signature représentant légal au formateur (juin 2026)', () => {
+    it('trame : co-saisie formateur + maître ; signature représentant légal au formateur (juin 2026)', () => {
       expect(peutEditer('formateur', 'entretien.trame')).toBe(true);
       expect(peutEditer('maitre', 'entretien.trame')).toBe(true);
       expect(peutEditer('apprenti', 'entretien.trame')).toBe(false);
@@ -66,27 +65,23 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('coordo', 'entretien.signature-representant-legal')).toBe(false);
     });
 
-    it('maître édite ses questions, son appréciation, son commentaire et sa signature', () => {
-      expect(peutEditer('maitre', 'entretien.questions-maitre')).toBe(true);
+    it('maître édite son appréciation, son commentaire et sa signature', () => {
       expect(peutEditer('maitre', 'entretien.appreciation-maitre')).toBe(true);
       expect(peutEditer('maitre', 'entretien.commentaires-maitre')).toBe(true);
       expect(peutEditer('maitre', 'entretien.signature-maitre')).toBe(true);
     });
 
-    it('formateur édite démarches, conditions, aides, son commentaire et sa signature', () => {
-      expect(peutEditer('formateur', 'entretien.demarches-administratives')).toBe(true);
-      expect(peutEditer('formateur', 'entretien.conditions-pratiques')).toBe(true);
-      expect(peutEditer('formateur', 'entretien.aides-demandees')).toBe(true);
+    it('formateur édite son commentaire et sa signature', () => {
       expect(peutEditer('formateur', 'entretien.commentaires-formateur')).toBe(true);
       expect(peutEditer('formateur', 'entretien.signature-formateur')).toBe(true);
     });
 
     it("aucun rôle ne peut éditer la zone d'un autre rôle", () => {
-      expect(peutEditer('maitre', 'entretien.questions-apprenti')).toBe(false);
-      expect(peutEditer('formateur', 'entretien.questions-apprenti')).toBe(false);
+      expect(peutEditer('maitre', 'entretien.commentaires-apprenti')).toBe(false);
+      expect(peutEditer('formateur', 'entretien.commentaires-apprenti')).toBe(false);
       expect(peutEditer('apprenti', 'entretien.appreciation-maitre')).toBe(false);
-      expect(peutEditer('apprenti', 'entretien.demarches-administratives')).toBe(false);
-      expect(peutEditer('maitre', 'entretien.demarches-administratives')).toBe(false);
+      expect(peutEditer('apprenti', 'entretien.commentaires-formateur')).toBe(false);
+      expect(peutEditer('maitre', 'entretien.commentaires-formateur')).toBe(false);
     });
 
     it('seul l’apprenti peut signer pour l’apprenti (R18)', () => {
@@ -104,7 +99,6 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
     });
 
     it('le formateur référent co-saisit les champs du maître — hors signature (1ᵉʳ juillet 2026)', () => {
-      expect(peutEditer('formateur', 'entretien.questions-maitre')).toBe(true);
       expect(peutEditer('formateur', 'entretien.appreciation-maitre')).toBe(true);
       expect(peutEditer('formateur', 'entretien.commentaires-maitre')).toBe(true);
       expect(peutEditer('formateur', 'entretien.attitudes')).toBe(true);
@@ -249,10 +243,10 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       // partagée formateur + coordo). `export-pdf` sortie le 16 juin 2026 et
       // `entretien.gestion` le 18 juin 2026 : devenues multi-rôle (formateur +
       // coordo + admin), elles ne sont plus « éditables par un seul rôle ».
-      // `entretien.questions-maitre` sortie le 1ᵉʳ juillet 2026 : co-saisie
-      // maître + formateur (le formateur tient le clavier en séance).
+      // Les ressources « questions » ont disparu avec la banque (juillet
+      // 2026 — entretien tripartite unique sur trame officielle).
       const RESSOURCES_LIVRET: Ressource[] = [
-        'entretien.questions-apprenti',
+        'entretien.commentaires-apprenti',
         'fiche.evaluation-entreprise',
         'fiche.evaluation-greta',
         'fiche.retour-apprenti',
@@ -271,10 +265,9 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       // dans la liste « réservée aux rôles métier ». La conduite de l'entretien
       // (questions, signatures) reste pédagogique et y figure.
       const RESSOURCES_PEDAGOGIQUES: Ressource[] = [
-        'entretien.questions-apprenti',
-        'entretien.questions-maitre',
+        'entretien.trame',
         'entretien.appreciation-maitre',
-        'entretien.demarches-administratives',
+        'entretien.commentaires-apprenti',
         'entretien.selection-competences-entreprise',
         'fiche.suivi-greta-cfa-apprenti',
         'fiche.suivi-greta-cfa-formateur',
@@ -387,14 +380,6 @@ describe('Administration — droits du rôle coordo', () => {
     expect(peutEditer('maitre', 'admin.affectations.gerer')).toBe(false);
     expect(peutEditer('formateur', 'admin.affectations.gerer')).toBe(false);
   });
-
-  it('la banque de questions est réservée à l’admin (le coordo en est exclu, 18 juin 2026)', () => {
-    expect(peutEditer('admin', 'admin.banque-questions.gerer')).toBe(true);
-    expect(peutEditer('coordo', 'admin.banque-questions.gerer')).toBe(false);
-    expect(peutEditer('formateur', 'admin.banque-questions.gerer')).toBe(false);
-    expect(peutEditer('maitre', 'admin.banque-questions.gerer')).toBe(false);
-    expect(peutEditer('apprenti', 'admin.banque-questions.gerer')).toBe(false);
-  });
 });
 
 describe('rolesAutorises', () => {
@@ -466,7 +451,7 @@ describe('Admin — droits administratifs uniquement (pas de pédagogie)', () =>
     expect(peutEditer('admin', 'fiche.observation-apprenti')).toBe(false);
     expect(peutEditer('admin', 'fiche.observation-maitre')).toBe(false);
     expect(peutEditer('admin', 'fiche.observation-formateur')).toBe(false);
-    expect(peutEditer('admin', 'entretien.questions-apprenti')).toBe(false);
+    expect(peutEditer('admin', 'entretien.trame')).toBe(false);
     expect(peutEditer('admin', 'entretien.appreciation-maitre')).toBe(false);
     expect(peutEditer('admin', 'grille-competences.entreprise')).toBe(false);
     expect(peutEditer('admin', 'entretien.attitudes')).toBe(false);

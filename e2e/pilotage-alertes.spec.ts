@@ -8,7 +8,7 @@ import { resetState, selectRole } from './helpers';
  *   - Bandeau de KPI (coordo / admin) sur le périmètre actif
  *   - Centre d'alertes par rôle (« qu'est-ce qui attend mon action ? »)
  *   - 2ᵉ formation BTS MHR : groupes du tableau de bord, sélecteur de
- *     formateur actif, référentiel 3 niveaux, jusqu'à 4 entretiens
+ *     formateur actif, référentiel 3 niveaux
  */
 
 test.beforeEach(async ({ page }) => {
@@ -42,7 +42,7 @@ test('coordo : bandeau de pilotage sur le périmètre + mini-stats par formation
   await expect(bandeau.getByTestId('pilotage-alertes-r7')).toContainText('0');
 });
 
-test("formateur : centre d'alertes (R7, signature centre, entretien à initialiser, fiche à verrouiller) — sans bandeau de pilotage", async ({
+test("formateur : centre d'alertes (R7, signature centre, fiche à verrouiller) — sans bandeau de pilotage", async ({
   page,
 }) => {
   // Rôle par défaut = formatrice Sophie (promo CAP).
@@ -50,10 +50,9 @@ test("formateur : centre d'alertes (R7, signature centre, entretien à initialis
 
   const centre = page.getByTestId('centre-alertes');
   await expect(centre).toBeVisible();
-  // Sofia : R7. Léa : C2 centre à signer, E2 à initialiser, P2 à verrouiller.
+  // Sofia : R7. Léa : C2 centre à signer, P2 à verrouiller.
   await expect(centre.getByTestId('alerte-r7-u-apprenti-sofia')).toBeVisible();
   await expect(centre.getByTestId('alerte-sig-fiche-fc-lea-c2')).toBeVisible();
-  await expect(centre.getByTestId('alerte-init-entretien-2-u-apprenti-lea')).toBeVisible();
   await expect(centre.getByTestId('alerte-verrou-fp-lea-2')).toBeVisible();
 });
 
@@ -87,10 +86,11 @@ test('bascule de formateur : Marc TISSIER ne voit que sa promo BTS, avec ses ale
     page.getByRole('button', { name: /Ouvrir le livret de Camille MOREAU/i }),
   ).toBeVisible();
 
-  // Ses alertes : R7 Yanis, E3 de Camille à signer, C2 à signer, P2 à verrouiller.
+  // Ses alertes : R7 Yanis, entretien de Yanis planifié à initialiser,
+  // C2 de Camille à signer, P2 à verrouiller.
   const centre = page.getByTestId('centre-alertes');
   await expect(centre.getByTestId('alerte-r7-u-apprenti-yanis')).toBeVisible();
-  await expect(centre.getByTestId('alerte-sig-entretien-3-u-apprenti-camille')).toBeVisible();
+  await expect(centre.getByTestId('alerte-init-entretien-u-apprenti-yanis')).toBeVisible();
   await expect(centre.getByTestId('alerte-sig-fiche-fc-camille-c2')).toBeVisible();
   await expect(centre.getByTestId('alerte-verrou-fp-camille-2')).toBeVisible();
 });
@@ -106,20 +106,19 @@ test('maître Karim : « votre signature est attendue » sur la P3 de Léa (pér
   );
 });
 
-test('BTS MHR : référentiel 3 niveaux (sous-familles) et 3ᵉ entretien accessibles sur le livret de Camille', async ({
+test("BTS MHR : référentiel 3 niveaux (sous-familles) et entretien accessibles sur le livret de Camille", async ({
   page,
 }) => {
   // Bascule sur Marc puis ouverture du livret de Camille.
   await page.getByRole('button', { name: /Marc TISSIER/i }).click();
   await page.getByRole('button', { name: /Ouvrir le livret de Camille MOREAU/i }).click();
 
-  // 3 événements « Entretien Tripartite » → 3 liens sidebar (E4 pas encore créé).
-  await expect(page.getByRole('link', { name: /Entretien tripartite 1/i })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Entretien tripartite 2/i })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Entretien tripartite 3/i })).toBeVisible();
+  // L'événement « Entretien Tripartite » existe → lien sidebar unique.
+  const lienEntretien = page.getByRole('link', { name: /Entretien tripartite/i });
+  await expect(lienEntretien).toHaveCount(1);
 
-  // E3 : initialisé, signé par Camille seule (1/3).
-  await page.getByRole('link', { name: /Entretien tripartite 3/i }).click();
+  // Entretien signé 3/3 dans la fixture — la page charge en lecture seule.
+  await lienEntretien.click();
   await expect(page.getByRole('heading', { name: /Entretien tripartite/i }).first()).toBeVisible();
 
   // Évaluation finale : la hiérarchie du référentiel 3 niveaux s'affiche par

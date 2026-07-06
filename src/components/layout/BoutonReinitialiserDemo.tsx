@@ -6,7 +6,6 @@ import { useApprentiActifStore } from '@/store/useApprentiActifStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { useReferentielsStore } from '@/store/useReferentielsStore';
-import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
 import { useEtablissementsStore } from '@/store/useEtablissementsStore';
 import { useEntreprisesStore } from '@/store/useEntreprisesStore';
 import { useAttitudesStore } from '@/store/useAttitudesStore';
@@ -29,7 +28,6 @@ export function BoutonReinitialiserDemo() {
   const reinitUtilisateurs = useUtilisateursStore((s) => s.reinitialiser);
   const reinitFormations = useFormationsStore((s) => s.reinitialiser);
   const reinitReferentiels = useReferentielsStore((s) => s.reinitialiser);
-  const reinitBanqueQuestions = useBanqueQuestionsStore((s) => s.reinitialiser);
   const reinitEtablissements = useEtablissementsStore((s) => s.reinitialiser);
   const reinitEntreprises = useEntreprisesStore((s) => s.reinitialiser);
   const reinitAttitudes = useAttitudesStore((s) => s.reinitialiser);
@@ -73,7 +71,6 @@ export function BoutonReinitialiserDemo() {
           reinitUtilisateurs();
           reinitFormations();
           reinitReferentiels();
-          reinitBanqueQuestions();
           reinitEtablissements();
           reinitEntreprises();
           reinitAttitudes();

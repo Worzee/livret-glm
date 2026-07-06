@@ -60,7 +60,7 @@ test('suppression : libre pour une attitude non utilisée, bloquée sinon', asyn
   await expect(ligneA5.getByRole('button', { name: /Supprimer l'attitude/i })).toBeDisabled();
   await expect(ligneA5.getByText(/Évaluée ou retenue dans au moins un livret/i)).toBeVisible();
 
-  // a9 est RETENUE (choix E1 des fixtures) sans être évaluée → bloquée aussi
+  // a9 est RETENUE (choix fait à l'entretien, fixtures) sans être évaluée → bloquée aussi
   // (13 juin 2026 : une attitude référencée par un livret est protégée).
   const ligneA9 = page.locator('[data-testid="attitude-row-a9"]');
   await expect(ligneA9.getByRole('button', { name: /Supprimer l'attitude/i })).toBeDisabled();
@@ -76,13 +76,13 @@ test('suppression : libre pour une attitude non utilisée, bloquée sinon', asyn
   await expect(page.getByText('Attitude éphémère de test')).toHaveCount(0);
 });
 
-test("le choix des attitudes se fait à l'E1 et filtre la grille du maître (13 juin 2026)", async ({
+test("le choix des attitudes se fait à l'entretien et filtre la grille du maître (13 juin 2026)", async ({
   page,
 }) => {
-  // Sofia : E1 pas encore initialisé — le formateur l'initialise.
+  // Sofia : entretien pas encore initialisé — le formateur l'initialise.
   await page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }).click();
-  await page.goto('/livret/entretien/1');
-  await page.getByTestId('init-entretien-1').click();
+  await page.goto('/livret/entretien');
+  await page.getByTestId('init-entretien').click();
 
   // La section de choix apparaît, vide au départ.
   const section = page.getByTestId('selection-attitudes');
@@ -103,9 +103,9 @@ test("le choix des attitudes se fait à l'E1 et filtre la grille du maître (13 
   ).toBeVisible();
 });
 
-test("le choix est figé dès que l'E1 est signé par les 3 parties", async ({ page }) => {
-  // Léa (par défaut) : E1 signé 3/3 dans les fixtures.
-  await page.goto('/livret/entretien/1');
+test("le choix est figé dès que l'entretien est signé par les 3 parties", async ({ page }) => {
+  // Léa (par défaut) : entretien signé 3/3 dans les fixtures.
+  await page.goto('/livret/entretien');
   const section = page.getByTestId('selection-attitudes');
   await expect(section.getByText(/Choix figé/i)).toBeVisible();
   await expect(page.getByTestId('selection-attitude-a5')).toBeDisabled();
@@ -114,22 +114,20 @@ test("le choix est figé dès que l'E1 est signé par les 3 parties", async ({ p
 test("le maître évalue les attitudes dans l'entretien — R20 bloque la signature sans évaluation", async ({
   page,
 }) => {
-  // 1. Le formateur initialise l'entretien 2 de Léa (E1 signé 3/3).
-  await page.goto('/livret/entretien/2');
-  await page.getByTestId('init-entretien-2').click();
+  // 1. Le formateur initialise l'entretien de Sofia et retient une attitude.
+  await page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }).click();
+  await page.goto('/livret/entretien');
+  await page.getByTestId('init-entretien').click();
   await expect(page.getByTestId('attitudes-entretien')).toBeVisible();
+  await page.getByTestId('selection-attitude-a5').check();
 
   // 2. Côté maître : appréciation remplie mais aucune attitude → signature
-  //    bloquée avec la raison R20 dédiée. Le radiogroup d'appréciation porte
-  //    le libellé seul ; celui des attitudes est préfixé « Attitude — ».
+  //    bloquée avec la raison R20 dédiée (grille enrichie de la trame).
   await selectRole(page, 'Maître / Tuteur');
-  await page
-    .getByRole('radiogroup', { name: 'Ponctualité et assiduité', exact: true })
-    .getByRole('radio', { name: '+', exact: true })
-    .click();
+  await page.getByTestId('appreciation-ponctualite-plus').click();
   await expect(page.getByText(/Évaluez au moins une attitude professionnelle/i)).toBeVisible();
 
-  // 3. Évalue une attitude → la raison disparaît.
+  // 3. Évalue l'attitude retenue → la raison disparaît.
   await page
     .getByRole('radiogroup', { name: "Attitude — Prise d'initiative et autonomie" })
     .getByRole('radio', { name: '+', exact: true })

@@ -1,12 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type {
-  FicheSuiviPeriode,
-  Formation,
-  LieuFiche,
-  NumeroEntretien,
-  PeriodeFormation,
-} from '@/types';
+import type { FicheSuiviPeriode, Formation, LieuFiche, PeriodeFormation } from '@/types';
 import { formationsDemo } from '@/fixtures/formations';
 import { useUtilisateursStore } from './useUtilisateursStore';
 import { useLivretStore } from './useLivretStore';
@@ -17,7 +11,6 @@ import {
   type SaisiePeriode,
   validerSaisiePeriode,
 } from '@/lib/validation-periode-formation';
-import { NOMBRE_ENTRETIENS_DEFAUT, peutDefinirNombreEntretiens } from '@/lib/nombre-entretiens';
 
 /**
  * Store des formations du dispositif.
@@ -51,16 +44,11 @@ interface FormationsStore {
   formations: Record<string, Formation>;
 
   /**
-   * Crée une nouvelle formation. Le nombre d'entretiens tripartites démarre
-   * au défaut (2) — il se règle ensuite dans la modale Planning.
+   * Crée une nouvelle formation (le planning des périodes se règle ensuite
+   * dans la modale Planning).
    * @returns la formation créée (avec id auto-généré).
    */
-  ajouterFormation: (
-    input: Omit<
-      Formation,
-      'id' | 'periodes' | 'periodesCentre' | 'nombreEntretiens' | 'questionsRetirees'
-    >,
-  ) => Formation;
+  ajouterFormation: (input: Omit<Formation, 'id' | 'periodes' | 'periodesCentre'>) => Formation;
   /** Met à jour les champs d'une formation existante (hors `periodes`). */
   modifierFormation: (id: string, patch: Partial<Omit<Formation, 'id' | 'periodes'>>) => void;
   /**
@@ -107,23 +95,6 @@ interface FormationsStore {
     lieu?: LieuFiche,
   ) => ResultatMutationPeriode;
 
-  /**
-   * Définit le nombre d'entretiens tripartites de la formation (1 à 4 —
-   * retours coordos juin 2026). Refus si la réduction passe en dessous d'un
-   * entretien déjà engagé (initialisé ou planifié) dans un livret de la
-   * promo (cf. `lib/nombre-entretiens`).
-   */
-  setNombreEntretiens: (formationId: string, nombre: NumeroEntretien) => ResultatMutationPeriode;
-
-  /**
-   * Coche/décoche une question de l'entretien comme **retirée** pour la
-   * formation (13 juin 2026). Par défaut toute question de la banque est
-   * présente et obligatoire ; ce toggle l'écarte (ou la réintègre) pour
-   * tous les entretiens de cette formation. Sans effet sur les entretiens
-   * déjà initialisés (snapshot figé) — n'impacte que les futurs entretiens.
-   */
-  toggleQuestionRetiree: (formationId: string, questionId: string) => void;
-
   /** Réinitialise le store aux fixtures (utilisé par BoutonReinitialiserDemo). */
   reinitialiser: () => void;
 }
@@ -145,7 +116,10 @@ interface FormationsStore {
 //        `Livret.fichesSuiviCentre`). Reset aux fixtures.
 //   v7 — 3 juillet 2026 : 2ᵉ formation de démo BTS MHR 2025-2027 (référentiel
 //        3 niveaux, 4 entretiens, site Bellecour). Reset aux fixtures.
-const VERSION_SCHEMA = 7;
+//   v8 — 6 juillet 2026 : entretien tripartite unique — suppression de
+//        `Formation.nombreEntretiens` et `Formation.questionsRetirees`
+//        (disparition de la banque de questions). Reset aux fixtures.
+const VERSION_SCHEMA = 8;
 
 function etatInitial(): Pick<FormationsStore, 'formations'> {
   return { formations: { ...formationsDemo } };
@@ -162,8 +136,6 @@ export const useFormationsStore = create<FormationsStore>()(
           id,
           periodes: [],
           periodesCentre: [],
-          nombreEntretiens: NOMBRE_ENTRETIENS_DEFAUT,
-          questionsRetirees: [],
           ...input,
         };
         set({ formations: { ...get().formations, [id]: formation } });
@@ -301,45 +273,6 @@ export const useFormationsStore = create<FormationsStore>()(
         }
         return { ok: true };
       },
-
-      // ── Nombre d'entretiens tripartites (retours coordos juin 2026) ──
-      setNombreEntretiens: (formationId, nombre) => {
-        const formation = get().formations[formationId];
-        if (!formation) return { ok: false, raison: 'Formation introuvable.' };
-        // Verrou : pas de réduction en dessous d'un entretien déjà engagé
-        // dans un livret de la promo (lecture cross-store au runtime). Le
-        // rattachement passe par l'apprenti·e (source de vérité des
-        // affectations) — même filtre que le verrou des périodes.
-        const apprentis = useUtilisateursStore.getState().apprentis;
-        const livretsPromo = Object.values(useLivretStore.getState().livrets).filter(
-          (l) => apprentis[l.apprentiId]?.formationId === formationId,
-        );
-        const verif = peutDefinirNombreEntretiens(nombre, livretsPromo);
-        if (!verif.ok) return verif;
-        set((s) => ({
-          formations: {
-            ...s.formations,
-            [formationId]: { ...formation, nombreEntretiens: nombre },
-          },
-        }));
-        return { ok: true };
-      },
-
-      toggleQuestionRetiree: (formationId, questionId) =>
-        set((s) => {
-          const formation = s.formations[formationId];
-          if (!formation) return s;
-          const retirees = formation.questionsRetirees ?? [];
-          const nouvelles = retirees.includes(questionId)
-            ? retirees.filter((id) => id !== questionId)
-            : [...retirees, questionId];
-          return {
-            formations: {
-              ...s.formations,
-              [formationId]: { ...formation, questionsRetirees: nouvelles },
-            },
-          };
-        }),
 
       reinitialiser: () => set(etatInitial()),
     }),

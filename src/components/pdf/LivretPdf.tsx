@@ -19,19 +19,16 @@ import type {
   NiveauAppreciation,
   NiveauMaitrise,
   NiveauMaitriseEntreprise,
-  NumeroEntretien,
-  QuestionBanque,
   Referentiel,
   SignaturePartie,
   SignaturesTripartite,
 } from '@/types';
-import { NUMEROS_ENTRETIEN } from '@/types';
 import { libelleRole } from '@/lib/droits';
 import { synthetiserCompetences, valeurEffective } from '@/lib/synthese-evaluation';
 import { calculerStatsParBloc } from '@/lib/stats-bloc';
 import { grouperParSousFamille } from '@/lib/grouper-competences';
-import { libelleEvenement, libelleModalite, modaliteEffective } from '@/lib/organisation-suivi';
-import { TRAME_ENTRETIEN_1, pointsAlerteTrameE1 } from '@/lib/trame-entretien-1';
+import { libelleEvenement } from '@/lib/organisation-suivi';
+import { TRAME_ENTRETIEN, pointsAlerteTrame } from '@/lib/trame-entretien';
 import { ATTITUDES_OBLIGATOIRES, lignesSyntheseAttitudes } from '@/lib/attitudes';
 import { attitudesRetenues } from '@/lib/selection-attitudes';
 import { COULEURS, COULEURS_APPRECIATION, styles } from './styles';
@@ -80,14 +77,8 @@ export interface LivretPdfProps {
   /** Entreprise d'accueil de l'apprenti·e — résolue via `apprenti.entrepriseId`. */
   entreprise?: Entreprise;
   /**
-   * Banque indexée des questions de l'entretien (refonte mai 2026).
-   * Permet au PDF de résoudre les libellés depuis les questionId stockées
-   * dans `entretien.reponses{Apprenti,Maitre}`.
-   */
-  banqueQuestions: Record<string, QuestionBanque>;
-  /**
    * Catalogue global des attitudes professionnelles (juin 2026) — évaluées
-   * par le maître à chaque entretien, synthétisées en évaluation finale.
+   * par le maître lors de l'entretien, synthétisées en évaluation finale.
    */
   attitudes: ReadonlyArray<AttitudeProfessionnelle>;
   /** ISO de la date d'export (test injectable). */
@@ -104,14 +95,13 @@ export function LivretPdf({
   referentiel,
   etablissement,
   entreprise,
-  banqueQuestions,
   attitudes,
   dateExport,
 }: LivretPdfProps) {
   const date = dateExport ?? new Date().toISOString();
   const nomComplet = `${apprenti.prenom} ${apprenti.nom}`;
   // 13 juin 2026 : le PDF ne présente que les attitudes RETENUES pour ce
-  // livret (choix fait à l'E1) — filtre unique en amont des pages.
+  // livret (choix fait à l'entretien) — filtre unique en amont des pages.
   const attitudesDuLivret = attitudesRetenues(attitudes, livret.attitudesSelectionnees ?? []);
 
   return (
@@ -133,22 +123,15 @@ export function LivretPdf({
         dateExport={date}
       />
       <PageOrganisation livret={livret} />
-      {NUMEROS_ENTRETIEN.map((numero) => {
-        const entretien = livret.entretiens[numero];
-        if (!entretien) return null;
-        return (
-          <PageEntretien
-            key={numero}
-            numero={numero}
-            entretien={entretien}
-            apprenti={apprenti}
-            maitre={maitre}
-            formateur={formateur}
-            banqueQuestions={banqueQuestions}
-            attitudes={attitudesDuLivret}
-          />
-        );
-      })}
+      {livret.entretien && (
+        <PageEntretien
+          entretien={livret.entretien}
+          apprenti={apprenti}
+          maitre={maitre}
+          formateur={formateur}
+          attitudes={attitudesDuLivret}
+        />
+      )}
       {livret.fichesSuivi.map((fiche) => (
         <PageFiche
           key={fiche.id}
@@ -234,9 +217,8 @@ export function PeriodePdf({
   );
 }
 
-/** PDF d'un seul entretien tripartite : page de garde + l'entretien ciblé. */
+/** PDF de l'entretien tripartite : page de garde + l'entretien. */
 export function EntretienPdf({
-  numero,
   livret,
   apprenti,
   maitre,
@@ -245,17 +227,16 @@ export function EntretienPdf({
   formation,
   etablissement,
   entreprise,
-  banqueQuestions,
   attitudes,
   dateExport,
-}: LivretPdfProps & { numero: NumeroEntretien }) {
+}: LivretPdfProps) {
   const date = dateExport ?? new Date().toISOString();
   const nomComplet = `${apprenti.prenom} ${apprenti.nom}`;
-  const entretien = livret.entretiens[numero];
+  const entretien = livret.entretien;
   const attitudesDuLivret = attitudesRetenues(attitudes, livret.attitudesSelectionnees ?? []);
   return (
     <Document
-      title={`Entretien tripartite ${numero} - ${nomComplet}`}
+      title={`Entretien tripartite - ${nomComplet}`}
       author="GRETA Lyon Métropole"
       subject={`Entretien tripartite - ${formation.intitule}`}
       creator="Maquette Livret GRETA - étape 1"
@@ -273,12 +254,10 @@ export function EntretienPdf({
       />
       {entretien && (
         <PageEntretien
-          numero={numero}
           entretien={entretien}
           apprenti={apprenti}
           maitre={maitre}
           formateur={formateur}
-          banqueQuestions={banqueQuestions}
           attitudes={attitudesDuLivret}
         />
       )}
@@ -677,11 +656,11 @@ function Ligne({ label, valeur }: { label: string; valeur: string }) {
 export function PageOrganisation({ livret }: { livret: Livret }) {
   const o = livret.organisationSuivi;
 
-  /** Combine modalité (entretiens) + date + commentaire en une chaîne PDF. */
-  const fmt = (c: { date?: string; commentaire?: string }, modalite?: string): string => {
+  /** Combine date + commentaire en une chaîne PDF. */
+  const fmt = (c: { date?: string; commentaire?: string }): string => {
     const date = c.date ? formaterDateLongue(c.date) : '';
     const comm = c.commentaire?.trim() ?? '';
-    const parts = [modalite, date, comm].filter(Boolean);
+    const parts = [date, comm].filter(Boolean);
     return parts.length ? parts.join(' — ') : '—';
   };
 
@@ -698,16 +677,9 @@ export function PageOrganisation({ livret }: { livret: Livret }) {
             Aucun événement n'a encore été ajouté à l'organisation du suivi.
           </Text>
         ) : (
-          o.evenements.map((evt) => {
-            const modalite = modaliteEffective(evt);
-            return (
-              <Champ
-                key={evt.id}
-                label={libelleEvenement(evt)}
-                valeur={fmt(evt, modalite ? libelleModalite(modalite) : undefined)}
-              />
-            );
-          })
+          o.evenements.map((evt) => (
+            <Champ key={evt.id} label={libelleEvenement(evt)} valeur={fmt(evt)} />
+          ))
         )}
         <View style={[styles.encart, { marginTop: 12 }]}>
           <Text>
@@ -724,126 +696,69 @@ export function PageOrganisation({ livret }: { livret: Livret }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function PageEntretien({
-  numero,
   entretien,
   apprenti,
   maitre,
   formateur,
-  banqueQuestions,
   attitudes,
 }: {
-  numero: NumeroEntretien;
   entretien: EntretienTripartite;
   apprenti: Apprenti;
   maitre: Maitre;
   formateur: Formateur;
-  banqueQuestions: Record<string, QuestionBanque>;
   attitudes: ReadonlyArray<AttitudeProfessionnelle>;
 }) {
   const ap = entretien.appreciationMaitre;
-  const da = entretien.demarchesAdministratives;
-  const cp = entretien.conditionsPratiques;
-  const ai = entretien.aidesDemandees;
   const c = entretien.commentaires;
-  // E1 (« première visite ») : trame officielle GRETA (rubriques + alertes) au
-  // lieu des questions apprenti/maître + démarches/conditions/aides.
-  const estE1 = entretien.reponsesTrame !== undefined;
-  const alertesE1 = estE1 ? pointsAlerteTrameE1(entretien.reponsesTrame) : [];
+  // Trame officielle GRETA (« première visite ») : rubriques + points d'alerte.
+  const alertes = pointsAlerteTrame(entretien.reponsesTrame);
   const sigRL = entretien.signatures.representantLegal;
-
-  /** Restitue chaque question sélectionnée + sa réponse (texte ou oui/non). */
-  const renduQuestions = (
-    ids: ReadonlyArray<string>,
-    reponses: Record<string, string | boolean | null>,
-    cible: 'apprenti' | 'maitre',
-  ) => {
-    const items = ids
-      .map((id) => banqueQuestions[id])
-      .filter((q): q is QuestionBanque => !!q && q.cible === cible);
-    if (items.length === 0) {
-      return (
-        <Text style={styles.vide}>
-          Aucune question sélectionnée pour {cible === 'apprenti' ? "l'apprenti·e" : 'le maître'}.
-        </Text>
-      );
-    }
-    return items.map((q) => {
-      const v = reponses[q.id];
-      if (q.type === 'oui-non') {
-        return (
-          <ChampOuiNon key={q.id} label={q.libelle} valeur={typeof v === 'boolean' ? v : null} />
-        );
-      }
-      const txt = typeof v === 'string' ? v : '';
-      return <ParagrapheLibre key={q.id} titre={q.libelle} valeur={txt} />;
-    });
-  };
 
   return (
     <Page size="A4" style={styles.page}>
       <PiedDePage dateExport={new Date().toISOString()} />
       <View>
-        <Text style={styles.h1}>Entretien tripartite n° {numero}</Text>
+        <Text style={styles.h1}>Entretien tripartite</Text>
         <Champ
           label="Date de l'entretien"
           valeur={entretien.dateEntretien ? formaterDateLongue(entretien.dateEntretien) : undefined}
         />
 
-        {estE1 ? (
-          <>
-            {TRAME_ENTRETIEN_1.map((rubrique) => (
-              <View key={rubrique.id}>
-                <Text style={styles.h2}>{rubrique.titre}</Text>
-                {rubrique.questions.map((q) => {
-                  const v = entretien.reponsesTrame?.[q.id];
-                  return q.type === 'oui-non' ? (
-                    <ChampOuiNon
-                      key={q.id}
-                      label={q.libelle}
-                      valeur={typeof v === 'boolean' ? v : null}
-                    />
-                  ) : (
-                    <ParagrapheLibre
-                      key={q.id}
-                      titre={q.libelle}
-                      valeur={typeof v === 'string' ? v : ''}
-                    />
-                  );
-                })}
-              </View>
+        {TRAME_ENTRETIEN.map((rubrique) => (
+          <View key={rubrique.id}>
+            <Text style={styles.h2}>{rubrique.titre}</Text>
+            {rubrique.questions.map((q) => {
+              const v = entretien.reponsesTrame[q.id];
+              return q.type === 'oui-non' ? (
+                <ChampOuiNon
+                  key={q.id}
+                  label={q.libelle}
+                  valeur={typeof v === 'boolean' ? v : null}
+                />
+              ) : (
+                <ParagrapheLibre
+                  key={q.id}
+                  titre={q.libelle}
+                  valeur={typeof v === 'string' ? v : ''}
+                />
+              );
+            })}
+          </View>
+        ))}
+        {alertes.length > 0 && (
+          <View style={[styles.encart, { marginTop: 6 }]}>
+            <Text style={styles.encartTitre}>
+              Points d'alerte ({alertes.length}) — action du GRETA CFA (DDF / coordonnateur)
+            </Text>
+            {alertes.map((q) => (
+              <Text key={q.id} style={{ fontSize: 9, marginTop: 2 }}>
+                • {q.libelle}
+              </Text>
             ))}
-            {alertesE1.length > 0 && (
-              <View style={[styles.encart, { marginTop: 6 }]}>
-                <Text style={styles.encartTitre}>
-                  Points d'alerte ({alertesE1.length}) — action du GRETA CFA (DDF / coordonnateur)
-                </Text>
-                {alertesE1.map((q) => (
-                  <Text key={q.id} style={{ fontSize: 9, marginTop: 2 }}>
-                    • {q.libelle}
-                  </Text>
-                ))}
-              </View>
-            )}
-          </>
-        ) : (
-          <>
-            <Text style={styles.h2}>Apprenti·e</Text>
-            {renduQuestions(
-              entretien.questionsApprentiSelectionnees,
-              entretien.reponsesApprenti,
-              'apprenti',
-            )}
-
-            <Text style={styles.h2}>Maître / Tuteur</Text>
-            {renduQuestions(
-              entretien.questionsMaitreSelectionnees,
-              entretien.reponsesMaitre,
-              'maitre',
-            )}
-          </>
+          </View>
         )}
 
-        {/* Attitudes professionnelles évaluées à chaque entretien (juin 2026).
+        {/* Attitudes professionnelles évaluées à l'entretien (juin 2026).
             3 juillet 2026 : les 4 obligatoires (appréciation générale du
             maître) ouvrent la liste, au-dessus des optionnelles retenues. */}
         <Text style={styles.h3}>Attitudes professionnelles (maître)</Text>
@@ -861,33 +776,7 @@ export function PageEntretien({
           <ParagrapheLibre titre="Commentaires du maître" valeur={ap.commentaires} />
         )}
 
-        {/* Démarches / conditions / aides : entretiens 2 à 4 uniquement
-            (retirées de la trame officielle E1). */}
-        {!estE1 && (
-          <>
-            <Text style={styles.h2}>Démarches administratives</Text>
-            <ChampOuiNon label="Contrat signé" valeur={da.contratSigne} />
-            <ChampOuiNon label="Visite médicale" valeur={da.visiteMedicale} />
-            <ChampOuiNon label="Permis de conduire" valeur={da.permisConduire} />
-            <ChampOuiNon label="Voiture" valeur={da.voiture} />
-            {da.remarques && <ParagrapheLibre titre="Remarques" valeur={da.remarques} />}
-
-            <Text style={styles.h2}>Conditions pratiques</Text>
-            <Champ label="Hébergement (centre)" valeur={cp.hebergementCentre} />
-            <Champ label="Hébergement (entreprise)" valeur={cp.hebergementEntreprise} />
-            <Champ label="Transport (centre)" valeur={cp.transportCentre} />
-            <Champ label="Transport (entreprise)" valeur={cp.transportEntreprise} />
-
-            <Text style={styles.h2}>Aides demandées</Text>
-            <ChampOuiNon label="Logement" valeur={ai.logement} />
-            <ChampOuiNon label="Premier équipement" valeur={ai.premierEquipement} />
-            <ChampOuiNon label="Permis" valeur={ai.permis} />
-            {ai.autres && <ParagrapheLibre titre="Autres aides" valeur={ai.autres} />}
-          </>
-        )}
-
-        {/* 1ᵉʳ juillet 2026 : 3 commentaires individuels partout (E1 inclus —
-            l'ancienne « synthèse » commune vivait dans c.formateur). */}
+        {/* 1ᵉʳ juillet 2026 : 3 commentaires individuels — un par partie. */}
         <Text style={styles.h2}>Commentaires</Text>
         <ParagrapheLibre titre="Apprenti·e" valeur={c.apprenti} />
         <ParagrapheLibre titre="Maître / Tuteur" valeur={c.maitre} />
@@ -900,7 +789,7 @@ export function PageEntretien({
           maitre={maitre}
           formateur={formateur}
         />
-        {estE1 && sigRL?.signe && (
+        {sigRL?.signe && (
           <Text style={{ fontSize: 9, marginTop: 4 }}>
             Représentant légal — signé le {formaterDateHeure(sigRL.dateSignature)}
           </Text>
@@ -1083,7 +972,7 @@ function PageEvaluationFinale({
   const lignesAttitudes = lignesSyntheseAttitudes(
     attitudes,
     livret.attitudesSelectionnees ?? [],
-    livret.entretiens,
+    livret.entretien,
   );
 
   return (
@@ -1159,25 +1048,14 @@ function PageEvaluationFinale({
         ))}
 
         {/* Synthèse des attitudes professionnelles (juin 2026) : évaluées
-            par le maître / tuteur à chaque entretien — une colonne par
-            entretien initialisé. */}
-        <Text style={styles.h2}>Attitudes professionnelles (synthèse des entretiens)</Text>
+            par le maître / tuteur lors de l'entretien tripartite. */}
+        <Text style={styles.h2}>Attitudes professionnelles (synthèse de l'entretien)</Text>
         <View style={styles.tableau}>
           <View style={[styles.tableauLigne, styles.tableauEnTete]}>
-            <Text style={[styles.tableauCellule, { width: '40%' }]}>Attitude</Text>
-            {NUMEROS_ENTRETIEN.map((n, idx) => (
-              <Text
-                key={n}
-                style={[
-                  idx === NUMEROS_ENTRETIEN.length - 1
-                    ? styles.tableauCelluleDerniere
-                    : styles.tableauCellule,
-                  { width: '15%' },
-                ]}
-              >
-                Entretien {n}
-              </Text>
-            ))}
+            <Text style={[styles.tableauCellule, { width: '70%' }]}>Attitude</Text>
+            <Text style={[styles.tableauCelluleDerniere, { width: '30%' }]}>
+              Entretien tripartite
+            </Text>
           </View>
           {lignesAttitudes.map((ligne, idx) => (
             <View
@@ -1188,33 +1066,23 @@ function PageEvaluationFinale({
                   : styles.tableauLigne
               }
             >
-              <Text style={[styles.tableauCellule, { width: '40%' }]}>
+              <Text style={[styles.tableauCellule, { width: '70%' }]}>
                 {ligne.obligatoire ? `${ligne.libelle} (obligatoire)` : ligne.libelle}
               </Text>
-              {NUMEROS_ENTRETIEN.map((n, idxN) => {
-                const niveau = ligne.niveaux[n];
-                return (
-                  <Text
-                    key={n}
-                    style={[
-                      idxN === NUMEROS_ENTRETIEN.length - 1
-                        ? styles.tableauCelluleDerniere
-                        : styles.tableauCellule,
-                      { width: '15%' },
-                    ]}
-                  >
-                    <Text
-                      style={
-                        niveau
-                          ? { color: COULEURS_APPRECIATION[niveau], fontFamily: 'Helvetica-Bold' }
-                          : { color: COULEURS.texteSecondaire }
-                      }
-                    >
-                      {libelleAppreciation(niveau)}
-                    </Text>
-                  </Text>
-                );
-              })}
+              <Text style={[styles.tableauCelluleDerniere, { width: '30%' }]}>
+                <Text
+                  style={
+                    ligne.niveau
+                      ? {
+                          color: COULEURS_APPRECIATION[ligne.niveau],
+                          fontFamily: 'Helvetica-Bold',
+                        }
+                      : { color: COULEURS.texteSecondaire }
+                  }
+                >
+                  {libelleAppreciation(ligne.niveau)}
+                </Text>
+              </Text>
             </View>
           ))}
         </View>

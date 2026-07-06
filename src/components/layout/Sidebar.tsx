@@ -12,7 +12,6 @@ import {
   LayoutDashboard,
   Library,
   Link2,
-  ListChecks,
   Menu,
   Notebook,
   QrCode,
@@ -25,7 +24,7 @@ import { useUserStore } from '@/store/useUserStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { peutEditer, type Ressource } from '@/lib/droits';
 import { FOND_LEGER_ROLE, TEXTE_ROLE } from '@/lib/couleurs-role';
-import { numeroEntretienPourMotif } from '@/lib/organisation-suivi';
+import { estMotifEntretienTripartite } from '@/lib/organisation-suivi';
 import type { Role } from '@/types';
 
 /**
@@ -49,9 +48,9 @@ interface LienItem {
 const LIENS_LIVRET: LienItem[] = [
   { to: '/', label: 'Tableau de bord', Icon: LayoutDashboard },
   { to: '/livret/organisation-suivi', label: 'Fiches de suivi', Icon: CalendarRange },
-  // Les liens « Entretien tripartite 1 » et « 2 » sont insérés dynamiquement
-  // après ce point (cf. NavContenu) — ils n'apparaissent que si l'événement
-  // correspondant existe dans l'organisation du suivi.
+  // Le lien « Entretien tripartite » est inséré dynamiquement après ce point
+  // (cf. NavContenu) — il n'apparaît que si l'événement correspondant existe
+  // dans l'organisation du suivi.
   { to: '/livret/fiches-suivi', label: 'Période en Entreprise', Icon: Notebook },
   { to: '/livret/fiches-suivi-centre', label: 'Période en Centre', Icon: GraduationCap },
   { to: '/livret/evaluation-finale', label: 'Évaluation finale', Icon: Target },
@@ -100,12 +99,6 @@ const LIENS_ADMIN: Array<LienItem & { ressource: Ressource }> = [
     label: 'Référentiels',
     Icon: Library,
     ressource: 'admin.referentiels.gerer',
-  },
-  {
-    to: '/admin/banque-questions',
-    label: 'Banque de questions',
-    Icon: ListChecks,
-    ressource: 'admin.banque-questions.gerer',
   },
   {
     to: '/admin/etablissements',
@@ -165,25 +158,17 @@ function NavContenu({ onNavigate }: { onNavigate?: () => void }) {
   const ctx = useApprentiActif();
   const liensAdminVisibles = LIENS_ADMIN.filter((l) => peutEditer(roleActif, l.ressource));
 
-  // Liens entretien conditionnels — un lien par événement entretien existant
-  // dans l'organisation du suivi du livret actif (jusqu'à 4 — juin 2026).
-  // Pas de doublons : si E1 a 2 événements (cas d'erreur de saisie), un
-  // seul lien apparaît.
+  // Lien entretien conditionnel — il apparaît si l'événement « Entretien
+  // Tripartite » existe dans l'organisation du suivi du livret actif.
   const liensEntretiens: LienItem[] = [];
-  if (ctx) {
-    const numerosVus = new Set<number>();
-    for (const evt of ctx.livret.organisationSuivi.evenements) {
-      const n = numeroEntretienPourMotif(evt.motif);
-      if (n && !numerosVus.has(n)) {
-        numerosVus.add(n);
-        liensEntretiens.push({
-          to: `/livret/entretien/${n}`,
-          label: `Entretien tripartite ${n}`,
-          Icon: ClipboardList,
-        });
-      }
-    }
-    liensEntretiens.sort((a, b) => a.label.localeCompare(b.label, 'fr-FR'));
+  if (
+    ctx?.livret.organisationSuivi.evenements.some((evt) => estMotifEntretienTripartite(evt.motif))
+  ) {
+    liensEntretiens.push({
+      to: '/livret/entretien',
+      label: 'Entretien tripartite',
+      Icon: ClipboardList,
+    });
   }
 
   // Insertion entre « Fiches de suivi » (index 1) et « Période en Entreprise ».

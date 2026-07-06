@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useState } from 'react';
 import { AlertCircle, CalendarRange, Lock, Pencil, Plus, Trash2, X } from 'lucide-react';
-import type { Formation, LieuFiche, Livret, NumeroEntretien, PeriodeFormation } from '@/types';
+import type { Formation, LieuFiche, Livret, PeriodeFormation } from '@/types';
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
@@ -14,20 +14,16 @@ import { cn } from '@/lib/utils';
 
 /**
  * Modale de gestion du planning d'une formation (refonte mai 2026 —
- * chantier #1, étendue juin 2026 : nombre d'entretiens tripartites, puis
- * 17 juin 2026 : périodes en centre de formation).
+ * chantier #1, étendue 17 juin 2026 : périodes en centre de formation).
  *
- * Affiche le nombre d'entretiens tripartites, puis **deux** plannings de
- * périodes indépendants — en entreprise et en centre — via le sous-composant
- * `SectionPeriodes`. Chaque période génère une fiche dans le livret de chaque
- * apprenti·e de la promo (entreprise → `fichesSuivi`, centre →
- * `fichesSuiviCentre`).
+ * Affiche **deux** plannings de périodes indépendants — en entreprise et en
+ * centre — via le sous-composant `SectionPeriodes`. Chaque période génère une
+ * fiche dans le livret de chaque apprenti·e de la promo (entreprise →
+ * `fichesSuivi`, centre → `fichesSuiviCentre`).
  *
- * 1ᵉʳ juillet 2026 (réunion direction) : la section « Questions de
- * l'entretien tripartite » (retrait par formation) est retirée de cette
- * modale — les questions se gèrent uniquement dans la banque de questions
- * côté admin. Le mécanisme `Formation.questionsRetirees` reste dans le
- * modèle (sans UI pour le moment).
+ * Juillet 2026 : la section « Nombre d'entretiens tripartites » a disparu —
+ * l'entretien tripartite est désormais unique et obligatoire pour toutes les
+ * formations (le suivi ultérieur passe par les fiches de suivi).
  */
 
 interface ModalePlanningPeriodesProps {
@@ -43,15 +39,10 @@ export function ModalePlanningPeriodes({
   formation,
   onFermer,
 }: ModalePlanningPeriodesProps) {
-  const setNombreEntretiens = useFormationsStore((s) => s.setNombreEntretiens);
   const livretsTous = useLivretStore((s) => s.livrets);
   const apprentis = useUtilisateursStore((s) => s.apprentis);
 
   const titreId = useId();
-  const [erreurEntretiens, setErreurEntretiens] = useState<string | null>(null);
-
-  // Live re-read : la formation dans le store évolue à chaque mutation.
-  const formationCourante = useFormationsStore((s) => s.formations[formation.id] ?? formation);
 
   // Livrets de la promo (pour évaluer le verrou modif/suppression).
   const livretsPromo = useMemo(
@@ -112,48 +103,6 @@ export function ModalePlanningPeriodes({
         </div>
 
         <div className="space-y-5 p-4">
-          {/* Nombre d'entretiens tripartites (retours coordos juin 2026) ── */}
-          <section className="space-y-2">
-            <h3 className="text-sm font-medium">Entretiens tripartites</h3>
-            <div className="flex flex-wrap items-center gap-3 rounded-md border border-border bg-secondary/30 p-3">
-              <label htmlFor="planning-nb-entretiens" className="text-sm">
-                Nombre d'entretiens de la formation
-              </label>
-              <select
-                id="planning-nb-entretiens"
-                data-testid="planning-nb-entretiens"
-                value={formationCourante.nombreEntretiens}
-                onChange={(e) => {
-                  const r = setNombreEntretiens(
-                    formation.id,
-                    Number(e.target.value) as NumeroEntretien,
-                  );
-                  setErreurEntretiens(r.ok ? null : (r.raison ?? 'Modification refusée.'));
-                }}
-                className="rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                {[1, 2, 3, 4].map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-              <p className="flex-1 min-w-[14rem] text-xs text-muted-foreground">
-                Jusqu'à 4 pour les formations de 2 ans. Seuls les motifs « Entretien Tripartite 1 à{' '}
-                {formationCourante.nombreEntretiens} » sont proposés dans les fiches de suivi des
-                livrets de la promo.
-              </p>
-            </div>
-            {erreurEntretiens && (
-              <p
-                role="alert"
-                className="rounded-md border border-red-200 bg-red-50 p-2 text-xs text-red-700"
-              >
-                {erreurEntretiens}
-              </p>
-            )}
-          </section>
-
           {/* Périodes en entreprise ─────────────────────────────────────── */}
           <SectionPeriodes formation={formation} lieu="entreprise" livretsPromo={livretsPromo} />
 
@@ -291,8 +240,8 @@ function SectionPeriodes({ formation, lieu, livretsPromo }: SectionPeriodesProps
       <h3 className="text-sm font-medium">{titreListe}</h3>
       {periodes.length === 0 ? (
         <p className="rounded-md border border-dashed border-border bg-secondary/30 p-3 text-sm text-muted-foreground">
-          Aucune période planifiée{estCentre ? ' en centre' : ''}. Ajoutez la première via le
-          bouton ci-dessous.
+          Aucune période planifiée{estCentre ? ' en centre' : ''}. Ajoutez la première via le bouton
+          ci-dessous.
         </p>
       ) : (
         <ul className="space-y-2">

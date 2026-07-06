@@ -1,23 +1,19 @@
-import type { FicheSuiviPeriode, LieuFiche, Livret, NumeroEntretien } from '@/types';
-import { NUMEROS_ENTRETIEN } from '@/types';
-import { numeroEntretienPourMotif } from './organisation-suivi';
+import type { FicheSuiviPeriode, LieuFiche, Livret } from '@/types';
+import { estMotifEntretienTripartite } from './organisation-suivi';
 import { periodeSignee } from './regles-periode';
 
 /**
  * Helpers purs pour le tableau de bord récapitulatif de l'apprenti·e
- * (18 juin 2026) : échéances (prochain entretien, période en cours, fin de
- * contrat) et progression (fiches signées, entretiens tenus). Aucune
+ * (18 juin 2026) : échéances (entretien tripartite, période en cours, fin de
+ * contrat) et progression (fiches signées, entretien tenu). Aucune
  * dépendance UI — réutilise les règles métier existantes.
  */
 
-/** Un entretien est tenu quand les 3 parties l'ont signé. */
-function entretienSigne(livret: Livret, numero: NumeroEntretien): boolean {
-  const e = livret.entretiens[numero];
+/** L'entretien est tenu quand les 3 parties l'ont signé. */
+export function entretienTenu(livret: Livret): boolean {
+  const e = livret.entretien;
   return (
-    !!e &&
-    e.signatures.apprenti.signe &&
-    e.signatures.maitre.signe &&
-    e.signatures.formateur.signe
+    !!e && e.signatures.apprenti.signe && e.signatures.maitre.signe && e.signatures.formateur.signe
   );
 }
 
@@ -50,7 +46,6 @@ export function periodeCourante(
 }
 
 export interface EcheanceEntretien {
-  numero: NumeroEntretien;
   /** Date prévue (ISO) issue de l'événement d'organisation, si renseignée. */
   datePrevue?: string;
   /** L'entretien est-il déjà initialisé (objet non null) ? */
@@ -58,37 +53,16 @@ export interface EcheanceEntretien {
 }
 
 /**
- * Prochaine échéance d'entretien tripartite : le plus petit numéro (≤
- * `nombreEntretiens`) non encore signé par les 3 parties, avec sa date prévue
- * si un événement d'organisation la porte. `null` si tous les entretiens
- * prévus sont signés.
+ * Échéance de l'entretien tripartite : tant qu'il n'est pas signé par les
+ * 3 parties, renvoie sa date prévue (si un événement d'organisation la
+ * porte) et son état d'initialisation. `null` quand l'entretien est signé.
  */
-export function prochainEntretien(
-  livret: Livret,
-  nombreEntretiens: number,
-): EcheanceEntretien | null {
-  for (const numero of NUMEROS_ENTRETIEN) {
-    if (numero > nombreEntretiens) break;
-    if (entretienSigne(livret, numero)) continue;
-    const evt = livret.organisationSuivi.evenements.find(
-      (ev) => numeroEntretienPourMotif(ev.motif) === numero,
-    );
-    return { numero, datePrevue: evt?.date, initialise: livret.entretiens[numero] !== null };
-  }
-  return null;
-}
-
-/** Nombre d'entretiens signés (3 parties) sur le total prévu par la formation. */
-export function progressionEntretiens(
-  livret: Livret,
-  nombreEntretiens: number,
-): { signes: number; total: number } {
-  let signes = 0;
-  for (const numero of NUMEROS_ENTRETIEN) {
-    if (numero > nombreEntretiens) break;
-    if (entretienSigne(livret, numero)) signes++;
-  }
-  return { signes, total: nombreEntretiens };
+export function echeanceEntretien(livret: Livret): EcheanceEntretien | null {
+  if (entretienTenu(livret)) return null;
+  const evt = livret.organisationSuivi.evenements.find((ev) =>
+    estMotifEntretienTripartite(ev.motif),
+  );
+  return { datePrevue: evt?.date, initialise: livret.entretien !== null };
 }
 
 /**

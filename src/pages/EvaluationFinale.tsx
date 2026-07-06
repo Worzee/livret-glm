@@ -4,7 +4,6 @@ import { useUserStore } from '@/store/useUserStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { useReferentielsStore } from '@/store/useReferentielsStore';
-import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
 import { useEtablissementsStore } from '@/store/useEtablissementsStore';
 import { useAttitudesStore } from '@/store/useAttitudesStore';
 import { peutEditer } from '@/lib/droits';
@@ -39,7 +38,6 @@ export function EvaluationFinale() {
   const roleActif = useUserStore((s) => s.roleActif);
   const formations = useFormationsStore((s) => s.formations);
   const referentiels = useReferentielsStore((s) => s.referentiels);
-  const banqueQuestions = useBanqueQuestionsStore((s) => s.questions);
   const etablissements = useEtablissementsStore((s) => s.etablissements);
   const attitudesMap = useAttitudesStore((s) => s.attitudes);
   const ctx = useApprentiActif();
@@ -95,7 +93,6 @@ export function EvaluationFinale() {
           formation={formation}
           referentiel={referentiel}
           etablissement={etablissement}
-          banqueQuestions={banqueQuestions}
           attitudes={Object.values(attitudesMap)}
         />
       </header>

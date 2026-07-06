@@ -9,8 +9,6 @@ import type {
   Formation,
   Livret,
   Maitre,
-  NumeroEntretien,
-  QuestionBanque,
   Referentiel,
 } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
@@ -45,7 +43,7 @@ export type VarianteExportPdf =
   | { type: 'livret' }
   | { type: 'periode'; ficheId: string }
   | { type: 'periode-centre'; ficheId: string }
-  | { type: 'entretien'; numero: NumeroEntretien }
+  | { type: 'entretien' }
   | { type: 'fiches-suivi' };
 
 interface BoutonExportPdfProps {
@@ -61,8 +59,6 @@ interface BoutonExportPdfProps {
   etablissement?: Etablissement;
   /** Entreprise d'accueil (résolue depuis `apprenti.entrepriseId`). */
   entreprise?: Entreprise;
-  /** Banque indexée des questions de l'entretien (refonte mai 2026). */
-  banqueQuestions: Record<string, QuestionBanque>;
   /** Catalogue global des attitudes professionnelles (juin 2026). */
   attitudes: ReadonlyArray<AttitudeProfessionnelle>;
   /** Document à générer (défaut : livret complet). */
@@ -85,10 +81,7 @@ export function BoutonExportPdf({
   // L'avertissement « livret volumineux » ne concerne que l'export complet ;
   // les exports partiels font 1 à 2 pages. Les fiches centre (17 juin 2026)
   // comptent aussi pour l'estimation du livret complet.
-  const toutesFiches = [
-    ...donnees.livret.fichesSuivi,
-    ...(donnees.livret.fichesSuiviCentre ?? []),
-  ];
+  const toutesFiches = [...donnees.livret.fichesSuivi, ...(donnees.livret.fichesSuiviCentre ?? [])];
   const totalDeverrouillages = toutesFiches.reduce(
     (n, f) => n + f.historiqueDeverrouillages.length,
     0,

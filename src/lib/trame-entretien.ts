@@ -1,21 +1,24 @@
 import type { NiveauAppreciation, ReponsesEntretien } from '@/types';
 
 /**
- * Trame officielle de l'entretien tripartite n° 1 (« première visite »).
+ * Trame officielle de l'entretien tripartite (« première visite »).
  * Référence : document GRETA « MAJ ENTRETIEN PREMIERE VISITE TRIPARTITE »
  * (réunion juin 2026).
  *
- * Cette trame est **figée** : contrairement à la banque de questions générique
- * (qui sert les entretiens 2 à 4 et reste pilotable par le coordo), la trame
- * E1 est un document normé, défini ici en dur. Les questions conjointes
- * (maître + apprenti·e) sont organisées en rubriques thématiques ; un « Non »
- * sur une question oui/non signale une difficulté nécessitant une action du
- * GRETA CFA (DDF / coordonnateur).
+ * Cette trame est **figée** : document normé, défini ici en dur. Les
+ * questions conjointes (maître + apprenti·e) sont organisées en rubriques
+ * thématiques ; un « Non » sur une question oui/non signale une difficulté
+ * nécessitant une action du GRETA CFA (DDF / coordonnateur).
+ *
+ * Juillet 2026 : l'entretien tripartite est désormais **unique et
+ * obligatoire** (les entretiens 2 à 4 et leur banque de questions ont été
+ * supprimés — le suivi ultérieur passe par les fiches de suivi). Les ids de
+ * questions gardent leur préfixe historique `e1-` (stabilité des réponses).
  */
 
 export type TypeQuestionTrame = 'texte' | 'oui-non';
 
-export interface QuestionTrameE1 {
+export interface QuestionTrame {
   /** Id stable — clé des réponses (`EntretienTripartite.reponsesTrame`). */
   id: string;
   libelle: string;
@@ -26,15 +29,15 @@ export interface QuestionTrameE1 {
   alerteSiNon?: boolean;
 }
 
-export interface RubriqueTrameE1 {
+export interface RubriqueTrame {
   id: string;
   titre: string;
   /** Texte d'introduction de la rubrique (consigne de remplissage). */
   intro?: string;
-  questions: ReadonlyArray<QuestionTrameE1>;
+  questions: ReadonlyArray<QuestionTrame>;
 }
 
-export const TRAME_ENTRETIEN_1: ReadonlyArray<RubriqueTrameE1> = [
+export const TRAME_ENTRETIEN: ReadonlyArray<RubriqueTrame> = [
   {
     id: 'integration',
     titre: "Intégration de l'apprenti·e dans l'entreprise",
@@ -215,13 +218,13 @@ export const TRAME_ENTRETIEN_1: ReadonlyArray<RubriqueTrameE1> = [
  * descriptions par niveau (document GRETA). Les clés correspondent à
  * `AppreciationMaitre` ; l'échelle suit `NiveauAppreciation`.
  */
-export interface CritereAppreciationE1 {
+export interface CritereAppreciation {
   cle: 'ponctualite' | 'comprehensionConsignes' | 'qualiteTravail' | 'integration';
   libelle: string;
   descriptions: Record<NiveauAppreciation, string>;
 }
 
-export const CRITERES_APPRECIATION_E1: ReadonlyArray<CritereAppreciationE1> = [
+export const CRITERES_APPRECIATION: ReadonlyArray<CritereAppreciation> = [
   {
     cle: 'ponctualite',
     libelle: 'Ponctualité — Assiduité',
@@ -265,8 +268,8 @@ export const CRITERES_APPRECIATION_E1: ReadonlyArray<CritereAppreciationE1> = [
 ];
 
 /** Toutes les questions de la trame, à plat (ordre des rubriques). */
-export function questionsTrameE1(): QuestionTrameE1[] {
-  return TRAME_ENTRETIEN_1.flatMap((r) => [...r.questions]);
+export function questionsTrame(): QuestionTrame[] {
+  return TRAME_ENTRETIEN.flatMap((r) => [...r.questions]);
 }
 
 /** Une valeur de réponse est-elle renseignée pour un type de question donné ? */
@@ -284,9 +287,9 @@ export function reponseTrameRenseignee(
  * réponse est explicitement « Non » (`false`). Sert au récapitulatif de fin
  * d'entretien et au PDF (actions à mener par le DDF / coordonnateur).
  */
-export function pointsAlerteTrameE1(reponses: ReponsesEntretien | undefined): QuestionTrameE1[] {
+export function pointsAlerteTrame(reponses: ReponsesEntretien | undefined): QuestionTrame[] {
   if (!reponses) return [];
-  return questionsTrameE1().filter(
+  return questionsTrame().filter(
     (q) => q.type === 'oui-non' && q.alerteSiNon === true && reponses[q.id] === false,
   );
 }
@@ -297,9 +300,9 @@ export function pointsAlerteTrameE1(reponses: ReponsesEntretien | undefined): Qu
  */
 export function questionsOuiNonSansReponse(
   reponses: ReponsesEntretien | undefined,
-): QuestionTrameE1[] {
+): QuestionTrame[] {
   const r = reponses ?? {};
-  return questionsTrameE1().filter(
+  return questionsTrame().filter(
     (q) => q.type === 'oui-non' && !reponseTrameRenseignee('oui-non', r[q.id]),
   );
 }

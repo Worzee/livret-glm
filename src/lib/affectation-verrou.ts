@@ -48,8 +48,8 @@ export function evaluerVerrouAffectation(
     };
   }
 
-  // Critère 2 : au moins un entretien tripartite initialisé (E1 à E4).
-  if (Object.values(livret.entretiens).some((e) => e !== null)) {
+  // Critère 2 : l'entretien tripartite est initialisé.
+  if (livret.entretien !== null) {
     return {
       verrouille: true,
       raison:

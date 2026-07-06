@@ -9,22 +9,9 @@ import {
 /** Entretien minimal avec n signatures apposées (0 à 3). */
 function entretien(nbSignatures: number): EntretienTripartite {
   return {
-    questionsApprentiSelectionnees: [],
-    questionsMaitreSelectionnees: [],
-    questionsImposees: [],
-    questionsObligatoires: [],
     evaluationsAttitudes: {},
-    reponsesApprenti: {},
-    reponsesMaitre: {},
+    reponsesTrame: {},
     appreciationMaitre: {},
-    demarchesAdministratives: {
-      contratSigne: null,
-      visiteMedicale: null,
-      permisConduire: null,
-      voiture: null,
-    },
-    conditionsPratiques: {},
-    aidesDemandees: { logement: null, premierEquipement: null, permis: null },
     commentaires: {},
     signatures: {
       apprenti: { signe: nbSignatures >= 1 },
@@ -34,25 +21,23 @@ function entretien(nbSignatures: number): EntretienTripartite {
   };
 }
 
-function livretAvecE1(e1: EntretienTripartite | null): Livret {
-  return {
-    entretiens: { 1: e1, 2: null, 3: null, 4: null },
-  } as unknown as Livret;
+function livretAvecEntretien(e: EntretienTripartite | null): Livret {
+  return { entretien: e } as unknown as Livret;
 }
 
 describe('selectionAttitudesFigee', () => {
-  it("reste modifiable tant que l'E1 n'est pas initialisé", () => {
-    expect(selectionAttitudesFigee(livretAvecE1(null))).toBe(false);
+  it("reste modifiable tant que l'entretien n'est pas initialisé", () => {
+    expect(selectionAttitudesFigee(livretAvecEntretien(null))).toBe(false);
   });
 
-  it('reste modifiable avec 0, 1 ou 2 signatures sur E1', () => {
-    expect(selectionAttitudesFigee(livretAvecE1(entretien(0)))).toBe(false);
-    expect(selectionAttitudesFigee(livretAvecE1(entretien(1)))).toBe(false);
-    expect(selectionAttitudesFigee(livretAvecE1(entretien(2)))).toBe(false);
+  it("reste modifiable avec 0, 1 ou 2 signatures sur l'entretien", () => {
+    expect(selectionAttitudesFigee(livretAvecEntretien(entretien(0)))).toBe(false);
+    expect(selectionAttitudesFigee(livretAvecEntretien(entretien(1)))).toBe(false);
+    expect(selectionAttitudesFigee(livretAvecEntretien(entretien(2)))).toBe(false);
   });
 
-  it('se fige à la 3ᵉ signature de E1 (pattern sélection des compétences)', () => {
-    expect(selectionAttitudesFigee(livretAvecE1(entretien(3)))).toBe(true);
+  it("se fige à la 3ᵉ signature de l'entretien (pattern sélection des compétences)", () => {
+    expect(selectionAttitudesFigee(livretAvecEntretien(entretien(3)))).toBe(true);
   });
 });
 

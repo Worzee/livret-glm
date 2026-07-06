@@ -1,5 +1,4 @@
-import type { Apprenti, Formation, Livret } from '@/types';
-import { NUMEROS_ENTRETIEN } from '@/types';
+import type { Apprenti, Livret } from '@/types';
 import { calculerAlerteR7, entretienSigneParTous } from './regles-entretien';
 
 /**
@@ -25,9 +24,9 @@ export interface StatsPilotage {
   fichesEntreprise: CompteurSignees;
   /** Fiches de période en centre de formation signées. */
   fichesCentre: CompteurSignees;
-  /** Entretiens signés par les 3 parties / entretiens attendus (formation). */
+  /** Entretiens signés par les 3 parties / attendus (1 par livret). */
   entretiens: { realises: number; attendus: number };
-  /** Nombre d'apprenti·e·s en alerte R7 (E1 en retard). */
+  /** Nombre d'apprenti·e·s en alerte R7 (entretien en retard). */
   alertesR7: number;
   livretsClotures: number;
 }
@@ -38,7 +37,6 @@ const ETATS_FICHE_SIGNEE = new Set(['signee', 'verrouillee']);
 export function statsPilotage(
   apprentis: ReadonlyArray<Apprenti>,
   livrets: Readonly<Record<string, Livret>>,
-  formations: Readonly<Record<string, Formation>>,
   maintenant: Date = new Date(),
 ): StatsPilotage {
   const stats: StatsPilotage = {
@@ -65,12 +63,10 @@ export function statsPilotage(
       if (ETATS_FICHE_SIGNEE.has(fiche.etat)) stats.fichesCentre.signees += 1;
     }
 
-    stats.entretiens.attendus += formations[apprenti.formationId]?.nombreEntretiens ?? 2;
-    for (const numero of NUMEROS_ENTRETIEN) {
-      if (entretienSigneParTous(livret.entretiens[numero])) stats.entretiens.realises += 1;
-    }
+    stats.entretiens.attendus += 1;
+    if (entretienSigneParTous(livret.entretien)) stats.entretiens.realises += 1;
 
-    if (calculerAlerteR7(apprenti, livret.entretiens[1], maintenant).declenchee) {
+    if (calculerAlerteR7(apprenti, livret.entretien, maintenant).declenchee) {
       stats.alertesR7 += 1;
     }
     if (livret.cloture) stats.livretsClotures += 1;

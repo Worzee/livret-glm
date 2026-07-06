@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CRITERES_APPRECIATION_E1,
-  TRAME_ENTRETIEN_1,
-  pointsAlerteTrameE1,
+  CRITERES_APPRECIATION,
+  TRAME_ENTRETIEN,
+  pointsAlerteTrame,
   questionsOuiNonSansReponse,
-  questionsTrameE1,
+  questionsTrame,
   reponseTrameRenseignee,
-} from './trame-entretien-1';
+} from './trame-entretien';
 
-describe('TRAME_ENTRETIEN_1 — structure', () => {
+describe('TRAME_ENTRETIEN — structure', () => {
   it('expose les 5 rubriques dans l’ordre du document', () => {
-    expect(TRAME_ENTRETIEN_1.map((r) => r.id)).toEqual([
+    expect(TRAME_ENTRETIEN.map((r) => r.id)).toEqual([
       'integration',
       'accompagnement',
       'adequation',
@@ -20,22 +20,22 @@ describe('TRAME_ENTRETIEN_1 — structure', () => {
   });
 
   it('comporte 25 questions au total (18 oui/non + 7 texte)', () => {
-    const toutes = questionsTrameE1();
+    const toutes = questionsTrame();
     expect(toutes).toHaveLength(25);
     expect(toutes.filter((q) => q.type === 'oui-non')).toHaveLength(18);
     expect(toutes.filter((q) => q.type === 'texte')).toHaveLength(7);
   });
 
   it('toutes les questions oui/non sont des points d’alerte potentiels (alerteSiNon)', () => {
-    for (const q of questionsTrameE1().filter((q) => q.type === 'oui-non')) {
+    for (const q of questionsTrame().filter((q) => q.type === 'oui-non')) {
       expect(q.alerteSiNon).toBe(true);
     }
   });
 
   it('chaque question a un id unique et un libellé non vide', () => {
-    const ids = questionsTrameE1().map((q) => q.id);
+    const ids = questionsTrame().map((q) => q.id);
     expect(new Set(ids).size).toBe(ids.length);
-    for (const q of questionsTrameE1()) {
+    for (const q of questionsTrame()) {
       expect(q.libelle.trim().length).toBeGreaterThan(0);
     }
   });
@@ -57,7 +57,7 @@ describe('reponseTrameRenseignee', () => {
   });
 });
 
-describe('pointsAlerteTrameE1', () => {
+describe('pointsAlerteTrame', () => {
   it('retourne les questions oui/non répondues « Non »', () => {
     const reponses = {
       'e1-integ-regles': true,
@@ -65,7 +65,7 @@ describe('pointsAlerteTrameE1', () => {
       'e1-org-absences': false, // alerte
       'e1-adeq-activites': 'des activités', // texte → jamais une alerte
     };
-    const alertes = pointsAlerteTrameE1(reponses).map((q) => q.id);
+    const alertes = pointsAlerteTrame(reponses).map((q) => q.id);
     expect(alertes).toContain('e1-integ-poste');
     expect(alertes).toContain('e1-org-absences');
     expect(alertes).not.toContain('e1-integ-regles'); // répondu « Oui »
@@ -73,9 +73,9 @@ describe('pointsAlerteTrameE1', () => {
   });
 
   it('aucune alerte si tout est « Oui » ou non renseigné', () => {
-    expect(pointsAlerteTrameE1({ 'e1-integ-poste': true })).toEqual([]);
-    expect(pointsAlerteTrameE1({})).toEqual([]);
-    expect(pointsAlerteTrameE1(undefined)).toEqual([]);
+    expect(pointsAlerteTrame({ 'e1-integ-poste': true })).toEqual([]);
+    expect(pointsAlerteTrame({})).toEqual([]);
+    expect(pointsAlerteTrame(undefined)).toEqual([]);
   });
 });
 
@@ -93,15 +93,15 @@ describe('questionsOuiNonSansReponse', () => {
   });
 });
 
-describe('CRITERES_APPRECIATION_E1', () => {
+describe('CRITERES_APPRECIATION', () => {
   it('expose les 4 critères avec une description par niveau (++/+/−/−−)', () => {
-    expect(CRITERES_APPRECIATION_E1.map((c) => c.cle)).toEqual([
+    expect(CRITERES_APPRECIATION.map((c) => c.cle)).toEqual([
       'ponctualite',
       'comprehensionConsignes',
       'qualiteTravail',
       'integration',
     ]);
-    for (const c of CRITERES_APPRECIATION_E1) {
+    for (const c of CRITERES_APPRECIATION) {
       for (const niveau of ['plusplus', 'plus', 'moins', 'moinsmoins'] as const) {
         expect(c.descriptions[niveau].trim().length).toBeGreaterThan(0);
       }

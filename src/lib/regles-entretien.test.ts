@@ -2,13 +2,12 @@ import { describe, expect, it } from 'vitest';
 import type { Apprenti, EntretienTripartite } from '@/types';
 import {
   calculerAlerteR7,
-  calculerProgression,
   DELAI_ENTRETIEN_JOURS,
+  entretienSigneParTous,
   peutEncoreEditer,
   peutInitialiserEntretien,
   validerSignatureEntretien,
 } from './regles-entretien';
-import { QUESTIONS_BANQUE_INITIALE, indexerBanque } from './questions-entretien';
 
 const apprenti = (contratDebut: string): Apprenti => ({
   id: 'a',
@@ -26,39 +25,9 @@ const apprenti = (contratDebut: string): Apprenti => ({
 });
 
 const entretienVide = (): EntretienTripartite => ({
-  // Refonte mai 2026 : on simule la sélection par défaut (toutes les
-  // questions de la banque) — équivalent fonctionnel à l'ancien format.
-  questionsApprentiSelectionnees: [
-    'q-app-motivations',
-    'q-app-contact-entreprise',
-    'q-app-connaissance-entreprise',
-    'q-app-metier-representation',
-    'q-app-difficultes-formation',
-    'q-app-difficultes-autres',
-    'q-app-ressenti-equipe',
-  ],
-  questionsMaitreSelectionnees: [
-    'q-mai-deja-forme',
-    'q-mai-diplomes-deja-formes',
-    'q-mai-objectifs-embauche',
-    'q-mai-organisation-tutorat',
-  ],
-  // Snapshots vides par défaut — les cas « questions obligatoires » les
-  // renseignent explicitement.
-  questionsImposees: [],
-  questionsObligatoires: [],
   evaluationsAttitudes: {},
-  reponsesApprenti: {},
-  reponsesMaitre: {},
+  reponsesTrame: {},
   appreciationMaitre: {},
-  demarchesAdministratives: {
-    contratSigne: null,
-    visiteMedicale: null,
-    permisConduire: null,
-    voiture: null,
-  },
-  conditionsPratiques: {},
-  aidesDemandees: { logement: null, premierEquipement: null, permis: null },
   commentaires: {},
   signatures: {
     apprenti: { signe: false },
@@ -145,73 +114,61 @@ describe('R8 / R9 — verrouillage progressif des sections', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-describe('peutInitialiserEntretien — séquencement (juin 2026)', () => {
-  const signe = (): EntretienTripartite => ({
-    ...entretienVide(),
-    signatures: {
-      apprenti: { signe: true, dateSignature: '2026-04-01T10:00:00Z' },
-      maitre: { signe: true, dateSignature: '2026-04-01T10:00:00Z' },
-      formateur: { signe: true, dateSignature: '2026-04-01T10:00:00Z' },
-    },
-  });
-  const vides = { 1: null, 2: null, 3: null, 4: null } as const;
-
-  it('E1 est toujours initialisable', () => {
-    expect(peutInitialiserEntretien(1, { ...vides }).ok).toBe(true);
+describe('peutInitialiserEntretien — R6 (entretien unique, juillet 2026)', () => {
+  it("l'entretien est initialisable tant qu'il n'existe pas", () => {
+    expect(peutInitialiserEntretien(null).ok).toBe(true);
   });
 
   it("un entretien déjà initialisé ne l'est pas une seconde fois (R6)", () => {
-    expect(peutInitialiserEntretien(1, { ...vides, 1: entretienVide() }).ok).toBe(false);
-  });
-
-  it("E2 refusé tant que E1 n'est pas initialisé", () => {
-    const r = peutInitialiserEntretien(2, { ...vides });
+    const r = peutInitialiserEntretien(entretienVide());
     expect(r.ok).toBe(false);
-    expect(r.raison).toMatch(/entretien tripartite 1/);
+    expect(r.raison).toMatch(/déjà initialisé/);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+describe('entretienSigneParTous', () => {
+  it('est vrai seulement quand les 3 parties obligatoires ont signé', () => {
+    const e = entretienVide();
+    expect(entretienSigneParTous(null)).toBe(false);
+    expect(entretienSigneParTous(e)).toBe(false);
+    e.signatures = {
+      apprenti: { signe: true },
+      maitre: { signe: true },
+      formateur: { signe: true },
+    };
+    expect(entretienSigneParTous(e)).toBe(true);
   });
 
-  it("E2 refusé tant que E1 n'est pas signé par les 3 parties", () => {
-    const partiel = entretienVide();
-    partiel.signatures.apprenti = { signe: true, dateSignature: '2026-04-01T10:00:00Z' };
-    const r = peutInitialiserEntretien(2, { ...vides, 1: partiel });
-    expect(r.ok).toBe(false);
-    expect(r.raison).toMatch(/signé par les 3 parties/);
-  });
-
-  it('E2 autorisé quand E1 est signé par les 3 parties', () => {
-    expect(peutInitialiserEntretien(2, { ...vides, 1: signe() }).ok).toBe(true);
-  });
-
-  it('E4 exige E3 signé — peu importe E1/E2', () => {
-    const entretiens = { 1: signe(), 2: signe(), 3: entretienVide(), 4: null };
-    const r = peutInitialiserEntretien(4, entretiens);
-    expect(r.ok).toBe(false);
-    expect(r.raison).toMatch(/entretien tripartite 3/);
-    expect(peutInitialiserEntretien(4, { ...entretiens, 3: signe() }).ok).toBe(true);
+  it('la signature du représentant légal ne compte pas dans le décompte', () => {
+    const e = entretienVide();
+    e.signatures = {
+      apprenti: { signe: true },
+      maitre: { signe: true },
+      formateur: { signe: false },
+      representantLegal: { signe: true },
+    };
+    expect(entretienSigneParTous(e)).toBe(false);
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('validerSignatureEntretien', () => {
-  const BANQUE = indexerBanque(QUESTIONS_BANQUE_INITIALE);
-
-  it('apprenti·e ne peut pas signer sans aucune réponse', () => {
+  it('apprenti·e peut signer sans exigence de saisie (trame co-saisie par le formateur et le maître)', () => {
     const e = entretienVide();
-    const r = validerSignatureEntretien(e, 'apprenti', BANQUE);
-    expect(r.peutSigner).toBe(false);
+    expect(validerSignatureEntretien(e, 'apprenti').peutSigner).toBe(true);
   });
 
-  it('apprenti·e peut signer avec au moins une réponse renseignée', () => {
+  it('formateur peut signer sans exigence de saisie (trame « première visite »)', () => {
     const e = entretienVide();
-    e.reponsesApprenti['q-app-motivations'] = 'Mon projet professionnel.';
-    expect(validerSignatureEntretien(e, 'apprenti', BANQUE).peutSigner).toBe(true);
+    expect(validerSignatureEntretien(e, 'formateur').peutSigner).toBe(true);
   });
 
   // Refonte mai 2026 : la signature maître exige uniquement au moins un
-  // critère d'appréciation. La saisie des questions est laissée libre.
+  // critère d'appréciation (+ une attitude évaluée, juin 2026).
   it("maître ne peut pas signer sans aucun critère d'appréciation", () => {
     const e = entretienVide();
-    const r = validerSignatureEntretien(e, 'maitre', BANQUE);
+    const r = validerSignatureEntretien(e, 'maitre');
     expect(r.peutSigner).toBe(false);
     expect(r.raisons.some((m) => m.includes('appréciation'))).toBe(true);
   });
@@ -219,119 +176,36 @@ describe('validerSignatureEntretien', () => {
   it("maître peut signer avec un critère d'appréciation ET une attitude évaluée (juin 2026)", () => {
     const e = entretienVide();
     e.appreciationMaitre.qualiteTravail = 'plusplus';
-    e.evaluationsAttitudes = { a1: 'plus' };
-    expect(validerSignatureEntretien(e, 'maitre', BANQUE).peutSigner).toBe(true);
+    e.evaluationsAttitudes = { a5: 'plus' };
+    expect(validerSignatureEntretien(e, 'maitre').peutSigner).toBe(true);
   });
 
   it('maître bloqué sans aucune attitude évaluée, même avec appréciation (extension R20 juin 2026)', () => {
     const e = entretienVide();
     e.appreciationMaitre.qualiteTravail = 'plusplus';
-    const r = validerSignatureEntretien(e, 'maitre', BANQUE);
+    const r = validerSignatureEntretien(e, 'maitre');
     expect(r.peutSigner).toBe(false);
     expect(r.raisons.some((m) => m.includes('attitude professionnelle'))).toBe(true);
   });
 
-  it('formateur ne peut pas signer sans aucune démarche administrative', () => {
+  it('maître orienté vers le CHOIX des attitudes tant que la sélection du livret est vide (13 juin 2026)', () => {
     const e = entretienVide();
-    expect(validerSignatureEntretien(e, 'formateur', BANQUE).peutSigner).toBe(false);
+    e.appreciationMaitre.qualiteTravail = 'plus';
+    const r = validerSignatureEntretien(e, 'maitre', []);
+    expect(r.peutSigner).toBe(false);
+    expect(r.raisons.some((m) => m.includes('Choisissez les attitudes'))).toBe(true);
   });
 
-  it('formateur peut signer avec au moins une démarche renseignée', () => {
+  it('maître signe quand la sélection est faite et une attitude retenue est évaluée', () => {
     const e = entretienVide();
-    e.demarchesAdministratives.contratSigne = true;
-    expect(validerSignatureEntretien(e, 'formateur', BANQUE).peutSigner).toBe(true);
+    e.appreciationMaitre.qualiteTravail = 'plus';
+    e.evaluationsAttitudes = { a5: 'plus' };
+    expect(validerSignatureEntretien(e, 'maitre', ['a5']).peutSigner).toBe(true);
   });
 
   it("coordo et admin ne peuvent jamais signer l'entretien", () => {
     const e = entretienVide();
-    expect(validerSignatureEntretien(e, 'coordo', BANQUE).peutSigner).toBe(false);
-    expect(validerSignatureEntretien(e, 'admin', BANQUE).peutSigner).toBe(false);
-  });
-
-  // Extension R20 juin 2026 (retours coordos) : questions obligatoires.
-  it('apprenti·e bloqué·e si une question obligatoire (cible apprenti) est sans réponse', () => {
-    const e = entretienVide();
-    e.questionsObligatoires = ['q-app-motivations'];
-    // Une réponse à une AUTRE question ne suffit pas.
-    e.reponsesApprenti['q-app-ressenti-equipe'] = 'Bonne ambiance.';
-    const r = validerSignatureEntretien(e, 'apprenti', BANQUE);
-    expect(r.peutSigner).toBe(false);
-    expect(r.raisons.some((m) => m.includes('obligatoire') && m.includes('motivations'))).toBe(
-      true,
-    );
-  });
-
-  it('apprenti·e peut signer une fois la question obligatoire répondue', () => {
-    const e = entretienVide();
-    e.questionsObligatoires = ['q-app-motivations'];
-    e.reponsesApprenti['q-app-motivations'] = 'Devenir chef·fe de partie.';
-    expect(validerSignatureEntretien(e, 'apprenti', BANQUE).peutSigner).toBe(true);
-  });
-
-  it('maître bloqué si une question obligatoire (cible maître) est sans réponse, même avec appréciation', () => {
-    const e = entretienVide();
-    e.questionsObligatoires = ['q-mai-deja-forme'];
-    e.appreciationMaitre.qualiteTravail = 'plus';
-    const r = validerSignatureEntretien(e, 'maitre', BANQUE);
-    expect(r.peutSigner).toBe(false);
-    expect(r.raisons.some((m) => m.includes('obligatoire'))).toBe(true);
-  });
-
-  it('maître : « non » (false) est une réponse valable à une question oui-non obligatoire', () => {
-    const e = entretienVide();
-    e.questionsObligatoires = ['q-mai-deja-forme'];
-    e.appreciationMaitre.qualiteTravail = 'plus';
-    e.evaluationsAttitudes = { a1: 'plus' };
-    e.reponsesMaitre['q-mai-deja-forme'] = false;
-    expect(validerSignatureEntretien(e, 'maitre', BANQUE).peutSigner).toBe(true);
-  });
-
-  it("les questions obligatoires de l'autre cible ne bloquent pas la signature", () => {
-    const e = entretienVide();
-    e.questionsObligatoires = ['q-app-motivations', 'q-mai-deja-forme'];
-    e.appreciationMaitre.qualiteTravail = 'plus';
-    e.evaluationsAttitudes = { a1: 'plus' };
-    e.reponsesMaitre['q-mai-deja-forme'] = true;
-    // Le maître signe alors que la question obligatoire APPRENTI est sans réponse.
-    expect(validerSignatureEntretien(e, 'maitre', BANQUE).peutSigner).toBe(true);
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-describe('calculerProgression', () => {
-  it('retourne 0% sur un entretien vierge', () => {
-    const r = calculerProgression(entretienVide());
-    expect(r.global).toBe(0);
-    expect(r.parRole.apprenti).toBe(0);
-    expect(r.parRole.maitre).toBe(0);
-    expect(r.parRole.formateur).toBe(0);
-  });
-
-  it('incrémente le score apprenti·e au fur et à mesure', () => {
-    const e = entretienVide();
-    e.reponsesApprenti['q-app-motivations'] = 'X';
-    e.reponsesApprenti['q-app-contact-entreprise'] = 'Y';
-    const r = calculerProgression(e);
-    // 2 / 7 ≈ 29 %
-    expect(r.parRole.apprenti).toBeGreaterThan(20);
-    expect(r.parRole.apprenti).toBeLessThan(40);
-  });
-
-  it('retourne 100% pour le rôle dont la section est entièrement remplie', () => {
-    const e = entretienVide();
-    e.demarchesAdministratives = {
-      contratSigne: true,
-      visiteMedicale: true,
-      permisConduire: false,
-      voiture: false,
-    };
-    e.conditionsPratiques = {
-      hebergementCentre: 'X',
-      hebergementEntreprise: 'X',
-      transportCentre: 'X',
-      transportEntreprise: 'X',
-    };
-    e.aidesDemandees = { logement: false, premierEquipement: false, permis: false };
-    expect(calculerProgression(e).parRole.formateur).toBe(100);
+    expect(validerSignatureEntretien(e, 'coordo').peutSigner).toBe(false);
+    expect(validerSignatureEntretien(e, 'admin').peutSigner).toBe(false);
   });
 });

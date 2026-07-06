@@ -290,7 +290,7 @@ describe('calculerResumeLivret — transitions de cas', () => {
     const livretTheo = getLivret(apprentiTheoDubois.id);
     const livretSofiaEntretienSigne: Livret = {
       ...livretSofia,
-      entretiens: { ...livretSofia.entretiens, 1: livretTheo.entretiens[1] },
+      entretien: livretTheo.entretien,
     };
     const r = calculerResumeLivret(apprentiSofiaPereira, livretSofiaEntretienSigne, MAINTENANT);
     expect(r.cas).not.toBe('alerte-r7');

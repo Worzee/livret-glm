@@ -1,9 +1,7 @@
 import type {
+  EntretienTripartite,
   EvenementOrganisationSuivi,
-  Livret,
-  ModaliteEntretien,
   MotifOrganisationSuivi,
-  NumeroEntretien,
   Role,
 } from '@/types';
 
@@ -14,6 +12,10 @@ import type {
  * Chaque entrée porte les métadonnées d'affichage (libellé, description, aide
  * de saisie pour le commentaire). L'ordre de la liste détermine l'ordre dans
  * le sélecteur d'ajout.
+ *
+ * Juillet 2026 : l'entretien tripartite est unique et obligatoire (les
+ * motifs `entretien-tripartite-2/3/4` ont été supprimés — le suivi ultérieur
+ * passe par les fiches de suivi).
  *
  * Pures fonctions — pas d'effet de bord, testables sans React.
  */
@@ -64,29 +66,10 @@ export const MOTIFS_ORGANISATION_SUIVI: ReadonlyArray<MetadonneesMotif> = [
     placeholderCommentaire: 'Période, intervenants, modalités…',
   },
   {
-    motif: 'entretien-tripartite-1',
-    libelle: 'Entretien Tripartite 1',
+    motif: 'entretien-tripartite',
+    libelle: 'Entretien Tripartite',
     description:
-      'Premier entretien tripartite — typiquement dans les 2 mois suivant la signature du contrat (R7).',
-    placeholderCommentaire: 'Date prévue, modalités, participants…',
-  },
-  {
-    motif: 'entretien-tripartite-2',
-    libelle: 'Entretien Tripartite 2',
-    description: 'Deuxième entretien tripartite — bilan ou réajustement en cours de formation.',
-    placeholderCommentaire: 'Date prévue, modalités, participants…',
-  },
-  {
-    motif: 'entretien-tripartite-3',
-    libelle: 'Entretien Tripartite 3',
-    description:
-      'Troisième entretien tripartite — formations longues (2 ans), bilan de progression.',
-    placeholderCommentaire: 'Date prévue, modalités, participants…',
-  },
-  {
-    motif: 'entretien-tripartite-4',
-    libelle: 'Entretien Tripartite 4',
-    description: 'Quatrième entretien tripartite — formations longues (2 ans), bilan final.',
+      "L'entretien tripartite obligatoire — typiquement dans les 2 mois suivant la signature du contrat (R7). Se tient en présentiel.",
     placeholderCommentaire: 'Date prévue, modalités, participants…',
   },
   {
@@ -138,16 +121,12 @@ export function creerEvenementVierge(
   motif: MotifOrganisationSuivi,
   idCustom?: string,
 ): EvenementOrganisationSuivi {
-  // Les entretiens tripartites démarrent en présentiel (imposé pour E1,
-  // défaut modifiable pour E2..E4) ; les autres motifs n'ont pas de modalité.
-  const modalite = modaliteParDefaut(motif);
   return {
     id: idCustom ?? `evt-${crypto.randomUUID().slice(0, 8)}`,
     motif,
     titre: '',
     date: '',
     commentaire: '',
-    ...(modalite ? { modalite } : {}),
   };
 }
 
@@ -166,13 +145,13 @@ export interface VerrouSuppressionEvenement {
  *  1. Un événement verrouillé doit d'abord être déverrouillé. Évite qu'un
  *     clic accidentel sur « Supprimer » fasse perdre une saisie qu'on a
  *     justement protégée.
- *  2. (juin 2026) Un événement « Entretien Tripartite N » dont l'entretien
+ *  2. (juin 2026) L'événement « Entretien Tripartite » dont l'entretien
  *     est **signé par au moins une partie** ne peut plus être supprimé —
  *     la fiche de suivi trace un acte engagé.
  */
 export function peutSupprimerEvenement(
   evt: EvenementOrganisationSuivi,
-  entretiens?: Livret['entretiens'],
+  entretien?: EntretienTripartite | null,
 ): VerrouSuppressionEvenement {
   if (evt.verrouille) {
     return {
@@ -180,16 +159,12 @@ export function peutSupprimerEvenement(
       raison: "Déverrouillez d'abord cet événement pour pouvoir le supprimer.",
     };
   }
-  const numero = numeroEntretienPourMotif(evt.motif);
-  if (numero !== null && entretiens) {
-    const entretien = entretiens[numero];
-    const nbSignatures = entretien
-      ? Object.values(entretien.signatures).filter((s) => s.signe).length
-      : 0;
+  if (estMotifEntretienTripartite(evt.motif) && entretien) {
+    const nbSignatures = Object.values(entretien.signatures).filter((s) => s.signe).length;
     if (nbSignatures > 0) {
       return {
         supprimable: false,
-        raison: `L'entretien tripartite ${numero} est signé par ${nbSignatures} partie${
+        raison: `L'entretien tripartite est signé par ${nbSignatures} partie${
           nbSignatures > 1 ? 's' : ''
         } — sa fiche de suivi ne peut plus être supprimée.`,
       };
@@ -199,125 +174,48 @@ export function peutSupprimerEvenement(
 }
 
 /**
- * Retourne le numéro d'entretien tripartite associé à un motif, ou `null`
- * si le motif n'est pas un entretien. Pratique pour aiguiller l'UI :
- * « cet événement ouvre-t-il un entretien tripartite et lequel ? ».
+ * Le motif est-il celui de l'entretien tripartite ? Pratique pour aiguiller
+ * l'UI : « cet événement ouvre-t-il l'entretien tripartite ? ».
  */
-export function numeroEntretienPourMotif(motif: MotifOrganisationSuivi): NumeroEntretien | null {
-  switch (motif) {
-    case 'entretien-tripartite-1':
-      return 1;
-    case 'entretien-tripartite-2':
-      return 2;
-    case 'entretien-tripartite-3':
-      return 3;
-    case 'entretien-tripartite-4':
-      return 4;
-    default:
-      return null;
-  }
-}
-
-/**
- * La modalité de déroulement (présentiel / distanciel) s'applique-t-elle à ce
- * motif ? Vrai uniquement pour les entretiens tripartites (15 juin 2026).
- */
-export function motifAvecModalite(motif: MotifOrganisationSuivi): boolean {
-  return numeroEntretienPourMotif(motif) !== null;
-}
-
-/**
- * Modalité **imposée** pour un motif, ou `null` si elle est libre (au choix)
- * ou non applicable. L'entretien tripartite 1 est obligatoirement en
- * présentiel ; les entretiens 2 à 4 sont au choix (présentiel ou distanciel).
- */
-export function modaliteImposee(motif: MotifOrganisationSuivi): ModaliteEntretien | null {
-  return motif === 'entretien-tripartite-1' ? 'presentiel' : null;
-}
-
-/**
- * Modalité par défaut à la création d'un événement : `'presentiel'` pour tout
- * entretien tripartite (imposé pour E1, défaut modifiable pour E2..E4),
- * `undefined` pour les autres motifs.
- */
-export function modaliteParDefaut(motif: MotifOrganisationSuivi): ModaliteEntretien | undefined {
-  return motifAvecModalite(motif) ? 'presentiel' : undefined;
-}
-
-/**
- * Modalité **effective** d'un événement, telle qu'elle doit être affichée :
- * la modalité imposée prime (E1 → présentiel), sinon la valeur stockée, sinon
- * le défaut `'presentiel'`. Renvoie `null` pour les motifs sans modalité.
- */
-export function modaliteEffective(evt: EvenementOrganisationSuivi): ModaliteEntretien | null {
-  if (!motifAvecModalite(evt.motif)) return null;
-  return modaliteImposee(evt.motif) ?? evt.modalite ?? 'presentiel';
-}
-
-/** Libellé court d'une modalité, pour l'UI et le PDF. */
-export function libelleModalite(modalite: ModaliteEntretien): string {
-  return modalite === 'presentiel' ? 'Présentiel' : 'Distanciel';
+export function estMotifEntretienTripartite(motif: MotifOrganisationSuivi): boolean {
+  return motif === 'entretien-tripartite';
 }
 
 /**
  * Indique si la fiche de suivi d'un événement est **figée par la signature**
- * de son entretien tripartite (15 juin 2026) : dès que l'entretien
- * correspondant est signé par les **3 parties** (apprenti·e + maître +
- * formateur), tous les champs de la carte (titre, date, commentaire,
- * modalité) passent en lecture seule, sans déverrouillage possible —
- * cohérent avec R9 (entretien signé = figé). Faux pour les motifs hors
- * entretien tripartite.
+ * de son entretien tripartite (15 juin 2026) : dès que l'entretien est signé
+ * par les **3 parties** (apprenti·e + maître + formateur), tous les champs de
+ * la carte (titre, date, commentaire) passent en lecture seule, sans
+ * déverrouillage possible — cohérent avec R9 (entretien signé = figé). Faux
+ * pour les motifs hors entretien tripartite.
  */
 export function evenementFigeParSignature(
   evt: EvenementOrganisationSuivi,
-  entretiens?: Livret['entretiens'],
+  entretien?: EntretienTripartite | null,
 ): boolean {
-  const numero = numeroEntretienPourMotif(evt.motif);
-  if (numero === null || !entretiens) return false;
-  const entretien = entretiens[numero];
-  if (!entretien) return false;
+  if (!estMotifEntretienTripartite(evt.motif) || !entretien) return false;
   const { apprenti, maitre, formateur } = entretien.signatures;
   return apprenti.signe && maitre.signe && formateur.signe;
-}
-
-/**
- * Catalogue des motifs proposables pour une formation donnée : les motifs
- * `entretien-tripartite-N` au-delà de `nombreEntretiens` sont masqués
- * (retours coordos juin 2026 — le nombre d'entretiens est défini par le
- * coordo au niveau de la formation). Les autres motifs sont toujours
- * proposés.
- */
-export function motifsDisponibles(
-  nombreEntretiens: NumeroEntretien,
-): ReadonlyArray<MetadonneesMotif> {
-  return MOTIFS_ORGANISATION_SUIVI.filter((m) => {
-    const n = numeroEntretienPourMotif(m.motif);
-    return n === null || n <= nombreEntretiens;
-  });
 }
 
 /**
  * Motifs proposables dans le sélecteur d'ajout selon le rôle actif
  * (retours coordos juin 2026, 2ᵉ passe) :
  *
- *  - **formateur référent** : uniquement les motifs entretien tripartite
- *    (1..N de la formation) — la planification des autres événements
- *    (réunions, visites, bilans…) relève du coordo ;
- *  - **coordo / admin** : tous les motifs (entretiens compris) ;
+ *  - **formateur référent** : uniquement le motif entretien tripartite —
+ *    la planification des autres événements (réunions, visites, bilans…)
+ *    relève du coordo ;
+ *  - **coordo / admin** : tous les motifs (entretien compris) ;
  *  - autres rôles : aucun (lecture seule de toute façon).
  *
  * La modification / suppression des événements existants reste régie par la
  * ressource `organisation-suivi` (formateur + coordo + admin), quel que
  * soit le motif.
  */
-export function motifsProposablesPourRole(
-  nombreEntretiens: NumeroEntretien,
-  role: Role,
-): ReadonlyArray<MetadonneesMotif> {
-  const disponibles = motifsDisponibles(nombreEntretiens);
-  if (role === 'coordo' || role === 'admin') return disponibles;
+export function motifsProposablesPourRole(role: Role): ReadonlyArray<MetadonneesMotif> {
+  if (role === 'coordo' || role === 'admin') return MOTIFS_ORGANISATION_SUIVI;
   if (role === 'formateur') {
-    return disponibles.filter((m) => numeroEntretienPourMotif(m.motif) !== null);
+    return MOTIFS_ORGANISATION_SUIVI.filter((m) => estMotifEntretienTripartite(m.motif));
   }
   return [];
 }

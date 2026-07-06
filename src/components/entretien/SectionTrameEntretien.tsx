@@ -6,7 +6,7 @@ import {
   ListChecks,
   UserCog,
 } from 'lucide-react';
-import type { EntretienTripartite, NiveauAppreciation, NumeroEntretien } from '@/types';
+import type { EntretienTripartite, NiveauAppreciation } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
 import { useAttitudesStore } from '@/store/useAttitudesStore';
@@ -14,33 +14,31 @@ import { peutEditer, type Ressource } from '@/lib/droits';
 import { peutEncoreEditer } from '@/lib/regles-entretien';
 import { attitudesRetenues } from '@/lib/selection-attitudes';
 import {
-  CRITERES_APPRECIATION_E1,
-  TRAME_ENTRETIEN_1,
-  pointsAlerteTrameE1,
-  type QuestionTrameE1,
-  type RubriqueTrameE1,
-} from '@/lib/trame-entretien-1';
+  CRITERES_APPRECIATION,
+  TRAME_ENTRETIEN,
+  pointsAlerteTrame,
+  type QuestionTrame,
+  type RubriqueTrame,
+} from '@/lib/trame-entretien';
 import { cn } from '@/lib/utils';
 import { CaseOuiNon } from './CaseOuiNon';
 import { SelecteurAppreciation } from '@/components/common/SelecteurAppreciation';
 
 /**
- * Trame officielle de l'entretien tripartite n° 1 (« première visite »).
- * Référence : document GRETA (réunion juin 2026), cf. `lib/trame-entretien-1`.
+ * Trame officielle de l'entretien tripartite (« première visite »).
+ * Référence : document GRETA (réunion juin 2026), cf. `lib/trame-entretien`.
  *
- * Spécifique à E1 : les rubriques thématiques (questions conjointes maître +
- * apprenti·e) remplacent les sections apprenti/maître et les blocs démarches /
- * conditions / aides. La grille d'appréciation est enrichie des descriptions
- * par niveau et un récapitulatif des « points d'alerte » (réponses « Non »)
- * liste les actions à mener par le GRETA CFA (DDF / coordonnateur).
+ * Rubriques thématiques (questions conjointes maître + apprenti·e), grille
+ * d'appréciation enrichie des descriptions par niveau et récapitulatif des
+ * « points d'alerte » (réponses « Non ») listant les actions à mener par le
+ * GRETA CFA (DDF / coordonnateur).
  *
  * Co-saisie par le formateur référent et le maître / tuteur (`entretien.trame`)
  * tant que l'entretien n'est pas signé par les 3 parties (R9).
  */
 
-interface SectionTrameEntretien1Props {
+interface SectionTrameEntretienProps {
   livretId: string;
-  numero: NumeroEntretien;
   entretien: EntretienTripartite;
   /** R9 : signé par les 3 parties → entretien figé, tout en lecture seule. */
   entretienVerrouille: boolean;
@@ -83,12 +81,11 @@ const NIVEAUX: ReadonlyArray<{
   },
 ];
 
-export function SectionTrameEntretien1({
+export function SectionTrameEntretien({
   livretId,
-  numero,
   entretien,
   entretienVerrouille,
-}: SectionTrameEntretien1Props) {
+}: SectionTrameEntretienProps) {
   const roleActif = useUserStore((s) => s.roleActif);
   const setReponseTrame = useLivretStore((s) => s.setReponseTrameEntretien);
   const setAppreciation = useLivretStore((s) => s.setAppreciationMaitre);
@@ -100,13 +97,13 @@ export function SectionTrameEntretien1({
   const editableTrame = peutEditer(roleActif, 'entretien.trame') && !entretienVerrouille;
   const editableGrille =
     peutEditer(roleActif, 'entretien.appreciation-maitre') && !entretienVerrouille;
-  // Attitudes : choisies à l'E1 (conservées), évaluées par le maître / tuteur.
+  // Attitudes : choisies à l'entretien, évaluées par le maître / tuteur.
   const editableAttitudes =
     peutEditer(roleActif, 'entretien.attitudes') && peutEncoreEditer('maitre', entretien);
   const attitudes = attitudesRetenues(Object.values(attitudesMap), attitudesSelectionnees ?? []);
 
-  const reponses = entretien.reponsesTrame ?? {};
-  const alertes = pointsAlerteTrameE1(reponses);
+  const reponses = entretien.reponsesTrame;
+  const alertes = pointsAlerteTrame(reponses);
 
   return (
     <div className="space-y-4">
@@ -124,13 +121,13 @@ export function SectionTrameEntretien1({
         </p>
       </div>
 
-      {TRAME_ENTRETIEN_1.map((rubrique) => (
-        <RubriqueTrame
+      {TRAME_ENTRETIEN.map((rubrique) => (
+        <RubriqueTrameCarte
           key={rubrique.id}
           rubrique={rubrique}
           reponses={reponses}
           editable={editableTrame}
-          onChange={(questionId, valeur) => setReponseTrame(livretId, numero, questionId, valeur)}
+          onChange={(questionId, valeur) => setReponseTrame(livretId, questionId, valeur)}
         />
       ))}
 
@@ -148,18 +145,18 @@ export function SectionTrameEntretien1({
             </p>
           </div>
         </header>
-        {CRITERES_APPRECIATION_E1.map((critere) => (
+        {CRITERES_APPRECIATION.map((critere) => (
           <LigneAppreciation
             key={critere.cle}
             critere={critere}
             valeur={entretien.appreciationMaitre[critere.cle]}
             editable={editableGrille}
-            onChange={(niveau) => setAppreciation(livretId, numero, { [critere.cle]: niveau })}
+            onChange={(niveau) => setAppreciation(livretId, { [critere.cle]: niveau })}
           />
         ))}
       </section>
 
-      {/* Attitudes professionnelles (choisies à l'E1, conservées) — évaluées
+      {/* Attitudes professionnelles (choisies à l'entretien) — évaluées
           par le maître / tuteur ; au moins une requise pour sa signature. */}
       <section
         data-testid="attitudes-entretien"
@@ -167,7 +164,7 @@ export function SectionTrameEntretien1({
       >
         <h2 className="text-base font-semibold">Attitudes professionnelles</h2>
         <p className="text-xs text-muted-foreground">
-          Retenues à l'entretien 1, évaluées par le maître / tuteur (au moins une requise pour
+          Retenues à l'entretien, évaluées par le maître / tuteur (au moins une requise pour
           signer).
         </p>
         {attitudes.length === 0 ? (
@@ -190,7 +187,7 @@ export function SectionTrameEntretien1({
                 <SelecteurAppreciation
                   editable={editableAttitudes}
                   valeur={entretien.evaluationsAttitudes[a.id] ?? null}
-                  onChange={(v) => setEvaluationAttitude(livretId, numero, a.id, v)}
+                  onChange={(v) => setEvaluationAttitude(livretId, a.id, v)}
                   ariaLabel={`Attitude — ${a.libelle}`}
                 />
               </div>
@@ -213,7 +210,7 @@ export function SectionTrameEntretien1({
           </p>
         </header>
         <div className="grid gap-3 md:grid-cols-3">
-          {COMMENTAIRES_E1.map(({ role, ressource, titre, bordure, classeRole, Icon }) => {
+          {COMMENTAIRES_ENTRETIEN.map(({ role, ressource, titre, bordure, classeRole, Icon }) => {
             const editable =
               peutEditer(roleActif, ressource) &&
               peutEncoreEditer(role, entretien) &&
@@ -237,7 +234,7 @@ export function SectionTrameEntretien1({
                   <textarea
                     rows={3}
                     value={valeur}
-                    onChange={(e) => setCommentaire(livretId, numero, role, e.target.value)}
+                    onChange={(e) => setCommentaire(livretId, role, e.target.value)}
                     placeholder="Votre commentaire sur cet entretien…"
                     aria-label={`Commentaire — ${titre}`}
                     className="w-full resize-y rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -261,8 +258,8 @@ export function SectionTrameEntretien1({
   );
 }
 
-/** Cartes de commentaires individuels de l'E1 — une par partie. */
-const COMMENTAIRES_E1: ReadonlyArray<{
+/** Cartes de commentaires individuels de l'entretien — une par partie. */
+const COMMENTAIRES_ENTRETIEN: ReadonlyArray<{
   role: 'apprenti' | 'maitre' | 'formateur';
   ressource: Ressource;
   titre: string;
@@ -300,13 +297,13 @@ const COMMENTAIRES_E1: ReadonlyArray<{
 // Rubrique thématique
 // ─────────────────────────────────────────────────────────────────────────────
 
-function RubriqueTrame({
+function RubriqueTrameCarte({
   rubrique,
   reponses,
   editable,
   onChange,
 }: {
-  rubrique: RubriqueTrameE1;
+  rubrique: RubriqueTrame;
   reponses: Record<string, string | boolean | null>;
   editable: boolean;
   onChange: (questionId: string, valeur: string | boolean | null) => void;
@@ -340,7 +337,7 @@ function ChampTrame({
   editable,
   onChange,
 }: {
-  question: QuestionTrameE1;
+  question: QuestionTrame;
   valeur: string | boolean | null | undefined;
   editable: boolean;
   onChange: (valeur: string | boolean | null) => void;
@@ -419,7 +416,7 @@ function LigneAppreciation({
   editable,
   onChange,
 }: {
-  critere: (typeof CRITERES_APPRECIATION_E1)[number];
+  critere: (typeof CRITERES_APPRECIATION)[number];
   valeur: NiveauAppreciation | undefined;
   editable: boolean;
   onChange: (niveau: NiveauAppreciation) => void;
@@ -459,7 +456,7 @@ function LigneAppreciation({
 // Récapitulatif des points d'alerte (réponses « Non »)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function RecapAlertes({ alertes }: { alertes: QuestionTrameE1[] }) {
+function RecapAlertes({ alertes }: { alertes: QuestionTrame[] }) {
   if (alertes.length === 0) {
     return (
       <section

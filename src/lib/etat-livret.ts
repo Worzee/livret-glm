@@ -79,12 +79,12 @@ export function calculerResumeLivret(
       f.historiqueDeverrouillages.length > 0 && f.etat !== 'signee' && f.etat !== 'verrouillee',
   );
 
-  // Refonte mai 2026 (chantier #2) : R7 et le cas pédagogique « entretien
-  // manquant » s'appliquent à E1. E2 = bilan mi-parcours, hors délai légal.
-  const alerteR7Result = calculerAlerteR7(apprenti, livret.entretiens[1], maintenant);
+  // R7 et le cas pédagogique « entretien manquant » s'appliquent à
+  // l'entretien tripartite (unique et obligatoire depuis juillet 2026).
+  const alerteR7Result = calculerAlerteR7(apprenti, livret.entretien, maintenant);
   const alerteR7 = alerteR7Result.declenchee;
 
-  const entretien = livret.entretiens[1];
+  const entretien = livret.entretien;
   const entretienAbsent = entretien === null;
   const entretienComplet =
     !!entretien &&

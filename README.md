@@ -4,7 +4,8 @@ Maquette numérique du livret d'apprentissage, **étape 1 / 3** (CDC v1.3 + adde
 
 > **À quoi ça sert ?** Démontrer à la direction du GRETA Lyon Métropole, sur une URL réelle protégée
 > par mot de passe, à quoi ressemblerait un livret d'apprentissage numérique : co-édition tripartite
-> (apprenti·e + maître + formateur), **jusqu'à 4 entretiens tripartites** avec banque de questions et attitudes professionnelles, fiches de
+> (apprenti·e + maître + formateur), **entretien tripartite unique et obligatoire** (trame officielle GRETA + attitudes professionnelles —
+> le suivi ultérieur passe par les fiches de suivi), fiches de
 > période **en entreprise et en centre de formation** (planning défini au niveau formation), évaluations finales, export PDF officiel,
 > administration métier (CRUD utilisateurs, formations, référentiels, **entreprises**, établissements, **import XLSX**).
 > Aucune donnée réelle, aucun tracker, aucune analytics.
@@ -15,7 +16,7 @@ Maquette numérique du livret d'apprentissage, **étape 1 / 3** (CDC v1.3 + adde
 | **Accès**         | Basic Auth `demo` / mdp partagé hors-canal                               |
 | **Pilote métier** | Guillaume FERRERI                                                        |
 | **État**          | Étape 1 livrée + 4 vagues post-livraison (CDC v1.5 + chantiers mai 2026) |
-| **Tests**         | **636 unit ✓ · 204 E2E ✓**                                               |
+| **Tests**         | **577 unit ✓ · 189 E2E ✓**                                               |
 
 ---
 
@@ -53,8 +54,8 @@ npm run lint              # ESLint
 npm run format            # Prettier (écriture)
 
 # Tests
-npm test                  # 636 tests Vitest unit
-npm run e2e               # 204 tests E2E Playwright (build + preview + tests)
+npm test                  # 577 tests Vitest unit
+npm run e2e               # 189 tests E2E Playwright (build + preview + tests)
 npm run e2e:ui            # UI Playwright pour debug
 npm run test:watch        # mode watch (unit)
 
@@ -83,7 +84,7 @@ LIVRET APPRENTISSAGE/
 ├── cahier-des-charges-livret-apprentissage-v1.5-addendum.md ← évolutions post-livraison
 ├── design-system/MASTER.md                                ← design system (CDC §14)
 ├── scripts/                                               ← déploiement VPS
-├── e2e/                                                   ← 28 specs Playwright
+├── e2e/                                                   ← 26 specs Playwright
 └── src/
     ├── types/index.ts              ← modèle (CDC §7 + extensions v1.5)
     ├── lib/                        ← logique métier pure + 39 fichiers tests TDD
@@ -91,19 +92,19 @@ LIVRET APPRENTISSAGE/
     │   ├── transitions-fiche.ts    ← R15/R16/R17/R21
     │   ├── validation-signature.ts ← R18/R20
     │   ├── regles-periode.ts       ← R11/R12/R13/R14
-    │   ├── regles-entretien.ts     ← R6/R7/R8/R9
+    │   ├── regles-entretien.ts     ← R6 (entretien unique)/R7/R8/R9
     │   ├── selection-competences-entreprise.ts ← CDC v1.5 §12 (sélection par livret)
     │   ├── cloture-livret.ts       ← R22
     │   ├── deverrouillage-fiche.ts ← R10 motivé
-    │   ├── questions-entretien.ts  ← banque de questions
+    │   ├── trame-entretien.ts      ← trame officielle de l'entretien tripartite
     │   ├── organisation-suivi.ts   ← refonte modulaire (liste d'événements)
     │   ├── import-referentiel.ts + parser-xlsx.ts ← CSV+XLSX
     │   ├── import-utilisateurs.ts + generer-xlsx-modele.ts ← chantier #5 (import XLSX users)
     │   ├── validation-periode-formation.ts ← chantier #1 (planning au niveau formation)
     │   ├── couleurs-role.ts        ← palette équilibrée mai 2026
-    │   └── *.test.ts               ← 636 tests Vitest
+    │   └── *.test.ts               ← 577 tests Vitest
     ├── store/                      ← 9 stores Zustand persistés
-    ├── fixtures/                   ← 6 livrets démo + utilisateurs + référentiels
+    ├── fixtures/                   ← 8 livrets démo + utilisateurs + référentiels
     ├── components/
     │   ├── layout/                 ← AppShell, Sidebar, RoleSwitcher, MobileMenu…
     │   ├── common/                 ← BoutonSigner, BoutonSupprimer, SelecteurNiveau…

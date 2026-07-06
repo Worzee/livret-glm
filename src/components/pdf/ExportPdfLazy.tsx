@@ -8,7 +8,6 @@ import type {
   Formation,
   Livret,
   Maitre,
-  QuestionBanque,
   Referentiel,
 } from '@/types';
 import { EntretienPdf, FichesSuiviPdf, LivretPdf, PeriodePdf } from './LivretPdf';
@@ -47,7 +46,6 @@ interface ExportPdfLazyProps {
   referentiel: Referentiel;
   etablissement?: Etablissement;
   entreprise?: Entreprise;
-  banqueQuestions: Record<string, QuestionBanque>;
   attitudes: ReadonlyArray<AttitudeProfessionnelle>;
 }
 
@@ -90,9 +88,9 @@ export default function ExportPdfLazy({ variante, ...donnees }: ExportPdfLazyPro
       break;
     }
     case 'entretien':
-      document = <EntretienPdf {...donnees} numero={variante.numero} />;
-      fileName = nomFichierEntretien(apprenti.nom, apprenti.prenom, variante.numero);
-      ariaLabel = `Télécharger l'entretien tripartite ${variante.numero} au format PDF`;
+      document = <EntretienPdf {...donnees} />;
+      fileName = nomFichierEntretien(apprenti.nom, apprenti.prenom);
+      ariaLabel = "Télécharger l'entretien tripartite au format PDF";
       break;
     case 'fiches-suivi':
       document = <FichesSuiviPdf {...donnees} />;

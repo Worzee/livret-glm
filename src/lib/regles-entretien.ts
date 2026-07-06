@@ -1,22 +1,16 @@
-import type {
-  Apprenti,
-  EntretienTripartite,
-  Livret,
-  NumeroEntretien,
-  QuestionBanque,
-  Role,
-} from '@/types';
-import { questionsObligatoiresSansReponse } from './questions-entretien';
+import type { Apprenti, EntretienTripartite, Role } from '@/types';
 import { auMoinsUneAttitudeEvaluee } from './attitudes';
 
 /**
- * Règles métier des entretiens tripartites.
- * Référence : cahier des charges v1.3 §8.2 + refonte mai 2026 (chantier #2).
+ * Règles métier de l'entretien tripartite.
+ * Référence : cahier des charges v1.3 §8.2 + refonte mai 2026 (chantier #2)
+ * + juillet 2026 : l'entretien tripartite est **unique et obligatoire** (les
+ * entretiens 2 à 4 ont été supprimés — le suivi ultérieur passe par les
+ * fiches de suivi).
  *
- *   R6  : au plus 2 entretiens tripartites par livret (E1 + E2)
- *   R7  : E1 devrait avoir lieu dans les 60 jours suivant contratDebut
- *         → bandeau d'alerte ambre, NE PAS bloquer. E2 n'est pas concerné
- *         par cette contrainte de délai (bilan mi-parcours).
+ *   R6  : un seul entretien tripartite par livret
+ *   R7  : l'entretien devrait avoir lieu dans les 60 jours suivant
+ *         contratDebut → bandeau d'alerte ambre, NE PAS bloquer
  *   R8  : éditable tant qu'aucune signature ; dès la 1ère signature, les
  *         champs du rôle signataire passent en lecture seule (les autres
  *         rôles peuvent encore remplir leur partie)
@@ -42,14 +36,10 @@ export interface AlerteR7 {
 
 /**
  * Détermine si l'alerte R7 doit s'afficher pour un livret donné.
- * - Pas d'alerte si l'**entretien 1** existe ET est signé par les 3 parties.
+ * - Pas d'alerte si l'entretien existe ET est signé par les 3 parties.
  * - Sinon, alerte dès que `today > contratDebut + 60 jours`.
  *
- * Refonte mai 2026 (chantier #2) : R7 s'applique uniquement à E1 (qui doit
- * se tenir tôt dans le parcours). E2 = bilan mi-parcours, sans contrainte
- * de délai.
- *
- * @param entretien L'entretien 1 du livret (ou `null` si pas encore initialisé).
+ * @param entretien L'entretien du livret (ou `null` si pas encore initialisé).
  */
 export function calculerAlerteR7(
   apprenti: Apprenti,
@@ -106,7 +96,7 @@ export function peutEncoreEditer(role: Role, entretien: EntretienTripartite): bo
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Séquencement des entretiens (retours coordos juin 2026)
+// Initialisation de l'entretien
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Un entretien est complet quand les 3 parties ont signé (R9). */
@@ -126,33 +116,14 @@ export interface ResultatInitialisationEntretien {
 }
 
 /**
- * L'entretien tripartite N peut-il être initialisé ?
- *
- * Règle (retours coordos juin 2026) : on ne peut pas initialiser
- * l'entretien suivant tant que le précédent n'est pas signé par les 3
- * parties. E1 est toujours initialisable ; un entretien déjà initialisé
- * ne l'est pas une seconde fois (R6).
+ * L'entretien tripartite peut-il être initialisé ? R6 : un seul entretien
+ * par livret — un entretien déjà initialisé ne l'est pas une seconde fois.
  */
 export function peutInitialiserEntretien(
-  numero: NumeroEntretien,
-  entretiens: Livret['entretiens'],
+  entretien: EntretienTripartite | null,
 ): ResultatInitialisationEntretien {
-  if (entretiens[numero] !== null) {
-    return { ok: false, raison: `L'entretien tripartite ${numero} est déjà initialisé.` };
-  }
-  if (numero === 1) return { ok: true };
-  const precedent = (numero - 1) as NumeroEntretien;
-  if (entretiens[precedent] === null) {
-    return {
-      ok: false,
-      raison: `Initialisez et faites signer l'entretien tripartite ${precedent} avant d'ouvrir l'entretien ${numero}.`,
-    };
-  }
-  if (!entretienSigneParTous(entretiens[precedent])) {
-    return {
-      ok: false,
-      raison: `L'entretien tripartite ${precedent} doit être signé par les 3 parties avant d'initialiser l'entretien ${numero}.`,
-    };
+  if (entretien !== null) {
+    return { ok: false, raison: "L'entretien tripartite est déjà initialisé." };
   }
   return { ok: true };
 }
@@ -164,23 +135,19 @@ export function peutInitialiserEntretien(
 /**
  * Vérifie qu'un rôle peut signer l'entretien tripartite.
  *
- * Critère de signature retenu (sprint 3) : la section principale du rôle
- * doit comporter au moins une saisie significative. Ces critères sont
- * volontairement souples (différents de R20 sur les fiches de période)
- * car l'entretien est un acte de cadrage, pas une évaluation périodique.
- *
- * Extension juin 2026 (retours coordos) : les questions marquées obligatoires
- * par le coordo (snapshot `entretien.questionsObligatoires`) doivent avoir une
- * réponse renseignée pour que la cible concernée (apprenti·e ou maître) puisse
- * signer. La `banque` sert à résoudre cible, type et libellé de chaque id.
+ * Critères volontairement souples (différents de R20 sur les fiches de
+ * période) car l'entretien est un acte de cadrage, pas une évaluation
+ * périodique. La trame officielle (« première visite ») est co-saisie par le
+ * formateur et le maître : l'apprenti·e et le formateur signent sans
+ * exigence de saisie ; le maître doit avoir évalué au moins un critère
+ * d'appréciation et une attitude professionnelle.
  */
 export function validerSignatureEntretien(
   entretien: EntretienTripartite,
   role: Role,
-  banque: Record<string, QuestionBanque>,
   /**
    * Ids des attitudes retenues pour le livret (13 juin 2026 — choisies à
-   * l'E1). Quand fourni et vide, la raison côté maître oriente vers le
+   * l'entretien). Quand fourni et vide, la raison côté maître oriente vers le
    * CHOIX plutôt que vers l'évaluation (rien à évaluer tant que rien n'est
    * retenu). Optionnel pour la rétrocompatibilité des appels existants.
    */
@@ -193,162 +160,35 @@ export function validerSignatureEntretien(
     return { peutSigner: false, raisons };
   }
 
-  switch (role) {
-    case 'apprenti': {
-      // Refonte mai 2026 : la signature est autorisée si au moins une des
-      // questions sélectionnées par le formateur référent a été répondue.
-      const reponses = entretien.reponsesApprenti;
-      const ids = entretien.questionsApprentiSelectionnees;
-      const auMoinsUneReponse = ids.some((id) => {
-        const v = reponses[id];
-        if (typeof v === 'string') return v.trim().length > 0;
-        return typeof v === 'boolean';
-      });
-      // Pas d'exigence quand l'apprenti·e n'a aucune question propre :
-      // entretien 1 (trame conjointe — juin 2026) ou formation sans question.
-      if (ids.length > 0 && !auMoinsUneReponse) {
-        raisons.push('Renseignez au moins une réponse à vos questions.');
-      }
-      for (const q of questionsObligatoiresSansReponse(entretien, 'apprenti', banque)) {
-        raisons.push(`Répondez à la question obligatoire « ${q.libelle} ».`);
-      }
-      break;
+  if (role === 'maitre') {
+    // Refonte mai 2026 : on exige uniquement au moins un critère
+    // d'appréciation.
+    const ap = entretien.appreciationMaitre;
+    const auMoinsUnCritere = !!(
+      ap.ponctualite ||
+      ap.comprehensionConsignes ||
+      ap.qualiteTravail ||
+      ap.integration
+    );
+    if (!auMoinsUnCritere) {
+      raisons.push("Évaluez au moins un critère d'appréciation (++, +, -, --).");
     }
-
-    case 'maitre': {
-      // Refonte mai 2026 : on exige uniquement au moins un critère
-      // d'appréciation. La saisie des questions sélectionnées reste libre
-      // (le formateur peut en avoir choisi 0 pour un cas simplifié).
-      const ap = entretien.appreciationMaitre;
-      const auMoinsUnCritere = !!(
-        ap.ponctualite ||
-        ap.comprehensionConsignes ||
-        ap.qualiteTravail ||
-        ap.integration
+    // Retours coordos juin 2026 : les attitudes professionnelles sont
+    // évaluées à l'entretien — au moins une est exigée pour signer.
+    // 13 juin 2026 : les attitudes se CHOISISSENT à l'entretien — tant que la
+    // sélection est vide, la raison oriente vers le choix.
+    if (attitudesSelectionnees !== undefined && attitudesSelectionnees.length === 0) {
+      raisons.push(
+        "Choisissez les attitudes professionnelles à évaluer (section « Choix des attitudes » de l'entretien).",
       );
-      if (!auMoinsUnCritere) {
-        raisons.push("Évaluez au moins un critère d'appréciation (++, +, -, --).");
-      }
-      // Retours coordos juin 2026 : les attitudes professionnelles sont
-      // évaluées à chaque entretien — au moins une est exigée pour signer.
-      // 13 juin 2026 : les attitudes se CHOISISSENT à l'E1 — tant que la
-      // sélection est vide, la raison oriente vers le choix.
-      if (attitudesSelectionnees !== undefined && attitudesSelectionnees.length === 0) {
-        raisons.push(
-          "Choisissez les attitudes professionnelles à évaluer (section « Choix des attitudes » de l'entretien 1).",
-        );
-      } else if (!auMoinsUneAttitudeEvaluee(entretien)) {
-        raisons.push('Évaluez au moins une attitude professionnelle.');
-      }
-      for (const q of questionsObligatoiresSansReponse(entretien, 'maitre', banque)) {
-        raisons.push(`Répondez à la question obligatoire « ${q.libelle} ».`);
-      }
-      break;
-    }
-
-    case 'formateur': {
-      // E1 (« première visite », trame officielle GRETA) : les démarches
-      // administratives ont été retirées → aucune exigence côté formateur pour
-      // signer. Les entretiens 2 à 4 conservent la règle historique.
-      const estE1 = entretien.reponsesTrame !== undefined;
-      if (!estE1) {
-        const d = entretien.demarchesAdministratives;
-        const renseigne =
-          d.contratSigne !== null ||
-          d.visiteMedicale !== null ||
-          d.permisConduire !== null ||
-          d.voiture !== null;
-        if (!renseigne) {
-          raisons.push('Renseignez au moins une démarche administrative (oui/non).');
-        }
-      }
-      break;
+    } else if (!auMoinsUneAttitudeEvaluee(entretien)) {
+      raisons.push('Évaluez au moins une attitude professionnelle.');
     }
   }
 
+  // Apprenti·e et formateur : aucune exigence de saisie — la trame officielle
+  // a retiré les démarches administratives (E1 « première visite ») et les
+  // questions individuelles ont disparu avec la banque (juillet 2026).
+
   return { peutSigner: raisons.length === 0, raisons };
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Barre de progression — % de complétude de l'entretien
-// ─────────────────────────────────────────────────────────────────────────────
-
-interface ProgressionEntretien {
-  /** Pourcentage global (0-100). */
-  global: number;
-  /** Pourcentage par rôle (apprenti, maitre, formateur). */
-  parRole: Record<'apprenti' | 'maitre' | 'formateur', number>;
-}
-
-/**
- * Calcule un score de complétude de l'entretien.
- * Sprint 3 : approche simple — on compte les champs renseignés sur le total
- * attendu pour chaque rôle.
- */
-export function calculerProgression(entretien: EntretienTripartite): ProgressionEntretien {
-  // Apprenti : N questions sélectionnées par le formateur référent.
-  // On considère « rempli » dès qu'on a une string non-vide ou un boolean.
-  const champsApprenti = entretien.questionsApprentiSelectionnees.map((id) =>
-    valeurReponseRemplie(entretien.reponsesApprenti[id]),
-  );
-  const apprentiPct = pourcentageRempli(champsApprenti);
-
-  // Maître : N questions sélectionnées + 4 critères d'appréciation (en dur)
-  const ap = entretien.appreciationMaitre;
-  const champsMaitre = [
-    ...entretien.questionsMaitreSelectionnees.map((id) =>
-      valeurReponseRemplie(entretien.reponsesMaitre[id]),
-    ),
-    ap.ponctualite,
-    ap.comprehensionConsignes,
-    ap.qualiteTravail,
-    ap.integration,
-  ];
-  const maitrePct = pourcentageRempli(champsMaitre);
-
-  // Formateur : 4 démarches + 4 conditions + 3 aides + remarques optionnels
-  const d = entretien.demarchesAdministratives;
-  const c = entretien.conditionsPratiques;
-  const a = entretien.aidesDemandees;
-  const champsFormateur = [
-    d.contratSigne !== null ? '✓' : '',
-    d.visiteMedicale !== null ? '✓' : '',
-    d.permisConduire !== null ? '✓' : '',
-    d.voiture !== null ? '✓' : '',
-    c.hebergementCentre,
-    c.hebergementEntreprise,
-    c.transportCentre,
-    c.transportEntreprise,
-    a.logement !== null ? '✓' : '',
-    a.premierEquipement !== null ? '✓' : '',
-    a.permis !== null ? '✓' : '',
-  ];
-  const formateurPct = pourcentageRempli(champsFormateur);
-
-  // Global = moyenne pondérée (chaque rôle compte autant)
-  const global = Math.round((apprentiPct + maitrePct + formateurPct) / 3);
-
-  return {
-    global,
-    parRole: {
-      apprenti: apprentiPct,
-      maitre: maitrePct,
-      formateur: formateurPct,
-    },
-  };
-}
-
-function pourcentageRempli(champs: Array<string | undefined | null>): number {
-  if (champs.length === 0) return 0;
-  const remplis = champs.filter((v) => v && v.toString().trim().length > 0).length;
-  return Math.round((remplis / champs.length) * 100);
-}
-
-/** Helper : ramène une réponse de question (string|boolean|null) à un marqueur
- * « rempli » (chaîne non vide) ou « non rempli » (chaîne vide), pour rester
- * compatible avec `pourcentageRempli`. */
-function valeurReponseRemplie(v: unknown): string {
-  if (typeof v === 'string') return v;
-  if (typeof v === 'boolean') return '✓';
-  return '';
 }

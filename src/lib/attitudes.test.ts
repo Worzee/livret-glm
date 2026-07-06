@@ -7,29 +7,16 @@ import {
   auMoinsUneAttitudeEvaluee,
   lignesSyntheseAttitudes,
 } from './attitudes';
-import { CRITERES_APPRECIATION_E1 } from './trame-entretien-1';
+import { CRITERES_APPRECIATION } from './trame-entretien';
 
 // Helper local — entretien minimal pour les tests.
 function entretien(
   evaluationsAttitudes: EntretienTripartite['evaluationsAttitudes'] = {},
 ): EntretienTripartite {
   return {
-    questionsApprentiSelectionnees: [],
-    questionsMaitreSelectionnees: [],
-    questionsImposees: [],
-    questionsObligatoires: [],
     evaluationsAttitudes,
-    reponsesApprenti: {},
-    reponsesMaitre: {},
+    reponsesTrame: {},
     appreciationMaitre: {},
-    demarchesAdministratives: {
-      contratSigne: null,
-      visiteMedicale: null,
-      permisConduire: null,
-      voiture: null,
-    },
-    conditionsPratiques: {},
-    aidesDemandees: { logement: null, premierEquipement: null, permis: null },
     commentaires: {},
     signatures: {
       apprenti: { signe: false },
@@ -111,12 +98,12 @@ describe('auMoinsUneAttitudeEvaluee', () => {
 });
 
 describe('ATTITUDES_OBLIGATOIRES', () => {
-  it("reprend les 4 critères de l'appréciation maître, dans l'ordre de la trame officielle E1", () => {
+  it("reprend les 4 critères de l'appréciation maître, dans l'ordre de la trame officielle", () => {
     expect(ATTITUDES_OBLIGATOIRES.map((a) => a.cle)).toEqual(
-      CRITERES_APPRECIATION_E1.map((c) => c.cle),
+      CRITERES_APPRECIATION.map((c) => c.cle),
     );
     expect(ATTITUDES_OBLIGATOIRES.map((a) => a.libelle)).toEqual(
-      CRITERES_APPRECIATION_E1.map((c) => c.libelle),
+      CRITERES_APPRECIATION.map((c) => c.libelle),
     );
   });
 
@@ -133,15 +120,8 @@ describe('lignesSyntheseAttitudes', () => {
     { id: 'a9', libelle: 'Motivation et implication' },
   ];
 
-  function entretiens(
-    e1: EntretienTripartite | null = null,
-    e2: EntretienTripartite | null = null,
-  ): Record<1 | 2 | 3 | 4, EntretienTripartite | null> {
-    return { 1: e1, 2: e2, 3: null, 4: null };
-  }
-
   it('place les 4 obligatoires avant les optionnelles retenues (ordre du catalogue)', () => {
-    const lignes = lignesSyntheseAttitudes(catalogue, ['a9', 'a5'], entretiens());
+    const lignes = lignesSyntheseAttitudes(catalogue, ['a9', 'a5'], null);
     expect(lignes.map((l) => l.id)).toEqual([
       'oblig-ponctualite',
       'oblig-comprehensionConsignes',
@@ -155,34 +135,31 @@ describe('lignesSyntheseAttitudes', () => {
   });
 
   it("lit les obligatoires dans l'appréciation du maître et les optionnelles dans les évaluations", () => {
-    const e1 = entretien({ a5: 'plus' });
-    e1.appreciationMaitre = { ponctualite: 'plusplus', qualiteTravail: 'moins' };
-    const lignes = lignesSyntheseAttitudes(catalogue, ['a5'], entretiens(e1));
+    const e = entretien({ a5: 'plus' });
+    e.appreciationMaitre = { ponctualite: 'plusplus', qualiteTravail: 'moins' };
+    const lignes = lignesSyntheseAttitudes(catalogue, ['a5'], e);
 
     const parId = new Map(lignes.map((l) => [l.id, l]));
-    expect(parId.get('oblig-ponctualite')?.niveaux[1]).toBe('plusplus');
-    expect(parId.get('oblig-qualiteTravail')?.niveaux[1]).toBe('moins');
+    expect(parId.get('oblig-ponctualite')?.niveau).toBe('plusplus');
+    expect(parId.get('oblig-qualiteTravail')?.niveau).toBe('moins');
     // Critère non renseigné dans l'appréciation → null.
-    expect(parId.get('oblig-integration')?.niveaux[1]).toBeNull();
-    expect(parId.get('a5')?.niveaux[1]).toBe('plus');
+    expect(parId.get('oblig-integration')?.niveau).toBeNull();
+    expect(parId.get('a5')?.niveau).toBe('plus');
   });
 
   it('retourne null pour un entretien absent ou une valeur non renseignée', () => {
-    const e2 = entretien({ a5: null });
-    e2.appreciationMaitre = { ponctualite: 'plus' };
-    const lignes = lignesSyntheseAttitudes(catalogue, ['a5'], entretiens(null, e2));
+    const lignesSansEntretien = lignesSyntheseAttitudes(catalogue, ['a5'], null);
+    expect(lignesSansEntretien.every((l) => l.niveau === null)).toBe(true);
 
+    const e = entretien({ a5: null });
+    const lignes = lignesSyntheseAttitudes(catalogue, ['a5'], e);
     const parId = new Map(lignes.map((l) => [l.id, l]));
-    // E1 non initialisé → null partout ; E3/E4 absents aussi.
-    expect(parId.get('oblig-ponctualite')?.niveaux[1]).toBeNull();
-    expect(parId.get('oblig-ponctualite')?.niveaux[2]).toBe('plus');
-    expect(parId.get('oblig-ponctualite')?.niveaux[3]).toBeNull();
     // Évaluation explicitement null → null.
-    expect(parId.get('a5')?.niveaux[2]).toBeNull();
+    expect(parId.get('a5')?.niveau).toBeNull();
   });
 
   it('ignore les ids orphelins de la sélection et conserve toujours les 4 obligatoires', () => {
-    const lignes = lignesSyntheseAttitudes(catalogue, ['a-supprimee'], entretiens());
+    const lignes = lignesSyntheseAttitudes(catalogue, ['a-supprimee'], null);
     expect(lignes).toHaveLength(4);
     expect(lignes.every((l) => l.obligatoire)).toBe(true);
   });

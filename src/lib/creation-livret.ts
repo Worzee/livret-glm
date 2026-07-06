@@ -88,10 +88,9 @@ export function creerLivretVierge(
       modifieLe: iso,
       modifiePar: auteurId,
     },
-    // Jusqu'à 4 entretiens tripartites (juin 2026), initialisés via
-    // événement dans l'organisation du suivi (motifs
-    // `entretien-tripartite-{1..N}`, N = Formation.nombreEntretiens).
-    entretiens: { 1: null, 2: null, 3: null, 4: null },
+    // L'entretien tripartite unique (juillet 2026), initialisé via
+    // événement de motif `entretien-tripartite` dans l'organisation du suivi.
+    entretien: null,
     fichesSuivi: planning.map((p) => creerFichePeriodeVierge(p, `fp-${livretId}-${p.id}`)),
     // Périodes en centre (17 juin 2026) — héritées du planning centre de la
     // formation. Préfixe d'id `fc-` (vs `fp-` pour l'entreprise).

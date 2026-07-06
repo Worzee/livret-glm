@@ -105,23 +105,6 @@ export interface Formation {
    * évaluées par le formateur référent (cf. `FicheSuiviPeriode`).
    */
   periodesCentre: PeriodeFormation[];
-  /**
-   * Nombre d'entretiens tripartites de la formation (1 à 4, défaut 2 —
-   * retours coordos juin 2026 : 4 pour les formations de 2 ans). Défini par
-   * le coordo dans la modale Planning, au même endroit que les périodes.
-   * Seuls les motifs `entretien-tripartite-{1..N}` sont proposés dans
-   * l'organisation du suivi des livrets de la promo.
-   */
-  nombreEntretiens: NumeroEntretien;
-  /**
-   * Questions de l'entretien tripartite **retirées** pour cette formation
-   * (13 juin 2026). Par défaut, toute question de la banque est présente et
-   * **obligatoire** dans tous les entretiens de la formation ; le coordo /
-   * admin retire ici les questions non pertinentes (par ids). Une question
-   * absente de la banque (supprimée) est ignorée. Géré dans la modale
-   * Planning, au même endroit que les périodes et le nombre d'entretiens.
-   */
-  questionsRetirees: string[];
 }
 
 export interface Entreprise {
@@ -237,7 +220,7 @@ export interface BlocCompetences {
 /**
  * Attitude professionnelle — catalogue global géré par l'admin (retours
  * coordos juin 2026, page `/admin/attitudes`). Évaluées par le maître /
- * tuteur à chaque entretien tripartite. Anciennement portées par le
+ * tuteur lors de l'entretien tripartite. Anciennement portées par le
  * référentiel de compétences.
  */
 export interface AttitudeProfessionnelle {
@@ -284,10 +267,9 @@ export interface SignaturesTripartite {
   formateur: SignaturePartie;
   /**
    * Représentant légal de l'apprenti·e (mineur·e) — 4e signataire **optionnel**,
-   * participe « en cas de besoin » (trame officielle de l'entretien 1, juin
-   * 2026). N'entre PAS dans le décompte des 3 signatures obligatoires (R9,
-   * séquencement des périodes…). `undefined` pour les fiches de période et les
-   * entretiens 2 à 4.
+   * participe « en cas de besoin » (trame officielle de l'entretien tripartite,
+   * juin 2026). N'entre PAS dans le décompte des 3 signatures obligatoires (R9,
+   * séquencement des périodes…). `undefined` pour les fiches de période.
    */
   representantLegal?: SignaturePartie;
 }
@@ -308,32 +290,14 @@ export type MotifOrganisationSuivi =
   | 'restitution-activites'
   | 'bilan-formation'
   /**
-   * Entretien tripartite n° 1 (typiquement dans les 2 mois suivant la
-   * signature du contrat — cf. R7). Refonte mai 2026 (chantier #2) : la
-   * création de cet événement donne accès à l'ouverture de l'entretien
-   * correspondant via le bouton « Ouvrir cet entretien » sur la carte.
+   * L'entretien tripartite — unique et obligatoire (juillet 2026 : les
+   * entretiens 2 à 4 ont été supprimés, le suivi ultérieur passe par les
+   * fiches de suivi). Typiquement dans les 2 mois suivant la signature du
+   * contrat — cf. R7. La création de cet événement donne accès à l'ouverture
+   * de l'entretien via le bouton « Ouvrir cet entretien » sur la carte.
    */
-  | 'entretien-tripartite-1'
-  /**
-   * Entretiens tripartites n° 2 à 4 — bilans de suivi ou réajustement
-   * (jusqu'à 4 entretiens pour les formations de 2 ans — retours coordos
-   * juin 2026). Contrairement à E1, leur signature ne fige PAS la
-   * sélection des compétences abordées en entreprise.
-   */
-  | 'entretien-tripartite-2'
-  | 'entretien-tripartite-3'
-  | 'entretien-tripartite-4'
+  | 'entretien-tripartite'
   | 'autre';
-
-/**
- * Numérotation des entretiens tripartites — jusqu'à 4 par livret (retours
- * coordos juin 2026 : formations de 2 ans). Le nombre effectif est défini
- * par le coordo au niveau de la formation (`Formation.nombreEntretiens`).
- */
-export type NumeroEntretien = 1 | 2 | 3 | 4;
-
-/** Liste ordonnée des numéros d'entretien possibles (pour itérer). */
-export const NUMEROS_ENTRETIEN: ReadonlyArray<NumeroEntretien> = [1, 2, 3, 4];
 
 /**
  * Un événement planifié dans l'organisation du suivi (CDC §5.1, refonte
@@ -345,13 +309,6 @@ export const NUMEROS_ENTRETIEN: ReadonlyArray<NumeroEntretien> = [1, 2, 3, 4];
  * partager le même motif (ex. plusieurs visites en entreprise) — le `titre`
  * optionnel permet de les distinguer dans la liste.
  */
-/**
- * Modalité de déroulement d'un entretien tripartite (15 juin 2026).
- * L'entretien tripartite 1 est **obligatoirement** en présentiel ; les
- * entretiens 2 à 4 peuvent se tenir en présentiel ou en distanciel.
- */
-export type ModaliteEntretien = 'presentiel' | 'distanciel';
-
 export interface EvenementOrganisationSuivi {
   /** Identifiant stable (UUID court) — clé React et cible des mutations. */
   id: string;
@@ -363,12 +320,6 @@ export interface EvenementOrganisationSuivi {
   date?: string;
   /** Commentaire libre — lieu, modalités, dates secondaires, etc. */
   commentaire?: string;
-  /**
-   * Modalité de déroulement — pertinent uniquement pour les motifs
-   * `entretien-tripartite-{1..4}` (15 juin 2026). E1 est imposé à
-   * `'presentiel'` ; E2..E4 sont au choix. `undefined` pour les autres motifs.
-   */
-  modalite?: ModaliteEntretien;
   /**
    * Verrou local de l'événement — quand `true`, le titre, la date et le
    * commentaire passent en lecture seule jusqu'à un déverrouillage explicite.
@@ -384,42 +335,12 @@ export interface OrganisationSuivi {
 }
 
 /**
- * Banque de questions de l'entretien tripartite (CDC §5.2, refonte mai 2026).
- *
- * Les questions posées à l'apprenti·e et au maître d'apprentissage ne sont
- * plus codées en dur : elles vivent dans une banque centrale gérée par les
- * coordinateur·rice·s + administrateur·rice·s. Pour chaque livret, le
- * formateur référent sélectionne (et ordonne) les questions à poser.
- *
- * Les réponses sont indexées par `questionId` pour rester robustes au
- * renommage des questions ; le type de la valeur dépend du `type` de la
- * question.
- */
-export type CibleQuestion = 'apprenti' | 'maitre';
-
-export type TypeQuestion = 'texte-court' | 'texte-long' | 'oui-non';
-
-export interface QuestionBanque {
-  id: string;
-  /** À qui la question s'adresse — détermine la section dans laquelle elle apparaît. */
-  cible: CibleQuestion;
-  /** Format attendu de la réponse. */
-  type: TypeQuestion;
-  /** Libellé affiché à l'utilisateur·rice. */
-  libelle: string;
-  /** Aide de saisie facultative (placeholder). Ignorée pour le type oui-non. */
-  placeholder?: string;
-  // Note (13 juin 2026) : `pourEntretiens` et `obligatoire` ont été retirés.
-  // La banque est désormais un **pur catalogue** géré par le coordo / admin.
-  // L'affectation est gérée par formation : par défaut TOUTE question est
-  // présente et obligatoire dans tous les entretiens ; le coordo retire
-  // certaines questions au niveau de la formation (`Formation.questionsRetirees`).
-}
-
-/**
- * Réponse à une question de l'entretien.
- *  - texte-court / texte-long → string
- *  - oui-non                  → boolean | null (null = pas répondu)
+ * Réponse à une question de la trame de l'entretien tripartite.
+ *  - texte  → string
+ *  - oui-non → boolean | null (null = pas répondu)
+ * (Juillet 2026 : la banque de questions qui servait les entretiens 2 à 4 a
+ * été supprimée avec eux — l'entretien unique repose sur la trame officielle
+ * GRETA, cf. `src/lib/trame-entretien.ts`.)
  */
 export type ValeurReponseEntretien = string | boolean | null;
 
@@ -436,77 +357,33 @@ export interface AppreciationMaitre {
   commentaires?: string;
 }
 
-export interface DemarchesAdministratives {
-  contratSigne: boolean | null;
-  visiteMedicale: boolean | null;
-  permisConduire: boolean | null;
-  voiture: boolean | null;
-  remarques?: string;
-}
-
-export interface ConditionsPratiques {
-  hebergementCentre?: string;
-  hebergementEntreprise?: string;
-  transportCentre?: string;
-  transportEntreprise?: string;
-}
-
-export interface AidesDemandees {
-  logement: boolean | null;
-  premierEquipement: boolean | null;
-  permis: boolean | null;
-  autres?: string;
-}
-
 export interface CommentairesEntretien {
   apprenti?: string;
   maitre?: string;
   formateur?: string;
 }
 
+/**
+ * L'entretien tripartite — unique et obligatoire (juillet 2026 : les
+ * entretiens 2 à 4 ont été supprimés, le suivi ultérieur passe par les
+ * fiches de suivi). Repose sur la trame officielle GRETA « première
+ * visite » (cf. `src/lib/trame-entretien.ts`), co-saisie par le formateur
+ * référent et le maître pendant l'entretien.
+ */
 export interface EntretienTripartite {
   dateEntretien?: string;
   /**
-   * IDs des questions posées pour chaque cible. L'ordre du tableau détermine
-   * l'ordre d'affichage. À l'initialisation, la liste reçoit les questions
-   * affectées par le coordo (snapshot — cf. `questionsImposees`) ; le
-   * formateur référent peut ensuite en ajouter depuis la banque.
-   */
-  questionsApprentiSelectionnees: string[];
-  questionsMaitreSelectionnees: string[];
-  /**
-   * Snapshot à l'initialisation : ids des questions affectées par le coordo
-   * à cet entretien (`pourEntretienN` dans la banque). Non retirables par le
-   * formateur. Les modifications ultérieures de la banque ne cascadent pas
-   * (un entretien fige sa configuration au moment où il est initialisé).
-   */
-  questionsImposees: string[];
-  /**
-   * Snapshot à l'initialisation : ids des questions marquées obligatoires
-   * dans la banque parmi celles affectées à cet entretien. Non retirables ET
-   * réponse exigée pour la signature de la cible concernée (extension R20).
-   */
-  questionsObligatoires: string[];
-  /**
    * Évaluations des attitudes professionnelles par le maître / tuteur
-   * (retours coordos juin 2026 — à chaque entretien). Au moins une
-   * évaluation est exigée pour que le maître signe (extension R20).
+   * (retours coordos juin 2026). Au moins une évaluation est exigée pour
+   * que le maître signe (extension R20).
    */
   evaluationsAttitudes: EvaluationsAttitudes;
-  /** Réponses indexées par `questionId` (cf. `ReponsesEntretien`). */
-  reponsesApprenti: ReponsesEntretien;
-  reponsesMaitre: ReponsesEntretien;
   /**
-   * Réponses à la trame officielle de l'**entretien 1** (« première visite »,
-   * refonte GRETA juin 2026), indexées par id de question de
-   * `TRAME_ENTRETIEN_1`. Spécifique à E1 ; les entretiens 2 à 4 continuent
-   * d'utiliser `reponsesApprenti` / `reponsesMaitre`. `undefined` hors E1.
+   * Réponses à la trame officielle (« première visite », refonte GRETA
+   * juin 2026), indexées par id de question de `TRAME_ENTRETIEN`.
    */
-  reponsesTrame?: ReponsesEntretien;
+  reponsesTrame: ReponsesEntretien;
   appreciationMaitre: AppreciationMaitre;
-  demarchesAdministratives: DemarchesAdministratives;
-  conditionsPratiques: ConditionsPratiques;
-  aidesDemandees: AidesDemandees;
   commentaires: CommentairesEntretien;
   signatures: SignaturesTripartite;
 }
@@ -628,18 +505,18 @@ export interface EvaluationFinaleCompetences {
 /**
  * Évaluations des attitudes professionnelles d'un entretien tripartite
  * (retours coordos juin 2026) : les attitudes sont évaluées par le
- * **maître / tuteur** À CHAQUE entretien (échelle ++/+/-/--), indexées par
- * `attitudeId` du catalogue global (`useAttitudesStore`). Une entrée
- * manquante ou `null` = non évaluée. L'onglet « Attitudes » de l'évaluation
- * finale devient une synthèse en lecture seule de ces évaluations (E1..E4).
+ * **maître / tuteur** lors de l'entretien tripartite (échelle ++/+/-/--),
+ * indexées par `attitudeId` du catalogue global (`useAttitudesStore`). Une
+ * entrée manquante ou `null` = non évaluée. L'onglet « Attitudes » de
+ * l'évaluation finale est une synthèse en lecture seule de ces évaluations.
  */
 export type EvaluationsAttitudes = Record<string, NiveauAppreciation | null>;
 
 /**
  * Ids des attitudes professionnelles retenues pour un livret (13 juin 2026).
- * Le choix se fait **lors de l'entretien tripartite 1** (maître / tuteur +
- * formateur référent), se fige à la 3ᵉ signature de l'E1 (pattern sélection
- * des compétences), puis ces attitudes sont évaluées **à chaque entretien**.
+ * Le choix se fait **lors de l'entretien tripartite** (maître / tuteur +
+ * formateur référent), se fige à sa 3ᵉ signature (pattern sélection des
+ * compétences), puis ces attitudes y sont évaluées par le maître.
  * Vide tant que le choix n'a pas été fait.
  */
 export type AttitudesSelectionnees = string[];
@@ -718,18 +595,15 @@ export interface Livret {
   formationId: string;
   organisationSuivi: OrganisationSuivi;
   /**
-   * Jusqu'à 4 entretiens tripartites par livret (retours coordos juin 2026 —
-   * formations de 2 ans). Chacun est généré via un événement de motif
-   * `entretien-tripartite-{N}` dans l'organisation du suivi ; le nombre
-   * d'entretiens autorisé est défini au niveau de la formation
-   * (`Formation.nombreEntretiens`, 1 à 4).
-   *
-   * E1 : signature des 3 parties → fige la sélection des compétences
-   * abordées en entreprise (auto-marquage cf. CDC v1.5 §12) ; R7 (alerte
-   * > 60 j) ne concerne que lui. E2..E4 : bilans de suivi — sans effet sur
-   * la sélection.
+   * L'entretien tripartite — unique et obligatoire (juillet 2026 : les
+   * entretiens 2 à 4 ont été supprimés, le suivi ultérieur passe par les
+   * fiches de suivi). Généré via un événement de motif `entretien-tripartite`
+   * dans l'organisation du suivi. Signature des 3 parties → fige la sélection
+   * des compétences abordées en entreprise (auto-marquage cf. CDC v1.5 §12) ;
+   * R7 : alerte > 60 j après le début du contrat. `null` tant que non
+   * initialisé.
    */
-  entretiens: Record<NumeroEntretien, EntretienTripartite | null>;
+  entretien: EntretienTripartite | null;
   fichesSuivi: FicheSuiviPeriode[];
   /**
    * Fiches des **périodes en centre de formation** (17 juin 2026) — miroir de
@@ -750,8 +624,8 @@ export interface Livret {
   selectionCompetencesEntreprise: SelectionCompetencesEntreprise;
   /**
    * Attitudes professionnelles retenues pour ce livret (13 juin 2026) —
-   * choisies à l'E1 (maître + formateur), figées à sa 3ᵉ signature,
-   * évaluées à chaque entretien. Cf. `AttitudesSelectionnees`.
+   * choisies à l'entretien tripartite (maître + formateur), figées à sa
+   * 3ᵉ signature, puis évaluées par le maître. Cf. `AttitudesSelectionnees`.
    */
   attitudesSelectionnees: AttitudesSelectionnees;
   /** R22 — null tant que le livret n'a pas été clôturé. */

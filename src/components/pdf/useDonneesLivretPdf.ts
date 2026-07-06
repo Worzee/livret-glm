@@ -7,13 +7,11 @@ import type {
   Formation,
   Livret,
   Maitre,
-  QuestionBanque,
   Referentiel,
 } from '@/types';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { useReferentielsStore } from '@/store/useReferentielsStore';
-import { useBanqueQuestionsStore } from '@/store/useBanqueQuestionsStore';
 import { useEtablissementsStore } from '@/store/useEtablissementsStore';
 import { useEntreprisesStore } from '@/store/useEntreprisesStore';
 import { useAttitudesStore } from '@/store/useAttitudesStore';
@@ -32,15 +30,13 @@ export interface DonneesLivretPdf {
   referentiel: Referentiel;
   etablissement?: Etablissement;
   entreprise?: Entreprise;
-  banqueQuestions: Record<string, QuestionBanque>;
   attitudes: AttitudeProfessionnelle[];
 }
 
 /**
  * Centralise la résolution des données nécessaires aux exports PDF du livret
- * actif (identité, formation, référentiel, établissement, banque de questions,
- * catalogue d'attitudes). Renvoie `null` si aucun·e apprenti·e n'est
- * sélectionné·e.
+ * actif (identité, formation, référentiel, établissement, catalogue
+ * d'attitudes). Renvoie `null` si aucun·e apprenti·e n'est sélectionné·e.
  *
  * Mutualise la « plomberie » entre l'évaluation finale (export du livret
  * complet) et les exports partiels — période, entretien, fiches de suivi
@@ -50,7 +46,6 @@ export interface DonneesLivretPdf {
 export function useDonneesLivretPdf(): DonneesLivretPdf | null {
   const formations = useFormationsStore((s) => s.formations);
   const referentiels = useReferentielsStore((s) => s.referentiels);
-  const banqueQuestions = useBanqueQuestionsStore((s) => s.questions);
   const etablissements = useEtablissementsStore((s) => s.etablissements);
   const entreprises = useEntreprisesStore((s) => s.entreprises);
   const attitudesMap = useAttitudesStore((s) => s.attitudes);
@@ -77,7 +72,6 @@ export function useDonneesLivretPdf(): DonneesLivretPdf | null {
     referentiel,
     etablissement,
     entreprise,
-    banqueQuestions,
     attitudes: Object.values(attitudesMap),
   };
 }

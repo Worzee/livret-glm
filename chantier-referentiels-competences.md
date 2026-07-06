@@ -1,11 +1,44 @@
 # Chantier — Refonte des référentiels et des compétences
 
 **Créé le** : 2026-07-06, à l'issue de la réunion direction (très positive)
-**Statut** : cadrage à préciser avec le pilote en début de session
+**Statut** : en cours — modification #1 livrée le 2026-07-06
 **Objet** : une « énorme phase de modification » est annoncée sur les référentiels et les
 compétences. Ce document est la **carte complète du sous-système** telle qu'elle existe
 aujourd'hui — à lire avant toute modification, pour ne pas ré-explorer le code et ne rien
 casser des invariants.
+
+---
+
+## 0. Modifications livrées et arbitrages consignés
+
+### Modification #1 — entretien tripartite unique et obligatoire (2026-07-06)
+
+Décision pilote : **il n'y a plus qu'un seul entretien tripartite obligatoire** ; les
+suivis ultérieurs se font via les **fiches de suivi existantes** (inchangées). Toutes les
+mentions des entretiens 2 à 4 sont supprimées.
+
+Arbitrages validés par le pilote en séance :
+
+1. **Banque de questions supprimée entièrement** (page admin, store, lib, droits,
+   `Formation.questionsRetirees`) — elle ne servait que les E2-E4, l'entretien unique
+   repose sur la trame officielle GRETA (`src/lib/trame-entretien.ts`). L'historique git
+   permet de la restaurer si un usage futur apparaît.
+2. **Modalité présentiel/distanciel supprimée** — elle ne distinguait E1 (présentiel
+   imposé) des E2-E4 (au choix). L'entretien unique se tient en présentiel (règle
+   inchangée), le champ et le sélecteur disparaissent.
+
+Décisions d'implémentation (sans consultation, dérivées de la demande) :
+`Livret.entretiens` (Record 1-4) aplati en `Livret.entretien` ; route `/livret/entretien`
+sans `:numero` ; motif unique `entretien-tripartite` ; libellés sans numérotation ;
+suppression de `Formation.nombreEntretiens` et du séquencement E1→E4 ; renommage
+`trame-entretien-1` → `trame-entretien` (ids de questions `e1-*` conservés stables) ;
+fixture Yanis dotée d'un événement entretien planifié non initialisé (préserve le cas
+« à initialiser » du centre d'alertes). Bumps `livret-donnees` v23 + `livret-formations`
+v8. Détail complet dans PROJECT-STATUS.md §4 (vague du 6 juillet 2026).
+
+⚠ Les sections ci-dessous (§2, §7…) décrivent l'état AVANT cette modification pour ce qui
+concerne les entretiens (E1..E4, `nombreEntretiens`) — les invariants référentiels /
+compétences restent exacts.
 
 ---
 

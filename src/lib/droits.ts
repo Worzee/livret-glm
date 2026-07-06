@@ -41,17 +41,12 @@ export type Ressource =
    */
   | 'entretien.attitudes'
   /**
-   * Choix des attitudes retenues pour le livret, fait lors de l'E1
+   * Choix des attitudes retenues pour le livret, fait lors de l'entretien
    * (13 juin 2026) — décision collective actée par le maître / tuteur ET le
-   * formateur référent ; figée à la 3ᵉ signature de l'E1.
+   * formateur référent ; figée à la 3ᵉ signature de l'entretien.
    */
   | 'entretien.attitudes-selection'
-  | 'entretien.questions-apprenti'
-  | 'entretien.questions-maitre'
   | 'entretien.appreciation-maitre'
-  | 'entretien.demarches-administratives'
-  | 'entretien.conditions-pratiques'
-  | 'entretien.aides-demandees'
   | 'entretien.commentaires-apprenti'
   | 'entretien.commentaires-maitre'
   | 'entretien.commentaires-formateur'
@@ -59,14 +54,14 @@ export type Ressource =
   | 'entretien.signature-maitre'
   | 'entretien.signature-formateur'
   /**
-   * Saisie de la **trame officielle de l'entretien 1** (« première visite »,
+   * Saisie de la **trame officielle de l'entretien** (« première visite »,
    * refonte GRETA juin 2026) : questions conjointes par rubriques + grille
    * d'appréciation + commentaires. Co-saisie pendant l'entretien par le
    * formateur référent et le maître / tuteur ; l'apprenti·e consulte.
    */
   | 'entretien.trame'
   /**
-   * Signature du représentant légal (apprenti·e mineur·e) à l'entretien 1 —
+   * Signature du représentant légal (apprenti·e mineur·e) à l'entretien —
    * apposée par le formateur référent qui conduit l'entretien (le représentant
    * légal n'est pas un rôle de l'application). Optionnelle, hors décompte R9.
    */
@@ -143,19 +138,13 @@ export type Ressource =
   | 'admin.affectations.gerer'
   /** Importer / supprimer / éditer les référentiels de compétences. */
   | 'admin.referentiels.gerer'
-  /**
-   * CRUD sur la banque de questions de l'entretien tripartite. Admin
-   * uniquement (18 juin 2026) — le coordo retire des questions par formation
-   * (modale Planning) mais ne gère plus le catalogue global.
-   */
-  | 'admin.banque-questions.gerer'
   /** CRUD sur les établissements (lieux de formation, URL Pronote). */
   | 'admin.etablissements.gerer'
   /** CRUD sur les entreprises d'accueil des apprenti·e·s (juin 2026). */
   | 'admin.entreprises.gerer'
   /**
    * CRUD sur le catalogue global des attitudes professionnelles (retours
-   * coordos juin 2026 — évaluées par le maître à chaque entretien).
+   * coordos juin 2026 — évaluées par le maître lors de l'entretien).
    */
   | 'admin.attitudes.gerer';
 
@@ -182,21 +171,16 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   // signature reste exclusive.
   'entretien.attitudes': ['maitre', 'formateur'],
   'entretien.attitudes-selection': ['maitre', 'formateur'],
-  'entretien.questions-apprenti': ['apprenti'],
-  'entretien.questions-maitre': ['maitre', 'formateur'],
   'entretien.appreciation-maitre': ['maitre', 'formateur'],
-  'entretien.demarches-administratives': ['formateur'],
-  'entretien.conditions-pratiques': ['formateur'],
-  'entretien.aides-demandees': ['formateur'],
   'entretien.commentaires-apprenti': ['apprenti'],
   'entretien.commentaires-maitre': ['maitre', 'formateur'],
   'entretien.commentaires-formateur': ['formateur'],
   'entretien.signature-apprenti': ['apprenti'],
   'entretien.signature-maitre': ['maitre'],
   'entretien.signature-formateur': ['formateur'],
-  // Trame officielle de l'entretien 1 : co-saisie formateur + maître (juin 2026)
+  // Trame officielle de l'entretien : co-saisie formateur + maître (juin 2026)
   'entretien.trame': ['formateur', 'maitre'],
-  // Signature du représentant légal (E1) : apposée par le formateur référent
+  // Signature du représentant légal : apposée par le formateur référent
   'entretien.signature-representant-legal': ['formateur'],
   // Sélection des compétences abordées en entreprise : maître / tuteur +
   // formateur référent décochent (1ᵉʳ juillet 2026 — tout est coché par défaut).
@@ -256,7 +240,6 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'admin.formations.supprimer': ['coordo', 'admin'],
   'admin.affectations.gerer': ['coordo', 'admin'],
   'admin.referentiels.gerer': ['coordo', 'admin'],
-  'admin.banque-questions.gerer': ['admin'], // admin uniquement (18 juin 2026)
   'admin.etablissements.gerer': ['admin'], // admin uniquement
   'admin.entreprises.gerer': ['coordo', 'admin'], // coordo + admin (gestion des apprenti·e·s)
   'admin.attitudes.gerer': ['admin'], // admin uniquement

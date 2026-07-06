@@ -33,8 +33,8 @@ test('les 3 boutons d’export apparaissent pour le formateur (période, entreti
   await page.goto('/livret/organisation-suivi');
   await expect(page.getByRole('button', { name: /Exporter les fiches de suivi/i })).toBeVisible();
 
-  // Entretien tripartite 1 (Léa : E1 initialisé)
-  await page.goto('/livret/entretien/1');
+  // Entretien tripartite (Léa : entretien initialisé)
+  await page.goto('/livret/entretien');
   await expect(page.getByRole('button', { name: /Exporter cet entretien/i })).toBeVisible();
 
   // Détail d'une période
@@ -87,11 +87,11 @@ test('téléchargement du PDF des fiches de suivi : fichier non vide au bon nom'
 test('l’export d’un entretien génère bien un lien de téléchargement (PageEntretien)', async ({
   page,
 }) => {
-  await page.goto('/livret/entretien/1');
+  await page.goto('/livret/entretien');
   await page.getByRole('button', { name: /Exporter cet entretien/i }).click();
   // L'apparition du lien prouve que le document s'est généré sans erreur.
   await expect(
-    page.getByRole('link', { name: /Télécharger l'entretien tripartite 1 au format PDF/i }),
+    page.getByRole('link', { name: /Télécharger l'entretien tripartite au format PDF/i }),
   ).toBeVisible({ timeout: 30_000 });
 });
 
@@ -102,7 +102,7 @@ test('apprenti·e et maître ne voient aucun bouton d’export ; le coordo les v
   await selectRole(page, 'Apprenti·e');
   await page.goto('/livret/organisation-suivi');
   await expect(page.getByRole('button', { name: /Exporter les fiches de suivi/i })).toHaveCount(0);
-  await page.goto('/livret/entretien/1');
+  await page.goto('/livret/entretien');
   await expect(page.getByRole('button', { name: /Exporter cet entretien/i })).toHaveCount(0);
 
   // Maître / tuteur : aucun bouton non plus.
@@ -114,6 +114,6 @@ test('apprenti·e et maître ne voient aucun bouton d’export ; le coordo les v
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/livret/organisation-suivi');
   await expect(page.getByRole('button', { name: /Exporter les fiches de suivi/i })).toBeVisible();
-  await page.goto('/livret/entretien/1');
+  await page.goto('/livret/entretien');
   await expect(page.getByRole('button', { name: /Exporter cet entretien/i })).toBeVisible();
 });

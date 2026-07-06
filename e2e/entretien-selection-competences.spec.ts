@@ -63,7 +63,7 @@ test("Léa : la section dans l'entretien affiche le badge « Sélection validée
 }) => {
   await selectRole(page, 'Formateur référent');
   // Léa est l'apprenti·e actif·ve par défaut
-  await page.goto('/livret/entretien/1');
+  await page.goto('/livret/entretien');
   await expect(
     page.getByRole('heading', { name: /Compétences abordées en entreprise/i }),
   ).toBeVisible();
@@ -102,7 +102,7 @@ test('Sofia : après initialisation, toutes les compétences sont cochées par d
   // 1. Le formateur initialise l'entretien de Sofia.
   await selectRole(page, 'Formateur référent');
   await page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }).click();
-  await page.goto('/livret/entretien/1');
+  await page.goto('/livret/entretien');
   await page.getByRole('button', { name: /Initialiser l'entretien/i }).click();
   await expect(
     page.getByRole('heading', { name: /Compétences abordées en entreprise/i }),
@@ -146,7 +146,7 @@ test("import d'un nouveau référentiel : la sélection repart « tout coché »
   await selectRole(page, 'Formateur référent');
   await page.goto('/');
   await page.getByRole('button', { name: /Ouvrir le livret de Sofia PEREIRA/i }).click();
-  await page.goto('/livret/entretien/1');
+  await page.goto('/livret/entretien');
   await page.getByRole('button', { name: /Initialiser l'entretien/i }).click();
   await expect(
     page.getByRole('heading', { name: /Compétences abordées en entreprise/i }),
@@ -159,7 +159,7 @@ test('Léa + apprenti·e : la section sélection est en lecture seule (matrice d
   page,
 }) => {
   await selectRole(page, 'Apprenti·e');
-  await page.goto('/livret/entretien/1');
+  await page.goto('/livret/entretien');
   // Toutes les cases sont disabled (apprenti·e n'a pas le droit d'éditer)
   await expect(page.getByTestId('selection-comp-c1-1')).toBeDisabled();
   await expect(page.getByTestId('selection-comp-c2-4')).toBeDisabled();

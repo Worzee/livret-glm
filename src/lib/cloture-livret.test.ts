@@ -36,7 +36,7 @@ const livretBase = (fiches: FicheSuiviPeriode[], cloture: ClotureLivret | null =
     modifieLe: '2025-09-01T08:00:00.000Z',
     modifiePar: 'u-form',
   },
-  entretiens: { 1: null, 2: null, 3: null, 4: null },
+  entretien: null,
   fichesSuivi: fiches,
   fichesSuiviCentre: [],
   evaluationFinaleCompetences: { lignes: [], modifieLe: '2025-09-01T08:00:00.000Z' },

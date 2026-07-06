@@ -13,8 +13,6 @@ const formation = (id: string, referentielId: string): Formation => ({
   lieuId: 'eta-test',
   periodes: [],
   periodesCentre: [],
-  nombreEntretiens: 2,
-  questionsRetirees: [],
 });
 
 describe('evaluerVerrouReferentiel', () => {

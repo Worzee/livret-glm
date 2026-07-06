@@ -142,14 +142,9 @@ export function nomFichierPeriodeCentre(
   return `periode-centre-${numeroPeriode}-${suffixeApprenti(nom, prenom, dateIso)}.pdf`;
 }
 
-/** Nom de fichier pour l'export d'un seul entretien tripartite (16 juin 2026). */
-export function nomFichierEntretien(
-  nom: string,
-  prenom: string,
-  numero: number,
-  dateIso?: string,
-): string {
-  return `entretien-tripartite-${numero}-${suffixeApprenti(nom, prenom, dateIso)}.pdf`;
+/** Nom de fichier pour l'export de l'entretien tripartite (16 juin 2026). */
+export function nomFichierEntretien(nom: string, prenom: string, dateIso?: string): string {
+  return `entretien-tripartite-${suffixeApprenti(nom, prenom, dateIso)}.pdf`;
 }
 
 /** Nom de fichier pour l'export des fiches de suivi (événements — 16 juin 2026). */

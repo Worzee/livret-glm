@@ -26,10 +26,10 @@ import { calculerResumeLivret, classesBadgeCas, libelleCas } from '@/lib/etat-li
 import { calculerAlerteR7 } from '@/lib/regles-entretien';
 import { libelleFichePeriode } from '@/lib/validation-fiche-periode';
 import {
+  echeanceEntretien,
+  entretienTenu,
   joursRestants,
   periodeCourante,
-  prochainEntretien,
-  progressionEntretiens,
   progressionFiches,
 } from '@/lib/recap-apprenti';
 import { cn } from '@/lib/utils';
@@ -77,17 +77,16 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
     ? maitres[apprenti.maitreApprentissageSecondId]
     : undefined;
   const formateur = formateurs[apprenti.formateurReferentId];
-  const nombreEntretiens = formation?.nombreEntretiens ?? 2;
 
   const resume = calculerResumeLivret(apprenti, livret);
-  const alerte = calculerAlerteR7(apprenti, livret.entretiens[1]);
-  const echeance = prochainEntretien(livret, nombreEntretiens);
+  const alerte = calculerAlerteR7(apprenti, livret.entretien);
+  const echeance = echeanceEntretien(livret);
   const fichesCentre = livret.fichesSuiviCentre ?? [];
   const periodeEnt = periodeCourante(livret.fichesSuivi, 'entreprise');
   const periodeCen = periodeCourante(fichesCentre, 'centre');
   const progEnt = progressionFiches(livret.fichesSuivi, 'entreprise');
   const progCen = progressionFiches(fichesCentre, 'centre');
-  const progEntretiens = progressionEntretiens(livret, nombreEntretiens);
+  const entretienRealise = entretienTenu(livret);
   const jrContrat = joursRestants(apprenti.contratFin);
 
   function aller(route: string) {
@@ -115,7 +114,7 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
         </p>
       </header>
 
-      {/* Alerte R7 — entretien tripartite 1 tardif. */}
+      {/* Alerte R7 — entretien tripartite tardif. */}
       {alerte.declenchee && (
         <div
           role="alert"
@@ -123,9 +122,9 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
         >
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <p>
-            Votre <strong>premier entretien tripartite</strong> n'a pas encore eu lieu. Il était
-            attendu avant le <strong>{formatFr(alerte.dateButoir)}</strong> ({alerte.joursDepasses}{' '}
-            jour{alerte.joursDepasses > 1 ? 's' : ''} de retard). Rapprochez-vous de votre formateur
+            Votre <strong>entretien tripartite</strong> n'a pas encore eu lieu. Il était attendu
+            avant le <strong>{formatFr(alerte.dateButoir)}</strong> ({alerte.joursDepasses} jour
+            {alerte.joursDepasses > 1 ? 's' : ''} de retard). Rapprochez-vous de votre formateur
             référent.
           </p>
         </div>
@@ -200,10 +199,10 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
             Mes échéances
           </h2>
           <dl className="space-y-2 text-sm">
-            <Ligne label="Prochain entretien" Icon={ClipboardList}>
+            <Ligne label="Entretien tripartite" Icon={ClipboardList}>
               {echeance ? (
                 <>
-                  Entretien tripartite {echeance.numero}
+                  Entretien tripartite
                   {echeance.datePrevue ? (
                     <span className="text-muted-foreground">
                       {' '}
@@ -215,7 +214,7 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
                 </>
               ) : (
                 <span className="inline-flex items-center gap-1 text-emerald-700">
-                  <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> Tous réalisés
+                  <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> Réalisé
                 </span>
               )}
             </Ligne>
@@ -255,9 +254,9 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
               total={progCen.total}
             />
             <Jauge
-              label="Entretiens tripartites réalisés"
-              valeur={progEntretiens.signes}
-              total={progEntretiens.total}
+              label="Entretien tripartite réalisé"
+              valeur={entretienRealise ? 1 : 0}
+              total={1}
             />
           </div>
         </section>
@@ -347,7 +346,10 @@ function Jauge({ label, valeur, total }: { label: string; valeur: number; total:
         </span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-secondary" aria-hidden="true">
-        <div className="h-full rounded-full bg-role-apprenti transition-all" style={{ width: `${pct}%` }} />
+        <div
+          className="h-full rounded-full bg-role-apprenti transition-all"
+          style={{ width: `${pct}%` }}
+        />
       </div>
     </div>
   );

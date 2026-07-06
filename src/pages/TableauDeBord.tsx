@@ -210,7 +210,7 @@ export function TableauDeBord() {
       {/* Pilotage du périmètre (3 juillet 2026) — coordo / admin uniquement :
           KPI agrégés (fiches signées, entretiens, alertes R7). */}
       {(roleActif === 'coordo' || roleActif === 'admin') && (
-        <BandeauPilotage apprentis={apprentisVisibles} livrets={livrets} formations={formations} />
+        <BandeauPilotage apprentis={apprentisVisibles} livrets={livrets} />
       )}
 
       {/* Centre d'alertes (3 juillet 2026) — « qu'est-ce qui attend mon
@@ -220,7 +220,6 @@ export function TableauDeBord() {
           role={roleActif}
           apprentis={apprentisVisibles}
           livrets={livrets}
-          formations={formations}
           onOuvrir={ouvrirAlerte}
         />
       )}
@@ -295,11 +294,7 @@ export function TableauDeBord() {
                 </span>
                 {/* Mini-pilotage par promo (3 juillet 2026) — coordo / admin. */}
                 {(roleActif === 'coordo' || roleActif === 'admin') && (
-                  <StatsGroupe
-                    apprentis={groupe.apprentis}
-                    livrets={livrets}
-                    formations={formations}
-                  />
+                  <StatsGroupe apprentis={groupe.apprentis} livrets={livrets} />
                 )}
               </summary>
               <div className="border-t border-border p-4">
@@ -332,16 +327,11 @@ export function TableauDeBord() {
 function StatsGroupe({
   apprentis,
   livrets,
-  formations,
 }: {
   apprentis: Apprenti[];
   livrets: Record<string, Livret>;
-  formations: Record<string, Formation>;
 }) {
-  const stats = useMemo(
-    () => statsPilotage(apprentis, livrets, formations),
-    [apprentis, livrets, formations],
-  );
+  const stats = useMemo(() => statsPilotage(apprentis, livrets), [apprentis, livrets]);
   return (
     <span className="ml-auto flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
       <span className="hidden sm:inline">
