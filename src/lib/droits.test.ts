@@ -380,6 +380,14 @@ describe('Administration — droits du rôle coordo', () => {
     expect(peutEditer('maitre', 'admin.affectations.gerer')).toBe(false);
     expect(peutEditer('formateur', 'admin.affectations.gerer')).toBe(false);
   });
+
+  it("les paramètres globaux (seuil de lignes évaluables) sont réservés à l'admin (juillet 2026)", () => {
+    expect(peutEditer('admin', 'admin.parametres.gerer')).toBe(true);
+    expect(peutEditer('coordo', 'admin.parametres.gerer')).toBe(false);
+    expect(peutEditer('formateur', 'admin.parametres.gerer')).toBe(false);
+    expect(peutEditer('maitre', 'admin.parametres.gerer')).toBe(false);
+    expect(peutEditer('apprenti', 'admin.parametres.gerer')).toBe(false);
+  });
 });
 
 describe('rolesAutorises', () => {

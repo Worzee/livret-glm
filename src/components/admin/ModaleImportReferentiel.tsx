@@ -1,5 +1,14 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, CheckCircle2, FileSpreadsheet, Upload, X } from 'lucide-react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  FileSpreadsheet,
+  Layers,
+  Undo2,
+  Upload,
+  X,
+} from 'lucide-react';
+import type { Referentiel } from '@/types';
 import {
   estXlsxBuffer,
   importerReferentielDepuisBuffer,
@@ -8,12 +17,20 @@ import {
   type RapportImport,
 } from '@/lib/import-referentiel';
 import {
+  agregerAuNiveauSuperieur,
+  appliquerExclusions,
+  compterCompetencesEvaluables,
+  peutAgregerAuNiveauSuperieur,
+} from '@/lib/limite-referentiel';
+import { grouperParSousFamille } from '@/lib/grouper-competences';
+import {
   type SaisieImportReferentiel,
   genererNomReferentiel,
   validerSaisieImportReferentiel,
 } from '@/lib/validation-import-referentiel';
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { useReferentielsStore } from '@/store/useReferentielsStore';
+import { useParametresStore } from '@/store/useParametresStore';
 import { cn } from '@/lib/utils';
 
 /**
@@ -36,6 +53,15 @@ import { cn } from '@/lib/utils';
  *      (signature ZIP pour XLSX, encodage UTF-8/CP1252 pour CSV).
  *   4. Clic « Importer » → le référentiel est créé avec le libellé déterminé
  *      en (1).
+ *
+ * Limite des lignes évaluables (juillet 2026 — chantier référentiels #2) :
+ * au-delà du seuil global (40 par défaut, `useParametresStore`), l'import est
+ * bloqué et deux issues sont proposées :
+ *   - **agréger au niveau supérieur** (référentiels 3 niveaux) : chaque
+ *     sous-famille devient la ligne évaluable, libellés fins en description ;
+ *   - **cocher / décocher** des compétences jusqu'à passer sous le seuil —
+ *     les décochées sont importées avec `exclue: true` (réactivables depuis
+ *     la page Référentiels).
  *
  * Esc / clic backdrop / Annuler ferment sans rien persister.
  */
@@ -77,6 +103,7 @@ export function ModaleImportReferentiel({
   const referentielsExistants = useReferentielsStore((s) => s.referentiels);
   const formations = useFormationsStore((s) => s.formations);
   const modifierFormation = useFormationsStore((s) => s.modifierFormation);
+  const seuil = useParametresStore((s) => s.seuilCompetencesEvaluables);
 
   const titreId = useId();
   const premierChampRef = useRef<HTMLSelectElement>(null);
@@ -96,6 +123,11 @@ export function ModaleImportReferentiel({
   const [bufferFichier, setBufferFichier] = useState<ArrayBuffer | null>(null);
   const [tentativeSoumission, setTentativeSoumission] = useState(false);
   const [apercu, setApercu] = useState<Apercu>(null);
+  // Résolution du dépassement de seuil (juillet 2026) : agrégation au niveau
+  // supérieur et/ou exclusions cochées manuellement. Réinitialisées à chaque
+  // nouvel aperçu.
+  const [agrege, setAgrege] = useState(false);
+  const [exclusions, setExclusions] = useState<ReadonlySet<string>>(new Set());
 
   useEffect(() => {
     // Pas de side-effect au mount : le focus auto est géré via `autoFocus`
@@ -118,6 +150,11 @@ export function ModaleImportReferentiel({
 
   const formationCible = formations[saisie.formationId];
 
+  function reinitialiserResolution() {
+    setAgrege(false);
+    setExclusions(new Set());
+  }
+
   async function onChangerFichier(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -130,6 +167,7 @@ export function ModaleImportReferentiel({
       contenuCsv: '', // exclusif avec le fichier
     }));
     setApercu(null);
+    reinitialiserResolution();
   }
 
   function onChangerTextarea(value: string) {
@@ -141,10 +179,12 @@ export function ModaleImportReferentiel({
     }));
     if (bufferFichier) setBufferFichier(null);
     setApercu(null);
+    reinitialiserResolution();
   }
 
   function genererApercu() {
     setTentativeSoumission(true);
+    reinitialiserResolution();
     if (!validation.ok) {
       setApercu(null);
       return;
@@ -189,9 +229,42 @@ export function ModaleImportReferentiel({
     }
   }
 
+  // ── Résolution du dépassement de seuil (juillet 2026) ────────────────────
+  // Référentiel candidat après agrégation éventuelle puis exclusions cochées.
+  // Calculs directs (pas de useMemo : on est après le return conditionnel
+  // `!ouvert`, et les volumes restent négligeables).
+  const referentielBase = apercu?.type === 'ok' ? apercu.rapport.referentiel : null;
+  const referentielIntermediaire: Referentiel | null = referentielBase
+    ? agrege
+      ? agregerAuNiveauSuperieur(referentielBase)
+      : referentielBase
+    : null;
+  const referentielFinal: Referentiel | null = referentielIntermediaire
+    ? exclusions.size > 0
+      ? appliquerExclusions(referentielIntermediaire, exclusions)
+      : referentielIntermediaire
+    : null;
+
+  const nbEvaluables = referentielFinal ? compterCompetencesEvaluables(referentielFinal) : 0;
+  // La résolution est nécessaire dès que le fichier BRUT dépasse le seuil —
+  // elle reste affichée ensuite pour suivre le compteur.
+  const resolutionNecessaire = referentielBase
+    ? compterCompetencesEvaluables(referentielBase) > seuil
+    : false;
+  const importBloque = nbEvaluables > seuil || nbEvaluables < 1;
+
+  function basculerExclusion(competenceId: string) {
+    setExclusions((prec) => {
+      const suiv = new Set(prec);
+      if (suiv.has(competenceId)) suiv.delete(competenceId);
+      else suiv.add(competenceId);
+      return suiv;
+    });
+  }
+
   function importer() {
-    if (!apercu || apercu.type !== 'ok') return;
-    const ref = ajouter(apercu.rapport.referentiel);
+    if (!referentielFinal || importBloque) return;
+    const ref = ajouter(referentielFinal);
     // Rattache la formation au nouveau référentiel — uniquement si une
     // formation a été choisie. Sinon le référentiel reste « orphelin » et
     // sera rattaché plus tard depuis la page Formations.
@@ -363,6 +436,29 @@ export function ModaleImportReferentiel({
 
           {/* Aperçu — affiché uniquement après clic sur « Aperçu ». */}
           {apercu?.type === 'ok' && <AperçuStats apercu={apercu} />}
+
+          {/* Dépassement du seuil de lignes évaluables (juillet 2026) :
+              agrégation au niveau supérieur et/ou cochage manuel. */}
+          {apercu?.type === 'ok' && resolutionNecessaire && referentielIntermediaire && (
+            <ResolutionDepassement
+              referentielBase={apercu.rapport.referentiel}
+              referentielIntermediaire={referentielIntermediaire}
+              nbEvaluables={nbEvaluables}
+              seuil={seuil}
+              agrege={agrege}
+              exclusions={exclusions}
+              onAgreger={() => {
+                setAgrege(true);
+                setExclusions(new Set());
+              }}
+              onAnnulerAgregation={() => {
+                setAgrege(false);
+                setExclusions(new Set());
+              }}
+              onBasculerExclusion={basculerExclusion}
+            />
+          )}
+
           {apercu?.type === 'erreur' && (
             <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">
               <div className="flex items-start gap-2">
@@ -380,10 +476,23 @@ export function ModaleImportReferentiel({
             <button
               type="button"
               onClick={importer}
-              className="inline-flex items-center gap-1.5 rounded-md bouton-plein-couleur-role px-4 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              disabled={importBloque}
+              data-testid="import-ref-importer"
+              title={
+                importBloque
+                  ? `Réduisez à ${seuil} lignes évaluables maximum avant d'importer.`
+                  : undefined
+              }
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-md px-4 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                importBloque
+                  ? 'cursor-not-allowed bg-muted text-muted-foreground'
+                  : 'bouton-plein-couleur-role',
+              )}
             >
               <Upload className="h-4 w-4" aria-hidden="true" />
-              Importer ({apercu.rapport.stats.nbCompetences} compétences)
+              Importer ({nbEvaluables} compétence{nbEvaluables > 1 ? 's' : ''} évaluable
+              {nbEvaluables > 1 ? 's' : ''})
             </button>
           ) : (
             <button
@@ -402,6 +511,159 @@ export function ModaleImportReferentiel({
             Annuler
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Résolution du dépassement de seuil (juillet 2026 — chantier référentiels #2)
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface ResolutionDepassementProps {
+  /** Référentiel brut issu du fichier (avant agrégation/exclusions). */
+  referentielBase: Referentiel;
+  /** Référentiel après agrégation éventuelle — support du cochage. */
+  referentielIntermediaire: Referentiel;
+  nbEvaluables: number;
+  seuil: number;
+  agrege: boolean;
+  exclusions: ReadonlySet<string>;
+  onAgreger: () => void;
+  onAnnulerAgregation: () => void;
+  onBasculerExclusion: (competenceId: string) => void;
+}
+
+function ResolutionDepassement({
+  referentielBase,
+  referentielIntermediaire,
+  nbEvaluables,
+  seuil,
+  agrege,
+  exclusions,
+  onAgreger,
+  onAnnulerAgregation,
+  onBasculerExclusion,
+}: ResolutionDepassementProps) {
+  const agregationPossible = peutAgregerAuNiveauSuperieur(referentielBase);
+  const nbApresAgregation = agregationPossible
+    ? compterCompetencesEvaluables(agregerAuNiveauSuperieur(referentielBase))
+    : 0;
+  const sousSeuil = nbEvaluables <= seuil;
+
+  return (
+    <div
+      data-testid="import-ref-depassement"
+      className="space-y-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+    >
+      <div className="flex items-start gap-2">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+        <p>
+          Ce référentiel compte{' '}
+          <strong>{compterCompetencesEvaluables(referentielBase)} compétences évaluables</strong> —
+          la limite est de <strong>{seuil}</strong> (au-delà, la saisie devient trop longue pour le
+          tuteur lors des périodes en entreprise). Réduisez le nombre de lignes avec l'une des deux
+          options ci-dessous.
+        </p>
+      </div>
+
+      {/* Option A — agrégation au niveau supérieur (3 niveaux uniquement). */}
+      {agregationPossible && !agrege && (
+        <button
+          type="button"
+          onClick={onAgreger}
+          data-testid="import-ref-agreger"
+          className="inline-flex items-center gap-1.5 rounded-md border border-amber-400 bg-white px-3 py-1.5 text-sm font-medium text-amber-900 hover:bg-amber-100"
+        >
+          <Layers className="h-4 w-4" aria-hidden="true" />
+          Garder le niveau supérieur ({nbApresAgregation} ligne
+          {nbApresAgregation > 1 ? 's' : ''} évaluable{nbApresAgregation > 1 ? 's' : ''})
+        </button>
+      )}
+      {!agregationPossible && (
+        <p className="text-xs">
+          Référentiel à 2 niveaux : pas de niveau intermédiaire à conserver — décochez des
+          compétences ci-dessous.
+        </p>
+      )}
+      {agrege && (
+        <div
+          data-testid="import-ref-agregation-active"
+          className="flex flex-wrap items-center gap-2 rounded border border-amber-400 bg-white px-2 py-1.5 text-xs"
+        >
+          <Layers className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span>
+            Niveau supérieur conservé : chaque sous-famille devient la ligne évaluable, les
+            compétences détaillées restent lisibles dans sa description.
+          </span>
+          <button
+            type="button"
+            onClick={onAnnulerAgregation}
+            data-testid="import-ref-annuler-agregation"
+            className="inline-flex items-center gap-1 rounded border border-amber-400 px-2 py-0.5 font-medium hover:bg-amber-100"
+          >
+            <Undo2 className="h-3 w-3" aria-hidden="true" />
+            Annuler
+          </button>
+        </div>
+      )}
+
+      {/* Option B — cochage manuel jusqu'à atteindre le seuil. */}
+      <div className="space-y-2">
+        <p
+          data-testid="import-ref-compteur"
+          className={cn('text-xs font-semibold', sousSeuil ? 'text-emerald-800' : 'text-red-700')}
+        >
+          {nbEvaluables} / {seuil} ligne{nbEvaluables > 1 ? 's' : ''} évaluable
+          {nbEvaluables > 1 ? 's' : ''}
+          {sousSeuil ? ' — prêt à importer' : ' — décochez encore pour atteindre la limite'}
+        </p>
+        <div className="max-h-56 space-y-2 overflow-y-auto rounded border border-amber-200 bg-white p-2">
+          {referentielIntermediaire.blocs.map((bloc) => (
+            <div key={bloc.id} className="space-y-1">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                {bloc.libelle}
+              </p>
+              {grouperParSousFamille(bloc).map((g, i) => (
+                <div key={g.sousFamille ?? `__plat-${i}`}>
+                  {g.sousFamille && (
+                    <p className="text-xs font-medium text-foreground/70">{g.sousFamille}</p>
+                  )}
+                  <ul
+                    className={cn(
+                      'space-y-0.5',
+                      g.sousFamille && 'ml-3 border-l border-border pl-2',
+                    )}
+                  >
+                    {g.competences.map((c) => {
+                      const cochee = !exclusions.has(c.id);
+                      return (
+                        <li key={c.id}>
+                          <label className="flex cursor-pointer items-start gap-2 text-xs text-foreground">
+                            <input
+                              type="checkbox"
+                              checked={cochee}
+                              onChange={() => onBasculerExclusion(c.id)}
+                              data-testid={`import-ref-coche-${c.id}`}
+                              className="mt-0.5"
+                            />
+                            <span className={cn(!cochee && 'text-muted-foreground line-through')}>
+                              {c.libelle}
+                            </span>
+                          </label>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+        <p className="text-xs">
+          Les compétences décochées sont conservées dans le référentiel (trace du fichier officiel)
+          et réactivables plus tard depuis la page Référentiels, tant que la limite est respectée.
+        </p>
       </div>
     </div>
   );

@@ -16,6 +16,7 @@ import { useEtablissementsStore } from '@/store/useEtablissementsStore';
 import { useEntreprisesStore } from '@/store/useEntreprisesStore';
 import { useAttitudesStore } from '@/store/useAttitudesStore';
 import { getMaitreByIdFromStore } from '@/store/useUtilisateursStore';
+import { referentielEvaluable } from '@/lib/limite-referentiel';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
 import { formationCapCuisine } from '@/fixtures/formations';
 import { formatriceSophieDubois, maitreKarimBenali } from '@/fixtures/utilisateurs';
@@ -54,7 +55,11 @@ export function useDonneesLivretPdf(): DonneesLivretPdf | null {
   if (!ctx) return null;
   const { apprenti, livret } = ctx;
   const formation = formations[apprenti.formationId] ?? formationCapCuisine;
-  const referentiel = referentiels[formation.referentielId] ?? referentielCapCuisine;
+  // Filtré des compétences exclues (limite des lignes évaluables) — le PDF
+  // ne présente que le contenu évaluable, comme les grilles.
+  const referentiel = referentielEvaluable(
+    referentiels[formation.referentielId] ?? referentielCapCuisine,
+  );
   const etablissement = etablissements[formation.lieuId];
   const entreprise = entreprises[apprenti.entrepriseId];
   const maitre = getMaitreByIdFromStore(apprenti.maitreApprentissageId) ?? maitreKarimBenali;

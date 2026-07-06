@@ -4,8 +4,10 @@ import {
   GraduationCap,
   Layers,
   Library,
+  ListChecks,
   Lock,
   Plus,
+  SlidersHorizontal,
   Sparkles,
   Trash2,
 } from 'lucide-react';
@@ -13,10 +15,18 @@ import type { BlocCompetences, Formation, Referentiel, Role } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useReferentielsStore } from '@/store/useReferentielsStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
+import { useParametresStore } from '@/store/useParametresStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
 import { evaluerVerrouReferentiel } from '@/lib/referentiel-verrou';
+import {
+  compterCompetencesEvaluables,
+  compterCompetencesExclues,
+  SEUIL_COMPETENCES_MAX,
+  SEUIL_COMPETENCES_MIN,
+} from '@/lib/limite-referentiel';
 import { grouperParSousFamille } from '@/lib/grouper-competences';
 import { ModaleImportReferentiel } from '@/components/admin/ModaleImportReferentiel';
+import { ModaleCompetencesEvaluables } from '@/components/admin/ModaleCompetencesEvaluables';
 import { cn } from '@/lib/utils';
 
 /**
@@ -37,6 +47,8 @@ export function GestionReferentiels() {
 
   const [modaleImportOuverte, setModaleImportOuverte] = useState(false);
   const [confirmationSuppression, setConfirmationSuppression] = useState<string | null>(null);
+  // Référentiel dont la modale « Lignes évaluables » est ouverte (juillet 2026).
+  const [exclusionsPour, setExclusionsPour] = useState<string | null>(null);
 
   useEffect(() => {
     if (!confirmationSuppression) return;
@@ -89,6 +101,8 @@ export function GestionReferentiels() {
         </button>
       </header>
 
+      <EncartSeuil roleActif={roleActif} />
+
       {liste.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
           Aucun référentiel importé. Cliquez sur « Importer un référentiel » pour démarrer.
@@ -99,7 +113,8 @@ export function GestionReferentiels() {
             const enConfirmation = confirmationSuppression === r.id;
             const verrou = evaluerVerrouReferentiel(r.id, formationsListe);
             const supprimable = !verrou.verrouille;
-            const nbCompetences = r.blocs.reduce((n, b) => n + b.competences.length, 0);
+            const nbEvaluables = compterCompetencesEvaluables(r);
+            const nbExclues = compterCompetencesExclues(r);
             const sousFamilles = new Set<string>();
             for (const b of r.blocs) {
               for (const c of b.competences) {
@@ -166,7 +181,11 @@ export function GestionReferentiels() {
                   />
                   <Statistique
                     Icon={BookOpen}
-                    label={`${nbCompetences} compétence${nbCompetences > 1 ? 's' : ''}`}
+                    label={`${nbEvaluables} compétence${nbEvaluables > 1 ? 's' : ''} évaluable${nbEvaluables > 1 ? 's' : ''}${
+                      nbExclues > 0
+                        ? ` (+${nbExclues} exclue${nbExclues > 1 ? 's' : ''} de l'évaluation)`
+                        : ''
+                    }`}
                   />
                   {r.niveauxColonnes === 3 && (
                     <Statistique
@@ -177,6 +196,18 @@ export function GestionReferentiels() {
                 </dl>
 
                 <FormationsRattachees formations={formationsRattachees} />
+
+                {/* Gestion des lignes évaluables (juillet 2026) : réactiver /
+                    exclure des compétences dans la limite du seuil global. */}
+                <button
+                  type="button"
+                  onClick={() => setExclusionsPour(r.id)}
+                  data-testid={`ref-lignes-evaluables-${r.id}`}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <ListChecks className="h-3.5 w-3.5" aria-hidden="true" />
+                  Lignes évaluables
+                </button>
 
                 {/* Détail des blocs en lecture seule. Le choix des compétences
                     abordées en entreprise se fait désormais par livret, à
@@ -205,7 +236,83 @@ export function GestionReferentiels() {
         ouvert={modaleImportOuverte}
         onAnnuler={() => setModaleImportOuverte(false)}
       />
+
+      {exclusionsPour && referentiels[exclusionsPour] && (
+        <ModaleCompetencesEvaluables
+          ouvert
+          referentiel={referentiels[exclusionsPour]}
+          onFermer={() => setExclusionsPour(null)}
+        />
+      )}
     </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Encart du seuil de lignes évaluables (juillet 2026) — lecture pour tous les
+// gestionnaires, édition réservée à l'admin (`admin.parametres.gerer`).
+// ─────────────────────────────────────────────────────────────────────────────
+
+function EncartSeuil({ roleActif }: { roleActif: Role }) {
+  const seuil = useParametresStore((s) => s.seuilCompetencesEvaluables);
+  const setSeuil = useParametresStore((s) => s.setSeuilCompetencesEvaluables);
+  const editable = peutEditer(roleActif, 'admin.parametres.gerer');
+
+  const [saisie, setSaisie] = useState(String(seuil));
+  const [erreur, setErreur] = useState<string | null>(null);
+
+  // Resynchronise la saisie si le seuil change ailleurs (reset démo).
+  useEffect(() => setSaisie(String(seuil)), [seuil]);
+
+  function enregistrer() {
+    const r = setSeuil(Number(saisie));
+    setErreur(r.ok ? null : (r.raison ?? 'Valeur refusée.'));
+  }
+
+  return (
+    <section
+      data-testid="encart-seuil"
+      className="space-y-1 rounded-lg border border-border bg-secondary/30 p-3"
+    >
+      <div className="flex flex-wrap items-center gap-3 text-sm">
+        <SlidersHorizontal className="h-4 w-4 shrink-0 texte-couleur-role" aria-hidden="true" />
+        <span className="font-medium">Limite de lignes évaluables par référentiel :</span>
+        {editable ? (
+          <>
+            <input
+              type="number"
+              min={SEUIL_COMPETENCES_MIN}
+              max={SEUIL_COMPETENCES_MAX}
+              value={saisie}
+              onChange={(e) => setSaisie(e.target.value)}
+              data-testid="param-seuil-input"
+              aria-label="Limite de lignes évaluables par référentiel"
+              className="w-20 rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <button
+              type="button"
+              onClick={enregistrer}
+              data-testid="param-seuil-enregistrer"
+              className="rounded-md bouton-plein-couleur-role px-3 py-1 text-xs font-medium"
+            >
+              Enregistrer
+            </button>
+          </>
+        ) : (
+          <strong data-testid="param-seuil-lecture">{seuil}</strong>
+        )}
+        <span className="text-xs text-muted-foreground">
+          Au-delà, la saisie des compétences devient trop longue pour le tuteur — l'import propose
+          alors d'agréger au niveau supérieur ou de décocher des lignes.
+          {!editable && ' Modifiable par l’administrateur·rice uniquement.'}
+        </span>
+      </div>
+      {erreur && (
+        <p role="alert" className="text-xs text-red-700">
+          {erreur}
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -293,16 +400,27 @@ function BlocDetail({ bloc }: BlocDetailProps) {
               <p className="font-medium text-foreground/80">{g.sousFamille}</p>
               <ul className="ml-3 mt-0.5 space-y-0.5 border-l border-border pl-2">
                 {g.competences.map((c) => (
-                  <li key={c.id} className="text-muted-foreground">
+                  <li
+                    key={c.id}
+                    className={cn('text-muted-foreground', c.exclue && 'line-through opacity-60')}
+                  >
                     {c.libelle}
+                    {c.exclue && <span className="ml-1 no-underline">(exclue)</span>}
                   </li>
                 ))}
               </ul>
             </li>
           ) : (
             g.competences.map((c) => (
-              <li key={c.id} className="text-xs text-muted-foreground">
+              <li
+                key={c.id}
+                className={cn(
+                  'text-xs text-muted-foreground',
+                  c.exclue && 'line-through opacity-60',
+                )}
+              >
                 {c.libelle}
+                {c.exclue && <span className="ml-1 no-underline">(exclue)</span>}
               </li>
             ))
           ),

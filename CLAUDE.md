@@ -1,7 +1,7 @@
 # Livret d'apprentissage — GRETA Lyon Métropole
 
 Maquette fonctionnelle (étape 1 du CDC v1.3, livrée + vagues post-livraison) d'un livret
-d'apprentissage dématérialisé. SPA Vite + React 18 + TypeScript strict, 9 stores Zustand
+d'apprentissage dématérialisé. SPA Vite + React 18 + TypeScript strict, 10 stores Zustand
 persistés en localStorage, **sans backend ni auth réelle** (c'est l'étape 2). Déployée sur
 https://livret-glm.duckdns.org (Basic Auth). Pilote métier : Guillaume FERRERI.
 
@@ -21,8 +21,8 @@ https://livret-glm.duckdns.org (Basic Auth). Pilote métier : Guillaume FERRERI.
 
 ```bash
 npm run dev            # Vite sur :5173
-npm test               # Vitest (577 tests au 2026-07-06)
-npm run e2e            # build + Playwright (189 tests) — c'est LA validation de référence
+npm test               # Vitest (602 tests au 2026-07-06)
+npm run e2e            # build + Playwright (193 tests) — c'est LA validation de référence
 npm run typecheck      # tsc --noEmit — ⚠ le build prod (tsc -b) voit PLUS que lui
 npm run build          # à passer avant tout push
 npm run lint && npm run format

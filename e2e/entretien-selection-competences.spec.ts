@@ -138,7 +138,7 @@ test("import d'un nouveau référentiel : la sélection repart « tout coché »
     .getByTestId('import-ref-csv')
     .fill(['BLOC;COMPETENCE', 'BLOC 1;Préparer les fonds', 'BLOC 1;Dresser les plats'].join('\n'));
   await modale.getByRole('button', { name: /^Aperçu$/i }).click();
-  await modale.getByRole('button', { name: /Importer \(2 compétences\)/i }).click();
+  await modale.getByRole('button', { name: /Importer \(2 compétences évaluables\)/i }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
   // 2. Sofia (sélection non validée) : sa sélection est réalignée sur le

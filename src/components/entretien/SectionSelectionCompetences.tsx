@@ -9,6 +9,7 @@ import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
 import { estSelectionnee, estValidee } from '@/lib/selection-competences-entreprise';
 import { grouperParSousFamille } from '@/lib/grouper-competences';
+import { referentielEvaluable } from '@/lib/limite-referentiel';
 import {
   LONGUEUR_MAX_MOTIF,
   LONGUEUR_MIN_MOTIF,
@@ -54,10 +55,13 @@ export function SectionSelectionCompetences({
   const [dialogOuverte, setDialogOuverte] = useState(false);
 
   // Résolution du référentiel courant — fallback CAP Cuisine cohérent avec
-  // TableauTriColonnes / GrilleCompetences.
+  // TableauTriColonnes / GrilleCompetences, filtré des compétences exclues
+  // (limite des lignes évaluables).
   const referentiel: Referentiel = useMemo(() => {
     const formation = formations[apprenti.formationId];
-    return (formation && referentiels[formation.referentielId]) ?? referentielCapCuisine;
+    return referentielEvaluable(
+      (formation && referentiels[formation.referentielId]) ?? referentielCapCuisine,
+    );
   }, [apprenti.formationId, formations, referentiels]);
 
   const validee = estValidee(selection);
@@ -79,8 +83,8 @@ export function SectionSelectionCompetences({
           Compétences abordées en entreprise
         </h2>
         <p className="text-xs text-muted-foreground">
-          Toutes les compétences sont activées par défaut. Le <strong>maître / tuteur</strong> et
-          le <strong>formateur référent</strong> décochent celles qui ne seront pas abordées sur le
+          Toutes les compétences sont activées par défaut. Le <strong>maître / tuteur</strong> et le{' '}
+          <strong>formateur référent</strong> décochent celles qui ne seront pas abordées sur le
           terrain. La sélection sera figée à la 3<sup>ᵉ</sup> signature de l'entretien.
         </p>
       </header>
@@ -107,7 +111,9 @@ export function SectionSelectionCompetences({
                 {g.sousFamille && (
                   <p className="text-xs font-medium text-foreground/70">{g.sousFamille}</p>
                 )}
-                <ul className={cn('space-y-1', g.sousFamille && 'ml-3 border-l border-border pl-2')}>
+                <ul
+                  className={cn('space-y-1', g.sousFamille && 'ml-3 border-l border-border pl-2')}
+                >
                   {g.competences.map((c) => (
                     <CompetenceCase
                       key={c.id}

@@ -80,7 +80,7 @@ test('import via textarea (3 colonnes) → aperçu, association et nom auto-gén
   await expect(modale.getByText(/L'import remplacera ce rattachement/i)).toBeVisible();
 
   // Import effectif
-  await modale.getByRole('button', { name: /Importer \(4 compétences\)/i }).click();
+  await modale.getByRole('button', { name: /Importer \(4 compétences évaluables\)/i }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
   // La carte du nouveau référentiel apparaît avec le nom auto-généré
@@ -100,7 +100,7 @@ test("import d'un fichier CSV réel — exemple-1 (3 colonnes, 16 sous-compéten
   await expect(modale.locator('li', { hasText: /^2 blocs?$/i })).toBeVisible();
   await expect(modale.locator('li', { hasText: /^16 compétences?$/i })).toBeVisible();
   await expect(modale.locator('li', { hasText: /^3 sous-familles?$/i })).toBeVisible();
-  await modale.getByRole('button', { name: /Importer \(16 compétences\)/i }).click();
+  await modale.getByRole('button', { name: /Importer \(16 compétences évaluables\)/i }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
@@ -117,7 +117,7 @@ test("import d'un fichier XLSX réel — exemple-1 (3 colonnes, format détecté
   await expect(modale.locator('li', { hasText: /^16 compétences?$/i })).toBeVisible();
   // Format détecté = XLSX
   await expect(modale.locator('li', { hasText: /XLSX/ })).toBeVisible();
-  await modale.getByRole('button', { name: /Importer \(16 compétences\)/i }).click();
+  await modale.getByRole('button', { name: /Importer \(16 compétences évaluables\)/i }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
@@ -133,7 +133,7 @@ test("import d'un fichier XLSX 2 colonnes — exemple-2 (référentiel plat)", a
   await expect(modale.locator('li', { hasText: /^2 blocs?$/i })).toBeVisible();
   await expect(modale.locator('li', { hasText: /^16 compétences?$/i })).toBeVisible();
   await expect(modale.locator('li', { hasText: /sous-familles?/i })).toHaveCount(0);
-  await modale.getByRole('button', { name: /Importer \(16 compétences\)/i }).click();
+  await modale.getByRole('button', { name: /Importer \(16 compétences évaluables\)/i }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 

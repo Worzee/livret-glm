@@ -140,6 +140,11 @@ export type Ressource =
   | 'admin.referentiels.gerer'
   /** CRUD sur les établissements (lieux de formation, URL Pronote). */
   | 'admin.etablissements.gerer'
+  /**
+   * Paramètres globaux de l'application (juillet 2026) — dont le seuil de
+   * lignes évaluables par référentiel. Admin uniquement (décision pilote).
+   */
+  | 'admin.parametres.gerer'
   /** CRUD sur les entreprises d'accueil des apprenti·e·s (juin 2026). */
   | 'admin.entreprises.gerer'
   /**
@@ -241,6 +246,7 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'admin.affectations.gerer': ['coordo', 'admin'],
   'admin.referentiels.gerer': ['coordo', 'admin'],
   'admin.etablissements.gerer': ['admin'], // admin uniquement
+  'admin.parametres.gerer': ['admin'], // admin uniquement (seuil référentiels, juillet 2026)
   'admin.entreprises.gerer': ['coordo', 'admin'], // coordo + admin (gestion des apprenti·e·s)
   'admin.attitudes.gerer': ['admin'], // admin uniquement
 };

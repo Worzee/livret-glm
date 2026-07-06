@@ -3,8 +3,10 @@ import { persist } from 'zustand/middleware';
 import type { Referentiel } from '@/types';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
 import { referentielBtsMhr } from '@/fixtures/referentiel-bts-mhr';
+import { peutBasculerExclusion, type ResultatValidation } from '@/lib/limite-referentiel';
 import { useFormationsStore } from './useFormationsStore';
 import { useLivretStore } from './useLivretStore';
+import { useParametresStore } from './useParametresStore';
 
 /**
  * Store des référentiels de compétences.
@@ -43,6 +45,15 @@ interface ReferentielsStore {
    */
   supprimerReferentiel: (id: string) => boolean;
 
+  /**
+   * Bascule l'état d'exclusion d'une compétence (juillet 2026 — limite des
+   * lignes évaluables). Gardes : au moins une feuille évaluable, réactivation
+   * refusée au-delà du seuil (`useParametresStore`). Les sélections non
+   * validées des livrets des formations rattachées sont réalignées (même
+   * cascade qu'un réimport).
+   */
+  basculerExclusionCompetence: (referentielId: string, competenceId: string) => ResultatValidation;
+
   /** Réinitialise le store au fixture initial (utilisé par BoutonReinitialiserDemo). */
   reinitialiser: () => void;
 }
@@ -54,7 +65,10 @@ interface ReferentielsStore {
 //        cf. `useLivretStore.selectionCompetencesEntreprise`)
 //   v3 — référentiel BTS MHR à 3 niveaux (Bloc → Sous-famille → Compétence)
 //        ajouté aux fixtures (3 juillet 2026). Reset pour recharger.
-const VERSION_SCHEMA = 3;
+//   v4 — 6 juillet 2026 : limite des lignes évaluables (chantier
+//        référentiels/compétences #2) — `Competence.exclue?` (exclusions
+//        d'import cochables + gestion post-import). Reset aux fixtures.
+const VERSION_SCHEMA = 4;
 
 function etatInitial(): Pick<ReferentielsStore, 'referentiels'> {
   return {
@@ -107,6 +121,35 @@ export const useReferentielsStore = create<ReferentielsStore>()(
         void _retire;
         set({ referentiels: sansLui });
         return true;
+      },
+
+      basculerExclusionCompetence: (referentielId, competenceId) => {
+        const referentiel = get().referentiels[referentielId];
+        if (!referentiel) return { ok: false, raison: 'Référentiel introuvable.' };
+        // Seuil global lu au runtime (cross-store, cycle résolu par ESM).
+        const seuil = useParametresStore.getState().seuilCompetencesEvaluables;
+        const garde = peutBasculerExclusion(referentiel, competenceId, seuil);
+        if (!garde.ok) return garde;
+        const maj: Referentiel = {
+          ...referentiel,
+          blocs: referentiel.blocs.map((b) => ({
+            ...b,
+            competences: b.competences.map((c) =>
+              c.id === competenceId ? { ...c, exclue: c.exclue ? undefined : true } : c,
+            ),
+          })),
+        };
+        set({ referentiels: { ...get().referentiels, [referentielId]: maj } });
+        // L'ensemble des compétences évaluables change → les sélections non
+        // validées des livrets des formations rattachées repartent
+        // « tout coché » (même cascade qu'un réimport, 1ᵉʳ juillet 2026).
+        const formations = Object.values(useFormationsStore.getState().formations);
+        for (const f of formations) {
+          if (f.referentielId === referentielId) {
+            useLivretStore.getState().realignerSelectionsFormation(f.id, maj);
+          }
+        }
+        return { ok: true };
       },
 
       reinitialiser: () => set(etatInitial()),

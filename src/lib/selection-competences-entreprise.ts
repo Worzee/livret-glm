@@ -167,7 +167,11 @@ export function realignerSurReferentiel(
   maintenant: Date = new Date(),
 ): SelectionCompetencesEntreprise {
   if (estValidee(sel)) return sel;
-  const ids = referentiel.blocs.flatMap((b) => b.competences.map((c) => c.id));
+  // Juillet 2026 : les compétences exclues (limite des lignes évaluables)
+  // ne participent pas à la sélection.
+  const ids = referentiel.blocs.flatMap((b) =>
+    b.competences.filter((c) => !c.exclue).map((c) => c.id),
+  );
   const actuels = new Set(sel.ids);
   if (ids.length === sel.ids.length && ids.every((id) => actuels.has(id))) {
     return sel;
@@ -189,7 +193,9 @@ export function nettoyerApresMajReferentiel(
   const idsValides = new Set<string>();
   for (const b of referentiel.blocs) {
     for (const c of b.competences) {
-      idsValides.add(c.id);
+      // Une compétence exclue (limite des lignes évaluables) équivaut à une
+      // compétence disparue pour la sélection.
+      if (!c.exclue) idsValides.add(c.id);
     }
   }
   const idsFiltres = sel.ids.filter((id) => idsValides.has(id));

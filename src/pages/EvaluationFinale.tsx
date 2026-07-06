@@ -7,6 +7,7 @@ import { useReferentielsStore } from '@/store/useReferentielsStore';
 import { useEtablissementsStore } from '@/store/useEtablissementsStore';
 import { useAttitudesStore } from '@/store/useAttitudesStore';
 import { peutEditer } from '@/lib/droits';
+import { referentielEvaluable } from '@/lib/limite-referentiel';
 import { libelleRole } from '@/lib/droits';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
 import { formatriceSophieDubois, maitreKarimBenali } from '@/fixtures/utilisateurs';
@@ -48,7 +49,10 @@ export function EvaluationFinale() {
   // Résolution du référentiel via la formation. Fallback sur le CAP Cuisine
   // si la formation n'a pas (encore) de référentiel défini ou si l'id pointe
   // vers un référentiel supprimé — comportement raisonnable pour la maquette.
-  const referentiel = referentiels[formation.referentielId] ?? referentielCapCuisine;
+  // Filtré des compétences exclues (limite des lignes évaluables).
+  const referentiel = referentielEvaluable(
+    referentiels[formation.referentielId] ?? referentielCapCuisine,
+  );
   const etablissement = etablissements[formation.lieuId];
   const maitre = getMaitreByIdFromStore(apprenti.maitreApprentissageId) ?? maitreKarimBenali;
   const maitreSecond = apprenti.maitreApprentissageSecondId

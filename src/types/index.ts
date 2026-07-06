@@ -208,6 +208,16 @@ export interface Competence {
    * L'évaluation se fait toujours au niveau leaf (cette Compétence elle-même).
    */
   sousFamille?: string;
+  /**
+   * Compétence **exclue de l'évaluation** (juillet 2026 — limite du nombre de
+   * lignes évaluables par référentiel, cf. `lib/limite-referentiel`).
+   * Conservée dans le référentiel pour garder la trace du fichier officiel ;
+   * réactivable depuis la page Référentiels tant que le total évaluable reste
+   * sous le seuil. Absente/`false` = évaluable (comportement historique).
+   * Les vues d'évaluation (grilles, fiches, sélection entreprise, PDF)
+   * consomment le référentiel filtré via `referentielEvaluable`.
+   */
+  exclue?: boolean;
 }
 
 export interface BlocCompetences {

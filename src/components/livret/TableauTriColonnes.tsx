@@ -17,6 +17,7 @@ import { useReferentielsStore } from '@/store/useReferentielsStore';
 import { peutEditer } from '@/lib/droits';
 import { peutEncoreEditerFiche } from '@/lib/transitions-fiche';
 import { estSelectionnee, estValidee } from '@/lib/selection-competences-entreprise';
+import { referentielEvaluable } from '@/lib/limite-referentiel';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
 import { SelecteurNiveau } from '@/components/common/SelecteurNiveau';
 import { BoutonSupprimer } from '@/components/common/BoutonSupprimer';
@@ -50,7 +51,11 @@ interface TableauTriColonnesProps {
   lieu?: LieuFiche;
 }
 
-export function TableauTriColonnes({ livretId, fiche, lieu = 'entreprise' }: TableauTriColonnesProps) {
+export function TableauTriColonnes({
+  livretId,
+  fiche,
+  lieu = 'entreprise',
+}: TableauTriColonnesProps) {
   const roleActif = useUserStore((s) => s.roleActif);
   const setEval = useLivretStore((s) => s.setEvaluationLigne);
   const ajouter = useLivretStore((s) => s.ajouterLigneSuiviEntreprise);
@@ -73,10 +78,13 @@ export function TableauTriColonnes({ livretId, fiche, lieu = 'entreprise' }: Tab
     livretCourant?.selectionCompetencesEntreprise;
   const selectionValidee = selection ? estValidee(selection) : false;
 
-  // Résolution du référentiel courant via la formation de l'apprenti·e actif·ve.
+  // Résolution du référentiel courant via la formation de l'apprenti·e
+  // actif·ve — filtré des compétences exclues (limite des lignes évaluables).
   const referentiel: Referentiel = useMemo(() => {
     const formation = ctx ? formations[ctx.apprenti.formationId] : undefined;
-    return (formation && referentiels[formation.referentielId]) ?? referentielCapCuisine;
+    return referentielEvaluable(
+      (formation && referentiels[formation.referentielId]) ?? referentielCapCuisine,
+    );
   }, [ctx, formations, referentiels]);
 
   const competencesParId = useMemo(() => {
@@ -203,7 +211,9 @@ export function TableauTriColonnes({ livretId, fiche, lieu = 'entreprise' }: Tab
                 peutEditerEval={peutEditerEval}
                 peutEditerRetour={peutEditerRetour}
                 peutSupprimer={peutAjouterLigne}
-                onChangeEval={(v) => setEval(livretId, fiche.id, l.id, { type: champEval, valeur: v }, lieu)}
+                onChangeEval={(v) =>
+                  setEval(livretId, fiche.id, l.id, { type: champEval, valeur: v }, lieu)
+                }
                 onChangeRetour={(v) =>
                   setEval(livretId, fiche.id, l.id, { type: 'retourApprenti', valeur: v }, lieu)
                 }
@@ -233,7 +243,9 @@ export function TableauTriColonnes({ livretId, fiche, lieu = 'entreprise' }: Tab
             peutEditerEval={peutEditerEval}
             peutEditerRetour={peutEditerRetour}
             peutSupprimer={peutAjouterLigne}
-            onChangeEval={(v) => setEval(livretId, fiche.id, l.id, { type: champEval, valeur: v }, lieu)}
+            onChangeEval={(v) =>
+              setEval(livretId, fiche.id, l.id, { type: champEval, valeur: v }, lieu)
+            }
             onChangeRetour={(v) =>
               setEval(livretId, fiche.id, l.id, { type: 'retourApprenti', valeur: v }, lieu)
             }
@@ -331,7 +343,8 @@ function LigneTableau(props: LigneTableauProps) {
 }
 
 function CarteCompetence(props: CarteCompetenceProps) {
-  const { ligne, competencesParId, champEval, emojiEval, classeTexteEval, bordureEvalCarte } = props;
+  const { ligne, competencesParId, champEval, emojiEval, classeTexteEval, bordureEvalCarte } =
+    props;
   const libelle = libelleCompetence(ligne, competencesParId);
 
   return (

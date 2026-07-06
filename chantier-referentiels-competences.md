@@ -36,6 +36,37 @@ fixture Yanis dotée d'un événement entretien planifié non initialisé (prés
 « à initialiser » du centre d'alertes). Bumps `livret-donnees` v23 + `livret-formations`
 v8. Détail complet dans PROJECT-STATUS.md §4 (vague du 6 juillet 2026).
 
+### Modification #2 — limite de 40 lignes évaluables par référentiel (2026-07-06)
+
+Décision pilote : **l'import d'un référentiel est limité à 40 lignes évaluables**
+(au-delà, la saisie devient trop longue pour le tuteur en période entreprise). En cas de
+dépassement, le coordo/admin choisit entre **agréger au niveau hiérarchique supérieur**
+ou **cocher/décocher** jusqu'à la limite. Le seuil est **modifiable par l'admin seul**.
+
+Arbitrages validés par le pilote en séance :
+
+1. **Les 40 = compétences évaluables (feuilles)** — les blocs / sous-familles
+   (regroupements d'affichage) ne comptent pas.
+2. **Agrégation proposée uniquement en 3 niveaux** (les sous-familles deviennent les
+   lignes évaluables, libellés fins conservés en description). En 2 niveaux, évaluer
+   « au bloc » serait trop grossier → cochage manuel seul.
+3. **Exclues conservées, non évaluables** (`Competence.exclue`) — trace du fichier
+   officiel, réactivables depuis la page Référentiels tant que le seuil est respecté.
+4. **Garde-fou à l'import uniquement** — un référentiel enregistré est forcément
+   conforme puisqu'il est passé par l'import.
+
+Implémentation : lib pure `limite-referentiel` (24 tests TDD), store
+`useParametresStore` (`livret-parametres` v1, seuil défaut 40), ressource
+`admin.parametres.gerer` (admin seul), résolution du dépassement dans
+`ModaleImportReferentiel`, gestion post-import dans `ModaleCompetencesEvaluables`
+(cascade de réalignement des sélections non validées), filtrage `referentielEvaluable`
+aux frontières (grilles, fiches, sélection entreprise, PDF). Bump `livret-referentiels`
+v4. Détail complet dans PROJECT-STATUS.md §4.
+
+⚠ Mise à jour des invariants §7 : « l'évaluation porte toujours sur les feuilles »
+devient « sur les feuilles **non exclues** » — consommer le référentiel via
+`referentielEvaluable` (jamais `blocs` brut) dans toute nouvelle vue d'évaluation.
+
 ⚠ Les sections ci-dessous (§2, §7…) décrivent l'état AVANT cette modification pour ce qui
 concerne les entretiens (E1..E4, `nombreEntretiens`) — les invariants référentiels /
 compétences restent exacts.
