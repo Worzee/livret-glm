@@ -1,7 +1,9 @@
 # Chantier — Refonte des référentiels et des compétences
 
 **Créé le** : 2026-07-06, à l'issue de la réunion direction (très positive)
-**Statut** : en cours — modifications #1 et #2 livrées le 2026-07-06, #3 en cours
+**Statut** : en cours — modifications #1 à #3 livrées le 2026-07-06 ; **#4 (évaluation
+par activités) cadrée en préliminaire, à implémenter dans une session dédiée — cf. §0,
+lire le cadrage AVANT de coder**
 **Objet** : une « énorme phase de modification » est annoncée sur les référentiels et les
 compétences. Ce document est la **carte complète du sous-système** telle qu'elle existe
 aujourd'hui — à lire avant toute modification, pour ne pas ré-explorer le code et ne rien
@@ -146,6 +148,115 @@ Décisions d'implémentation (sans consultation, dérivées de la demande) :
 attitudes à l'entretien et le tableau de compétences des fiches centre ont
 disparu avec la #3. Les invariants purement référentiels (feuilles non
 exclues, sélection « tout coché », réimport = remplacement) restent exacts.
+
+### Modification #4 — évaluation par ACTIVITÉS (CADRAGE PRÉLIMINAIRE, non implémentée)
+
+**Principe (pilote, 2026-07-06)** : certaines formations ne sont pas adaptées à une
+évaluation en « compétences » mais en « **activités** ». Le référentiel de compétences
+reste **impératif et obligatoire**. Cinq chantiers annoncés :
+
+1. **Import de « modèles d'activités »** pour une formation (fichier Excel — forme à
+   discuter avec le pilote).
+2. **Mapping activités ↔ compétences** par le coordo/admin, jusqu'au **balayage global**
+   du référentiel (hors compétences exclues — modif #2).
+3. Balayage complet → le coordo **choisit le mode d'évaluation** de la formation
+   (compétences ou activités). L'entretien tripartite s'en trouve modifié.
+4. Mode activités → **fiches entreprise par activités** : plus aucune compétence, le
+   tuteur associe une ou plusieurs activités à la période et les évalue.
+5. **Synthèse** : garde l'affichage PAR COMPÉTENCES, alimentées « par le prisme des
+   activités » (projection activité → compétences couvertes).
+
+#### Angles morts identifiés (session #3 du 2026-07-06 — à arbitrer AVANT de coder)
+
+**A. Cycle de vie du MODE (critique).** Le mode est porté par la formation, les données
+par les livrets. Bascule compétences → activités (ou l'inverse) alors que des entretiens
+sont signés et des fiches remplies = perte/incohérence. Options : bascule **verrouillée
+dès la première saisie signée** dans la promo (pattern verrou maison, recommandé), reset
+avec confirmation, ou données mixtes. À trancher, dans LES DEUX SENS. Prévoir aussi le
+changement de formation d'un·e apprenti·e entre deux promos de modes différents.
+
+**B. Règle de projection activités → compétences (critique).** Si l'activité A couvre
+c1+c2 (« Maîtrisé » en P2) et l'activité B couvre c2 (« Partiel » en P3), c2 vaut quoi ?
+Proposition cohérente avec l'existant : **last-write-wins chronologique toutes activités
+confondues** (P3 gagne), avec provenance « via activité B, Période 3 » affichée. La
+saisie manuelle d'écrasement dans la grille Synthèse (+ modale de confirmation) doit-elle
+rester possible en mode activités ? Nouvelle lib pure de projection à écrire en TDD.
+
+**C. Couplage avec le référentiel vivant (critique).**
+- **Réimport du référentiel** (= remplacement intégral, ids potentiellement changés) →
+  mapping orphelin → balayage incomplet → le mode activités retombe-t-il automatiquement ?
+  Étendre la cascade `realignerSurReferentiel` / l'avertissement de réimport.
+- **Exclusions** : réactiver une compétence exclue APRÈS validation du balayage le rend
+  incomplet (garde à ajouter côté page Référentiels / `peutBasculerExclusion`) ; exclure
+  une compétence peut au contraire compléter le balayage d'un coup.
+- **Seuil des 40 lignes** : motivé par la charge de saisie du tuteur — faut-il un seuil
+  équivalent sur le nombre d'activités d'un modèle ?
+- **Changement de référentiel d'une formation** : mapping à invalider, mode à retomber ?
+
+**D. Sélection des compétences abordées en entreprise (CDC v1.5 §12).** En mode
+activités, cette sélection (tout coché → maître décoche → validée à la 3ᵉ signature E1 →
+R10 pour rouvrir) garde-t-elle un sens ? Hypothèse : c'est LA modification de l'entretien
+annoncée — la section devient une **sélection d'activités prévues en entreprise** (mêmes
+règles de validation/figeage ?), et la grille Synthèse (restreinte à la sélection depuis
+la #3) se restreint aux **compétences couvertes par les activités retenues**. À valider.
+
+**E. Fiches entreprise.** `LigneSuiviEntreprise.competenceId` → nouveau discriminant
+`activiteId` ? Même échelle (Maîtrisé/Partiel/Non maîtrisé/Non fait) ? « Activité libre »
+hors modèle (équivalent `libelleLibre`) autorisée ? R20 maître : « ≥ 1 activité évaluée »
+remplace « ≥ 1 compétence abordée » ; les **attitudes par période (modif #3) restent
+inchangées** (à confirmer) ; retour apprenti par ligne inchangé. Le sélecteur « Ajouter
+une compétence » devient « Ajouter une activité » — gaté par quoi (cf. D) ?
+
+**F. Fichier Excel et lieu du mapping.** Deux options : (a) mapping DANS le fichier
+(colonne « codes des compétences couvertes » — fragile : les codes ne s'affichent plus
+depuis juin, fichiers pilote à vérifier) ; (b) fichier = activités seules (code, libellé,
+description) et **mapping entièrement dans l'UI** post-import (recommandé — c'est là que
+la jauge de balayage prend son sens), avec éventuel pré-remplissage optionnel depuis le
+fichier. Prévoir : réimport d'un modèle déjà mappé (remplacement + réalignement, pattern
+référentiels), verrou de suppression (modèle utilisé), CSV en plus du XLSX (parser maison
+`parser-xlsx` + pipeline `import-referentiel` réutilisables), validation de saisie.
+
+**G. Droits.** Nouvelles ressources : `admin.activites.gerer` (import + mapping + choix
+du mode — coordo + admin : ingénierie de formation, pas de contenu pédagogique, cohérent
+avec `admin.referentiels.gerer`) ; `fiche.activites` (tuteur — miroir de
+`fiche.evaluation-entreprise`). Matrice × 5 rôles + tests.
+
+**H. UI.** Page/modale admin « Modèles d'activités » avec éditeur de mapping et **jauge
+de balayage** (« X/Y compétences couvertes », liste des manquantes) conditionnant le
+déblocage du choix de mode ; badge du mode sur les cartes formation (GestionFormations,
+pilotage ?) ; alerte coordo « balayage incomplet » dans le centre d'alertes ?
+
+**I. PDF.** Pages de fiches entreprise en mode activités (tableau Activité | Évaluation |
+Retour), Synthèse par compétences avec provenance (« via activité X — Période N »).
+
+**J. Fixtures & E2E.** Les compteurs E2E comptent les fixtures (8 apprenti·e·s, 2
+formations, périmètres Martine 5/Bernard 3, Karim 4/Hélène 3, Sophie 6/Marc 2) — une 3ᵉ
+formation de démo casserait les périmètres. Recommandation : faire vivre le mode
+activités sur une promo existante OU assumer l'adaptation des compteurs. Bumps attendus :
+nouveau store `livret-activites` v1, `livret-formations` v9 (mode + modeleActivitesId),
+`livret-donnees` v25 (lignes de fiches).
+
+#### Questions de cadrage pour le pilote (à poser en début de session #4)
+
+1. **Forme du fichier Excel** : quelles colonnes ? Le mapping compétences est-il dans le
+   fichier ou fait uniquement dans l'UI ? Un fichier d'exemple réel est-il disponible
+   (comme les 4 fichiers référentiels de `src/lib/__fixtures__/`) ?
+2. **Bascule du mode** : verrouillée dès la première saisie signée dans la promo ?
+   Réversible tant que rien n'est signé ? Dans les deux sens ?
+3. **Projection** : en cas de niveaux divergents sur une même compétence via plusieurs
+   activités, last-write-wins chronologique ? Et la saisie manuelle d'écrasement dans la
+   Synthèse reste-t-elle permise ?
+4. **Entretien** : en mode activités, la sélection §12 devient-elle une sélection
+   d'activités (mêmes règles : tout coché ?, validation 3ᵉ signature, R10) ou
+   disparaît-elle ? Les attitudes par période restent-elles identiques ?
+5. **Activité libre** hors modèle sur une fiche : autorisée (équivalent de l'activité
+   ad hoc actuelle) ?
+6. **Réimport / exclusions** : si le balayage redevient incomplet (réimport du
+   référentiel, réactivation d'une compétence), le mode retombe-t-il en compétences ou
+   bloque-t-on l'action tant que des livrets sont en mode activités ?
+7. **Seuil** : limite du nombre d'activités par modèle (équivalent des 40 lignes) ?
+8. **Échelle** : mêmes 4 niveaux entreprise pour évaluer une activité ?
+9. **Démo** : quelle promo de démo passe en mode activités (existante ou nouvelle) ?
 
 ---
 
