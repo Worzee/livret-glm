@@ -7,8 +7,12 @@ import type { NiveauAppreciation, ReponsesEntretien } from '@/types';
  *
  * Cette trame est **figée** : document normé, défini ici en dur. Les
  * questions conjointes (maître + apprenti·e) sont organisées en rubriques
- * thématiques ; un « Non » sur une question oui/non signale une difficulté
- * nécessitant une action du GRETA CFA (DDF / coordonnateur).
+ * thématiques ; chaque question oui/non porte sa **polarité d'alerte**
+ * (`alerteSi`) : dans les 4 premières rubriques un « Non » signale une
+ * difficulté nécessitant une action du GRETA CFA (DDF / coordonnateur) ;
+ * dans la rubrique « Difficultés éventuelles » c'est un « Oui » qui signale
+ * la difficulté (7 juillet 2026, demande pilote : « Oui » = je rencontre un
+ * problème — plus naturel que l'ancien « Oui » = situation satisfaisante).
  *
  * Juillet 2026 : l'entretien tripartite est désormais **unique et
  * obligatoire** (les entretiens 2 à 4 et leur banque de questions ont été
@@ -23,10 +27,15 @@ export interface QuestionTrame {
   id: string;
   libelle: string;
   type: TypeQuestionTrame;
-  /** Aide affichée sous la question (ex. action attendue si « Non »). */
+  /** Aide affichée sous la question (ex. action attendue en cas d'alerte). */
   aide?: string;
-  /** Pour les oui/non : un « Non » est un point d'alerte (action DDF/coordo). */
-  alerteSiNon?: boolean;
+  /**
+   * Polarité d'alerte des questions oui/non : la réponse indiquée déclenche
+   * un point d'alerte (action DDF / coordonnateur) et s'affiche en rouge.
+   * `'non'` = question formulée positivement (« … est connu ») ; `'oui'` =
+   * question formulée en difficulté (« Logement » : Oui = problème).
+   */
+  alerteSi?: 'oui' | 'non';
 }
 
 export interface RubriqueTrame {
@@ -56,19 +65,19 @@ export const TRAME_ENTRETIEN: ReadonlyArray<RubriqueTrame> = [
       {
         id: 'e1-integ-regles',
         type: 'oui-non',
-        alerteSiNon: true,
+        alerteSi: 'non',
         libelle: "Les règles de fonctionnement de l'entreprise sont connues de l'apprenti·e",
       },
       {
         id: 'e1-integ-poste',
         type: 'oui-non',
-        alerteSiNon: true,
+        alerteSi: 'non',
         libelle: "L'apprenti·e connaît le poste / les activités demandées",
       },
       {
         id: 'e1-integ-contact',
         type: 'oui-non',
-        alerteSiNon: true,
+        alerteSi: 'non',
         libelle: "L'apprenti·e sait à qui s'adresser en cas de difficulté / de besoin",
       },
     ],
@@ -86,7 +95,7 @@ export const TRAME_ENTRETIEN: ReadonlyArray<RubriqueTrame> = [
       {
         id: 'e1-accomp-sensibilisation',
         type: 'oui-non',
-        alerteSiNon: true,
+        alerteSi: 'non',
         libelle:
           "Le maître d'apprentissage a participé à une réunion de sensibilisation organisée par le GRETA CFA et/ou a été destinataire des supports de sensibilisation",
         aide: "Si non, le formateur rappelle le rôle du maître d'apprentissage.",
@@ -94,7 +103,7 @@ export const TRAME_ENTRETIEN: ReadonlyArray<RubriqueTrame> = [
       {
         id: 'e1-accomp-presentation-formation',
         type: 'oui-non',
-        alerteSiNon: true,
+        alerteSi: 'non',
         libelle:
           "Le maître d'apprentissage a été destinataire d'une présentation de la formation et de ses objectifs",
         aide: 'Si non, le formateur présente la formation.',
@@ -102,7 +111,7 @@ export const TRAME_ENTRETIEN: ReadonlyArray<RubriqueTrame> = [
       {
         id: 'e1-accomp-livret',
         type: 'oui-non',
-        alerteSiNon: true,
+        alerteSi: 'non',
         libelle: "Le livret d'apprentissage est complété",
         aide: "Si non, le formateur rappelle l'importance de le compléter régulièrement.",
       },
@@ -127,13 +136,13 @@ export const TRAME_ENTRETIEN: ReadonlyArray<RubriqueTrame> = [
       {
         id: 'e1-adeq-lien-diplome',
         type: 'oui-non',
-        alerteSiNon: true,
+        alerteSi: 'non',
         libelle: 'Les activités sont en lien avec le diplôme préparé',
       },
       {
         id: 'e1-adeq-competences',
         type: 'oui-non',
-        alerteSiNon: true,
+        alerteSi: 'non',
         libelle:
           "L'apprenti·e peut mettre en œuvre ou développer les compétences visées par la formation",
       },
@@ -151,27 +160,27 @@ export const TRAME_ENTRETIEN: ReadonlyArray<RubriqueTrame> = [
       {
         id: 'e1-org-calendrier',
         type: 'oui-non',
-        alerteSiNon: true,
+        alerteSi: 'non',
         libelle:
           "L'apprenti·e sait où trouver les informations sur son calendrier d'alternance (Pronote, livret d'apprentissage…)",
       },
       {
         id: 'e1-org-absences',
         type: 'oui-non',
-        alerteSiNon: true,
+        alerteSi: 'non',
         libelle:
           "Les absences et retards sont signalés par l'apprenti·e selon les procédures prévues (entreprise, GRETA CFA, justificatif d'absence…)",
       },
       {
         id: 'e1-org-coordonnees',
         type: 'oui-non',
-        alerteSiNon: true,
+        alerteSi: 'non',
         libelle: "Les coordonnées des interlocuteurs au CFA sont connues de l'entreprise",
       },
       {
         id: 'e1-org-infos',
         type: 'oui-non',
-        alerteSiNon: true,
+        alerteSi: 'non',
         libelle:
           "Les informations transmises par le CFA sont bien reçues par l'entreprise (attestations mensuelles, bulletins, mails…)",
       },
@@ -181,29 +190,29 @@ export const TRAME_ENTRETIEN: ReadonlyArray<RubriqueTrame> = [
     id: 'difficultes',
     titre: "Difficultés éventuelles rencontrées par l'apprenti·e",
     intro:
-      'Pour chaque point, cochez « Oui » si la situation est satisfaisante, « Non » en cas de difficulté. Un « Non » est transmis au DDF ou au coordonnateur pour étudier la mise en place d’une action.',
+      'Pour chaque point, cochez « Oui » si l’apprenti·e rencontre une difficulté, « Non » sinon. Un « Oui » est transmis au DDF ou au coordonnateur pour étudier la mise en place d’une action.',
     questions: [
-      { id: 'e1-diff-logement', type: 'oui-non', alerteSiNon: true, libelle: 'Logement' },
-      { id: 'e1-diff-transport', type: 'oui-non', alerteSiNon: true, libelle: 'Transport' },
+      { id: 'e1-diff-logement', type: 'oui-non', alerteSi: 'oui', libelle: 'Logement' },
+      { id: 'e1-diff-transport', type: 'oui-non', alerteSi: 'oui', libelle: 'Transport' },
       {
         id: 'e1-diff-financieres',
         type: 'oui-non',
-        alerteSiNon: true,
+        alerteSi: 'oui',
         libelle: 'Difficultés financières',
       },
       {
         id: 'e1-diff-informatique',
         type: 'oui-non',
-        alerteSiNon: true,
+        alerteSi: 'oui',
         libelle: "Accès à l'outil informatique",
       },
       {
         id: 'e1-diff-equipement',
         type: 'oui-non',
-        alerteSiNon: true,
+        alerteSi: 'oui',
         libelle: 'Équipement professionnel',
       },
-      { id: 'e1-diff-autres', type: 'oui-non', alerteSiNon: true, libelle: 'Autres' },
+      { id: 'e1-diff-autres', type: 'oui-non', alerteSi: 'oui', libelle: 'Autres' },
       {
         id: 'e1-diff-autres-precisions',
         type: 'texte',
@@ -283,15 +292,30 @@ export function reponseTrameRenseignee(
 }
 
 /**
- * Points d'alerte de l'entretien : questions oui/non `alerteSiNon` dont la
- * réponse est explicitement « Non » (`false`). Sert au récapitulatif de fin
- * d'entretien et au PDF (actions à mener par le DDF / coordonnateur).
+ * La réponse donnée à une question oui/non est-elle un point d'alerte ?
+ * Suit la polarité de la question (`alerteSi`) : « Non » sur une question
+ * formulée positivement, « Oui » sur une question formulée en difficulté
+ * (rubrique « Difficultés éventuelles » — 7 juillet 2026). Consommée par
+ * l'UI (surlignage + couleur des boutons) et le PDF.
+ */
+export function estReponseAlerte(
+  question: QuestionTrame,
+  valeur: ReponsesEntretien[string] | undefined,
+): boolean {
+  if (question.type !== 'oui-non' || typeof valeur !== 'boolean') return false;
+  if (question.alerteSi === 'oui') return valeur === true;
+  if (question.alerteSi === 'non') return valeur === false;
+  return false;
+}
+
+/**
+ * Points d'alerte de l'entretien : questions oui/non dont la réponse suit la
+ * polarité d'alerte (`alerteSi`). Sert au récapitulatif de fin d'entretien et
+ * au PDF (actions à mener par le DDF / coordonnateur).
  */
 export function pointsAlerteTrame(reponses: ReponsesEntretien | undefined): QuestionTrame[] {
   if (!reponses) return [];
-  return questionsTrame().filter(
-    (q) => q.type === 'oui-non' && q.alerteSiNon === true && reponses[q.id] === false,
-  );
+  return questionsTrame().filter((q) => estReponseAlerte(q, reponses[q.id]));
 }
 
 /**

@@ -16,7 +16,7 @@ Maquette numérique du livret d'apprentissage, **étape 1 / 3** (CDC v1.3 + adde
 | **Accès**         | Basic Auth `demo` / mdp partagé hors-canal                               |
 | **Pilote métier** | Guillaume FERRERI                                                        |
 | **État**          | Étape 1 livrée + 4 vagues post-livraison (CDC v1.5 + chantiers mai 2026) |
-| **Tests**         | **676 unit ✓ · 205 E2E ✓**                                               |
+| **Tests**         | **678 unit ✓ · 205 E2E ✓**                                               |
 
 ---
 
@@ -54,7 +54,7 @@ npm run lint              # ESLint
 npm run format            # Prettier (écriture)
 
 # Tests
-npm test                  # 676 tests Vitest unit
+npm test                  # 678 tests Vitest unit
 npm run e2e               # 205 tests E2E Playwright (build + preview + tests)
 npm run e2e:ui            # UI Playwright pour debug
 npm run test:watch        # mode watch (unit)
@@ -103,7 +103,7 @@ LIVRET APPRENTISSAGE/
     │   ├── import-utilisateurs.ts + generer-xlsx-modele.ts ← chantier #5 (import XLSX users)
     │   ├── validation-periode-formation.ts ← chantier #1 (planning au niveau formation)
     │   ├── couleurs-role.ts        ← palette équilibrée mai 2026
-    │   └── *.test.ts               ← 676 tests Vitest
+    │   └── *.test.ts               ← 678 tests Vitest
     ├── store/                      ← 10 stores Zustand persistés
     ├── fixtures/                   ← 8 livrets démo + utilisateurs + référentiels
     ├── components/

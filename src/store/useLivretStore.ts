@@ -141,7 +141,12 @@ import { useUtilisateursStore } from './useUtilisateursStore';
 //        entreprise de la promo CAP Cuisine (mode activités) portent des
 //        lignes d'ACTIVITÉS du modèle `act-cap-cuisine`, projetées vers les
 //        compétences dans la grille « Synthèse ». Reset pour recharger.
-const VERSION_SCHEMA = 25;
+//   v26 — 7 juillet 2026 : polarité d'alerte de la rubrique « Difficultés
+//        éventuelles » de la trame inversée (demande pilote) — « Oui » =
+//        difficulté déclarée (rouge + récapitulatif), « Non » = norme
+//        (vert). Les réponses `e1-diff-*` des fixtures changent de valeur
+//        (difficulté logement de Léa : `false` → `true`). Reset.
+const VERSION_SCHEMA = 26;
 
 interface LivretStore {
   livrets: Record<string, Livret>;

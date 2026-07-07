@@ -29,7 +29,7 @@ import { synthetiserCompetences, valeurEffective } from '@/lib/synthese-evaluati
 import { calculerStatsParBloc } from '@/lib/stats-bloc';
 import { grouperParSousFamille } from '@/lib/grouper-competences';
 import { libelleEvenement } from '@/lib/organisation-suivi';
-import { TRAME_ENTRETIEN, pointsAlerteTrame } from '@/lib/trame-entretien';
+import { TRAME_ENTRETIEN, estReponseAlerte, pointsAlerteTrame } from '@/lib/trame-entretien';
 import { ATTITUDES_OBLIGATOIRES, lignesSyntheseAttitudes } from '@/lib/attitudes';
 import { attitudesRetenues } from '@/lib/selection-attitudes';
 import {
@@ -399,14 +399,28 @@ function ChampAppreciation({
   );
 }
 
-/** Ligne « label : Oui/Non » — Oui vert, Non rouge (couleurs du site). */
-function ChampOuiNon({ label, valeur }: { label: string; valeur: boolean | null | undefined }) {
+/**
+ * Ligne « label : Oui/Non » aux couleurs du site. La couleur suit la
+ * POLARITÉ de la question (7 juillet 2026) : la réponse d'alerte est rouge,
+ * la réponse « norme » verte — sur la rubrique « Difficultés éventuelles »,
+ * c'est donc « Oui » (difficulté déclarée) qui s'affiche en rouge.
+ */
+function ChampOuiNon({
+  label,
+  valeur,
+  estAlerte,
+}: {
+  label: string;
+  valeur: boolean | null | undefined;
+  /** La réponse donnée est-elle un point d'alerte (cf. `estReponseAlerte`) ? */
+  estAlerte: boolean;
+}) {
   const couleur =
-    valeur === true
-      ? styles.niveauMaitrise
-      : valeur === false
+    valeur === null || valeur === undefined
+      ? { color: COULEURS.texteSecondaire }
+      : estAlerte
         ? styles.niveauNonMaitrise
-        : { color: COULEURS.texteSecondaire };
+        : styles.niveauMaitrise;
   return (
     <Text style={styles.paire}>
       <Text style={styles.paireLabel}>{label} : </Text>
@@ -752,6 +766,7 @@ export function PageEntretien({
                   key={q.id}
                   label={q.libelle}
                   valeur={typeof v === 'boolean' ? v : null}
+                  estAlerte={estReponseAlerte(q, typeof v === 'boolean' ? v : undefined)}
                 />
               ) : (
                 <ParagrapheLibre

@@ -14,6 +14,7 @@ import { peutEncoreEditer } from '@/lib/regles-entretien';
 import {
   CRITERES_APPRECIATION,
   TRAME_ENTRETIEN,
+  estReponseAlerte,
   pointsAlerteTrame,
   type QuestionTrame,
   type RubriqueTrame,
@@ -105,9 +106,9 @@ export function SectionTrameEntretien({
         <ListChecks className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
         <p>
           Trame officielle de la première visite tripartite (questions communes au maître / tuteur
-          et à l'apprenti·e). Une réponse <strong>« Non »</strong> signale une difficulté à traiter
-          par le GRETA CFA (DDF / coordonnateur) ; elle est reprise dans le récapitulatif en bas de
-          page.
+          et à l'apprenti·e). Une réponse <strong>signalée en rouge</strong> indique une difficulté
+          à traiter par le GRETA CFA (DDF / coordonnateur) ; elle est reprise dans le récapitulatif
+          en bas de page.
         </p>
       </div>
 
@@ -300,7 +301,9 @@ function ChampTrame({
   const id = `trame-q-${question.id}`;
 
   if (question.type === 'oui-non') {
-    const estAlerte = question.alerteSiNon === true && valeur === false;
+    // 7 juillet 2026 : l'alerte suit la polarité de la question — « Non » sur
+    // les questions positives, « Oui » sur la rubrique « Difficultés ».
+    const estAlerte = estReponseAlerte(question, typeof valeur === 'boolean' ? valeur : undefined);
     // Pas de flex-wrap : un libellé long passe sur 2 lignes (flex-1) et le
     // sélecteur Oui/Non reste aligné à droite comme les autres questions.
     return (
@@ -323,6 +326,7 @@ function ChampTrame({
             valeur={typeof valeur === 'boolean' ? valeur : null}
             onChange={(v) => onChange(v)}
             ariaLabel={question.libelle}
+            polarite={question.alerteSi === 'oui' ? 'oui-negatif' : 'oui-positif'}
           />
           {estAlerte && question.aide && (
             <span className="text-xs text-amber-700">{question.aide}</span>

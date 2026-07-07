@@ -254,19 +254,25 @@ const TEXTES_TRAME_E1_DEMO: Record<string, string> = {
 };
 
 /**
- * Réponses de démonstration à la trame de l'entretien 1 : toutes les oui/non à
- * « Oui » sauf les ids passés dans `idsNon` (qui déclenchent un point d'alerte),
- * et des textes courts réalistes (surchageables par formation).
+ * Réponses de démonstration à la trame de l'entretien 1 : toutes les oui/non
+ * à leur réponse « normale », sauf les ids passés dans `idsAlerte` (qui
+ * déclenchent un point d'alerte), et des textes courts réalistes
+ * (surchageables par formation). 7 juillet 2026 : la réponse suit la
+ * POLARITÉ de la question — sur la rubrique « Difficultés éventuelles »,
+ * la norme est « Non » et l'alerte « Oui » (difficulté déclarée).
  */
 function reponsesTrameDemo(
-  idsNon: ReadonlyArray<string> = [],
+  idsAlerte: ReadonlyArray<string> = [],
   textes: Record<string, string> = TEXTES_TRAME_E1_DEMO,
 ): Record<string, string | boolean> {
-  const non = new Set(idsNon);
+  const alerte = new Set(idsAlerte);
   const out: Record<string, string | boolean> = {};
   for (const q of questionsTrame()) {
-    if (q.type === 'oui-non') out[q.id] = !non.has(q.id);
-    else out[q.id] = textes[q.id] ?? '';
+    if (q.type === 'oui-non') {
+      out[q.id] = q.alerteSi === 'oui' ? alerte.has(q.id) : !alerte.has(q.id);
+    } else {
+      out[q.id] = textes[q.id] ?? '';
+    }
   }
   return out;
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CRITERES_APPRECIATION,
   TRAME_ENTRETIEN,
+  estReponseAlerte,
   pointsAlerteTrame,
   questionsOuiNonSansReponse,
   questionsTrame,
@@ -26,9 +27,17 @@ describe('TRAME_ENTRETIEN — structure', () => {
     expect(toutes.filter((q) => q.type === 'texte')).toHaveLength(7);
   });
 
-  it('toutes les questions oui/non sont des points d’alerte potentiels (alerteSiNon)', () => {
+  it('toutes les questions oui/non portent une polarité d’alerte (alerteSi)', () => {
     for (const q of questionsTrame().filter((q) => q.type === 'oui-non')) {
-      expect(q.alerteSiNon).toBe(true);
+      expect(q.alerteSi === 'oui' || q.alerteSi === 'non').toBe(true);
+    }
+  });
+
+  it('la rubrique « Difficultés » alerte sur « Oui », les autres sur « Non » (7 juillet 2026)', () => {
+    for (const rubrique of TRAME_ENTRETIEN) {
+      for (const q of rubrique.questions.filter((q) => q.type === 'oui-non')) {
+        expect(q.alerteSi).toBe(rubrique.id === 'difficultes' ? 'oui' : 'non');
+      }
     }
   });
 
@@ -58,24 +67,40 @@ describe('reponseTrameRenseignee', () => {
 });
 
 describe('pointsAlerteTrame', () => {
-  it('retourne les questions oui/non répondues « Non »', () => {
+  it('retourne les questions répondues dans le sens de leur polarité d’alerte', () => {
     const reponses = {
       'e1-integ-regles': true,
-      'e1-integ-poste': false, // alerte
-      'e1-org-absences': false, // alerte
+      'e1-integ-poste': false, // alerte (polarité « non »)
+      'e1-org-absences': false, // alerte (polarité « non »)
+      'e1-diff-logement': true, // alerte (polarité « oui » — difficulté déclarée)
+      'e1-diff-transport': false, // pas d'alerte (pas de difficulté)
       'e1-adeq-activites': 'des activités', // texte → jamais une alerte
     };
     const alertes = pointsAlerteTrame(reponses).map((q) => q.id);
     expect(alertes).toContain('e1-integ-poste');
     expect(alertes).toContain('e1-org-absences');
+    expect(alertes).toContain('e1-diff-logement');
+    expect(alertes).not.toContain('e1-diff-transport');
     expect(alertes).not.toContain('e1-integ-regles'); // répondu « Oui »
     expect(alertes).not.toContain('e1-adeq-activites'); // texte
   });
 
-  it('aucune alerte si tout est « Oui » ou non renseigné', () => {
-    expect(pointsAlerteTrame({ 'e1-integ-poste': true })).toEqual([]);
+  it('aucune alerte pour les réponses « normales » ou non renseignées', () => {
+    expect(pointsAlerteTrame({ 'e1-integ-poste': true, 'e1-diff-logement': false })).toEqual([]);
     expect(pointsAlerteTrame({})).toEqual([]);
     expect(pointsAlerteTrame(undefined)).toEqual([]);
+  });
+});
+
+describe('estReponseAlerte', () => {
+  it('suit la polarité de la question', () => {
+    const parId = new Map(questionsTrame().map((q) => [q.id, q]));
+    expect(estReponseAlerte(parId.get('e1-integ-regles')!, false)).toBe(true);
+    expect(estReponseAlerte(parId.get('e1-integ-regles')!, true)).toBe(false);
+    expect(estReponseAlerte(parId.get('e1-diff-logement')!, true)).toBe(true);
+    expect(estReponseAlerte(parId.get('e1-diff-logement')!, false)).toBe(false);
+    expect(estReponseAlerte(parId.get('e1-diff-logement')!, undefined)).toBe(false);
+    expect(estReponseAlerte(parId.get('e1-adeq-activites')!, 'texte')).toBe(false);
   });
 });
 
