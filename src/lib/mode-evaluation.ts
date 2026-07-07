@@ -177,7 +177,7 @@ export function peutChangerReferentielFormation(formation: Formation): ResultatV
 /**
  * La réactivation d'une compétence exclue est bloquée si une formation
  * rattachée est en mode activités ET que le mapping du modèle ne couvre pas
- * cette compétence — le balayage redeviendrait incomplet (Q6). L'exclusion,
+ * cette compétence : le balayage redeviendrait incomplet (Q6). L'exclusion,
  * elle, reste toujours permise du point de vue du mode (elle ne peut que
  * compléter le balayage).
  */
@@ -192,7 +192,7 @@ export function peutReactiverCompetence(
     if (!estCouverteParModele(modele, competenceId)) {
       return {
         ok: false,
-        raison: `Réactivation bloquée : « ${f.intitule} » est en mode activités et son mapping ne couvre pas cette compétence — le balayage redeviendrait incomplet. Mappez d’abord la compétence sur une activité.`,
+        raison: `Réactivation bloquée : « ${f.intitule} » est en mode activités et son mapping ne couvre pas cette compétence : le balayage redeviendrait incomplet. Mappez d’abord la compétence sur une activité.`,
       };
     }
   }

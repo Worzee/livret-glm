@@ -425,7 +425,7 @@ function LigneStats({
 }) {
   return (
     <Text style={{ fontSize: 9, marginTop: 2 }}>
-      {titre} — <Text style={styles.niveauMaitrise}>Maîtrisé : {stats.maitrise}</Text> ·{' '}
+      {titre} - <Text style={styles.niveauMaitrise}>Maîtrisé : {stats.maitrise}</Text> ·{' '}
       <Text style={styles.niveauPartiel}>En cours : {stats.partiel}</Text> ·{' '}
       <Text style={styles.niveauNonMaitrise}>Non maîtrisé : {stats.nonMaitrise}</Text> ·{' '}
       <Text style={{ color: COULEURS.texteSecondaire }}>Non évalué : {stats.nonEvalue}</Text>
@@ -436,10 +436,10 @@ function LigneStats({
 function PiedDePage({ dateExport }: { dateExport: string }) {
   return (
     <View style={styles.piedDePage} fixed>
-      <Text>GRETA Lyon Métropole — Maquette de démonstration (aucune valeur officielle)</Text>
+      <Text>GRETA Lyon Métropole - Maquette de démonstration (aucune valeur officielle)</Text>
       <Text
         render={({ pageNumber, totalPages }) =>
-          `${pageNumber} / ${totalPages} — Exporté le ${formaterDateCourte(dateExport)}`
+          `${pageNumber} / ${totalPages} - Exporté le ${formaterDateCourte(dateExport)}`
         }
       />
     </View>
@@ -450,7 +450,7 @@ function Champ({ label, valeur }: { label: string; valeur: string | undefined })
   return (
     <Text style={styles.paire}>
       <Text style={styles.paireLabel}>{label} : </Text>
-      <Text style={styles.paireValeur}>{valeur && valeur.length > 0 ? valeur : '—'}</Text>
+      <Text style={styles.paireValeur}>{valeur && valeur.length > 0 ? valeur : '-'}</Text>
     </Text>
   );
 }
@@ -582,7 +582,7 @@ export function PageDeGarde({
   // Fallback : si l'établissement est introuvable (cas non nominal — soft
   // delete d'un lieu encore référencé), on affiche un libellé générique.
   const libelleLieu = etablissement
-    ? `${etablissement.nom}${etablissement.ville ? ` — ${etablissement.ville}` : ''}`
+    ? `${etablissement.nom}${etablissement.ville ? ` (${etablissement.ville})` : ''}`
     : 'Établissement non spécifié';
   return (
     <Page size="A4" style={styles.page}>
@@ -604,7 +604,7 @@ export function PageDeGarde({
               {apprenti.prenom} {apprenti.nom}
             </Text>
             <Text style={styles.gardeFormation}>
-              {formation.intitule} — promotion {formation.annee}
+              {formation.intitule} - promotion {formation.annee}
             </Text>
           </View>
 
@@ -647,7 +647,7 @@ export function PageDeGarde({
 
         <View>
           <Text style={styles.gardeBandeauDemo}>
-            MAQUETTE DE DÉMONSTRATION — DONNÉES FICTIVES — AUCUNE VALEUR OFFICIELLE
+            MAQUETTE DE DÉMONSTRATION - DONNÉES FICTIVES - AUCUNE VALEUR OFFICIELLE
           </Text>
           <Text style={styles.gardeMentions}>
             Document généré le {formaterDateLongue(dateExport)} · cahier des charges v1.3 · maquette
@@ -681,7 +681,7 @@ export function PageOrganisation({ livret }: { livret: Livret }) {
     const date = c.date ? formaterDateLongue(c.date) : '';
     const comm = c.commentaire?.trim() ?? '';
     const parts = [date, comm].filter(Boolean);
-    return parts.length ? parts.join(' — ') : '—';
+    return parts.length ? parts.join(' - ') : '-';
   };
 
   return (
@@ -766,7 +766,7 @@ export function PageEntretien({
         {alertes.length > 0 && (
           <View style={[styles.encart, { marginTop: 6 }]}>
             <Text style={styles.encartTitre}>
-              Points d'alerte ({alertes.length}) — action du GRETA CFA (DDF / coordonnateur)
+              Points d'alerte ({alertes.length}) : action du GRETA CFA (DDF / coordonnateur)
             </Text>
             {alertes.map((q) => (
               <Text key={q.id} style={{ fontSize: 9, marginTop: 2 }}>
@@ -802,7 +802,7 @@ export function PageEntretien({
         />
         {sigRL?.signe && (
           <Text style={{ fontSize: 9, marginTop: 4 }}>
-            Représentant légal — signé le {formaterDateHeure(sigRL.dateSignature)}
+            Représentant légal : signé le {formaterDateHeure(sigRL.dateSignature)}
           </Text>
         )}
       </View>
@@ -915,7 +915,7 @@ export function PageFiche({
                         </Text>
                       </Text>
                       <Text style={[styles.tableauCelluleDerniere, { width: '35%' }]}>
-                        {l.retourApprenti || '—'}
+                        {l.retourApprenti || '-'}
                       </Text>
                     </View>
                   );
@@ -967,7 +967,7 @@ export function PageFiche({
             {fiche.historiqueDeverrouillages.map((entree) => (
               <View key={entree.id} style={{ marginTop: 4 }}>
                 <Text style={{ fontSize: 8, color: COULEURS.texteSecondaire }}>
-                  {formaterDateHeure(entree.dateIso)} — {entree.auteurNom} (
+                  {formaterDateHeure(entree.dateIso)} - {entree.auteurNom} (
                   {libelleRole(entree.auteurRole)})
                 </Text>
                 <Text style={{ fontSize: 9 }}>{entree.motif}</Text>
@@ -1108,7 +1108,7 @@ function PageEvaluationFinale({
                   ent.source === 'synthese'
                     ? libelleActivite
                       ? `via « ${libelleActivite} »${
-                          ent.numeroPeriode !== undefined ? ` — Période ${ent.numeroPeriode}` : ''
+                          ent.numeroPeriode !== undefined ? ` (Période ${ent.numeroPeriode})` : ''
                         }`
                       : ent.numeroPeriode !== undefined
                         ? `Période ${ent.numeroPeriode}`
@@ -1240,7 +1240,7 @@ function PageAnnexes({ livret }: { livret: Livret }) {
                 {f.historiqueDeverrouillages.map((entree) => (
                   <View key={entree.id} style={{ marginTop: 4 }}>
                     <Text style={{ fontSize: 8, color: COULEURS.texteSecondaire }}>
-                      {formaterDateHeure(entree.dateIso)} — {entree.auteurNom} (
+                      {formaterDateHeure(entree.dateIso)} - {entree.auteurNom} (
                       {libelleRole(entree.auteurRole)})
                     </Text>
                     <Text style={{ fontSize: 9 }}>{entree.motif}</Text>
@@ -1251,7 +1251,7 @@ function PageAnnexes({ livret }: { livret: Livret }) {
         )}
 
         <Text style={[styles.italique, { marginTop: 24, fontSize: 8 }]}>
-          Document généré par la maquette du livret d'apprentissage GRETA Lyon Métropole — étape 1,
+          Document généré par la maquette du livret d'apprentissage GRETA Lyon Métropole (étape 1),
           cahier des charges v1.3. Ce document n'a aucune valeur officielle.
         </Text>
       </View>

@@ -123,7 +123,7 @@ export function validerSignature(
       // signée. Garde défensive — l'UI ne propose plus ce bouton.
       if (lieu === 'entreprise') {
         raisons.push(
-          'Le formateur référent ne signe pas les périodes en entreprise — il peut commenter puis verrouiller la fiche une fois signée par les deux parties.',
+          'Le formateur référent ne signe pas les périodes en entreprise : il peut commenter puis verrouiller la fiche une fois signée par les deux parties.',
         );
         return { peutSigner: false, raisons };
       }

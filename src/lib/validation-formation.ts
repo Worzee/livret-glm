@@ -51,7 +51,7 @@ export function validerSaisieFormation(saisie: SaisieFormation): ResultatValidat
     erreurs.annee = "L'année académique est obligatoire.";
   } else if (!REGEX_ANNEE.test(saisie.annee.trim())) {
     avertissements.annee =
-      'Format inhabituel — le format conseillé est « YYYY-YYYY » (ex : 2025-2026).';
+      'Format inhabituel : le format conseillé est « YYYY-YYYY » (ex : 2025-2026).';
   }
   // Le référentiel peut ne pas exister encore au moment de créer la formation
   // (cas où on l'importe plus tard). On ne bloque donc pas la sauvegarde, mais

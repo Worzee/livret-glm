@@ -184,7 +184,7 @@ export function FicheSuiviPeriodeDetail({ lieu = 'entreprise' }: FicheSuiviPerio
                     dateStyle: 'long',
                     timeStyle: 'short',
                   })}{' '}
-                  — {entree.auteurNom} ({libelleRole(entree.auteurRole)})
+                  · {entree.auteurNom} ({libelleRole(entree.auteurRole)})
                 </p>
                 <p className="mt-1 text-amber-950">{entree.motif}</p>
               </li>

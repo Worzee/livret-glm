@@ -58,7 +58,7 @@ export function SyntheseAttitudes() {
           Synthèse en lecture seule. Les 4 premières attitudes (obligatoires) reprennent
           l'appréciation générale du maître / tuteur portée à l'entretien tripartite ; les suivantes
           sont les attitudes retenues, évaluées par le maître / tuteur à chaque période en
-          entreprise — le dernier niveau connu est affiché avec sa période d'origine.
+          entreprise : le dernier niveau connu est affiché avec sa période d'origine.
         </p>
       </header>
 
@@ -115,7 +115,7 @@ export function SyntheseAttitudes() {
                       </span>
                     </div>
                   ) : (
-                    <span className="text-muted-foreground">—</span>
+                    <span className="text-muted-foreground">-</span>
                   )}
                 </td>
               </tr>
@@ -126,7 +126,7 @@ export function SyntheseAttitudes() {
 
       {aucuneOptionnelle && (
         <p className="rounded-md border border-dashed border-border bg-secondary/30 p-3 text-sm text-muted-foreground">
-          Aucune attitude optionnelle retenue pour ce livret — le choix se fait à l'entretien
+          Aucune attitude optionnelle retenue pour ce livret : le choix se fait à l'entretien
           tripartite (maître / tuteur + formateur référent) ; elles sont ensuite évaluées à chaque
           période en entreprise.
         </p>

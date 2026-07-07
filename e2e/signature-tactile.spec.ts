@@ -76,7 +76,7 @@ test('le tracé manuscrit est exigé pour confirmer une signature', async ({ pag
   await tracerSignature(page);
   await confirmer.click();
   await expect(page.getByText(/^Signé$/).first()).toBeVisible();
-  const image = page.getByAltText(/Signature manuscrite — Apprenti·e/i);
+  const image = page.getByAltText(/Signature manuscrite : Apprenti·e/i);
   await expect(image).toBeVisible();
   // Le PNG est bien embarqué en data-URL (stocké dans la signature).
   await expect(image).toHaveAttribute('src', /^data:image\/png/);
@@ -88,10 +88,10 @@ test('la signature manuscrite persiste au rechargement (localStorage)', async ({
   await page.getByRole('button', { name: /Signer en tant que Sofia/i }).click();
   await tracerSignature(page);
   await page.getByRole('button', { name: /^Confirmer$/ }).click();
-  await expect(page.getByAltText(/Signature manuscrite — Apprenti·e/i)).toBeVisible();
+  await expect(page.getByAltText(/Signature manuscrite : Apprenti·e/i)).toBeVisible();
 
   await page.reload();
-  await expect(page.getByAltText(/Signature manuscrite — Apprenti·e/i)).toBeVisible();
+  await expect(page.getByAltText(/Signature manuscrite : Apprenti·e/i)).toBeVisible();
   // R21 : aucune action de retrait — le bouton « Signer » a disparu pour ce rôle.
   await expect(page.getByRole('button', { name: /Signer en tant que Sofia/i })).toHaveCount(0);
 });

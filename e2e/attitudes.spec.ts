@@ -110,7 +110,7 @@ test("le choix des attitudes se fait à l'entretien et alimente la fiche de pér
   const grille = page.getByTestId('attitudes-fiche');
   await expect(grille.getByRole('radiogroup')).toHaveCount(2);
   await expect(
-    grille.getByRole('radiogroup', { name: "Attitude — Prise d'initiative et autonomie" }),
+    grille.getByRole('radiogroup', { name: "Attitude : Prise d'initiative et autonomie" }),
   ).toBeVisible();
 });
 
@@ -149,7 +149,7 @@ test('le maître évalue les attitudes sur la fiche de période — R20 exige TO
 
   // 3. Évalue la 1ʳᵉ attitude → il en reste une seule.
   await grille
-    .getByRole('radiogroup', { name: "Attitude — Prise d'initiative et autonomie" })
+    .getByRole('radiogroup', { name: "Attitude : Prise d'initiative et autonomie" })
     .getByRole('radio', { name: '+', exact: true })
     .click();
   await expect(
@@ -158,7 +158,7 @@ test('le maître évalue les attitudes sur la fiche de période — R20 exige TO
 
   // 4. Évalue la 2ᵉ → la raison R20 disparaît.
   await grille
-    .getByRole('radiogroup', { name: 'Attitude — Motivation et implication' })
+    .getByRole('radiogroup', { name: 'Attitude : Motivation et implication' })
     .getByRole('radio', { name: '++', exact: true })
     .click();
   await expect(

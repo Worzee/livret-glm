@@ -202,7 +202,7 @@ function BadgeStatut({
         <Lock className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
         <div>
           <p className="font-medium">
-            Sélection validée — {nbCochees} compétence{nbCochees > 1 ? 's' : ''} sur{' '}
+            Sélection validée : {nbCochees} compétence{nbCochees > 1 ? 's' : ''} sur{' '}
             {totalCompetences}
           </p>
           <p className="text-xs">
@@ -218,7 +218,7 @@ function BadgeStatut({
       <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
       <div>
         <p className="font-medium">
-          Sélection en cours — {nbCochees} compétence{nbCochees > 1 ? 's' : ''} sur{' '}
+          Sélection en cours : {nbCochees} compétence{nbCochees > 1 ? 's' : ''} sur{' '}
           {totalCompetences}
         </p>
         <p className="text-xs">
@@ -282,7 +282,7 @@ export function HistoriqueInvalidations({
                   timeStyle: 'short',
                 })}
               </time>{' '}
-              — {e.auteurNom} ({libelleRole(e.auteurRole)})
+              · {e.auteurNom} ({libelleRole(e.auteurRole)})
             </p>
             <p className="text-muted-foreground italic">« {e.motif} »</p>
           </li>

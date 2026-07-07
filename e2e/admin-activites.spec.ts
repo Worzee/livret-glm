@@ -34,7 +34,7 @@ test('le coordo voit le modèle CAP Cuisine : 6 activités, balayage complet, fo
   await expect(carte).toBeVisible();
   await expect(carte).toContainText(/6 activités/i);
   await expect(carte.getByTestId('balayage-act-cap-cuisine')).toContainText(
-    /10\/10 compétences couvertes — complet/i,
+    /10\/10 compétences couvertes \(complet/i,
   );
   await expect(carte).toContainText(/CAP Cuisine \(2025-2026\)/);
   await expect(carte.getByTestId('badge-mode-f-cap-cuisine-2025')).toContainText(/Mode activités/i);

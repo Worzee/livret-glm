@@ -44,7 +44,7 @@ export function evaluerVerrouAffectation(
   if (nbFiches > 0) {
     return {
       verrouille: true,
-      raison: `${nbFiches} fiche${nbFiches > 1 ? 's' : ''} de période travaillée${nbFiches > 1 ? 's' : ''} — modifier l'affectation effacerait le travail en cours.`,
+      raison: `${nbFiches} fiche${nbFiches > 1 ? 's' : ''} de période travaillée${nbFiches > 1 ? 's' : ''} : modifier l'affectation effacerait le travail en cours.`,
     };
   }
 
@@ -53,7 +53,7 @@ export function evaluerVerrouAffectation(
     return {
       verrouille: true,
       raison:
-        "Entretien tripartite initialisé — modifier l'affectation invaliderait l'engagement formel.",
+        "Entretien tripartite initialisé : modifier l'affectation invaliderait l'engagement formel.",
     };
   }
 
@@ -67,7 +67,7 @@ export function evaluerVerrouAffectation(
     });
     return {
       verrouille: true,
-      raison: `Contrat démarré le ${dateFormatee} — affectations verrouillées par défaut.`,
+      raison: `Contrat démarré le ${dateFormatee} : affectations verrouillées par défaut.`,
     };
   }
 

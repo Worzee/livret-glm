@@ -342,7 +342,7 @@ function LigneTableau(props: LigneTableauProps) {
           />
         ) : (
           <span className={cn('text-sm', !ligne.retourApprenti && 'text-muted-foreground italic')}>
-            {ligne.retourApprenti || '—'}
+            {ligne.retourApprenti || '-'}
           </span>
         )}
       </td>
@@ -404,7 +404,7 @@ function CarteCompetence(props: CarteCompetenceProps) {
           />
         ) : (
           <p className={cn('text-sm', !ligne.retourApprenti && 'text-muted-foreground italic')}>
-            {ligne.retourApprenti || '—'}
+            {ligne.retourApprenti || '-'}
           </p>
         )}
       </div>

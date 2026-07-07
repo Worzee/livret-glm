@@ -202,7 +202,7 @@ export function ModaleFormation({ ouvert, formation, onAnnuler, onValide }: Moda
                 value: r.id,
                 libelle: r.libelle,
               }))}
-              optionVideLibelle="— Aucun (à définir plus tard) —"
+              optionVideLibelle="Aucun (à définir plus tard)"
               avertissement={avertissements.referentielId}
             />
           </Section>
@@ -421,7 +421,7 @@ function ChampSelect({
           <option value="">{optionVideLibelle}</option>
         ) : (
           <option value="" disabled>
-            — Choisir —
+            Choisir…
           </option>
         )}
         {options.map((o) => (

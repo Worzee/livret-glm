@@ -346,7 +346,7 @@ export function ModaleImportReferentiel({
                 erreurs.formationId ? 'border-red-400' : 'border-input',
               )}
             >
-              <option value="">— Aucune (rattacher plus tard) —</option>
+              <option value="">Aucune (rattacher plus tard)</option>
               {formationsListe.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.intitule} ({f.annee})
@@ -366,7 +366,7 @@ export function ModaleImportReferentiel({
               >
                 Cette formation est en <strong>mode activités</strong> : son référentiel est figé
                 (le mapping du modèle d’activités porte sur lui). Repassez d’abord la formation en
-                mode compétences — possible tant que rien n’est signé.
+                mode compétences (possible tant que rien n’est signé).
               </p>
             )}
             {formationCible ? (
@@ -583,7 +583,7 @@ function ResolutionDepassement({
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
         <p>
           Ce référentiel compte{' '}
-          <strong>{compterCompetencesEvaluables(referentielBase)} compétences évaluables</strong> —
+          <strong>{compterCompetencesEvaluables(referentielBase)} compétences évaluables</strong> ;
           la limite est de <strong>{seuil}</strong> (au-delà, la saisie devient trop longue pour le
           tuteur lors des périodes en entreprise). Réduisez le nombre de lignes avec l'une des deux
           options ci-dessous.
@@ -605,7 +605,7 @@ function ResolutionDepassement({
       )}
       {!agregationPossible && (
         <p className="text-xs">
-          Référentiel à 2 niveaux : pas de niveau intermédiaire à conserver — décochez des
+          Référentiel à 2 niveaux : pas de niveau intermédiaire à conserver : décochez des
           compétences ci-dessous.
         </p>
       )}
@@ -639,7 +639,7 @@ function ResolutionDepassement({
         >
           {nbEvaluables} / {seuil} ligne{nbEvaluables > 1 ? 's' : ''} évaluable
           {nbEvaluables > 1 ? 's' : ''}
-          {sousSeuil ? ' — prêt à importer' : ' — décochez encore pour atteindre la limite'}
+          {sousSeuil ? ' : prêt à importer' : ' : décochez encore pour atteindre la limite'}
         </p>
         <div className="max-h-56 space-y-2 overflow-y-auto rounded border border-amber-200 bg-white p-2">
           {referentielIntermediaire.blocs.map((bloc) => (
@@ -704,7 +704,7 @@ function AperçuStats({ apercu }: { apercu: AperçuOk }) {
       <div className="flex items-start gap-2">
         <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
         <div>
-          <strong>Aperçu prêt — {rapport.referentiel.formation}</strong>
+          <strong>Aperçu prêt : {rapport.referentiel.formation}</strong>
           <ul className="mt-1 grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
             <li>
               <strong>{stats.nbBlocs}</strong> bloc{stats.nbBlocs > 1 ? 's' : ''}

@@ -411,7 +411,7 @@ function CelluleNiveau({
           <Sparkles className="h-3 w-3 shrink-0" aria-hidden="true" />
           {libelleActivite
             ? `Via activité « ${libelleActivite} »${
-                eff.numeroPeriode !== undefined ? ` — Période ${eff.numeroPeriode}` : ''
+                eff.numeroPeriode !== undefined ? ` (Période ${eff.numeroPeriode})` : ''
               }`
             : eff.numeroPeriode !== undefined
               ? `Vue en Période ${eff.numeroPeriode}`
@@ -434,7 +434,7 @@ function CelluleCommentaire({
   if (!editable) {
     return (
       <span className={cn('text-sm', !valeur && 'text-muted-foreground italic')}>
-        {valeur || '—'}
+        {valeur || '-'}
       </span>
     );
   }

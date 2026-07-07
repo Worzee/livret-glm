@@ -15,7 +15,7 @@ test.beforeEach(async ({ page }) => {
 test('le bandeau de démonstration a été retiré (retours coordos juin 2026)', async ({ page }) => {
   // L'application a bien chargé…
   await expect(
-    page.getByRole('link', { name: /Accueil — Livret d'apprentissage/i }),
+    page.getByRole('link', { name: /Accueil - Livret d'apprentissage/i }),
   ).toBeVisible();
   // …sans le bandeau, ni à l'accueil ni sur une page intérieure.
   await expect(page.getByText(/MAQUETTE DE DÉMONSTRATION/i)).toHaveCount(0);

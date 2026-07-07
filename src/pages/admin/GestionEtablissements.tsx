@@ -178,7 +178,7 @@ export function GestionEtablissements() {
                     </span>
                   ) : (
                     <span className="italic text-muted-foreground">
-                      URL Pronote non configurée — cliquez sur le crayon pour l'ajouter.
+                      URL Pronote non configurée : cliquez sur le crayon pour l'ajouter.
                     </span>
                   )}
                 </div>
@@ -323,7 +323,7 @@ function ModaleEtablissement({
               type="text"
               value={nom}
               onChange={(e) => setNom(e.target.value)}
-              placeholder="Ex : GRETA Lyon Métropole — Site Diderot"
+              placeholder="Ex : GRETA Lyon Métropole - Site Diderot"
               className={cn(
                 'w-full rounded-md border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring',
                 erreurNom ? 'border-red-400' : 'border-input',
@@ -400,7 +400,7 @@ function ModaleEtablissement({
               </p>
             ) : (
               <p className="text-xs text-muted-foreground">
-                Optionnel. Renseignez l'URL du portail Pronote du lieu — elle sera proposée aux
+                Optionnel. Renseignez l'URL du portail Pronote du lieu : elle sera proposée aux
                 utilisateur·rice·s rattaché·e·s à une formation de cet établissement.
               </p>
             )}

@@ -161,7 +161,7 @@ function validerLignes<T extends TypeImport>(
     erreurs.push({
       ligne: 0,
       colonne: null,
-      message: 'Le fichier est vide — aucune ligne détectée.',
+      message: 'Le fichier est vide : aucune ligne détectée.',
     });
     return { type, lignes: [], erreurs, ok: false };
   }

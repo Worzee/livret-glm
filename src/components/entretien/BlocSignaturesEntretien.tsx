@@ -82,7 +82,7 @@ export function BlocSignaturesEntretien({
       {ficheVerrouillee && (
         <div className="bandeau-info-couleur-role inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs">
           <Lock className="h-3.5 w-3.5" aria-hidden="true" />
-          Entretien validé — toutes les sections sont en lecture seule.
+          Entretien validé : toutes les sections sont en lecture seule.
         </div>
       )}
 
@@ -113,7 +113,7 @@ export function BlocSignaturesEntretien({
                   {sig.trace && (
                     <img
                       src={sig.trace}
-                      alt={`Signature manuscrite — ${libelleRole(role)}`}
+                      alt={`Signature manuscrite : ${libelleRole(role)}`}
                       className="h-14 max-w-full rounded border border-border bg-white object-contain"
                     />
                   )}
@@ -142,7 +142,7 @@ export function BlocSignaturesEntretien({
                 <BoutonSigner
                   role={role}
                   nomCourt={utilisateurActif.prenom}
-                  libelleEngagement={`${libelleRole(role)} — ${utilisateurActif.prenom} ${utilisateurActif.nom}`}
+                  libelleEngagement={`${libelleRole(role)} : ${utilisateurActif.prenom} ${utilisateurActif.nom}`}
                   disabled={!validation?.peutSigner}
                   raisonsBlocage={validation?.raisons}
                   onConfirmer={(trace) => signer(livretId, role, trace)}
@@ -177,7 +177,7 @@ export function BlocSignaturesEntretien({
               <Users className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
               <span className="text-sm font-medium">Représentant légal</span>
               <span className="text-xs text-muted-foreground">
-                (facultatif — apprenti·e mineur·e)
+                (facultatif, apprenti·e mineur·e)
               </span>
             </header>
             {sig?.signe ? (
@@ -185,7 +185,7 @@ export function BlocSignaturesEntretien({
                 {sig.trace && (
                   <img
                     src={sig.trace}
-                    alt="Signature manuscrite — représentant légal"
+                    alt="Signature manuscrite : représentant légal"
                     className="h-14 max-w-full rounded border border-border bg-white object-contain"
                   />
                 )}
@@ -215,7 +215,7 @@ export function BlocSignaturesEntretien({
               />
             ) : (
               <p className="text-xs italic text-muted-foreground">
-                Signature facultative — apposée par le formateur référent si le représentant légal
+                Signature facultative : apposée par le formateur référent si le représentant légal
                 est présent.
               </p>
             )}

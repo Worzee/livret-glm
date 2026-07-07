@@ -267,7 +267,7 @@ export function ModaleUtilisateurStaff({
                   onChange={(v) => setSaisie((s) => ({ ...s, entreprise: v }))}
                   erreur={erreurs.entreprise}
                   obligatoire
-                  hint="Nom commercial — ex : « Restaurant Le Gourmet »"
+                  hint="Nom commercial (ex : « Restaurant Le Gourmet »)"
                   testId="staff-entreprise"
                 />
                 <Champ
@@ -276,7 +276,7 @@ export function ModaleUtilisateurStaff({
                   onChange={(v) => setSaisie((s) => ({ ...s, fonction: v }))}
                   erreur={erreurs.fonction}
                   obligatoire
-                  hint="Poste occupé — ex : « Chef de cuisine »"
+                  hint="Poste occupé (ex : « Chef de cuisine »)"
                   testId="staff-fonction"
                 />
               </>

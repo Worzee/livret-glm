@@ -84,7 +84,7 @@ export function PronoteWeb() {
             <p>
               <strong>Identifiants propres à chacun·e :</strong> chaque utilisateur·rice dispose de
               ses propres identifiants Pronote, à utiliser directement sur le portail. Le livret
-              d'apprentissage ne stocke aucun mot de passe et ne récupère aucune donnée Pronote — il
+              d'apprentissage ne stocke aucun mot de passe et ne récupère aucune donnée Pronote : il
               vous redirige simplement.
             </p>
           </div>
@@ -147,7 +147,7 @@ export function PronoteWeb() {
                       <p className="font-medium text-foreground">
                         {e.nom}
                         <span className="ml-2 text-xs font-normal text-muted-foreground">
-                          — Ouvre dans un nouvel onglet
+                          (ouvre dans un nouvel onglet)
                         </span>
                       </p>
                       <p className="mt-0.5 text-xs text-muted-foreground break-all">
@@ -167,7 +167,7 @@ export function PronoteWeb() {
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-muted-foreground">{e.nom}</p>
                       <p className="mt-0.5 text-xs italic text-muted-foreground">
-                        URL Pronote non configurée — contactez un administrateur·rice.
+                        URL Pronote non configurée : contactez un administrateur·rice.
                       </p>
                     </div>
                   </div>
@@ -181,7 +181,7 @@ export function PronoteWeb() {
       {peutGerer && etablissements.length > 0 && (
         <p className="text-xs text-muted-foreground italic">
           <Lock className="inline h-3 w-3 mr-1" aria-hidden="true" />
-          Configuration réservée au rôle Administrateur·rice —{' '}
+          Configuration réservée au rôle Administrateur·rice :{' '}
           <a
             href="/admin/etablissements"
             className="texte-couleur-role underline-offset-2 hover:underline"

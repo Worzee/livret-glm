@@ -106,7 +106,7 @@ export function SectionTrameEntretien({
         <p>
           Trame officielle de la première visite tripartite (questions communes au maître / tuteur
           et à l'apprenti·e). Une réponse <strong>« Non »</strong> signale une difficulté à traiter
-          par le GRETA CFA (DDF / coordonnateur) — elle est reprise dans le récapitulatif en bas de
+          par le GRETA CFA (DDF / coordonnateur) ; elle est reprise dans le récapitulatif en bas de
           page.
         </p>
       </div>
@@ -130,7 +130,7 @@ export function SectionTrameEntretien({
               Synthèse de la période et bilan de l'intégration
             </h2>
             <p className="text-xs text-muted-foreground">
-              Appréciation du maître / tuteur — sélectionnez le niveau correspondant pour chaque
+              Appréciation du maître / tuteur : sélectionnez le niveau correspondant pour chaque
               critère.
             </p>
           </div>
@@ -161,7 +161,7 @@ export function SectionTrameEntretien({
         <header>
           <h2 className="text-base font-semibold">Commentaires</h2>
           <p className="text-xs text-muted-foreground">
-            Un commentaire par partie — chacun est figé dès la signature de son auteur·rice.
+            Un commentaire par partie : chacun est figé dès la signature de son auteur·rice.
           </p>
         </header>
         <div className="grid gap-3 md:grid-cols-3">
@@ -191,7 +191,7 @@ export function SectionTrameEntretien({
                     value={valeur}
                     onChange={(e) => setCommentaire(livretId, role, e.target.value)}
                     placeholder="Votre commentaire sur cet entretien…"
-                    aria-label={`Commentaire — ${titre}`}
+                    aria-label={`Commentaire : ${titre}`}
                     className="w-full resize-y rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 ) : (
@@ -430,13 +430,13 @@ function RecapAlertes({ alertes }: { alertes: QuestionTrame[] }) {
     >
       <h2 className="flex items-center gap-1.5 text-sm font-semibold text-amber-900">
         <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-        Points d'alerte ({alertes.length}) — action à mener par le GRETA CFA
+        Points d'alerte ({alertes.length}) : action à mener par le GRETA CFA
       </h2>
       <ul className="list-disc space-y-1 pl-6 text-sm text-amber-900">
         {alertes.map((q) => (
           <li key={q.id}>
             {q.libelle}
-            {q.aide ? ` — ${q.aide}` : ''}
+            {q.aide ? ` : ${q.aide}` : ''}
           </li>
         ))}
       </ul>

@@ -89,7 +89,7 @@ export function validerSaisieFichePeriode(
   // Titre — avertissement seulement si très long (rare en pratique, mais
   // utile pour éviter des libellés à 200 caractères qui cassent l'UI).
   if (saisie.titre && saisie.titre.trim().length > TITRE_MAX_CONFORTABLE) {
-    avertissements.titre = `Titre très long (>${TITRE_MAX_CONFORTABLE} caractères) — préférez un libellé court (ex : « Stage automne »).`;
+    avertissements.titre = `Titre très long (>${TITRE_MAX_CONFORTABLE} caractères) : préférez un libellé court (ex : « Stage automne »).`;
   }
 
   return {
@@ -138,5 +138,5 @@ export function peutSupprimerFichePeriode(fiche: FicheSuiviPeriode): {
  */
 export function libelleFichePeriode(fiche: FicheSuiviPeriode): string {
   const titre = fiche.titre?.trim();
-  return titre ? `Période ${fiche.numeroPeriode} — ${titre}` : `Période ${fiche.numeroPeriode}`;
+  return titre ? `Période ${fiche.numeroPeriode} : ${titre}` : `Période ${fiche.numeroPeriode}`;
 }

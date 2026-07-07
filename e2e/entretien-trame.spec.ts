@@ -83,15 +83,15 @@ test('3 commentaires individuels — chacun édite le sien (1ᵉʳ juillet 2026)
 
   // En formateur : son commentaire est éditable, celui du maître aussi
   // (co-saisie 1ᵉʳ juillet) — mais PAS celui de l'apprenti·e.
-  await expect(page.getByLabel('Commentaire — Formateur référent')).toBeVisible();
-  await expect(page.getByLabel('Commentaire — Maître / Tuteur')).toBeVisible();
-  await expect(page.getByLabel('Commentaire — Apprenti·e')).toHaveCount(0);
-  await page.getByLabel('Commentaire — Formateur référent').fill('Synthèse du formateur.');
+  await expect(page.getByLabel('Commentaire : Formateur référent')).toBeVisible();
+  await expect(page.getByLabel('Commentaire : Maître / Tuteur')).toBeVisible();
+  await expect(page.getByLabel('Commentaire : Apprenti·e')).toHaveCount(0);
+  await page.getByLabel('Commentaire : Formateur référent').fill('Synthèse du formateur.');
 
   // Côté apprenti·e : seul SON commentaire est éditable ; le texte du
   // formateur reste visible en lecture.
   await selectRole(page, 'Apprenti·e');
-  await expect(page.getByLabel('Commentaire — Apprenti·e')).toBeVisible();
-  await expect(page.getByLabel('Commentaire — Formateur référent')).toHaveCount(0);
+  await expect(page.getByLabel('Commentaire : Apprenti·e')).toBeVisible();
+  await expect(page.getByLabel('Commentaire : Formateur référent')).toHaveCount(0);
   await expect(page.getByText('Synthèse du formateur.')).toBeVisible();
 });

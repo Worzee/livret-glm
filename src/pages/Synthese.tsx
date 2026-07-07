@@ -92,7 +92,7 @@ export function Synthese() {
           </p>
           {!aDroitEdition && (
             <p className="text-xs text-muted-foreground italic">
-              Vous consultez en mode <strong>{libelleRole(roleActif)}</strong> — toutes les cellules
+              Vous consultez en mode <strong>{libelleRole(roleActif)}</strong> : toutes les cellules
               sont en lecture seule.
             </p>
           )}

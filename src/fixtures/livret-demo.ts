@@ -204,7 +204,7 @@ function livretVierge(
           id: 'evt-vierge-6',
           motif: 'entretien-tripartite',
           date: '2025-10-28',
-          commentaire: 'Entretien tripartite — dans les 2 mois suivant le contrat (R7).',
+          commentaire: 'Entretien tripartite : à tenir dans les 2 mois suivant le contrat (R7).',
         },
       ],
       modifieLe: '2025-09-10T08:00:00.000Z',
@@ -250,7 +250,7 @@ const TEXTES_TRAME_E1_DEMO: Record<string, string> = {
     'Point hebdomadaire le lundi ; consignes orales complétées par une fiche de tâches.',
   'e1-adeq-activites': 'Mise en place, taillage des légumes, aide à la production du service.',
   'e1-adeq-difficultes':
-    "Rapidité d'exécution encore à consolider — point de vigilance à travailler en centre.",
+    "Rapidité d'exécution encore à consolider : point de vigilance à travailler en centre.",
 };
 
 /**
@@ -481,7 +481,7 @@ const leaCentre1: FicheSuiviPeriode = {
     apprenti:
       "Regroupement très formateur, bonne dynamique de groupe. J'ai consolidé les taillages et découvert les fonds de sauce.",
     formateur:
-      "Regroupement d'automne : approfondissement de l'hygiène HACCP, taillages, fonds de base. Léa progresse bien au centre — à consolider sur les fonds.",
+      "Regroupement d'automne : approfondissement de l'hygiène HACCP, taillages, fonds de base. Léa progresse bien au centre, à consolider sur les fonds.",
   },
   signatures: {
     apprenti: { signe: true, dateSignature: '2025-10-17T16:00:00.000Z' },
@@ -503,7 +503,7 @@ const leaCentre2: FicheSuiviPeriode = {
   suiviEntreprise: [],
   observations: {
     apprenti:
-      'Regroupement axé pâtisserie — beaucoup de pratique, je gagne en régularité. La crème pâtissière reste un point que je dois consolider.',
+      'Regroupement axé pâtisserie : beaucoup de pratique, je gagne en régularité. La crème pâtissière reste un point que je dois consolider.',
     // Observation formateur vide : NON bloquante pour sa signature (juillet
     // 2026) — la fiche reste « en cours » car il n'a simplement pas signé.
     formateur: '',
@@ -804,7 +804,7 @@ const livretSofia: Livret = {
       {
         id: 'evt-sofia-2',
         motif: 'entretien-individuel',
-        commentaire: 'Reporté plusieurs fois — à reprogrammer en urgence.',
+        commentaire: 'Reporté plusieurs fois, à reprogrammer en urgence.',
       },
       {
         id: 'evt-sofia-3',
@@ -870,7 +870,7 @@ const livretMinh: Livret = {
         id: 'evt-minh-1',
         motif: 'reunion-rentree',
         date: '2025-09-04',
-        commentaire: 'Salle Diderot — Minh absent (intégration tardive)',
+        commentaire: 'Salle Diderot ; Minh absent (intégration tardive)',
       },
       {
         id: 'evt-minh-2',
@@ -1286,7 +1286,7 @@ const entretienCamille: EntretienTripartite = {
     qualiteTravail: 'moins',
     integration: 'plusplus',
     commentaires:
-      'Très bon relationnel client. La rigueur des mises en place doit encore progresser — normal à ce stade.',
+      'Très bon relationnel client. La rigueur des mises en place doit encore progresser, normal à ce stade.',
   },
   commentaires: {
     apprenti: "L'équipe m'a très bien intégrée, le rythme des services est soutenu mais motivant.",
@@ -1406,7 +1406,7 @@ const camillePeriode3: FicheSuiviPeriode = {
   // visible côté tuteur tant que a9/a10/a12 ne sont pas évaluées).
   evaluationsAttitudes: { a7: 'plusplus' },
   observations: {
-    apprenti: 'Période en cours — gros volume avec la saison des terrasses.',
+    apprenti: 'Période en cours : gros volume avec la saison des terrasses.',
     maitre: '',
     formateur: '',
   },
@@ -1478,7 +1478,7 @@ const livretCamille: Livret = {
         id: 'evt-camille-2',
         motif: 'entretien-tripartite',
         date: '2025-10-21',
-        commentaire: 'Entretien tripartite — dans les 2 mois suivant le contrat (R7).',
+        commentaire: 'Entretien tripartite : à tenir dans les 2 mois suivant le contrat (R7).',
       },
       {
         id: 'evt-camille-3',
@@ -1560,7 +1560,7 @@ const livretYanis: Livret = {
         id: 'evt-yanis-2',
         motif: 'accueil-tuteur',
         date: '2025-09-22',
-        commentaire: 'Journée tuteurs — Julien FAURE excusé (à reprogrammer).',
+        commentaire: 'Journée tuteurs ; Julien FAURE excusé (à reprogrammer).',
       },
       {
         id: 'evt-yanis-3',
@@ -1570,7 +1570,7 @@ const livretYanis: Livret = {
       {
         id: 'evt-yanis-4',
         motif: 'entretien-tripartite',
-        commentaire: "À programmer d'urgence — délai R7 dépassé.",
+        commentaire: "À programmer d'urgence (délai R7 dépassé).",
       },
     ],
     modifieLe: '2025-09-22T10:00:00.000Z',

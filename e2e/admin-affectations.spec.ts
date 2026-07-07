@@ -125,7 +125,7 @@ test('cas final : déplacer tous les apprenti·e·s de Karim débloque sa suppre
   await page
     .locator('tbody tr', { hasText: 'Luca BIANCHI' })
     .getByLabel(/Second maître \/ tuteur de Luca BIANCHI/i)
-    .selectOption({ label: '— Second (optionnel) —' });
+    .selectOption({ label: 'Second (optionnel)' });
 
   // Sur la page Utilisateurs, le bouton supprimer Karim doit maintenant être actif.
   await page.goto('/admin/utilisateurs');

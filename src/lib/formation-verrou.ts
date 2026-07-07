@@ -31,6 +31,6 @@ export function evaluerVerrouFormation(
   return {
     verrouille: true,
     nbApprentisRattaches: nb,
-    raison: `${nb} apprenti·e${sfx} rattaché·e${sfx} — réaffectez-les avant suppression.`,
+    raison: `${nb} apprenti·e${sfx} rattaché·e${sfx} : réaffectez-les avant suppression.`,
   };
 }

@@ -80,7 +80,7 @@ export function CentreAlertes({ role, apprentis, livrets, onOuvrir }: CentreAler
               <span className="shrink-0">{ICONES[alerte.type]}</span>
               <span className="min-w-0 flex-1 truncate">
                 <strong className="font-medium">{alerte.apprentiNom}</strong>
-                <span className="text-muted-foreground"> — {alerte.message}</span>
+                <span className="text-muted-foreground"> : {alerte.message}</span>
               </span>
               <ChevronRight
                 className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"

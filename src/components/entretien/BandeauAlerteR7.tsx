@@ -37,7 +37,7 @@ export function BandeauAlerteR7({ alerte }: BandeauAlerteR7Props) {
           ({alerte.joursDepasses} jour{alerte.joursDepasses > 1 ? 's' : ''} de retard).
         </p>
         <p className="text-xs text-amber-800/80">
-          Cette alerte est informative — la maquette n'empêche pas la poursuite de la saisie.
+          Cette alerte est informative : la maquette n'empêche pas la poursuite de la saisie.
         </p>
       </div>
     </div>

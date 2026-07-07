@@ -105,7 +105,7 @@ describe('libelleEvenement', () => {
 
   it('concatène le titre quand il est renseigné', () => {
     expect(libelleEvenement({ ...base, titre: 'Visite n°1 — novembre' })).toBe(
-      'Visites en entreprise — Visite n°1 — novembre',
+      'Visites en entreprise : Visite n°1 — novembre',
     );
   });
 

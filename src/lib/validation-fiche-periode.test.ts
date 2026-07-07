@@ -170,9 +170,9 @@ describe('libelleFichePeriode', () => {
     );
   });
 
-  it('retourne « Période N — <titre> » quand le titre est rempli', () => {
+  it('retourne « Période N : <titre> » quand le titre est rempli', () => {
     expect(
       libelleFichePeriode({ ...fiche(2, '2025-09-01', '2025-12-15'), titre: 'Stage automne' }),
-    ).toBe('Période 2 — Stage automne');
+    ).toBe('Période 2 : Stage automne');
   });
 });

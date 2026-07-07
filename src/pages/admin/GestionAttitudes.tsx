@@ -143,7 +143,7 @@ export function GestionAttitudes() {
                           }
                           title={
                             utilisee
-                              ? 'Attitude évaluée ou retenue dans au moins un livret — suppression impossible.'
+                              ? 'Attitude évaluée ou retenue dans au moins un livret : suppression impossible.'
                               : undefined
                           }
                           className={cn(

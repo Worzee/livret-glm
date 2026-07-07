@@ -126,7 +126,7 @@ export function ZoneObservation({ livretId, fiche, lieu = 'entreprise' }: ZoneOb
                     !valeur && 'text-muted-foreground italic',
                   )}
                 >
-                  {valeur || '—'}
+                  {valeur || '-'}
                 </p>
               )}
             </article>

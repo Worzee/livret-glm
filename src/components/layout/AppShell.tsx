@@ -60,7 +60,7 @@ export function AppShell() {
           <Link
             to="/"
             className="flex items-center gap-3 text-foreground hover:text-primary transition-colors"
-            aria-label="Accueil — Livret d'apprentissage GRETA Lyon Métropole"
+            aria-label="Accueil - Livret d'apprentissage GRETA Lyon Métropole"
           >
             {/* Logo officiel du réseau GRETA CFA — Académie de Lyon (remplace
                 le carré « GLM » de la maquette, juin 2026). */}
@@ -72,7 +72,7 @@ export function AppShell() {
             />
             <span className="hidden sm:flex flex-col leading-tight">
               <span className="font-semibold">Livret d'apprentissage</span>
-              <span className="text-xs text-muted-foreground">GRETA Lyon Métropole — Démo</span>
+              <span className="text-xs text-muted-foreground">GRETA Lyon Métropole - Démo</span>
             </span>
           </Link>
 
@@ -145,7 +145,7 @@ interface TrioContextuelProps {
 }
 
 function TrioContextuel({ trio, testid }: TrioContextuelProps) {
-  const fmt = (p?: { prenom: string; nom: string }) => (p ? `${p.prenom} ${p.nom}` : '—');
+  const fmt = (p?: { prenom: string; nom: string }) => (p ? `${p.prenom} ${p.nom}` : '-');
   // `flex-wrap` permet le wrap gracieux sur mobile (Pixel 5 = 393px) ; sur
   // desktop tout tient sur une ligne.
   return (

@@ -372,7 +372,7 @@ function LigneAffectation({
             desactive={!editable}
             ariaLabel={`Second maître / tuteur de ${apprenti.prenom} ${apprenti.nom}`}
           >
-            <option value="">— Second (optionnel) —</option>
+            <option value="">Second (optionnel)</option>
             {maitres
               .filter((m) => m.id !== apprenti.maitreApprentissageId)
               .map((m) => (
@@ -409,7 +409,7 @@ function LigneAffectation({
             aDestinationDuFlash={champFlash === 'coordo'}
             ariaLabel={`Coordinateur·rice de ${apprenti.prenom} ${apprenti.nom}`}
           >
-            <option value="">— Aucun·e —</option>
+            <option value="">Aucun·e</option>
             {coordos.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.prenom} {c.nom}
@@ -420,7 +420,7 @@ function LigneAffectation({
           <span className="text-xs text-muted-foreground">
             {(() => {
               const c = coordos.find((cc) => cc.id === apprenti.coordoId);
-              return c ? `${c.prenom} ${c.nom}` : '—';
+              return c ? `${c.prenom} ${c.nom}` : '-';
             })()}
           </span>
         )}

@@ -27,7 +27,7 @@ test("le coordo accède au planning d'une formation depuis sa carte", async ({ p
     .click();
   const modale = page.getByRole('dialog');
   await expect(
-    modale.getByRole('heading', { name: /Planning des périodes — CAP Cuisine/i }),
+    modale.getByRole('heading', { name: /Planning des périodes : CAP Cuisine/i }),
   ).toBeVisible();
   // Les 3 périodes entreprise fixtures de la CAP Cuisine 2025-2026 sont
   // affichées (scopé à la section entreprise — la section centre a aussi des
@@ -61,7 +61,7 @@ test("le coordo ajoute une nouvelle période et la voit apparaître dans le livr
   await modale.getByTestId('planning-debut').fill('2026-05-04');
   await modale.getByTestId('planning-fin').fill('2026-06-30');
   await modale.getByTestId('planning-soumettre').click();
-  await expect(modale.getByText(/Période 4 — Période bilan/i)).toBeVisible();
+  await expect(modale.getByText(/Période 4 : Période bilan/i)).toBeVisible();
 
   // Ferme la modale (bouton du footer — le X d'en-tête porte le même nom
   // accessible, d'où le .last() pour éviter la violation strict mode)
@@ -74,7 +74,7 @@ test("le coordo ajoute une nouvelle période et la voit apparaître dans le livr
     .getByRole('button', { name: /Ouvrir le livret de Théo DUBOIS/i })
     .click();
   await page.goto('/livret/fiches-suivi');
-  await expect(page.locator('li', { hasText: /Période 4 — Période bilan/i })).toBeVisible();
+  await expect(page.locator('li', { hasText: /Période 4 : Période bilan/i })).toBeVisible();
 });
 
 test("le formateur référent ne peut PAS gérer le planning des périodes", async ({ page }) => {

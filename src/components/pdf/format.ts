@@ -11,7 +11,7 @@ import type {
  */
 
 export function formaterDateCourte(iso: string | undefined): string {
-  if (!iso) return '—';
+  if (!iso) return '-';
   return new Date(iso).toLocaleDateString('fr-FR', {
     day: '2-digit',
     month: '2-digit',
@@ -20,7 +20,7 @@ export function formaterDateCourte(iso: string | undefined): string {
 }
 
 export function formaterDateLongue(iso: string | undefined): string {
-  if (!iso) return '—';
+  if (!iso) return '-';
   return new Date(iso).toLocaleDateString('fr-FR', {
     day: 'numeric',
     month: 'long',
@@ -29,7 +29,7 @@ export function formaterDateLongue(iso: string | undefined): string {
 }
 
 export function formaterDateHeure(iso: string | undefined): string {
-  if (!iso) return '—';
+  if (!iso) return '-';
   return new Date(iso).toLocaleString('fr-FR', {
     day: '2-digit',
     month: '2-digit',
@@ -52,7 +52,7 @@ export function libelleNiveau(
     case 'non-fait':
       return 'Non fait';
     default:
-      return '—';
+      return '-';
   }
 }
 
@@ -67,7 +67,7 @@ export function libelleAppreciation(n: NiveauAppreciation | null | undefined): s
     case 'moinsmoins':
       return '--';
     default:
-      return '—';
+      return '-';
   }
 }
 
@@ -98,7 +98,7 @@ export function couleurEtatFiche(e: EtatFiche): string {
 }
 
 export function libelleOuiNon(b: boolean | null | undefined): string {
-  if (b === null || b === undefined) return '—';
+  if (b === null || b === undefined) return '-';
   return b ? 'Oui' : 'Non';
 }
 

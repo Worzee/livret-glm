@@ -74,7 +74,7 @@ test('import via textarea (3 colonnes) → aperçu, association BTS et nom auto-
 
   // Aperçu — affiche les stats
   await modale.getByRole('button', { name: /^Aperçu$/i }).click();
-  await expect(modale.getByText(/Aperçu prêt — Referentiel_BTS Management/)).toBeVisible();
+  await expect(modale.getByText(/Aperçu prêt : Referentiel_BTS Management/)).toBeVisible();
   await expect(modale.locator('li', { hasText: /^2 blocs?$/i })).toBeVisible();
   await expect(modale.locator('li', { hasText: /^4 compétences?$/i })).toBeVisible();
   // Avertissement de remplacement (la formation BTS MHR est déjà rattachée
@@ -228,7 +228,7 @@ test("import sans formation — nom libre obligatoire, référentiel orphelin cr
   // Saisie du nom libre → import effectif
   await modale.getByTestId('import-ref-nom-libre').fill('Référentiel CAP Boulanger 2026');
   await modale.getByRole('button', { name: /^Aperçu$/i }).click();
-  await expect(modale.getByText(/Aperçu prêt — Référentiel CAP Boulanger 2026/)).toBeVisible();
+  await expect(modale.getByText(/Aperçu prêt : Référentiel CAP Boulanger 2026/)).toBeVisible();
   await modale.getByRole('button', { name: /Importer \(/i }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 

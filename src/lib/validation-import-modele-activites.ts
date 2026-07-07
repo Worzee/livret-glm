@@ -41,7 +41,7 @@ export function validerSaisieImportModele(
   const erreurs: ErreursImportModele = {};
 
   if (!saisie.formationId?.trim()) {
-    erreurs.formationId = 'Choisissez la formation cible — le mapping portera sur son référentiel.';
+    erreurs.formationId = 'Choisissez la formation cible : le mapping portera sur son référentiel.';
   }
 
   const aFichier = saisie.source === 'fichier' && !!saisie.nomFichier?.trim();

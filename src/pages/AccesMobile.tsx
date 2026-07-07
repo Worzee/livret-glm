@@ -38,7 +38,7 @@ export function AccesMobile() {
           <h1 className="text-2xl font-semibold">Accès mobile</h1>
         </div>
         <p className="text-muted-foreground">
-          Faites scanner ce QR code pour ouvrir le livret d'apprentissage sur un téléphone — par
+          Faites scanner ce QR code pour ouvrir le livret d'apprentissage sur un téléphone, par
           exemple par le maître / tuteur lors d'une visite en entreprise.
         </p>
       </header>
@@ -65,7 +65,7 @@ export function AccesMobile() {
           <li>Ouvrez l'appareil photo du téléphone (pas besoin d'application dédiée).</li>
           <li>Visez le QR code ci-dessus, puis touchez le lien qui apparaît.</li>
           <li>
-            Saisissez les <strong>identifiants d'accès</strong> — ils ne sont pas affichés ici et se
+            Saisissez les <strong>identifiants d'accès</strong> : ils ne sont pas affichés ici et se
             communiquent oralement par le GRETA.
           </li>
         </ol>

@@ -44,12 +44,12 @@ export function SectionAttitudesFiche({ livretId, fiche }: SectionAttitudesFiche
         <h3 className="text-lg font-medium">Attitudes professionnelles</h3>
         <p className="text-xs text-muted-foreground">
           Retenues à l'entretien tripartite, évaluées par le maître / tuteur à chaque période en
-          entreprise — toutes sont requises pour sa signature.
+          entreprise : toutes sont requises pour sa signature.
         </p>
       </header>
       {attitudes.length === 0 ? (
         <p className="text-sm italic text-muted-foreground">
-          Aucune attitude retenue pour ce livret — le choix se fait à l'entretien tripartite.
+          Aucune attitude retenue pour ce livret : le choix se fait à l'entretien tripartite.
         </p>
       ) : (
         <>
@@ -76,7 +76,7 @@ export function SectionAttitudesFiche({ livretId, fiche }: SectionAttitudesFiche
                   editable={editable}
                   valeur={fiche.evaluationsAttitudes?.[a.id] ?? null}
                   onChange={(v) => evaluer(livretId, fiche.id, a.id, v)}
-                  ariaLabel={`Attitude — ${a.libelle}`}
+                  ariaLabel={`Attitude : ${a.libelle}`}
                 />
               </div>
             ))}

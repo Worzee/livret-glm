@@ -149,7 +149,7 @@ test('établissement sans URL Pronote : affiché en lecture seule (pas de lien c
   await selectRole(page, 'Apprenti·e');
   await page.goto('/livret/pronote');
   await expect(
-    page.getByText(/URL Pronote non configurée — contactez un administrateur/i),
+    page.getByText(/URL Pronote non configurée : contactez un administrateur/i),
   ).toBeVisible();
 });
 

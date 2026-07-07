@@ -30,6 +30,6 @@ export function evaluerVerrouEtablissement(
   return {
     verrouille: true,
     nbFormationsRattachees: nb,
-    raison: `${nb} formation${sfx} rattachée${sfx} — réaffectez-les avant suppression.`,
+    raison: `${nb} formation${sfx} rattachée${sfx} : réaffectez-les avant suppression.`,
   };
 }

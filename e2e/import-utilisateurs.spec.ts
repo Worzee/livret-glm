@@ -38,7 +38,7 @@ test("import par un coordo : l'apprentie rejoint son périmètre (juin 2026)", a
 
   await page.getByTestId('input-fichier').setInputFiles({ ...FICHIER, buffer: xlsxApprentie() });
   await page.getByRole('button', { name: /^Importer 1 compte$/i }).click();
-  await expect(page.getByText(/Import terminé — 1 compte créé/i)).toBeVisible();
+  await expect(page.getByText(/Import terminé : 1 compte créé/i)).toBeVisible();
 
   // Martine (coordo importatrice) voit Nadia sur son tableau de bord.
   await page.goto('/');
@@ -59,7 +59,7 @@ test('import par un admin : apprentie sans coordo, invisible des coordos', async
 
   await page.getByTestId('input-fichier').setInputFiles({ ...FICHIER, buffer: xlsxApprentie() });
   await page.getByRole('button', { name: /^Importer 1 compte$/i }).click();
-  await expect(page.getByText(/Import terminé — 1 compte créé/i)).toBeVisible();
+  await expect(page.getByText(/Import terminé : 1 compte créé/i)).toBeVisible();
 
   // L'admin la voit (il voit tout).
   await page.goto('/');

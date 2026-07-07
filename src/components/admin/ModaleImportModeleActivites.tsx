@@ -202,7 +202,7 @@ export function ModaleImportModeleActivites({
                 Importer un modèle d'activités
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Fichier CSV ou XLSX — activités seules (colonnes : code, libellé, description ; la
+                Fichier CSV ou XLSX : activités seules (colonnes : code, libellé, description ; la
                 première ligne est ignorée). Le mapping vers les compétences se fait ensuite dans
                 l'éditeur.
               </p>
@@ -239,7 +239,7 @@ export function ModaleImportModeleActivites({
                 erreurs.formationId ? 'border-red-400' : 'border-input',
               )}
             >
-              <option value="">— Choisir une formation —</option>
+              <option value="">Choisir une formation…</option>
               {formationsListe.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.intitule} ({f.annee})
@@ -296,7 +296,7 @@ export function ModaleImportModeleActivites({
                 <Download className="h-3 w-3" aria-hidden="true" />
                 gabarit Excel à remplir
               </button>{' '}
-              — une activité par ligne, seule la colonne Libellé est obligatoire.
+              : une activité par ligne, seule la colonne Libellé est obligatoire.
             </p>
           </div>
 

@@ -80,7 +80,7 @@ export function SectionSelectionActivites({
           <Lock className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
           <div>
             <p className="font-medium">
-              Sélection validée — {nbCochees} activité{nbCochees > 1 ? 's' : ''} sur{' '}
+              Sélection validée : {nbCochees} activité{nbCochees > 1 ? 's' : ''} sur{' '}
               {totalActivites}
             </p>
             <p className="text-xs">
@@ -98,7 +98,7 @@ export function SectionSelectionActivites({
           <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
           <div>
             <p className="font-medium">
-              Sélection en cours — {nbCochees} activité{nbCochees > 1 ? 's' : ''} sur{' '}
+              Sélection en cours : {nbCochees} activité{nbCochees > 1 ? 's' : ''} sur{' '}
               {totalActivites}
             </p>
             <p className="text-xs">

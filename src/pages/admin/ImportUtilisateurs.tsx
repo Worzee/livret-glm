@@ -301,7 +301,7 @@ export function ImportUtilisateurs() {
                 <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
                 <h2 className="font-medium">
                   {rapport.lignes.length} ligne{rapport.lignes.length > 1 ? 's' : ''} valide
-                  {rapport.lignes.length > 1 ? 's' : ''} — prêt à importer
+                  {rapport.lignes.length > 1 ? 's' : ''} : prêt à importer
                 </h2>
               </header>
               <button
@@ -319,7 +319,7 @@ export function ImportUtilisateurs() {
                 <AlertCircle className="h-5 w-5" aria-hidden="true" />
                 <h2 className="font-medium">
                   {rapport.erreurs.length} erreur{rapport.erreurs.length > 1 ? 's' : ''} détectée
-                  {rapport.erreurs.length > 1 ? 's' : ''} — import refusé
+                  {rapport.erreurs.length > 1 ? 's' : ''} : import refusé
                 </h2>
               </header>
               <p className="text-xs text-red-900">
@@ -354,7 +354,7 @@ export function ImportUtilisateurs() {
           <header className="flex items-center gap-2 text-emerald-900">
             <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
             <h2 className="font-medium">
-              Import terminé — {resultatImport.nb} compte{resultatImport.nb > 1 ? 's' : ''} créé
+              Import terminé : {resultatImport.nb} compte{resultatImport.nb > 1 ? 's' : ''} créé
               {resultatImport.nb > 1 ? 's' : ''}
             </h2>
           </header>

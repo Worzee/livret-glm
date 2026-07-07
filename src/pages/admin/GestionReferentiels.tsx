@@ -302,7 +302,7 @@ function EncartSeuil({ roleActif }: { roleActif: Role }) {
           <strong data-testid="param-seuil-lecture">{seuil}</strong>
         )}
         <span className="text-xs text-muted-foreground">
-          Au-delà, la saisie des compétences devient trop longue pour le tuteur — l'import propose
+          Au-delà, la saisie des compétences devient trop longue pour le tuteur : l'import propose
           alors d'agréger au niveau supérieur ou de décocher des lignes.
           {!editable && ' Modifiable par l’administrateur·rice uniquement.'}
         </span>
@@ -352,7 +352,7 @@ function FormationsRattachees({ formations }: { formations: ReadonlyArray<Format
       >
         <GraduationCap className="h-3.5 w-3.5 shrink-0 mt-0.5" aria-hidden="true" />
         <span>
-          Aucune formation rattachée — à rattacher depuis la page <em>Formations</em>.
+          Aucune formation rattachée : à rattacher depuis la page <em>Formations</em>.
         </span>
       </p>
     );

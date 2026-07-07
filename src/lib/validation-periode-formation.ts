@@ -153,7 +153,7 @@ export function renumeroterPeriodes(periodes: ReadonlyArray<PeriodeFormation>): 
 
 export function libellePeriode(periode: PeriodeFormation): string {
   const base = `Période ${periode.numero}`;
-  return periode.titre ? `${base} — ${periode.titre}` : base;
+  return periode.titre ? `${base} : ${periode.titre}` : base;
 }
 
 function formaterDate(iso: string): string {

@@ -93,7 +93,7 @@ export function BlocSignatures({ livretId, fiche, lieu = 'entreprise' }: BlocSig
       <header>
         <h3 className="text-lg font-medium">Signatures de fin de période</h3>
         <p className="text-xs text-muted-foreground">
-          Une fiche passe à l'état « signée » lorsque les deux parties ont apposé leur signature —{' '}
+          Une fiche passe à l'état « signée » lorsque les deux parties ont apposé leur signature :{' '}
           {detailParties}.
         </p>
       </header>
@@ -125,7 +125,7 @@ export function BlocSignatures({ livretId, fiche, lieu = 'entreprise' }: BlocSig
                   {sig.trace && (
                     <img
                       src={sig.trace}
-                      alt={`Signature manuscrite — ${libelleRole(role)}`}
+                      alt={`Signature manuscrite : ${libelleRole(role)}`}
                       className="h-14 max-w-full rounded border border-border bg-white object-contain"
                     />
                   )}
@@ -154,7 +154,7 @@ export function BlocSignatures({ livretId, fiche, lieu = 'entreprise' }: BlocSig
                 <BoutonSigner
                   role={role}
                   nomCourt={utilisateurActif.prenom}
-                  libelleEngagement={`${libelleRole(role)} — ${utilisateurActif.prenom} ${utilisateurActif.nom}`}
+                  libelleEngagement={`${libelleRole(role)} : ${utilisateurActif.prenom} ${utilisateurActif.nom}`}
                   disabled={!validation?.peutSigner}
                   raisonsBlocage={validation?.raisons}
                   onConfirmer={(trace) => signer(livretId, fiche.id, role, trace, lieu)}

@@ -139,20 +139,20 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
           </h2>
           <dl className="space-y-2 text-sm">
             <Ligne label="Diplôme préparé">
-              {formation?.intitule ?? '—'}
+              {formation?.intitule ?? '-'}
               {formation?.annee ? ` (${formation.annee})` : ''}
             </Ligne>
             <Ligne label="Centre de formation" Icon={Building2}>
               {etablissement
-                ? `${etablissement.nom}${etablissement.ville ? ` — ${etablissement.ville}` : ''}`
-                : '—'}
+                ? `${etablissement.nom}${etablissement.ville ? ` (${etablissement.ville})` : ''}`
+                : '-'}
             </Ligne>
             <Ligne label="Entreprise d'accueil" Icon={Briefcase}>
               {entreprise ? (
                 <>
                   {entreprise.raisonSociale}
                   {entreprise.ville ? (
-                    <span className="text-muted-foreground"> — {entreprise.ville}</span>
+                    <span className="text-muted-foreground"> ({entreprise.ville})</span>
                   ) : null}
                   {derniereAffectation ? (
                     <span className="block text-xs font-normal text-muted-foreground">
@@ -162,7 +162,7 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
                   ) : null}
                 </>
               ) : (
-                '—'
+                '-'
               )}
             </Ligne>
             <Ligne label="Contrat">
@@ -173,7 +173,7 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
                 <>
                   {maitre.prenom} {maitre.nom}
                   {maitre.entreprise ? (
-                    <span className="text-muted-foreground"> — {maitre.entreprise}</span>
+                    <span className="text-muted-foreground"> ({maitre.entreprise})</span>
                   ) : null}
                   {maitreSecond ? (
                     <span className="text-muted-foreground">
@@ -183,11 +183,11 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
                   ) : null}
                 </>
               ) : (
-                '—'
+                '-'
               )}
             </Ligne>
             <Ligne label="Formateur référent" Icon={UserCog}>
-              {formateur ? `${formateur.prenom} ${formateur.nom}` : '—'}
+              {formateur ? `${formateur.prenom} ${formateur.nom}` : '-'}
             </Ligne>
           </dl>
         </section>
@@ -206,10 +206,10 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
                   {echeance.datePrevue ? (
                     <span className="text-muted-foreground">
                       {' '}
-                      — prévu le {formatFr(echeance.datePrevue)}
+                      : prévu le {formatFr(echeance.datePrevue)}
                     </span>
                   ) : (
-                    <span className="text-muted-foreground"> — à planifier</span>
+                    <span className="text-muted-foreground"> : à planifier</span>
                   )}
                 </>
               ) : (
@@ -325,7 +325,7 @@ function PeriodeEnCours({ fiche }: { fiche: Parameters<typeof libelleFichePeriod
       {libelleFichePeriode(fiche)}
       <span className="text-muted-foreground">
         {' '}
-        — du {formatFr(fiche.dateDebut)} au {formatFr(fiche.dateFin)}
+        (du {formatFr(fiche.dateDebut)} au {formatFr(fiche.dateFin)})
       </span>
     </>
   );

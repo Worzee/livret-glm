@@ -247,7 +247,7 @@ export const useFormationsStore = create<FormationsStore>()(
           return {
             ok: false,
             raison:
-              'La formation est en mode activités — repassez d’abord en mode compétences pour changer de modèle.',
+              'La formation est en mode activités : repassez d’abord en mode compétences pour changer de modèle.',
           };
         }
         const modele = modeleActivitesId

@@ -10,7 +10,7 @@ import type { Etablissement } from '@/types';
 
 export const etablissementSiteDiderot: Etablissement = {
   id: 'eta-site-diderot',
-  nom: 'GRETA Lyon Métropole — Site Diderot',
+  nom: 'GRETA Lyon Métropole - Site Diderot',
   adresse: '41 rue Antoine Lumière',
   codePostal: '69008',
   ville: 'Lyon',
@@ -19,7 +19,7 @@ export const etablissementSiteDiderot: Etablissement = {
 /** 2ᵉ site (3 juillet 2026) — accueille le BTS MHR, démontre le multi-sites. */
 export const etablissementSiteBellecour: Etablissement = {
   id: 'eta-site-bellecour',
-  nom: 'GRETA Lyon Métropole — Site Bellecour',
+  nom: 'GRETA Lyon Métropole - Site Bellecour',
   adresse: '18 place Bellecour',
   codePostal: '69002',
   ville: 'Lyon',

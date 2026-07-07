@@ -312,7 +312,7 @@ export function ModaleApprenti({ ouvert, apprenti, onAnnuler, onValide }: Modale
                   libelle: `${m.prenom} ${m.nom}`,
                 }))}
               erreur={erreurs.maitreApprentissageSecondId}
-              optionVide="— Aucun —"
+              optionVide="Aucun"
             />
             <ChampSelect
               label="Entreprise d'accueil"
@@ -344,7 +344,7 @@ export function ModaleApprenti({ ouvert, apprenti, onAnnuler, onValide }: Modale
                   value: c.id,
                   libelle: `${c.prenom} ${c.nom}`,
                 }))}
-                optionVide="— Aucun·e —"
+                optionVide="Aucun·e"
               />
             )}
           </Section>
@@ -414,7 +414,7 @@ function HistoriqueEntreprises({
               </span>
             )}
             <span className="text-muted-foreground">
-              depuis le {new Date(e.dateIso).toLocaleDateString('fr-FR')} — {e.auteurNom} (
+              depuis le {new Date(e.dateIso).toLocaleDateString('fr-FR')}, par {e.auteurNom} (
               {libelleRole(e.auteurRole)})
             </span>
           </li>
@@ -512,7 +512,7 @@ interface ChampSelectProps {
   obligatoire?: boolean;
   /**
    * Libellé d'une option vide SÉLECTIONNABLE (champ optionnel, ex. second
-   * maître). Sans cette prop, l'option vide est « — Choisir — » désactivée.
+   * maître). Sans cette prop, l'option vide est « Choisir… » désactivée.
    */
   optionVide?: string;
 }
@@ -549,7 +549,7 @@ function ChampSelect({
           <option value="">{optionVide}</option>
         ) : (
           <option value="" disabled>
-            — Choisir —
+            Choisir…
           </option>
         )}
         {options.map((o) => (

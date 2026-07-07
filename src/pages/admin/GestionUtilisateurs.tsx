@@ -199,7 +199,7 @@ export function GestionUtilisateurs() {
       if (nb > 0) {
         return {
           bloque: true,
-          raison: `${nb} apprenti·e${sfx(nb)} rattaché·e${sfx(nb)} — réaffectez-les avant suppression.`,
+          raison: `${nb} apprenti·e${sfx(nb)} rattaché·e${sfx(nb)} : réaffectez-les avant suppression.`,
         };
       }
     }
@@ -208,7 +208,7 @@ export function GestionUtilisateurs() {
       if (nb > 0) {
         return {
           bloque: true,
-          raison: `${nb} apprenti·e${sfx(nb)} référence${nb > 1 ? 'nt' : ''} ce formateur — réaffectez avant suppression.`,
+          raison: `${nb} apprenti·e${sfx(nb)} référence${nb > 1 ? 'nt' : ''} ce formateur : réaffectez avant suppression.`,
         };
       }
     }

@@ -123,7 +123,7 @@ export function OrganisationSuivi() {
         <div className="inline-flex items-center gap-2 rounded-md bg-muted px-3 py-1.5 text-xs text-muted-foreground">
           <Lock className="h-3.5 w-3.5" aria-hidden="true" />
           Vous consultez en mode{' '}
-          <strong className="text-foreground">{libelleRole(roleActif)}</strong> — modification
+          <strong className="text-foreground">{libelleRole(roleActif)}</strong> : modification
           réservée au formateur référent, au coordinateur·rice et à l'administrateur·rice.
         </div>
       )}
@@ -145,7 +145,7 @@ export function OrganisationSuivi() {
               onChange={(e) => setMotifAAjouter(e.target.value as MotifOrganisationSuivi | '')}
               className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
-              <option value="">— Choisir un motif —</option>
+              <option value="">Choisir un motif…</option>
               {motifsProposables.map((m) => (
                 <option key={m.motif} value={m.motif}>
                   {m.libelle}
@@ -322,7 +322,7 @@ function CarteEvenement({
           className="inline-flex w-fit items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-900"
         >
           <Lock className="h-3.5 w-3.5" aria-hidden="true" />
-          Entretien signé par les 3 parties — fiche verrouillée
+          Entretien signé par les 3 parties : fiche verrouillée
         </div>
       )}
 
@@ -343,14 +343,14 @@ function CarteEvenement({
       {peutEditerChamp ? (
         <div className="space-y-1">
           <label htmlFor={idTitre} className="text-xs font-medium text-muted-foreground">
-            Titre (optionnel — utile pour distinguer plusieurs événements du même motif)
+            Titre (optionnel, utile pour distinguer plusieurs événements du même motif)
           </label>
           <input
             id={idTitre}
             type="text"
             value={evenement.titre ?? ''}
             onChange={(e) => onChangeTitre(e.target.value)}
-            placeholder={'ex : Visite n°1 — novembre 2025'}
+            placeholder={'ex : Visite n°1 (novembre 2025)'}
             className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>

@@ -147,7 +147,7 @@ export function EntretienTripartite() {
             <Eye className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <p>
               <strong>Consultation en lecture seule.</strong> L'entretien n'a pas encore été
-              initialisé — les champs s'ouvriront à la saisie après initialisation par le formateur
+              initialisé : les champs s'ouvriront à la saisie après initialisation par le formateur
               référent ou la coordination.
             </p>
           </div>

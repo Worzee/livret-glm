@@ -130,7 +130,7 @@ export function ModaleFichePeriode({
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {fiche
-                  ? "Titre et dates — les autres champs s'éditent depuis la fiche."
+                  ? "Titre et dates : les autres champs s'éditent depuis la fiche."
                   : 'Le numéro est attribué automatiquement.'}
               </p>
             </div>

@@ -84,7 +84,7 @@ export function ModalePlanningPeriodes({
             <CalendarRange className="h-5 w-5 shrink-0 texte-couleur-role" aria-hidden="true" />
             <div>
               <h2 id={titreId} className="text-lg font-semibold">
-                Planning des périodes — {formation.intitule}
+                Planning des périodes : {formation.intitule}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {formation.annee} · {livretsPromo.length} apprenti·e·s rattaché·e·s. Chaque période

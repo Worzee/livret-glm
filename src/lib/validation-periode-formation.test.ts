@@ -202,7 +202,7 @@ describe('renumeroterPeriodes', () => {
 describe('libellePeriode', () => {
   it('formate avec titre quand présent', () => {
     expect(libellePeriode(periode('x', 2, '', '', 'Stage automne'))).toBe(
-      'Période 2 — Stage automne',
+      'Période 2 : Stage automne',
     );
   });
 

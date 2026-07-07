@@ -207,7 +207,7 @@ export const TRAME_ENTRETIEN: ReadonlyArray<RubriqueTrame> = [
       {
         id: 'e1-diff-autres-precisions',
         type: 'texte',
-        libelle: 'Autres difficultés — précisions',
+        libelle: 'Autres difficultés (précisions)',
       },
     ],
   },
@@ -227,7 +227,7 @@ export interface CritereAppreciation {
 export const CRITERES_APPRECIATION: ReadonlyArray<CritereAppreciation> = [
   {
     cle: 'ponctualite',
-    libelle: 'Ponctualité — Assiduité',
+    libelle: 'Ponctualité / Assiduité',
     descriptions: {
       plusplus: "Arrive à l'heure, est assidu·e",
       plus: 'Présence régulière, ou absences justifiées',

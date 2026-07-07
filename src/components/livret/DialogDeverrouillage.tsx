@@ -126,7 +126,7 @@ export function DialogDeverrouillage({
             rows={4}
             value={motif}
             onChange={(e) => setMotif(e.target.value)}
-            placeholder="Ex. : erreur de saisie sur l'évaluation du bloc 2 — à corriger en accord avec le maître."
+            placeholder="Ex. : erreur de saisie sur l'évaluation du bloc 2, à corriger en accord avec le maître."
             aria-invalid={afficherErreur}
             aria-describedby={afficherErreur ? erreurId : undefined}
             className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"

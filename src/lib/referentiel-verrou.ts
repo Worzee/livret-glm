@@ -33,6 +33,6 @@ export function evaluerVerrouReferentiel(
   return {
     verrouille: true,
     nbFormationsRattachees: nb,
-    raison: `${nb} formation${sfx} rattachée${sfx} — réaffectez le référentiel avant suppression.`,
+    raison: `${nb} formation${sfx} rattachée${sfx} : réaffectez le référentiel avant suppression.`,
   };
 }

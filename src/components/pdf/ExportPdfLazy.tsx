@@ -115,7 +115,7 @@ export default function ExportPdfLazy({ variante, ...donnees }: ExportPdfLazyPro
       aria-label={ariaLabel}
     >
       {({ loading, error }) => {
-        if (error) return 'Erreur — voir la console';
+        if (error) return 'Erreur : voir la console';
         if (loading) return 'Génération du PDF…';
         return 'Télécharger le PDF';
       }}

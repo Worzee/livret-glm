@@ -78,7 +78,7 @@ export function ModaleCompetencesEvaluables({
             <ListChecks className="h-5 w-5 shrink-0 texte-couleur-role" aria-hidden="true" />
             <div>
               <h2 id={titreId} className="text-lg font-semibold">
-                Lignes évaluables — {referentielCourant.formation}
+                Lignes évaluables : {referentielCourant.formation}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Les compétences décochées sont conservées mais n'apparaissent plus dans les grilles,

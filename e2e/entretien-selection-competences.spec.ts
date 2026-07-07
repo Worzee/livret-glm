@@ -73,7 +73,7 @@ test("Léa : la section « Activités prévues en entreprise » affiche le badge
   await expect(
     page.getByRole('heading', { name: /Activités prévues en entreprise/i }),
   ).toBeVisible();
-  await expect(page.getByText(/Sélection validée — 5 activités sur 6/i)).toBeVisible();
+  await expect(page.getByText(/Sélection validée : 5 activités sur 6/i)).toBeVisible();
   // a1 est dans la sélection de Léa → case cochée, mais désactivée car validée
   const caseA1 = page.getByTestId('selection-act-act-cap-a1');
   await expect(caseA1).toBeChecked();
@@ -98,7 +98,7 @@ test('Léa : la grille de synthèse est restreinte aux compétences couvertes pa
   await expect(
     page.getByLabel(/^Acquis en entreprise pour Réceptionner et stocker la marchandise$/i).first(),
   ).toBeVisible();
-  await expect(page.getByText(/Via activité « .+ » — Période \d+/i).first()).toBeVisible();
+  await expect(page.getByText(/Via activité « .+ » \(Période \d+\)/i).first()).toBeVisible();
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

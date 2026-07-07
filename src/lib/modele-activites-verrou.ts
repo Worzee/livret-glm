@@ -35,7 +35,7 @@ export function evaluerVerrouModeleActivites(
   return {
     verrouille: true,
     nbFormationsRattachees: nb,
-    raison: `${nb} formation${sfx} rattachée${sfx} — détachez le modèle avant suppression.`,
+    raison: `${nb} formation${sfx} rattachée${sfx} : détachez le modèle avant suppression.`,
   };
 }
 
@@ -50,6 +50,6 @@ export function peutRemplacerModele(
   const noms = bloquantes.map((f) => f.intitule).join(', ');
   return {
     ok: false,
-    raison: `Réimport bloqué : ${noms} ${bloquantes.length > 1 ? 'sont' : 'est'} en mode activités sur ce modèle — le mapping repartirait vierge et le balayage serait incomplet. Repassez d’abord en mode compétences.`,
+    raison: `Réimport bloqué : ${noms} ${bloquantes.length > 1 ? 'sont' : 'est'} en mode activités sur ce modèle : le mapping repartirait vierge et le balayage serait incomplet. Repassez d’abord en mode compétences.`,
   };
 }

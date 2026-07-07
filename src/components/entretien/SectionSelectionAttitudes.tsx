@@ -55,7 +55,7 @@ export function SectionSelectionAttitudes({ livret }: SectionSelectionAttitudesP
       {figee && (
         <div className="bandeau-info-couleur-role inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs">
           <Lock className="h-3.5 w-3.5" aria-hidden="true" />
-          Choix figé — l'entretien 1 est signé par les 3 parties.
+          Choix figé : l'entretien 1 est signé par les 3 parties.
         </div>
       )}
 

@@ -42,7 +42,7 @@ test('la synthèse hérite des fiches de période (projection des activités, ch
   // La promo CAP est en mode activités (juillet 2026) : les cellules héritées
   // portent la provenance « Via activité X — Période N » (projection
   // last-write-wins chronologique des évaluations d'activités de Léa).
-  await expect(page.getByText(/Via activité « .+ » — Période \d+/i).first()).toBeVisible();
+  await expect(page.getByText(/Via activité « .+ » \(Période \d+\)/i).first()).toBeVisible();
 });
 
 test('la grille ne montre plus de colonne « Acquis en centre » (juillet 2026)', async ({
@@ -121,7 +121,7 @@ test('maître : remplacer une évaluation entreprise héritée exige une confirm
     }),
   });
   await expect(
-    cellule.getByText(/Via activité « Réceptionner et stocker les livraisons du jour » — Période 1/i),
+    cellule.getByText(/Via activité « Réceptionner et stocker les livraisons du jour » \(Période 1\)/i),
   ).toBeVisible();
 
   // 1. Cliquer un autre niveau ouvre la modale — la valeur ne change PAS

@@ -69,7 +69,7 @@ export const MOTIFS_ORGANISATION_SUIVI: ReadonlyArray<MetadonneesMotif> = [
     motif: 'entretien-tripartite',
     libelle: 'Entretien Tripartite',
     description:
-      "L'entretien tripartite obligatoire — typiquement dans les 2 mois suivant la signature du contrat (R7). Se tient en présentiel.",
+      "L'entretien tripartite obligatoire, typiquement dans les 2 mois suivant la signature du contrat (R7). Se tient en présentiel.",
     placeholderCommentaire: 'Date prévue, modalités, participants…',
   },
   {
@@ -110,7 +110,7 @@ export function libelleMotif(motif: MotifOrganisationSuivi): string {
 export function libelleEvenement(evt: EvenementOrganisationSuivi): string {
   const base = libelleMotif(evt.motif);
   const titre = evt.titre?.trim();
-  return titre ? `${base} — ${titre}` : base;
+  return titre ? `${base} : ${titre}` : base;
 }
 
 /**
@@ -166,7 +166,7 @@ export function peutSupprimerEvenement(
         supprimable: false,
         raison: `L'entretien tripartite est signé par ${nbSignatures} partie${
           nbSignatures > 1 ? 's' : ''
-        } — sa fiche de suivi ne peut plus être supprimée.`,
+        } : sa fiche de suivi ne peut plus être supprimée.`,
       };
     }
   }
