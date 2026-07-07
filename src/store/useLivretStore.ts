@@ -34,7 +34,13 @@ import {
   toggleCompetence,
 } from '@/lib/selection-competences-entreprise';
 import { realignerSurModele } from '@/lib/selection-activites-entreprise';
+import { apprentisSansLivret } from '@/lib/reparation-livrets';
+import { creerLivretVierge } from '@/lib/creation-livret';
+import { modeEffectif } from '@/lib/mode-evaluation';
 import { useUtilisateursStore } from './useUtilisateursStore';
+import { useFormationsStore } from './useFormationsStore';
+import { useReferentielsStore } from './useReferentielsStore';
+import { useActivitesStore } from './useActivitesStore';
 
 /**
  * Store Zustand des livrets.
@@ -428,6 +434,17 @@ interface LivretStore {
     motif: string,
     lieu?: LieuFiche,
   ) => void;
+
+  /**
+   * Recrée un livret vierge pour chaque apprenti·e qui n'en a plus
+   * (7 juillet 2026 — bug pilote) : un bump de `livret-donnees` reset les
+   * livrets aux fixtures alors que `livret-utilisateurs` conserve les
+   * comptes créés par l'utilisateur. Planning hérité de la formation,
+   * sélections réalignées (référentiel + modèle d'activités selon le mode).
+   * Appelée au montage de l'application (cf. `AppShell`).
+   * @returns le nombre de livrets recréés.
+   */
+  reparerLivretsManquants: () => number;
 
   /** Réinitialise complètement les livrets aux fixtures (CDC §24.8). */
   reinitialiserDemo: () => void;
@@ -1118,6 +1135,51 @@ export const useLivretStore = create<LivretStore>()(
             };
           }),
         ),
+
+      reparerLivretsManquants: () => {
+        const orphelins = apprentisSansLivret(
+          useUtilisateursStore.getState().apprentis,
+          get().livrets,
+        );
+        if (orphelins.length === 0) return 0;
+        const formations = useFormationsStore.getState().formations;
+        const referentiels = useReferentielsStore.getState().referentiels;
+        const modeles = useActivitesStore.getState().modeles;
+
+        const nouveaux: Record<string, Livret> = {};
+        for (const apprenti of orphelins) {
+          const formation = apprenti.formationId ? formations[apprenti.formationId] : undefined;
+          nouveaux[`livret-${apprenti.id}`] = creerLivretVierge(
+            apprenti,
+            `livret-${apprenti.id}`,
+            apprenti.formateurReferentId,
+            formation?.periodes ?? [],
+            new Date(),
+            formation?.periodesCentre ?? [],
+          );
+        }
+        set((s) => ({
+          livrets: { ...s.livrets, ...nouveaux },
+          derniereModification: new Date().toISOString(),
+        }));
+        // Réalignement des sélections sur le référentiel / le modèle EFFECTIFS
+        // de la formation (creerLivretVierge part du CAP Cuisine des fixtures).
+        for (const apprenti of orphelins) {
+          const formation = apprenti.formationId ? formations[apprenti.formationId] : undefined;
+          if (!formation) continue;
+          const referentiel = referentiels[formation.referentielId];
+          if (referentiel) {
+            get().realignerSelectionLivret(`livret-${apprenti.id}`, referentiel);
+          }
+          if (modeEffectif(formation) === 'activites' && formation.modeleActivitesId) {
+            const modele = modeles[formation.modeleActivitesId];
+            if (modele) {
+              get().realignerSelectionActivitesLivret(`livret-${apprenti.id}`, modele);
+            }
+          }
+        }
+        return orphelins.length;
+      },
 
       reinitialiserDemo: () =>
         set(() => ({

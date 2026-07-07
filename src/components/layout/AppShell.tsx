@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { Building2, GraduationCap, HardHat, UserCog } from 'lucide-react';
 import logoGreta from '@/assets/logo-greta.png';
@@ -8,6 +9,7 @@ import { IndicateurEnregistrement } from '@/components/common/IndicateurEnregist
 import { useUserStore } from '@/store/useUserStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
+import { useLivretStore } from '@/store/useLivretStore';
 import { libelleRole } from '@/lib/droits';
 import { cn } from '@/lib/utils';
 import type { Role } from '@/types';
@@ -35,6 +37,15 @@ export function AppShell() {
   const ctxApprenti = useApprentiActif();
   const maitres = useUtilisateursStore((s) => s.maitres);
   const formateurs = useUtilisateursStore((s) => s.formateurs);
+
+  // Auto-réparation (7 juillet 2026 — bug pilote) : un bump de
+  // `livret-donnees` reset les livrets aux fixtures, mais les apprenti·e·s
+  // créé·e·s par l'utilisateur survivent dans `livret-utilisateurs` — sans
+  // livret, l'ouverture retombait sur « Aucun·e apprenti·e sélectionné·e ».
+  // Idempotent : ne recrée que les livrets manquants.
+  useEffect(() => {
+    useLivretStore.getState().reparerLivretsManquants();
+  }, []);
 
   // Trio contextuel — visible uniquement quand un·e apprenti·e est actif·ve
   // (donc pas sur les pages /admin/...). Aide à comprendre « qui voit quoi »

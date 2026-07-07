@@ -164,6 +164,15 @@ export const useUtilisateursStore = create<UtilisateursStore>()(
           livrets: { ...s.livrets, [livret.id]: livret },
           derniereModification: new Date().toISOString(),
         }));
+        // La sélection de compétences part « tout coché » sur le référentiel
+        // EFFECTIF de la formation (7 juillet 2026 — creerLivretVierge part du
+        // CAP Cuisine des fixtures, faux pour une création BTS).
+        if (formation) {
+          const referentiel = useReferentielsStore.getState().referentiels[formation.referentielId];
+          if (referentiel) {
+            useLivretStore.getState().realignerSelectionLivret(livret.id, referentiel);
+          }
+        }
         // Chantier #4 (juillet 2026) : si la formation est en mode activités,
         // la sélection d'activités du nouveau livret part « tout coché » sur
         // le modèle de la formation (miroir de la sélection de compétences).
