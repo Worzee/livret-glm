@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, FileSpreadsheet, Upload, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, Upload, X } from 'lucide-react';
 import {
   importerModeleDepuisBuffer,
   importerModeleDepuisTexte,
@@ -8,6 +8,10 @@ import {
 } from '@/lib/import-modele-activites';
 import { estXlsxBuffer } from '@/lib/import-referentiel';
 import { modeEffectif } from '@/lib/mode-evaluation';
+import {
+  genererXlsxGabaritActivites,
+  NOM_FICHIER_GABARIT_ACTIVITES,
+} from '@/lib/modele-xlsx-activites';
 import {
   genererNomModeleActivites,
   type SaisieImportModele,
@@ -114,6 +118,22 @@ export function ModaleImportModeleActivites({
     setSaisie((s) => ({ ...s, source: 'texte', contenuCsv: value, nomFichier: '' }));
     if (bufferFichier) setBufferFichier(null);
     setApercu(null);
+  }
+
+  // Gabarit Excel à remplir puis réimporter (pattern ImportUtilisateurs).
+  function telechargerGabarit() {
+    const bytes = genererXlsxGabaritActivites();
+    const blob = new Blob([new Uint8Array(bytes)], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = NOM_FICHIER_GABARIT_ACTIVITES;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   function genererApercu() {
@@ -265,6 +285,19 @@ export function ModaleImportModeleActivites({
               onChange={onChangerFichier}
               className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-secondary/80"
             />
+            <p className="text-xs text-muted-foreground">
+              Partez du{' '}
+              <button
+                type="button"
+                onClick={telechargerGabarit}
+                data-testid="import-act-telecharger-gabarit"
+                className="inline-flex items-center gap-1 underline hover:no-underline"
+              >
+                <Download className="h-3 w-3" aria-hidden="true" />
+                gabarit Excel à remplir
+              </button>{' '}
+              — une activité par ligne, seule la colonne Libellé est obligatoire.
+            </p>
           </div>
 
           {/* Texte collé */}

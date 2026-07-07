@@ -138,6 +138,36 @@ test('réimport d’un référentiel pour une formation en mode activités : blo
   await expect(modale.getByRole('button', { name: /Importer \(/i })).toBeDisabled();
 });
 
+test('le gabarit Excel se télécharge puis se réimporte tel quel (boucle complète)', async ({
+  page,
+}) => {
+  await selectRole(page, 'Coordinateur·rice');
+  await page.goto('/admin/activites');
+
+  // 1. Téléchargement depuis le bouton de la page.
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByTestId('telecharger-gabarit-activites').click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe('modele-activites.xlsx');
+  const chemin = await download.path();
+
+  // 2. Le fichier téléchargé se réimporte tel quel (3 activités d'exemple).
+  await page.getByTestId('ouvrir-import-modele-activites').click();
+  const modale = page.getByRole('dialog');
+  // Le gabarit est aussi proposé depuis la modale, à côté du champ fichier.
+  await expect(modale.getByTestId('import-act-telecharger-gabarit')).toBeVisible();
+  await modale.getByTestId('import-act-formation').selectOption({ value: 'f-bts-mhr-2025' });
+  await modale.locator('input[type="file"]').setInputFiles(chemin);
+  await modale.getByTestId('import-act-apercu').click();
+  await expect(modale.getByText(/3 activités détectées/i)).toBeVisible();
+  await expect(modale.getByText(/Réceptionner et contrôler les livraisons/i)).toBeVisible();
+  await modale.getByTestId('import-act-importer').click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(
+    page.locator('article').filter({ hasText: /Activites_BTS Management/ }),
+  ).toContainText(/3 activités/i);
+});
+
 test('la suppression du modèle CAP est bloquée tant que la formation le rattache', async ({
   page,
 }) => {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ClipboardList,
+  Download,
   Gauge,
   GraduationCap,
   ListTodo,
@@ -19,6 +20,10 @@ import { calculerBalayage } from '@/lib/balayage-referentiel';
 import { modeEffectif } from '@/lib/mode-evaluation';
 import { evaluerVerrouModeleActivites } from '@/lib/modele-activites-verrou';
 import { referentielEvaluable } from '@/lib/limite-referentiel';
+import {
+  genererXlsxGabaritActivites,
+  NOM_FICHIER_GABARIT_ACTIVITES,
+} from '@/lib/modele-xlsx-activites';
 import { ModaleImportModeleActivites } from '@/components/admin/ModaleImportModeleActivites';
 import { cn } from '@/lib/utils';
 
@@ -70,6 +75,23 @@ export function GestionActivites() {
     setConfirmationSuppression(null);
   }
 
+  // Gabarit Excel à remplir puis réimporter (même pattern de téléchargement
+  // que la page Import Excel des utilisateurs).
+  function telechargerGabarit() {
+    const bytes = genererXlsxGabaritActivites();
+    const blob = new Blob([new Uint8Array(bytes)], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = NOM_FICHIER_GABARIT_ACTIVITES;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
@@ -86,15 +108,27 @@ export function GestionActivites() {
             par compétences, alimentée par la projection des activités.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setModaleImportOuverte(true)}
-          data-testid="ouvrir-import-modele-activites"
-          className="inline-flex items-center gap-1.5 rounded-md bouton-plein-couleur-role px-4 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <Plus className="h-4 w-4" aria-hidden="true" />
-          Importer un modèle
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={telechargerGabarit}
+            data-testid="telecharger-gabarit-activites"
+            title="Fichier Excel à remplir (une activité par ligne) puis à réimporter"
+            className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Download className="h-4 w-4" aria-hidden="true" />
+            Télécharger le gabarit Excel
+          </button>
+          <button
+            type="button"
+            onClick={() => setModaleImportOuverte(true)}
+            data-testid="ouvrir-import-modele-activites"
+            className="inline-flex items-center gap-1.5 rounded-md bouton-plein-couleur-role px-4 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            Importer un modèle
+          </button>
+        </div>
       </header>
 
       {liste.length === 0 ? (

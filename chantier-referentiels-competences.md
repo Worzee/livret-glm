@@ -320,6 +320,11 @@ nouveau store `livret-activites` v1, `livret-formations` v9 (mode + modeleActivi
   Luca P3 c2-3/c2-4 → a4 résolue par une activité libre « Inventaire de fin
   de mois »), sélections d'activités validées (a6 écartée chez Léa/Minh/Aya),
   Sofia « tout coché » non validé ; BTS inchangé (mode compétences).
+- **Gabarit Excel à remplir** (complément post-livraison du 2026-07-07, demande
+  pilote) : lib `modele-xlsx-activites` (réutilise le writer
+  `generer-xlsx-modele`, boucle fermée testée gabarit →
+  `construireModeleActivites`), bouton « Télécharger le gabarit Excel » sur
+  `/admin/activites` + lien dans la modale d'import (`modele-activites.xlsx`).
 - **Non fait (hors périmètre arbitré)** : alerte « balayage incomplet » au
   centre d'alertes (inutile tant que les gardes imposent le balayage complet
   en mode activités) ; seuil d'activités par modèle (Q7 : pas de limite).
@@ -456,9 +461,11 @@ Références aux compétences ailleurs dans le modèle (couplages par `competenc
   `sprint4-evaluation-finale.spec.ts`, `fiches-periodes*.spec.ts`, `pilotage-alertes.spec.ts`
   (compte sur les fixtures BTS)
 - Total projet au 2026-07-06 (après modification #3) : **611 unitaires / 196 E2E — tous verts**
-- Total projet au 2026-07-07 (après modification #4) : **673 unitaires / 204 E2E — tous verts**
-  (+58 unitaires sur les 7 libs du chantier #4, +3 droits, +2 validation-signature ;
-  nouveau spec `admin-activites.spec.ts`, refonte `entretien-selection-competences.spec.ts`)
+- Total projet au 2026-07-07 (après modification #4 + gabarit Excel) : **676 unitaires /
+  205 E2E — tous verts** (+58 unitaires sur les 7 libs du chantier #4 +3 sur le gabarit
+  XLSX, +3 droits, +2 validation-signature ; nouveau spec `admin-activites.spec.ts`
+  — 9 scénarios dont la boucle gabarit → réimport —, refonte
+  `entretien-selection-competences.spec.ts`)
 
 ## 9. Checklist de la procédure de modification type (rituel maison)
 
