@@ -466,6 +466,9 @@ Références aux compétences ailleurs dans le modèle (couplages par `competenc
   XLSX, +3 droits, +2 validation-signature ; nouveau spec `admin-activites.spec.ts`
   — 9 scénarios dont la boucle gabarit → réimport —, refonte
   `entretien-selection-competences.spec.ts`)
+- Total projet au 2026-07-07 (après les demandes pilote hors chantier — polarité Oui/Non
+  de la rubrique « Difficultés » + auto-réparation des livrets manquants) : **682 unitaires /
+  206 E2E — tous verts** (49 fichiers de test, 29 specs E2E)
 
 ## 9. Checklist de la procédure de modification type (rituel maison)
 

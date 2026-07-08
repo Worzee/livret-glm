@@ -104,7 +104,7 @@ LIVRET APPRENTISSAGE/
     │   ├── validation-periode-formation.ts ← chantier #1 (planning au niveau formation)
     │   ├── couleurs-role.ts        ← palette équilibrée mai 2026
     │   └── *.test.ts               ← 682 tests Vitest
-    ├── store/                      ← 10 stores Zustand persistés
+    ├── store/                      ← 11 stores Zustand persistés
     ├── fixtures/                   ← 8 livrets démo + utilisateurs + référentiels
     ├── components/
     │   ├── layout/                 ← AppShell, Sidebar, RoleSwitcher, MobileMenu…
@@ -186,7 +186,7 @@ Procédure complète dans [`scripts/README.md`](./scripts/README.md) § _Sécuri
 
 - **Frontend** : Vite 6 + React 18 + TypeScript 5.7 (strict)
 - **Style** : Tailwind CSS 3 + shadcn/ui (tokens CSS variables)
-- **State** : Zustand 5 + middleware `persist` (localStorage, **10 stores** persistés)
+- **State** : Zustand 5 + middleware `persist` (localStorage, **11 stores** persistés)
 - **Routing** : React Router v6
 - **PDF** : `@react-pdf/renderer` (lazy-loaded — chargé uniquement au clic « Exporter »)
 - **XLSX** : `fflate` (~12 KB) pour la décompression ZIP + parser maison

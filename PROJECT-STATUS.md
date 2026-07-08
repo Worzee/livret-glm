@@ -96,7 +96,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 - **Frontend** : Vite 6 + React 18 + TypeScript 5.7 (strict)
 - **Style** : Tailwind CSS 3 + shadcn/ui (tokens CSS variables, palette 5 rôles équilibrée mai 2026)
 - **State** : Zustand 5 + middleware `persist` — **11 stores** persistés en localStorage :
-  - `livret-donnees` (schema v25) — livrets, fiches **entreprise** (compétences **ou activités selon le mode de la formation** + **évaluations des attitudes par période** — juillet 2026) **+ centre de formation** (`fichesSuiviCentre`, **observations de fin de période seules**), **l'entretien tripartite unique et obligatoire** (`Livret.entretien` — trame officielle GRETA), synthèse des compétences (colonne entreprise seule), sélection des compétences abordées en entreprise **+ sélection des activités prévues en entreprise** (mode activités — chantier #4), **forçage d'affichage des périodes** (`affichagePeriodesForce`)
+  - `livret-donnees` (schema v26) — livrets, fiches **entreprise** (compétences **ou activités selon le mode de la formation** + **évaluations des attitudes par période** — juillet 2026) **+ centre de formation** (`fichesSuiviCentre`, **observations de fin de période seules**), **l'entretien tripartite unique et obligatoire** (`Livret.entretien` — trame officielle GRETA), synthèse des compétences (colonne entreprise seule), sélection des compétences abordées en entreprise **+ sélection des activités prévues en entreprise** (mode activités — chantier #4), **forçage d'affichage des périodes** (`affichagePeriodesForce`)
   - `livret-role-actif` — rôle + maître / coordo / formateur actifs
   - `livret-apprenti-actif` — id de l'apprenti·e affiché·e
   - `livret-utilisateurs` (schema v6) — apprenti·e·s (avec **second maître / tuteur optionnel**, **coordo de rattachement**, **entreprise d'accueil par id + historique des affectations** juin 2026), maîtres (avec `entreprise` + `fonction`), formateurs, coordos, admins
@@ -1037,6 +1037,7 @@ LIVRET APPRENTISSAGE/
     │   ├── historique-entreprise.ts # traçabilité des affectations (28 juin)
     │   ├── pilotage.ts             # KPI coordo/admin du tableau de bord (3 juillet)
     │   ├── alertes.ts              # centre d'alertes par rôle (3 juillet)
+    │   ├── reparation-livrets.ts   # auto-réparation des livrets manquants après bump (7 juillet)
     │   ├── couleurs-role.ts        # polish — mappings Tailwind par rôle
     │   ├── __fixtures__/
     │   └── utils.ts
@@ -1243,7 +1244,7 @@ location.reload();
 - **2 entretiens par livret** (chantier #2) : `Livret.entretien1` + `entretien2`, mutations indexées par `numero: 1 | 2`. Auto-marquage de la sélection compétences à 3ᵉ signature E1 uniquement.
 - **Tests TDD ciblés** sur la logique métier pure (`lib/`) ; les composants UI sont testés via Playwright E2E
 - **Migration localStorage par bump de version** : reset complet à chaque bump (pas de migration logicielle, données fictives)
-- **10 stores Zustand persistés avec import croisé** : synchronisations cross-store dans les actions, cycle résolu par ESM
+- **11 stores Zustand persistés avec import croisé** : synchronisations cross-store dans les actions, cycle résolu par ESM
 - **Cohérence référentielle protectrice** : suppressions bloquées en cascade (apprenti·e si livret actif, maître/formateur si rattachements, formation si apprenti·e·s, référentiel si formations rattachées, période formation si fiches signées, événement organisation si verrouillé, question banque si utilisée, établissement si formation rattachée)
 - **Palette par rôle** (équilibrage mai 2026) : 5 tokens dans `tailwind.config.ts` + variable CSS `--ring` dynamique au niveau du wrapper AppShell pour propager la couleur du rôle actif à tous les focus/hover/sélection. PDF aligné sur la même charte.
 - **Mobile-first responsive** : drawer + RoleSwitcher compact + audit Playwright dédié 12 tests

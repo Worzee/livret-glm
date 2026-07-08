@@ -1,7 +1,7 @@
 # Livret d'apprentissage — GRETA Lyon Métropole
 
 Maquette fonctionnelle (étape 1 du CDC v1.3, livrée + vagues post-livraison) d'un livret
-d'apprentissage dématérialisé. SPA Vite + React 18 + TypeScript strict, 10 stores Zustand
+d'apprentissage dématérialisé. SPA Vite + React 18 + TypeScript strict, 11 stores Zustand
 persistés en localStorage, **sans backend ni auth réelle** (c'est l'étape 2). Déployée sur
 https://livret-glm.duckdns.org (Basic Auth). Pilote métier : Guillaume FERRERI.
 
@@ -12,8 +12,9 @@ https://livret-glm.duckdns.org (Basic Auth). Pilote métier : Guillaume FERRERI.
 - Conventions de code : `CONVENTIONS.md` · Script de démo : `DEMO.md` (à réécrire, périmé)
 - Pistes étape 2 (SSO, comptes, mots de passe) : `TODO-etape-2.md`, `playbook-sso-entra-greta.md`,
   `chantier-creation-comptes.md`, `conformite-rgpd.md`
-- **Chantier en cours — refonte référentiels/compétences** : `chantier-referentiels-competences.md`
-  (carte du sous-système + questions de cadrage + checklist)
+- **Chantier référentiels/compétences (modifications #1 à #4 livrées les 6-7 juillet 2026)** :
+  `chantier-referentiels-competences.md` — carte complète du sous-système + arbitrages figés
+  de chaque modification. LE document à lire avant de toucher aux référentiels / activités
 - `STACK_GRETA_LYON.md` et `_kit-deploiement-o2switch/` : doctrine portefeuille Greta,
   **volontairement non commités** — ne pas les ajouter à un commit du livret
 
@@ -21,8 +22,8 @@ https://livret-glm.duckdns.org (Basic Auth). Pilote métier : Guillaume FERRERI.
 
 ```bash
 npm run dev            # Vite sur :5173
-npm test               # Vitest (611 tests au 2026-07-06)
-npm run e2e            # build + Playwright (196 tests) — c'est LA validation de référence
+npm test               # Vitest (682 tests au 2026-07-07)
+npm run e2e            # build + Playwright (206 tests) — c'est LA validation de référence
 npm run typecheck      # tsc --noEmit — ⚠ le build prod (tsc -b) voit PLUS que lui
 npm run build          # à passer avant tout push
 npm run lint && npm run format
