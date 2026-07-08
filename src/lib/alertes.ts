@@ -1,6 +1,7 @@
 import type { Apprenti, FicheSuiviPeriode, LieuFiche, Livret, Role } from '@/types';
 import { calculerAlerteR7, entretienSigneParTous } from './regles-entretien';
 import { estMotifEntretienTripartite } from './organisation-suivi';
+import { pointsAlerteNonTraites } from './points-alerte';
 
 /**
  * Centre d'alertes du tableau de bord (3 juillet 2026 — préparation démo
@@ -18,6 +19,7 @@ import { estMotifEntretienTripartite } from './organisation-suivi';
 
 export type TypeAlerte =
   | 'alerte-r7'
+  | 'point-alerte-entretien'
   | 'signature-entretien'
   | 'signature-fiche'
   | 'entretien-a-initialiser'
@@ -32,6 +34,13 @@ export interface AlerteTableauBord {
   message: string;
   /** Route de destination — l'apprenti·e est activé·e au clic. */
   lien: string;
+  /**
+   * Points d'alerte de l'entretien (`point-alerte-entretien`, 8 juillet 2026) :
+   * id de la question de la trame + id du livret, pour la case « traité ».
+   * Absents pour les autres types d'alerte.
+   */
+  questionId?: string;
+  livretId?: string;
 }
 
 /** Signataires d'une fiche selon son lieu (1ᵉʳ juillet 2026). */
@@ -88,8 +97,23 @@ export function alertesTableauBord(
       }
     }
 
-    // ── Coordo / admin : pas de droit pédagogique → affectations seules ────
+    // ── Coordo / admin : suivi (points d'alerte de l'entretien) + affectations.
+    //    Pas de droit pédagogique : marquer un point « traité » est un acte de
+    //    gestion, l'entretien lui-même n'est pas touché (8 juillet 2026).
     if (role === 'coordo' || role === 'admin') {
+      for (const point of pointsAlerteNonTraites(livret)) {
+        alertes.push({
+          id: `point-alerte-${apprenti.id}-${point.id}`,
+          type: 'point-alerte-entretien',
+          apprentiId: apprenti.id,
+          apprentiNom: nom,
+          message: point.libelle,
+          lien: '/livret/entretien',
+          questionId: point.id,
+          livretId: livret.id,
+        });
+      }
+
       const manques: string[] = [];
       if (!apprenti.formationId) manques.push('formation');
       if (!apprenti.maitreApprentissageId) manques.push('maître / tuteur');
@@ -181,11 +205,12 @@ export function alertesTableauBord(
 
   const ORDRE: Record<TypeAlerte, number> = {
     'alerte-r7': 0,
-    'signature-entretien': 1,
-    'signature-fiche': 2,
-    'entretien-a-initialiser': 3,
-    'fiche-a-verrouiller': 4,
-    'affectation-incomplete': 5,
+    'point-alerte-entretien': 1,
+    'signature-entretien': 2,
+    'signature-fiche': 3,
+    'entretien-a-initialiser': 4,
+    'fiche-a-verrouiller': 5,
+    'affectation-incomplete': 6,
   };
   return alertes.sort(
     (a, b) => ORDRE[a.type] - ORDRE[b.type] || a.apprentiNom.localeCompare(b.apprentiNom, 'fr'),

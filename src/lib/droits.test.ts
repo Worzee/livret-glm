@@ -237,6 +237,15 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('apprenti', 'cloturer-livret')).toBe(false);
       expect(peutEditer('maitre', 'cloturer-livret')).toBe(false);
     });
+
+    it("le suivi des points d'alerte de l'entretien est réservé au coordo / admin (8 juillet 2026)", () => {
+      // Acte de GESTION (marquer « traité ») — pas d'écriture pédagogique.
+      expect(peutEditer('coordo', 'point-alerte.traiter')).toBe(true);
+      expect(peutEditer('admin', 'point-alerte.traiter')).toBe(true);
+      expect(peutEditer('formateur', 'point-alerte.traiter')).toBe(false);
+      expect(peutEditer('apprenti', 'point-alerte.traiter')).toBe(false);
+      expect(peutEditer('maitre', 'point-alerte.traiter')).toBe(false);
+    });
   });
 
   describe('Cohérence transverse', () => {

@@ -7,7 +7,7 @@ import { useLivretStore } from '@/store/useLivretStore';
 import { useApprentiActifStore } from '@/store/useApprentiActifStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
-import { libelleRole } from '@/lib/droits';
+import { libelleRole, peutEditer } from '@/lib/droits';
 import {
   anneesFormationsDisponibles,
   apprentisAccessibles,
@@ -47,6 +47,7 @@ export function TableauDeBord() {
   const formateurActifId = useUserStore((s) => s.formateurActifId);
   const setFormateurActif = useUserStore((s) => s.setFormateurActif);
   const livrets = useLivretStore((s) => s.livrets);
+  const basculerPointAlerteTraite = useLivretStore((s) => s.basculerPointAlerteTraite);
   const setApprentiActif = useApprentiActifStore((s) => s.setApprentiActif);
   const apprentis = useUtilisateursStore((s) => s.apprentis);
   const maitres = useUtilisateursStore((s) => s.maitres);
@@ -92,6 +93,14 @@ export function TableauDeBord() {
   function ouvrirAlerte(alerte: AlerteTableauBord) {
     setApprentiActif(alerte.apprentiId);
     navigate(alerte.lien);
+  }
+
+  // 8 juillet 2026 : le coordo / admin marque « traité » un point d'alerte de
+  // l'entretien (l'entretien n'est pas modifié — cf. `point-alerte.traiter`).
+  function traiterPointAlerte(alerte: AlerteTableauBord) {
+    if (alerte.livretId && alerte.questionId) {
+      basculerPointAlerteTraite(alerte.livretId, alerte.questionId);
+    }
   }
 
   // Rôle apprenti·e : un seul livret (le sien) → récapitulatif personnel
@@ -221,6 +230,7 @@ export function TableauDeBord() {
           apprentis={apprentisVisibles}
           livrets={livrets}
           onOuvrir={ouvrirAlerte}
+          onTraiter={peutEditer(roleActif, 'point-alerte.traiter') ? traiterPointAlerte : undefined}
         />
       )}
 

@@ -255,6 +255,15 @@ interface LivretStore {
   setAffichagePeriodesForce: (livretId: string, lieu: LieuFiche, force: boolean) => void;
 
   /**
+   * Bascule l'état « traité » d'un point d'alerte de l'entretien (8 juillet
+   * 2026 — coordo / admin, ressource `point-alerte.traiter`). N'écrit QUE dans
+   * `Livret.pointsAlerteTraites` : l'entretien tripartite reste strictement
+   * inchangé. Toggle (re-cocher retire le point de « À traiter », re-décocher
+   * l'y ramène). No-op si le livret est absent.
+   */
+  basculerPointAlerteTraite: (livretId: string, questionId: string) => void;
+
+  /**
    * Crée une nouvelle fiche de suivi par période. Le numéro est auto-attribué
    * (max(numeroPeriode existants) + 1). La validation R11/R12/R13 est faite
    * côté UI via `validerSaisieFichePeriode`.
@@ -679,6 +688,17 @@ export const useLivretStore = create<LivretStore>()(
             ...l,
             affichagePeriodesForce: { ...l.affichagePeriodesForce, [lieu]: force },
           })),
+        ),
+
+      basculerPointAlerteTraite: (livretId, questionId) =>
+        set((s) =>
+          muterLivret(s, livretId, (l) => {
+            const traites = l.pointsAlerteTraites ?? [];
+            const pointsAlerteTraites = traites.includes(questionId)
+              ? traites.filter((id) => id !== questionId)
+              : [...traites, questionId];
+            return { ...l, pointsAlerteTraites };
+          }),
         ),
 
       ajouterFichePeriode: (livretId, input) => {

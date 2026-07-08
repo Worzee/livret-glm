@@ -219,3 +219,55 @@ describe('alertesTableauBord — coordo / admin (sans droit pédagogique)', () =
     expect(r[0].lien).toBe('/admin/affectations');
   });
 });
+
+describe("alertesTableauBord — points d'alerte de l'entretien (8 juillet 2026)", () => {
+  // Entretien signé 3/3 avec une réponse en alerte (logement : alerteSi 'oui').
+  const entretienAvecAlerte: EntretienTripartite = {
+    ...entretien({
+      apprenti: { signe: true },
+      maitre: { signe: true },
+      formateur: { signe: true },
+    }),
+    reponsesTrame: { 'e1-diff-logement': true },
+  };
+
+  it("remonte les points d'alerte non traités au coordo et à l'admin", () => {
+    const l = livret('a1', { entretien: entretienAvecAlerte });
+    for (const role of ['coordo', 'admin'] as const) {
+      const alerte = alertesPour(role, l).find((x) => x.type === 'point-alerte-entretien');
+      expect(alerte).toBeDefined();
+      expect(alerte?.questionId).toBe('e1-diff-logement');
+      expect(alerte?.livretId).toBe('livret-a1');
+      expect(alerte?.message).toBe('Logement');
+      expect(alerte?.lien).toBe('/livret/entretien');
+    }
+  });
+
+  it("ne remonte PAS les points d'alerte aux rôles pédagogiques (apprenti, maître, formateur)", () => {
+    const l = livret('a1', { entretien: entretienAvecAlerte });
+    for (const role of ['apprenti', 'maitre', 'formateur'] as const) {
+      expect(alertesPour(role, l).map((x) => x.type)).not.toContain('point-alerte-entretien');
+    }
+  });
+
+  it("ne remonte pas un point d'alerte déjà marqué « traité »", () => {
+    const l = livret('a1', {
+      entretien: entretienAvecAlerte,
+      pointsAlerteTraites: ['e1-diff-logement'],
+    });
+    expect(alertesPour('coordo', l).map((x) => x.type)).not.toContain('point-alerte-entretien');
+  });
+
+  it("classe les points d'alerte juste après les alertes R7", () => {
+    // a1 : entretien signé avec alerte (pas de R7 car signé). a2 : pas
+    // d'entretien → R7. L'ordre global met les R7 avant les points d'alerte.
+    const a1 = apprenti('a1', { nom: 'BLIN' });
+    const a2 = apprenti('a2', { nom: 'ADAM' });
+    const livrets = {
+      l1: livret('a1', { entretien: entretienAvecAlerte }),
+      l2: livret('a2'),
+    };
+    const types = alertesTableauBord('coordo', [a1, a2], livrets, MAINTENANT).map((x) => x.type);
+    expect(types.indexOf('alerte-r7')).toBeLessThan(types.indexOf('point-alerte-entretien'));
+  });
+});

@@ -761,6 +761,16 @@ export interface Livret {
    * 3ᵉ signature, puis évaluées par le maître. Cf. `AttitudesSelectionnees`.
    */
   attitudesSelectionnees: AttitudesSelectionnees;
+  /**
+   * Points d'alerte de l'entretien tripartite (réponses signalant une
+   * difficulté — cf. `pointsAlerteTrame`) que la coordination a marqués
+   * « traités » (8 juillet 2026, demande pilote). Liste des **ids de questions
+   * de la trame** déjà pris en charge ; les points d'alerte restants remontent
+   * dans « À traiter » du tableau de bord coordo / admin. Ce suivi vit **hors
+   * de `entretien`** — l'entretien lui-même reste strictement inchangé.
+   * Optionnel : absent = aucun point traité.
+   */
+  pointsAlerteTraites?: string[];
   /** R22 — null tant que le livret n'a pas été clôturé. */
   cloture: ClotureLivret | null;
   creeLe: string;

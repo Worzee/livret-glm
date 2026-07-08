@@ -4,6 +4,7 @@ import {
   Bell,
   CheckCircle2,
   ChevronRight,
+  Flag,
   Lock,
   PenLine,
   PlayCircle,
@@ -20,6 +21,7 @@ import { alertesTableauBord, type AlerteTableauBord, type TypeAlerte } from '@/l
 
 const ICONES: Record<TypeAlerte, React.ReactNode> = {
   'alerte-r7': <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden="true" />,
+  'point-alerte-entretien': <Flag className="h-4 w-4 text-amber-600" aria-hidden="true" />,
   'signature-entretien': <PenLine className="texte-couleur-role h-4 w-4" aria-hidden="true" />,
   'signature-fiche': <PenLine className="texte-couleur-role h-4 w-4" aria-hidden="true" />,
   'entretien-a-initialiser': (
@@ -34,9 +36,21 @@ interface CentreAlertesProps {
   apprentis: Apprenti[];
   livrets: Record<string, Livret>;
   onOuvrir: (alerte: AlerteTableauBord) => void;
+  /**
+   * Marque « traité » un point d'alerte de l'entretien (8 juillet 2026 — coordo
+   * / admin). Fourni uniquement quand le rôle a la ressource
+   * `point-alerte.traiter` ; absent → pas de case à cocher.
+   */
+  onTraiter?: (alerte: AlerteTableauBord) => void;
 }
 
-export function CentreAlertes({ role, apprentis, livrets, onOuvrir }: CentreAlertesProps) {
+export function CentreAlertes({
+  role,
+  apprentis,
+  livrets,
+  onOuvrir,
+  onTraiter,
+}: CentreAlertesProps) {
   const alertes = useMemo(
     () => alertesTableauBord(role, apprentis, livrets),
     [role, apprentis, livrets],
@@ -69,26 +83,54 @@ export function CentreAlertes({ role, apprentis, livrets, onOuvrir }: CentreAler
         </h2>
       </header>
       <ul className="divide-y divide-border">
-        {alertes.map((alerte) => (
-          <li key={alerte.id}>
-            <button
-              type="button"
-              onClick={() => onOuvrir(alerte)}
-              data-testid={`alerte-${alerte.id}`}
-              className="group flex w-full items-center gap-2 p-3 text-left text-sm hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
+        {alertes.map((alerte) =>
+          alerte.type === 'point-alerte-entretien' && onTraiter ? (
+            // Point d'alerte de l'entretien : le libellé ouvre l'entretien
+            // (contexte), la case « traité » le retire de « À traiter ».
+            <li key={alerte.id} className="flex items-center gap-2 p-3 text-sm">
               <span className="shrink-0">{ICONES[alerte.type]}</span>
-              <span className="min-w-0 flex-1 truncate">
+              <button
+                type="button"
+                onClick={() => onOuvrir(alerte)}
+                data-testid={`alerte-${alerte.id}`}
+                className="min-w-0 flex-1 truncate rounded text-left hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
                 <strong className="font-medium">{alerte.apprentiNom}</strong>
                 <span className="text-muted-foreground"> : {alerte.message}</span>
-              </span>
-              <ChevronRight
-                className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
-                aria-hidden="true"
-              />
-            </button>
-          </li>
-        ))}
+              </button>
+              <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={false}
+                  onChange={() => onTraiter(alerte)}
+                  data-testid={`traiter-${alerte.id}`}
+                  aria-label={`Marquer traité : ${alerte.apprentiNom} — ${alerte.message}`}
+                  className="h-4 w-4 accent-[hsl(var(--ring))]"
+                />
+                traité
+              </label>
+            </li>
+          ) : (
+            <li key={alerte.id}>
+              <button
+                type="button"
+                onClick={() => onOuvrir(alerte)}
+                data-testid={`alerte-${alerte.id}`}
+                className="group flex w-full items-center gap-2 p-3 text-left text-sm hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <span className="shrink-0">{ICONES[alerte.type]}</span>
+                <span className="min-w-0 flex-1 truncate">
+                  <strong className="font-medium">{alerte.apprentiNom}</strong>
+                  <span className="text-muted-foreground"> : {alerte.message}</span>
+                </span>
+                <ChevronRight
+                  className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+                  aria-hidden="true"
+                />
+              </button>
+            </li>
+          ),
+        )}
       </ul>
     </section>
   );

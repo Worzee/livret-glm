@@ -124,6 +124,11 @@ export type Ressource =
   // Page « Accès mobile » (3 juillet 2026) : QR code de l'application à faire
   // scanner (tuteur en visite, présentation) — réservé à l'encadrement.
   | 'acces-mobile'
+  // Suivi des points d'alerte de l'entretien par la coordination : marquer
+  // « traité » un point remonté dans « À traiter » (8 juillet 2026). Acte de
+  // GESTION (n'écrit rien dans l'entretien ni dans les évaluations) → coordo +
+  // admin, conforme à la doctrine « coordo/admin sans droit pédagogique ».
+  | 'point-alerte.traiter'
   | 'cloturer-livret'
   // ── Administration (rôle coordo, hors CDC v1.3 — extension métier) ────────
   | 'admin.utilisateurs.creer-apprenti'
@@ -240,6 +245,8 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   // le faire scanner (tuteur en visite, démo direction). Pas de contenu
   // pédagogique — même trio que l'export PDF.
   'acces-mobile': ['formateur', 'coordo', 'admin'],
+  // Suivi de gestion (8 juillet 2026) — pas de contenu pédagogique.
+  'point-alerte.traiter': ['coordo', 'admin'],
   'cloturer-livret': ['formateur'],
 
   // ── Administration (rôles coordo, admin et formateur partiel) ──────────

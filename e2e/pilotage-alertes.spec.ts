@@ -47,6 +47,30 @@ test('coordo : bandeau de pilotage sur le périmètre + mini-stats par formation
   await expect(bandeau.getByTestId('pilotage-alertes-r7')).toContainText('0');
 });
 
+test("coordo : les points d'alerte de l'entretien remontent dans « À traiter » et se cochent « traité »", async ({
+  page,
+}) => {
+  await selectRole(page, 'Coordinateur·rice');
+  const centre = page.getByTestId('centre-alertes');
+
+  // Léa (entretien signé 3/3) porte 2 points d'alerte : logement + absences.
+  const logement = centre.getByTestId('alerte-point-alerte-u-apprenti-lea-e1-diff-logement');
+  await expect(logement).toContainText('Léa MARTIN');
+  await expect(logement).toContainText('Logement');
+  await expect(
+    centre.getByTestId('alerte-point-alerte-u-apprenti-lea-e1-org-absences'),
+  ).toBeVisible();
+
+  // Le coordo coche « traité » → le point sort de « À traiter » (l'autre reste).
+  await centre.getByTestId('traiter-point-alerte-u-apprenti-lea-e1-diff-logement').click();
+  await expect(
+    centre.getByTestId('alerte-point-alerte-u-apprenti-lea-e1-diff-logement'),
+  ).toHaveCount(0);
+  await expect(
+    centre.getByTestId('alerte-point-alerte-u-apprenti-lea-e1-org-absences'),
+  ).toBeVisible();
+});
+
 test("formateur : centre d'alertes (R7, signature centre, fiche à verrouiller) — sans bandeau de pilotage", async ({
   page,
 }) => {
