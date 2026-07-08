@@ -21,6 +21,7 @@ import { modeEffectif } from '@/lib/mode-evaluation';
 import { peutEncoreEditerFiche } from '@/lib/transitions-fiche';
 import { estSelectionnee, estValidee } from '@/lib/selection-competences-entreprise';
 import { referentielEvaluable } from '@/lib/limite-referentiel';
+import { estLigneLibre } from '@/lib/lignes-suivi';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
 import { SelecteurNiveau } from '@/components/common/SelecteurNiveau';
 import { BoutonSupprimer } from '@/components/common/BoutonSupprimer';
@@ -221,11 +222,15 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
                 peutEditerEval={peutEditerEval}
                 peutEditerRetour={peutEditerRetour}
                 peutSupprimer={peutAjouterLigne}
+                peutEditerLibelle={peutAjouterLigne}
                 onChangeEval={(v) =>
                   setEval(livretId, fiche.id, l.id, { type: 'evaluationEntreprise', valeur: v })
                 }
                 onChangeRetour={(v) =>
                   setEval(livretId, fiche.id, l.id, { type: 'retourApprenti', valeur: v })
+                }
+                onChangeLibelle={(v) =>
+                  setEval(livretId, fiche.id, l.id, { type: 'libelleLibre', valeur: v })
                 }
                 onSupprimer={() => supprimer(livretId, fiche.id, l.id)}
               />
@@ -253,11 +258,15 @@ export function TableauTriColonnes({ livretId, fiche }: TableauTriColonnesProps)
             peutEditerEval={peutEditerEval}
             peutEditerRetour={peutEditerRetour}
             peutSupprimer={peutAjouterLigne}
+            peutEditerLibelle={peutAjouterLigne}
             onChangeEval={(v) =>
               setEval(livretId, fiche.id, l.id, { type: 'evaluationEntreprise', valeur: v })
             }
             onChangeRetour={(v) =>
               setEval(livretId, fiche.id, l.id, { type: 'retourApprenti', valeur: v })
+            }
+            onChangeLibelle={(v) =>
+              setEval(livretId, fiche.id, l.id, { type: 'libelleLibre', valeur: v })
             }
             onSupprimer={() => supprimer(livretId, fiche.id, l.id)}
           />
@@ -279,8 +288,11 @@ interface CelluleProps {
   peutEditerEval: boolean;
   peutEditerRetour: boolean;
   peutSupprimer: boolean;
+  /** Édition de l'intitulé libre (lignes ad hoc — formateur / maître). */
+  peutEditerLibelle: boolean;
   onChangeEval: (v: LigneSuiviEntreprise['evaluationEntreprise']) => void;
   onChangeRetour: (v: string) => void;
+  onChangeLibelle: (v: string) => void;
   onSupprimer: () => void;
 }
 
@@ -293,6 +305,31 @@ interface CarteCompetenceProps extends CelluleProps {
   emojiEval: string;
   classeTexteEval: string;
   bordureEvalCarte: string;
+}
+
+/**
+ * Zone de texte de saisie de l'intitulé libre d'une ligne ad hoc (activité /
+ * compétence hors modèle et hors référentiel — juillet 2026). Le maître / tuteur
+ * ou le formateur référent y donne le nom ET le contexte / détail de l'activité
+ * réalisée, plutôt que de laisser l'ancien libellé figé « Activité libre ».
+ */
+function ChampActiviteLibre({
+  valeur,
+  onChange,
+}: {
+  valeur: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <textarea
+      rows={3}
+      className="w-full resize-y rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+      value={valeur}
+      placeholder="Nommez et décrivez l'activité réalisée (contexte, détails)…"
+      aria-label="Intitulé et détails de l'activité libre"
+      onChange={(e) => onChange(e.target.value)}
+    />
+  );
 }
 
 function libelleCompetence(
@@ -320,7 +357,11 @@ function LigneTableau(props: LigneTableauProps) {
   return (
     <tr className="align-top hover:bg-secondary/30">
       <td className="px-3 py-3">
-        <div className="text-sm">{libelle}</div>
+        {estLigneLibre(ligne) && props.peutEditerLibelle ? (
+          <ChampActiviteLibre valeur={ligne.libelleLibre ?? ''} onChange={props.onChangeLibelle} />
+        ) : (
+          <div className="text-sm">{libelle}</div>
+        )}
       </td>
       <td className={cn('px-3 py-3 border-l-2', bordureEval)}>
         <SelecteurNiveau
@@ -368,10 +409,17 @@ function CarteCompetence(props: CarteCompetenceProps) {
   return (
     <article className="rounded-lg border border-border bg-card p-4 space-y-3">
       <header className="flex items-start justify-between gap-2">
-        <div>
-          <div className="text-sm font-medium">{libelle}</div>
+        <div className="min-w-0 flex-1">
+          {estLigneLibre(ligne) && props.peutEditerLibelle ? (
+            <ChampActiviteLibre
+              valeur={ligne.libelleLibre ?? ''}
+              onChange={props.onChangeLibelle}
+            />
+          ) : (
+            <div className="text-sm font-medium">{libelle}</div>
+          )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <Pastille valeur={ligne.evaluationEntreprise} title={emojiEval} />
           <Pastille
             valeur={ligne.retourApprenti ? 'rempli' : 'vide'}

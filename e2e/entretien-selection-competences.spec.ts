@@ -64,7 +64,7 @@ test("Sofia : la grille de synthèse est masquée tant que la sélection n'est p
 // Léa MARTIN — sélection d'activités validée depuis la fixture
 // ─────────────────────────────────────────────────────────────────────────────
 
-test("Léa : la section « Activités prévues en entreprise » affiche le badge « Sélection validée » et les cases sont désactivées", async ({
+test('Léa : la section « Activités prévues en entreprise » affiche le badge « Sélection validée » et les cases sont désactivées', async ({
   page,
 }) => {
   await selectRole(page, 'Formateur référent');
@@ -197,15 +197,46 @@ test('le maître / tuteur peut ajouter une activité à une fiche de période (m
   await expect(selecteur).toBeVisible();
   // Seules les activités RETENUES apparaissent (a6 écartée chez Minh) + la
   // possibilité d'une activité libre hors modèle (arbitrage Q5).
-  await expect(
-    selecteur.locator('option', { hasText: /desserts à l’assiette/i }),
-  ).toHaveCount(0);
+  await expect(selecteur.locator('option', { hasText: /desserts à l’assiette/i })).toHaveCount(0);
   await expect(selecteur.locator('option', { hasText: /Activité libre/i })).toHaveCount(1);
   // Ajout effectif d'une activité retenue → une ligne apparaît dans le tableau.
   await selecteur.selectOption({ label: 'Réceptionner et stocker les livraisons du jour' });
   await expect(
     page.getByRole('cell', { name: 'Réceptionner et stocker les livraisons du jour', exact: true }),
   ).toBeVisible();
+});
+
+test("activité libre : le tuteur saisit l'intitulé et les détails dans une zone de texte (persistée)", async ({
+  page,
+}) => {
+  // Minh : période 1 en brouillon, sélection d'activités validée → le maître
+  // peut ajouter une activité libre hors modèle ET la décrire (juillet 2026).
+  await page.getByRole('button', { name: /Ouvrir le livret de Minh NGUYEN/i }).click();
+  await selectRole(page, 'Maître / Tuteur');
+  await page.goto('/livret/fiches-suivi');
+  await page
+    .getByRole('link', { name: /Période 1/i })
+    .first()
+    .click();
+
+  // Ajout d'une activité libre hors modèle : au lieu du libellé figé
+  // « Activité libre », une zone de texte apparaît dans la colonne « Activité ».
+  await page.getByLabel(/Ajouter une activité à la fiche/i).selectOption({ value: '__libre' });
+  // Le libellé est rendu deux fois (tableau desktop + carte mobile empilée) —
+  // on ne cible que la vue visible selon le viewport du projet Playwright.
+  const zone = page
+    .getByLabel(/Intitulé et détails de l'activité libre/i)
+    .filter({ visible: true });
+  await expect(zone).toBeVisible();
+  const detail = 'Inventaire de fin de mois en économat : comptage des stocks et saisie logiciel.';
+  await zone.fill(detail);
+  await expect(zone).toHaveValue(detail);
+
+  // Persistance : après rechargement, la saisie est conservée (store persisté).
+  await page.reload();
+  await expect(
+    page.getByLabel(/Intitulé et détails de l'activité libre/i).filter({ visible: true }),
+  ).toHaveValue(detail);
 });
 
 test("l'apprenti·e ne peut toujours pas ajouter d'activité à la fiche", async ({ page }) => {

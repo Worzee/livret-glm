@@ -178,7 +178,8 @@ interface LivretStore {
     ligneId: string,
     champ:
       | { type: 'evaluationEntreprise'; valeur: NiveauMaitriseEntreprise | null }
-      | { type: 'retourApprenti'; valeur: string },
+      | { type: 'retourApprenti'; valeur: string }
+      | { type: 'libelleLibre'; valeur: string },
   ) => void;
 
   /** Met à jour la zone d'observation d'un rôle pour la fiche. */
@@ -556,6 +557,9 @@ export const useLivretStore = create<LivretStore>()(
             if (champ.type === 'evaluationEntreprise')
               nouvelleLigne.evaluationEntreprise = champ.valeur;
             if (champ.type === 'retourApprenti') nouvelleLigne.retourApprenti = champ.valeur;
+            // Intitulé libre d'une ligne ad hoc (activité/compétence hors
+            // source) — saisi par le maître / tuteur ou le formateur référent.
+            if (champ.type === 'libelleLibre') nouvelleLigne.libelleLibre = champ.valeur;
             const nouvellesLignes = [...f.suiviEntreprise];
             nouvellesLignes[ligneIdx] = nouvelleLigne;
             return { ...f, suiviEntreprise: nouvellesLignes };
