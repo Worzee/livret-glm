@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   Bell,
+  Check,
   CheckCircle2,
   ChevronRight,
   Flag,
@@ -9,6 +10,7 @@ import {
   PenLine,
   PlayCircle,
   UserX,
+  X,
 } from 'lucide-react';
 import type { Apprenti, Livret, Role } from '@/types';
 import { alertesTableauBord, type AlerteTableauBord, type TypeAlerte } from '@/lib/alertes';
@@ -98,17 +100,11 @@ export function CentreAlertes({
                 <strong className="font-medium">{alerte.apprentiNom}</strong>
                 <span className="text-muted-foreground"> : {alerte.message}</span>
               </button>
-              <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
-                <input
-                  type="checkbox"
-                  checked={false}
-                  onChange={() => onTraiter(alerte)}
-                  data-testid={`traiter-${alerte.id}`}
-                  aria-label={`Marquer traité : ${alerte.apprentiNom} — ${alerte.message}`}
-                  className="h-4 w-4 accent-[hsl(var(--ring))]"
-                />
-                traité
-              </label>
+              <BoutonTraiter
+                idBase={alerte.id}
+                ariaLabel={`Marquer traité : ${alerte.apprentiNom} — ${alerte.message}`}
+                onConfirmer={() => onTraiter(alerte)}
+              />
             </li>
           ) : (
             <li key={alerte.id}>
@@ -133,5 +129,85 @@ export function CentreAlertes({
         )}
       </ul>
     </section>
+  );
+}
+
+/**
+ * Bouton « Traité » avec confirmation à 2 clics (8 juillet 2026), au pattern de
+ * `BoutonSupprimer` : 1ᵉʳ clic → « Confirmez-vous avoir réglé ce problème ?
+ * [✓] [✗] » ; ✓ marque le point d'alerte traité (il sort de « À traiter »).
+ * Esc ou 10 s d'inactivité annulent — pas d'action irréversible sans validation.
+ */
+function BoutonTraiter({
+  idBase,
+  ariaLabel,
+  onConfirmer,
+}: {
+  idBase: string;
+  ariaLabel: string;
+  onConfirmer: () => void;
+}) {
+  const [confirmation, setConfirmation] = useState(false);
+
+  useEffect(() => {
+    if (!confirmation) return;
+    const t = setTimeout(() => setConfirmation(false), 10_000);
+    return () => clearTimeout(t);
+  }, [confirmation]);
+
+  useEffect(() => {
+    if (!confirmation) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setConfirmation(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [confirmation]);
+
+  if (confirmation) {
+    return (
+      <span
+        role="group"
+        aria-label="Confirmer le traitement du point d'alerte"
+        className="inline-flex shrink-0 items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 p-0.5"
+      >
+        <span className="px-1.5 text-xs font-medium text-emerald-900">
+          Confirmez-vous avoir réglé ce problème ?
+        </span>
+        <button
+          type="button"
+          onClick={() => {
+            onConfirmer();
+            setConfirmation(false);
+          }}
+          data-testid={`confirmer-traiter-${idBase}`}
+          aria-label="Confirmer : problème réglé"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-sm bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Check className="h-4 w-4" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setConfirmation(false)}
+          aria-label="Annuler"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <X className="h-4 w-4" aria-hidden="true" />
+        </button>
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setConfirmation(true)}
+      data-testid={`traiter-${idBase}`}
+      aria-label={ariaLabel}
+      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-input px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+      Traité
+    </button>
   );
 }

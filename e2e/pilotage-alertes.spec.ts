@@ -47,7 +47,7 @@ test('coordo : bandeau de pilotage sur le périmètre + mini-stats par formation
   await expect(bandeau.getByTestId('pilotage-alertes-r7')).toContainText('0');
 });
 
-test("coordo : les points d'alerte de l'entretien remontent dans « À traiter » et se cochent « traité »", async ({
+test("coordo : les points d'alerte de l'entretien remontent dans « À traiter » et se marquent « traité » (avec confirmation)", async ({
   page,
 }) => {
   await selectRole(page, 'Coordinateur·rice');
@@ -61,8 +61,19 @@ test("coordo : les points d'alerte de l'entretien remontent dans « À traiter �
     centre.getByTestId('alerte-point-alerte-u-apprenti-lea-e1-org-absences'),
   ).toBeVisible();
 
-  // Le coordo coche « traité » → le point sort de « À traiter » (l'autre reste).
+  // « Traité » demande confirmation avant de retirer le point.
   await centre.getByTestId('traiter-point-alerte-u-apprenti-lea-e1-diff-logement').click();
+  await expect(centre.getByText(/Confirmez-vous avoir réglé ce problème/i)).toBeVisible();
+  // Annuler laisse le point en place.
+  await centre.getByRole('button', { name: /^Annuler$/i }).click();
+  await expect(
+    centre.getByTestId('alerte-point-alerte-u-apprenti-lea-e1-diff-logement'),
+  ).toBeVisible();
+  // Confirmer le retire de « À traiter » ; l'autre point reste.
+  await centre.getByTestId('traiter-point-alerte-u-apprenti-lea-e1-diff-logement').click();
+  await centre
+    .getByTestId('confirmer-traiter-point-alerte-u-apprenti-lea-e1-diff-logement')
+    .click();
   await expect(
     centre.getByTestId('alerte-point-alerte-u-apprenti-lea-e1-diff-logement'),
   ).toHaveCount(0);
