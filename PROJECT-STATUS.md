@@ -906,6 +906,8 @@ suivi existantes**. Toutes les mentions des entretiens 2 à 4 sont supprimées.
 
 ## 5. Règles métier R1 → R24
 
+> **Référentiel dédié + historique des évolutions** : [`REGLES-METIER.md`](REGLES-METIER.md) — énoncé actuel de chaque règle, lib d'implémentation et journal des changements par règle (R6, R7, R10, R13, R14, R15, R20, R22 ont évolué depuis le CDC v1.3).
+
 Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustements depuis l'addendum v1.5 :
 
 | Règle   | Sujet                                                                                                                                                                                 | État                                                      |
@@ -915,8 +917,8 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 | R3      | Apprenti·e voit son livret seul                                                                                                                                                       | ✓ matrice + `apprentis-accessibles`                       |
 | R4      | Maître voit ses apprenti·e·s                                                                                                                                                          | ✓ matrice                                                 |
 | R5      | Formateur voit sa promo                                                                                                                                                               | ✓ matrice                                                 |
-| **R6**  | **Jusqu'à 4 entretiens par livret — nombre défini par la formation (juin 2026)**                                                                                                      | ✓ E1..E4, verrou de réduction                             |
-| **R7**  | **Alerte si > 60 j sans E1** (chantier #2 : ne concerne plus E2)                                                                                                                      | ✓ 5 tests                                                 |
+| **R6**  | **Un seul entretien tripartite, obligatoire, par livret** (chantier #1, 6 juillet 2026)                                                                                                      | ✓ entretien unique                                        |
+| **R7**  | **Alerte si > 60 j sans l'entretien tripartite**                                                                                                                      | ✓ 5 tests                                                 |
 | R8      | Verrouillage progressif entretien                                                                                                                                                     | ✓ par entretien                                           |
 | R9      | 3 signatures = entretien figé                                                                                                                                                         | ✓ par entretien                                           |
 | **R10** | **Déverrouillage formateur + motif**                                                                                                                                                  | ✓ 8 tests TDD + modale UI + traçabilité                   |
