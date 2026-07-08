@@ -67,7 +67,13 @@ export function BandeauPilotage({ apprentis, livrets }: BandeauPilotageProps) {
           libelle="Alertes R7"
           valeur={String(stats.alertesR7)}
           accent={stats.alertesR7 > 0 ? 'alerte' : 'ok'}
-          detail={stats.alertesR7 > 0 ? 'entretien 1 en retard' : 'aucun retard'}
+          detail={
+            stats.alertesR7 === 0
+              ? 'aucun retard'
+              : stats.alertesR7 > 1
+                ? 'entretiens tripartites en retard'
+                : 'entretien tripartite en retard'
+          }
         />
       </ul>
     </section>

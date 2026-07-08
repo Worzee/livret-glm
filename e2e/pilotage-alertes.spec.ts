@@ -25,7 +25,12 @@ test('coordo : bandeau de pilotage sur le périmètre + mini-stats par formation
   const bandeau = page.getByTestId('bandeau-pilotage');
   await expect(bandeau).toBeVisible();
   await expect(bandeau.getByTestId('pilotage-apprentis')).toContainText('5');
-  await expect(bandeau.getByTestId('pilotage-alertes-r7')).toContainText('2');
+  const carteR7 = bandeau.getByTestId('pilotage-alertes-r7');
+  await expect(carteR7).toContainText('2');
+  // Libellé fiabilisé (8 juillet 2026) : plus de « entretien 1 » (périmé depuis
+  // l'entretien unique), accord au pluriel avec le nombre d'alertes.
+  await expect(carteR7).toContainText('entretiens tripartites en retard');
+  await expect(carteR7).not.toContainText('entretien 1');
 
   // 2 groupes de formation, BTS (promo la plus récente) en premier, chacun
   // avec son badge « 1 alerte R7 » dans l'en-tête de section.
@@ -106,7 +111,7 @@ test('maître Karim : « votre signature est attendue » sur la P3 de Léa (pér
   );
 });
 
-test("BTS MHR : référentiel 3 niveaux (sous-familles) et entretien accessibles sur le livret de Camille", async ({
+test('BTS MHR : référentiel 3 niveaux (sous-familles) et entretien accessibles sur le livret de Camille', async ({
   page,
 }) => {
   // Bascule sur Marc puis ouverture du livret de Camille.
