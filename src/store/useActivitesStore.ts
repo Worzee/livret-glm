@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { ModeleActivites } from '@/types';
 import { modeleActivitesCapCuisine } from '@/fixtures/modele-activites-cap-cuisine';
-import { calculerBalayage } from '@/lib/balayage-referentiel';
+import { activitesSansCompetenceEvaluable } from '@/lib/balayage-referentiel';
 import { modeEffectif, type ResultatValidation } from '@/lib/mode-evaluation';
 import { evaluerVerrouModeleActivites, peutRemplacerModele } from '@/lib/modele-activites-verrou';
 import { useFormationsStore } from './useFormationsStore';
@@ -15,9 +15,10 @@ import { useReferentielsStore } from './useReferentielsStore';
  *
  * Un modèle regroupe les activités professionnelles importées pour une
  * formation (fichier CSV/XLSX — activités seules) puis mappées sur les
- * compétences de son référentiel dans l'éditeur de mapping. Le balayage
- * complet du référentiel conditionne le passage de la formation en mode
- * d'évaluation « activités » (cf. `lib/balayage-referentiel`,
+ * compétences de son référentiel dans l'éditeur de mapping. Le passage de la
+ * formation en mode « activités » exige que **chaque activité fasse appel à au
+ * moins une compétence évaluable** (10 juillet 2026 — le balayage complet du
+ * référentiel n'est plus exigé ; cf. `lib/balayage-referentiel`,
  * `lib/mode-evaluation`).
  *
  * Conception alignée sur `useReferentielsStore` :
@@ -27,8 +28,8 @@ import { useReferentielsStore } from './useReferentielsStore';
  *     vierge) ; sinon les sélections d'activités non validées des livrets
  *     repartent « tout coché » (même cascade que les référentiels)
  *   - `supprimerModele` bloqué si une formation rattache le modèle
- *   - `setMappingActivite` : garde le balayage complet quand une formation
- *     rattachée est déjà en mode activités
+ *   - `setMappingActivite` : quand une formation rattachée est déjà en mode
+ *     activités, refuse de laisser une activité sans aucune compétence
  *   - `reinitialiser` remet l'état aux fixtures
  *
  * Note import croisé : lectures des autres stores via `getState()` au
@@ -56,7 +57,8 @@ interface ActivitesStore {
   /**
    * Remplace le mapping d'une activité (ids des compétences couvertes).
    * Quand une formation rattachée est en mode activités, la mutation est
-   * refusée si elle rendrait le balayage incomplet (arbitrage pilote Q6).
+   * refusée si elle laisserait une activité sans aucune compétence évaluable
+   * (arbitrage pilote Q6, invariant révisé le 10 juillet 2026).
    */
   setMappingActivite: (
     modeleId: string,
@@ -129,9 +131,12 @@ export const useActivitesStore = create<ActivitesStore>()(
             a.id === activiteId ? { ...a, competenceIds: [...competenceIds] } : a,
           ),
         };
-        // Garde Q6 : une formation rattachée en mode activités impose un
-        // balayage complet en permanence — refuser une retouche du mapping
-        // qui découvrirait une compétence.
+        // Garde Q6 (invariant révisé le 10 juillet 2026) : quand une formation
+        // rattachée est en mode activités, chaque activité doit rester mappée
+        // sur au moins une compétence évaluable — refuser une retouche qui
+        // laisserait une activité sans aucune compétence. Découvrir une
+        // compétence du référentiel est en revanche libre (le balayage
+        // complet n'est plus exigé).
         const formations = Object.values(useFormationsStore.getState().formations);
         const enModeActivites = formations.some(
           (f) => f.modeleActivitesId === modeleId && modeEffectif(f) === 'activites',
@@ -139,11 +144,12 @@ export const useActivitesStore = create<ActivitesStore>()(
         if (enModeActivites) {
           const referentiel = useReferentielsStore.getState().referentiels[modele.referentielId];
           if (referentiel) {
-            const balayage = calculerBalayage(maj, referentiel);
-            if (!balayage.complet) {
+            const enDefaut = activitesSansCompetenceEvaluable(maj, referentiel);
+            if (enDefaut.length > 0) {
+              const libelles = enDefaut.map((a) => `« ${a.libelle} »`).join(', ');
               return {
                 ok: false,
-                raison: `Modification refusée : le balayage deviendrait incomplet (${balayage.couvertes.length}/${balayage.total}) alors qu'une formation est en mode activités. Mappez d'abord les compétences concernées sur une autre activité.`,
+                raison: `Modification refusée : ${libelles} ne ferait plus appel à aucune compétence alors qu'une formation est en mode activités. Chaque activité doit rester mappée sur au moins une compétence.`,
               };
             }
           }

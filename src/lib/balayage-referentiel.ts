@@ -4,11 +4,12 @@ import type { Activite, ModeleActivites, Referentiel } from '@/types';
  * Balayage du référentiel par un modèle d'activités (juillet 2026 — chantier
  * référentiels/compétences #4).
  *
- * Le passage d'une formation en mode d'évaluation « activités » exige que le
- * mapping du modèle couvre TOUTES les compétences évaluables du référentiel
- * (hors compétences exclues — modif #2). Cette lib calcule la jauge affichée
- * dans l'éditeur de mapping (« X/Y compétences couvertes ») et le drapeau
- * `complet` qui conditionne le déblocage du choix de mode.
+ * 10 juillet 2026 (retour démo direction) : le passage d'une formation en mode
+ * « activités » n'exige PLUS le balayage complet du référentiel — il suffit que
+ * **chaque activité du modèle fasse appel à au moins une compétence évaluable**
+ * (cf. `activitesSansCompetenceEvaluable`). La jauge « X/Y compétences
+ * couvertes » (`calculerBalayage`) reste affichée à titre **informatif** ; les
+ * compétences non couvertes n'apparaîtront simplement pas dans la Synthèse.
  *
  * Pures fonctions — pas d'effet de bord.
  */
@@ -71,16 +72,30 @@ export function calculerBalayage(
   };
 }
 
+/** Ids des compétences évaluables (non exclues) d'un référentiel. */
+export function idsCompetencesEvaluables(referentiel: Referentiel): Set<string> {
+  const ids = new Set<string>();
+  for (const bloc of referentiel.blocs) {
+    for (const c of bloc.competences) {
+      if (!c.exclue) ids.add(c.id);
+    }
+  }
+  return ids;
+}
+
 /**
- * Une compétence est-elle couverte par le mapping du modèle ? Sert de garde à
- * la réactivation d'une compétence exclue quand une formation rattachée est en
- * mode activités : réactiver une compétence non couverte rendrait le balayage
- * incomplet (arbitrage pilote Q6 — l'action est alors bloquée).
+ * Activités du modèle qui ne font appel à AUCUNE compétence évaluable du
+ * référentiel (mapping vide, ou uniquement des ids disparus / exclus).
+ * C'est LA condition de bascule en mode activités depuis le 10 juillet 2026 :
+ * la bascule est débloquée dès que cette liste est vide — peu importe que
+ * toutes les compétences du référentiel soient balayées ou non.
+ * `modele` absent → rien à vérifier, liste vide.
  */
-export function estCouverteParModele(
+export function activitesSansCompetenceEvaluable(
   modele: ModeleActivites | undefined,
-  competenceId: string,
-): boolean {
-  if (!modele) return false;
-  return modele.activites.some((a) => a.competenceIds.includes(competenceId));
+  referentiel: Referentiel,
+): Activite[] {
+  if (!modele) return [];
+  const evaluables = idsCompetencesEvaluables(referentiel);
+  return modele.activites.filter((a) => !a.competenceIds.some((id) => evaluables.has(id)));
 }

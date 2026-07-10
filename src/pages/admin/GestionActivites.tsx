@@ -16,7 +16,7 @@ import { useActivitesStore } from '@/store/useActivitesStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { useReferentielsStore } from '@/store/useReferentielsStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
-import { calculerBalayage } from '@/lib/balayage-referentiel';
+import { activitesSansCompetenceEvaluable, calculerBalayage } from '@/lib/balayage-referentiel';
 import { modeEffectif } from '@/lib/mode-evaluation';
 import { evaluerVerrouModeleActivites } from '@/lib/modele-activites-verrou';
 import { referentielEvaluable } from '@/lib/limite-referentiel';
@@ -33,9 +33,11 @@ import { cn } from '@/lib/utils';
  *
  * Réservée aux rôles `coordo` et `admin` (matrice §6 — `admin.activites.gerer`).
  * Permet d'importer un modèle d'activités pour une formation, de mapper
- * chaque activité sur les compétences du référentiel (jauge de balayage),
- * puis — balayage complet — de basculer la formation en mode « activités ».
- * La bascule est verrouillée dès la première saisie signée dans la promo.
+ * chaque activité sur les compétences du référentiel (jauge de balayage
+ * informative), puis de basculer la formation en mode « activités » dès que
+ * **chaque activité fait appel à au moins une compétence** (10 juillet 2026 —
+ * le balayage complet n'est plus exigé). La bascule est verrouillée dès la
+ * première saisie signée dans la promo.
  */
 
 export function GestionActivites() {
@@ -103,8 +105,9 @@ export function GestionActivites() {
           <p className="text-muted-foreground">
             Certaines formations s'évaluent par <strong>activités</strong> plutôt que par
             compétences. Importez un modèle pour une formation, mappez chaque activité sur les
-            compétences de son référentiel, puis basculez la formation en mode activités quand le
-            balayage est complet. Le référentiel de compétences reste impératif : la Synthèse reste
+            compétences de son référentiel, puis basculez la formation en mode activités dès que
+            chaque activité fait appel à au moins une compétence (il n'est pas nécessaire de couvrir
+            tout le référentiel). Le référentiel de compétences reste impératif : la Synthèse reste
             par compétences, alimentée par la projection des activités.
           </p>
         </div>
@@ -193,6 +196,11 @@ function CarteModele({
 }: CarteModeleProps) {
   const referentielFiltre = referentiel ? referentielEvaluable(referentiel) : undefined;
   const balayage = referentielFiltre ? calculerBalayage(modele, referentielFiltre) : undefined;
+  // Condition de bascule (10 juillet 2026) : chaque activité mappée sur au
+  // moins une compétence évaluable — la couverture totale n'est plus exigée.
+  const activitesNonMappees = referentielFiltre
+    ? activitesSansCompetenceEvaluable(modele, referentielFiltre)
+    : [];
   const libellesCompetences = useMemo(() => {
     const map = new Map<string, string>();
     for (const b of referentiel?.blocs ?? []) {
@@ -249,11 +257,13 @@ function CarteModele({
         </button>
       </header>
 
-      {/* Jauge de balayage — conditionne le déblocage du mode activités. */}
+      {/* Jauge de balayage (informative) + activités sans compétence (la
+          condition de bascule depuis le 10 juillet 2026). */}
       {balayage ? (
         <JaugeBalayage
           modeleId={modele.id}
           balayage={balayage}
+          activitesNonMappees={activitesNonMappees}
           libellesCompetences={libellesCompetences}
         />
       ) : (
@@ -274,7 +284,7 @@ function CarteModele({
           <EncartModeFormation
             key={f.id}
             formation={f}
-            balayageComplet={balayage?.complet ?? false}
+            toutesActivitesMappees={!!referentielFiltre && activitesNonMappees.length === 0}
           />
         ))
       )}
@@ -321,18 +331,28 @@ function libelleSourceModele(source: NonNullable<ModeleActivites['source']>): st
 interface JaugeBalayageProps {
   modeleId: string;
   balayage: ReturnType<typeof calculerBalayage>;
+  /** Activités sans compétence mappée — LA condition bloquante (10 juillet 2026). */
+  activitesNonMappees: ReadonlyArray<Activite>;
   libellesCompetences: ReadonlyMap<string, string>;
 }
 
-function JaugeBalayage({ modeleId, balayage, libellesCompetences }: JaugeBalayageProps) {
+function JaugeBalayage({
+  modeleId,
+  balayage,
+  activitesNonMappees,
+  libellesCompetences,
+}: JaugeBalayageProps) {
   const pct =
     balayage.total > 0 ? Math.round((balayage.couvertes.length / balayage.total) * 100) : 0;
+  // 10 juillet 2026 : l'état « prêt » suit la condition de bascule (chaque
+  // activité mappée), plus la couverture totale — la jauge reste informative.
+  const pret = activitesNonMappees.length === 0;
   return (
     <div
       data-testid={`balayage-${modeleId}`}
       className={cn(
         'space-y-1.5 rounded-md border p-3 text-sm',
-        balayage.complet
+        pret
           ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
           : 'border-amber-200 bg-amber-50 text-amber-900',
       )}
@@ -340,7 +360,7 @@ function JaugeBalayage({ modeleId, balayage, libellesCompetences }: JaugeBalayag
       <p className="flex items-center gap-2 font-medium">
         <Gauge className="h-4 w-4 shrink-0" aria-hidden="true" />
         Balayage du référentiel : {balayage.couvertes.length}/{balayage.total} compétences couvertes{' '}
-        {balayage.complet ? '(complet ✓)' : ''}
+        {balayage.complet ? '(complet ✓)' : '(partiel, non bloquant)'}
       </p>
       <div
         role="progressbar"
@@ -350,14 +370,22 @@ function JaugeBalayage({ modeleId, balayage, libellesCompetences }: JaugeBalayag
         className="h-2 w-full overflow-hidden rounded-full bg-white/70"
       >
         <div
-          className={cn('h-full', balayage.complet ? 'bg-emerald-500' : 'bg-amber-500')}
+          className={cn('h-full', pret ? 'bg-emerald-500' : 'bg-amber-500')}
           style={{ width: `${pct}%` }}
         />
       </div>
+      {activitesNonMappees.length > 0 && (
+        <p className="text-xs font-medium" data-testid={`activites-non-mappees-${modeleId}`}>
+          ⚠ {activitesNonMappees.length} activité{activitesNonMappees.length > 1 ? 's' : ''} sans
+          compétence mappée : {activitesNonMappees.map((a) => a.libelle).join(' · ')} — mappez
+          chaque activité sur au moins une compétence pour débloquer le mode activités.
+        </p>
+      )}
       {balayage.manquantes.length > 0 && (
         <p className="text-xs">
           <strong>Non couvertes :</strong>{' '}
           {balayage.manquantes.map((id) => libellesCompetences.get(id) ?? id).join(' · ')}
+          <span className="italic"> (ces compétences n'apparaîtront pas dans la Synthèse)</span>
         </p>
       )}
       {balayage.orphelines.length > 0 && (
@@ -377,10 +405,11 @@ function JaugeBalayage({ modeleId, balayage, libellesCompetences }: JaugeBalayag
 
 function EncartModeFormation({
   formation,
-  balayageComplet,
+  toutesActivitesMappees,
 }: {
   formation: Formation;
-  balayageComplet: boolean;
+  /** Chaque activité du modèle mappée sur ≥ 1 compétence (condition de bascule). */
+  toutesActivitesMappees: boolean;
 }) {
   const setModeEvaluation = useFormationsStore((s) => s.setModeEvaluation);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -403,16 +432,16 @@ function EncartModeFormation({
         <button
           type="button"
           onClick={basculer}
-          disabled={cible === 'activites' && !balayageComplet}
+          disabled={cible === 'activites' && !toutesActivitesMappees}
           data-testid={`basculer-mode-${formation.id}`}
           title={
-            cible === 'activites' && !balayageComplet
-              ? 'Complétez le mapping (balayage complet requis) pour débloquer le mode activités.'
+            cible === 'activites' && !toutesActivitesMappees
+              ? 'Mappez chaque activité sur au moins une compétence du référentiel pour débloquer le mode activités.'
               : undefined
           }
           className={cn(
             'rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-            cible === 'activites' && !balayageComplet && 'cursor-not-allowed opacity-50',
+            cible === 'activites' && !toutesActivitesMappees && 'cursor-not-allowed opacity-50',
           )}
         >
           {cible === 'activites' ? 'Passer en mode activités' : 'Repasser en mode compétences'}

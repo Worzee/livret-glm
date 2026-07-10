@@ -86,10 +86,12 @@ export interface PeriodeFormation {
  * dans la grille « Synthèse ». Le référentiel de compétences reste impératif
  * dans les deux modes.
  *
- * Le passage en mode `activites` exige un **balayage complet** du référentiel
- * par le mapping du modèle (hors compétences exclues). La bascule — dans les
- * deux sens — est **verrouillée dès la première saisie signée** dans la promo
- * (cf. `lib/mode-evaluation`).
+ * Le passage en mode `activites` exige que **chaque activité du modèle fasse
+ * appel à au moins une compétence évaluable** du référentiel (10 juillet 2026,
+ * retour démo direction — le balayage complet n'est plus exigé ; les
+ * compétences non couvertes n'apparaissent pas dans la Synthèse). La bascule
+ * — dans les deux sens — est **verrouillée dès la première saisie signée**
+ * dans la promo (cf. `lib/mode-evaluation`).
  */
 export type ModeEvaluation = 'competences' | 'activites';
 
@@ -309,9 +311,9 @@ export interface Activite {
  * Modèle d'activités d'une formation (juillet 2026 — chantier #4). Importé
  * depuis un fichier CSV/XLSX (activités seules : code, libellé, description),
  * puis mappé activité par activité sur le référentiel dans l'UI. Le passage
- * de la formation en mode `activites` exige un **balayage complet** : chaque
- * compétence évaluable (non exclue) du référentiel doit être couverte par au
- * moins une activité (cf. `lib/balayage-referentiel`).
+ * de la formation en mode `activites` exige que **chaque activité soit mappée
+ * sur au moins une compétence évaluable** (10 juillet 2026 — la couverture
+ * complète du référentiel n'est plus exigée ; cf. `lib/balayage-referentiel`).
  */
 export interface ModeleActivites {
   id: string;

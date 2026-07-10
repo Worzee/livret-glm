@@ -4,7 +4,7 @@ import type { Referentiel } from '@/types';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
 import { referentielBtsMhr } from '@/fixtures/referentiel-bts-mhr';
 import { peutBasculerExclusion, type ResultatValidation } from '@/lib/limite-referentiel';
-import { peutReactiverCompetence, peutReimporterReferentiel } from '@/lib/mode-evaluation';
+import { peutExclureCompetence, peutReimporterReferentiel } from '@/lib/mode-evaluation';
 import { useActivitesStore } from './useActivitesStore';
 import { useFormationsStore } from './useFormationsStore';
 import { useLivretStore } from './useLivretStore';
@@ -141,17 +141,18 @@ export const useReferentielsStore = create<ReferentielsStore>()(
         const seuil = useParametresStore.getState().seuilCompetencesEvaluables;
         const garde = peutBasculerExclusion(referentiel, competenceId, seuil);
         if (!garde.ok) return garde;
-        // Chantier #4 (juillet 2026) : la RÉACTIVATION d'une compétence non
-        // couverte par le mapping est bloquée quand une formation rattachée
-        // est en mode activités (le balayage redeviendrait incomplet — Q6).
-        // L'exclusion, elle, ne peut que compléter le balayage.
+        // Chantier #4, invariant révisé le 10 juillet 2026 : la RÉACTIVATION
+        // d'une compétence exclue est libre (elle ajoute une compétence
+        // évaluable). C'est l'EXCLUSION qui est bloquée quand une formation
+        // rattachée est en mode activités et qu'une activité de son modèle
+        // ne serait plus mappée sur aucune compétence évaluable.
         const feuille = referentiel.blocs
           .flatMap((b) => b.competences)
           .find((c) => c.id === competenceId);
-        if (feuille?.exclue) {
-          const gardeMode = peutReactiverCompetence(
+        if (!feuille?.exclue) {
+          const gardeMode = peutExclureCompetence(
             competenceId,
-            referentielId,
+            referentiel,
             Object.values(useFormationsStore.getState().formations),
             useActivitesStore.getState().modeles,
           );

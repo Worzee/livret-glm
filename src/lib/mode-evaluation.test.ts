@@ -12,7 +12,7 @@ import {
   modeEffectif,
   peutBasculerMode,
   peutChangerReferentielFormation,
-  peutReactiverCompetence,
+  peutExclureCompetence,
   peutReimporterReferentiel,
   promoAUneSaisieSignee,
 } from './mode-evaluation';
@@ -198,20 +198,41 @@ describe('peutBasculerMode', () => {
     expect(r.raison).toMatch(/modèle/i);
   });
 
-  it('refuse le passage en activités si le balayage est incomplet', () => {
-    const modeleIncomplet: ModeleActivites = {
+  it('autorise le passage en activités même à balayage INCOMPLET, dès que chaque activité est mappée (10 juillet 2026)', () => {
+    // a1 ne couvre que c1 : c2 reste non balayée — plus bloquant depuis la
+    // révision de l'invariant (retour démo direction).
+    const modelePartiel: ModeleActivites = {
       ...modeleComplet,
       activites: [{ id: 'a1', code: 'A1', libelle: 'Activité 1', competenceIds: ['c1'] }],
     };
     const r = peutBasculerMode({
       formation: formation({ modeleActivitesId: 'act-test' }),
       cible: 'activites',
-      modele: modeleIncomplet,
+      modele: modelePartiel,
+      referentiel,
+      livretsPromo: [],
+    });
+    expect(r.ok).toBe(true);
+  });
+
+  it('refuse le passage en activités si une activité ne fait appel à aucune compétence', () => {
+    const modeleAvecActiviteVide: ModeleActivites = {
+      ...modeleComplet,
+      activites: [
+        { id: 'a1', code: 'A1', libelle: 'Activité 1', competenceIds: ['c1'] },
+        { id: 'a2', code: 'A2', libelle: 'Activité 2', competenceIds: [] },
+      ],
+    };
+    const r = peutBasculerMode({
+      formation: formation({ modeleActivitesId: 'act-test' }),
+      cible: 'activites',
+      modele: modeleAvecActiviteVide,
       referentiel,
       livretsPromo: [],
     });
     expect(r.ok).toBe(false);
-    expect(r.raison).toMatch(/balayage/i);
+    expect(r.raison).toMatch(/sans compétence mappée/i);
+    expect(r.raison).toContain('Activité 2');
   });
 
   it('refuse le passage en activités si le modèle est mappé sur un autre référentiel', () => {
@@ -270,15 +291,24 @@ describe('gardes référentiel × mode activités', () => {
     expect(peutChangerReferentielFormation(fCompetences).ok).toBe(true);
   });
 
-  it('peutReactiverCompetence : bloqué si la compétence n’est pas couverte par le mapping', () => {
+  it('peutExclureCompetence : bloqué si une activité ne serait plus mappée sur rien (10 juillet 2026)', () => {
+    // a1 est mappée sur c1 ET c2 : exclure c1 laisse c2 → permis.
     const modeles = { 'act-test': modeleComplet };
-    expect(peutReactiverCompetence('c1', 'ref-test', [fActivites], modeles).ok).toBe(true);
-    const bloque = peutReactiverCompetence('hors-mapping', 'ref-test', [fActivites], modeles);
+    expect(peutExclureCompetence('c1', referentiel, [fActivites], modeles).ok).toBe(true);
+
+    // a1 mappée sur c1 seule : exclure c1 la ferait tomber à 0 → bloqué.
+    const modelesEtroits = {
+      'act-test': {
+        ...modeleComplet,
+        activites: [{ id: 'a1', code: 'A1', libelle: 'Activité 1', competenceIds: ['c1'] }],
+      },
+    };
+    const bloque = peutExclureCompetence('c1', referentiel, [fActivites], modelesEtroits);
     expect(bloque.ok).toBe(false);
-    expect(bloque.raison).toMatch(/balayage/i);
+    expect(bloque.raison).toMatch(/Exclusion bloquée/i);
+    expect(bloque.raison).toContain('Activité 1');
+
     // Sans formation en mode activités : toujours permis.
-    expect(peutReactiverCompetence('hors-mapping', 'ref-test', [fCompetences], modeles).ok).toBe(
-      true,
-    );
+    expect(peutExclureCompetence('c1', referentiel, [fCompetences], modelesEtroits).ok).toBe(true);
   });
 });

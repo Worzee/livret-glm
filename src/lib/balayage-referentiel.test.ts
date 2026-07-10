@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { Activite, ModeleActivites, Referentiel } from '@/types';
 import {
+  activitesSansCompetenceEvaluable,
   calculerBalayage,
   competencesCouvertes,
-  estCouverteParModele,
 } from './balayage-referentiel';
 
 const referentiel = (exclues: string[] = []): Referentiel => ({
@@ -111,14 +111,33 @@ describe('calculerBalayage', () => {
   });
 });
 
-describe('estCouverteParModele', () => {
-  it('vraie si au moins une activité mappe la compétence', () => {
-    const m = modele([activite('a1', ['c1'])]);
-    expect(estCouverteParModele(m, 'c1')).toBe(true);
-    expect(estCouverteParModele(m, 'c2')).toBe(false);
+describe('activitesSansCompetenceEvaluable', () => {
+  it('vide quand chaque activité mappe au moins une compétence évaluable (couverture partielle acceptée)', () => {
+    // a1 et a2 sont mappées, c3 n'est couverte par personne : aucune activité
+    // en défaut — c'est la nouvelle condition de bascule (10 juillet 2026).
+    const m = modele([activite('a1', ['c1']), activite('a2', ['c2'])]);
+    expect(activitesSansCompetenceEvaluable(m, referentiel())).toEqual([]);
   });
 
-  it('fausse sans modèle', () => {
-    expect(estCouverteParModele(undefined, 'c1')).toBe(false);
+  it("liste les activités sans aucun mapping, dans l'ordre du modèle", () => {
+    const m = modele([activite('a1', []), activite('a2', ['c2']), activite('a3', [])]);
+    expect(activitesSansCompetenceEvaluable(m, referentiel()).map((a) => a.id)).toEqual([
+      'a1',
+      'a3',
+    ]);
+  });
+
+  it('une activité mappée uniquement sur des ids orphelins ou exclus est en défaut', () => {
+    const m = modele([activite('a1', ['disparue']), activite('a2', ['c2'])]);
+    expect(activitesSansCompetenceEvaluable(m, referentiel()).map((a) => a.id)).toEqual(['a1']);
+    // c2 exclue : a2 (mappée seulement sur c2) tombe en défaut à son tour.
+    expect(activitesSansCompetenceEvaluable(m, referentiel(['c2'])).map((a) => a.id)).toEqual([
+      'a1',
+      'a2',
+    ]);
+  });
+
+  it('sans modèle, aucune activité en défaut (rien à vérifier)', () => {
+    expect(activitesSansCompetenceEvaluable(undefined, referentiel())).toEqual([]);
   });
 });

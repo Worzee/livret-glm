@@ -9,7 +9,10 @@ import { resetState, selectRole } from './helpers';
  * `act-cap-cuisine`, 6 activités, balayage 10/10) ; le BTS MHR reste en mode
  * compétences. Les verrous testés :
  *   - bascule bloquée dès la première saisie signée dans la promo (Q2) ;
- *   - passage en activités bloqué tant que le balayage est incomplet ;
+ *   - passage en activités bloqué tant qu'une activité ne fait appel à aucune
+ *     compétence — débloqué dès que chaque activité est mappée sur au moins
+ *     une compétence, même à balayage partiel (10 juillet 2026, retour démo
+ *     direction — le balayage complet n'est plus exigé) ;
  *   - réimport d'un référentiel bloqué si une formation rattachée est en
  *     mode activités (Q6).
  */
@@ -54,7 +57,7 @@ test('CAP : le retour en mode compétences est verrouillé (saisies signées dan
   await expect(carte.getByTestId('badge-mode-f-cap-cuisine-2025')).toContainText(/Mode activités/i);
 });
 
-test('import d’un modèle pour le BTS : balayage incomplet → mode activités indisponible', async ({
+test('import BTS : bascule bloquée tant qu’une activité est sans compétence, débloquée dès 1 compétence par activité (balayage partiel)', async ({
   page,
 }) => {
   await selectRole(page, 'Coordinateur·rice');
@@ -78,12 +81,39 @@ test('import d’un modèle pour le BTS : balayage incomplet → mode activités
   await modale.getByTestId('import-act-importer').click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
-  // La carte du nouveau modèle apparaît, balayage incomplet (0/10), et le
-  // bouton de bascule vers le mode activités est désactivé.
+  // 1. Fraîchement importées, les 2 activités ne font appel à aucune
+  //    compétence : la bascule est désactivée et l'encart les liste.
   const carte = page.locator('article').filter({ hasText: /Activites_BTS Management/ });
   await expect(carte).toBeVisible();
   await expect(carte).toContainText(/0\/11 compétences couvertes/i);
+  await expect(carte.locator('[data-testid^="activites-non-mappees-"]')).toContainText(
+    /2 activités sans compétence mappée/i,
+  );
   await expect(carte.getByTestId('basculer-mode-f-bts-mhr-2025')).toBeDisabled();
+
+  // 2. Une compétence sur la 1ʳᵉ activité : la 2ᵉ reste en défaut → toujours
+  //    désactivée.
+  await carte.getByText(/Mapping activités ↔ compétences/i).click();
+  await carte
+    .getByRole('checkbox', { name: /Service en salle couvre/i })
+    .first()
+    .check();
+  await expect(carte.locator('[data-testid^="activites-non-mappees-"]')).toContainText(
+    /1 activité sans compétence mappée/i,
+  );
+  await expect(carte.getByTestId('basculer-mode-f-bts-mhr-2025')).toBeDisabled();
+
+  // 3. Une compétence sur la 2ᵉ activité (la même : peu importe — l'union ne
+  //    couvre que 1/11) : chaque activité fait appel à au moins une
+  //    compétence → la bascule se DÉBLOQUE, à balayage partiel (le balayage
+  //    complet n'est plus exigé, 10 juillet 2026).
+  await carte
+    .getByRole('checkbox', { name: /Gestion des stocks du restaurant couvre/i })
+    .first()
+    .check();
+  await expect(carte).toContainText(/1\/11 compétences couvertes \(partiel, non bloquant\)/i);
+  await expect(carte.locator('[data-testid^="activites-non-mappees-"]')).toHaveCount(0);
+  await expect(carte.getByTestId('basculer-mode-f-bts-mhr-2025')).toBeEnabled();
 });
 
 test('mapping dans l’éditeur : la jauge progresse à chaque compétence couverte', async ({

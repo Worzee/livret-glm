@@ -6,11 +6,14 @@ import type {
   Referentiel,
   SignaturesTripartite,
 } from '@/types';
-import { calculerBalayage, estCouverteParModele } from './balayage-referentiel';
+import { activitesSansCompetenceEvaluable } from './balayage-referentiel';
 
 /**
  * Cycle de vie du mode d'évaluation d'une formation (juillet 2026 — chantier
- * référentiels/compétences #4, arbitrages pilote Q2 et Q6).
+ * référentiels/compétences #4, arbitrages pilote Q2 et Q6 ; **invariant révisé
+ * le 10 juillet 2026 après démo direction** : la bascule en mode activités
+ * n'exige plus le balayage complet du référentiel, seulement que chaque
+ * activité fasse appel à au moins une compétence évaluable).
  *
  * Le mode (`competences` | `activites`) est porté par la formation, mais les
  * données (fiches, entretien, sélections) vivent dans les livrets. Deux
@@ -20,11 +23,14 @@ import { calculerBalayage, estCouverteParModele } from './balayage-referentiel';
  *      n'est signée dans la promo ; **verrouillée dès la première signature**
  *      (entretien ou fiche, entreprise ou centre) — pattern verrou maison.
  *   2. **Référentiel vivant** — tant qu'une formation rattachée est en mode
- *      activités : réimport du référentiel bloqué, changement de référentiel
- *      de la formation bloqué, réactivation d'une compétence exclue bloquée
- *      si elle n'est pas couverte par le mapping (le balayage redeviendrait
- *      incomplet). L'exclusion d'une compétence reste permise (elle ne peut
- *      que compléter le balayage).
+ *      activités : réimport du référentiel bloqué et changement de référentiel
+ *      de la formation bloqué (les mappings deviendraient orphelins — des
+ *      activités tomberaient à 0 compétence) ; **exclusion** d'une compétence
+ *      bloquée si une activité n'est mappée QUE sur elle (elle tomberait à 0).
+ *      La **réactivation** d'une compétence exclue est libre depuis le
+ *      10 juillet 2026 : elle ne fait qu'ajouter une compétence évaluable et ne
+ *      peut briser l'invariant (l'ancienne garde « balayage incomplet » est
+ *      tombée avec l'exigence de balayage complet).
  *
  * Pures fonctions — pas d'effet de bord.
  */
@@ -86,7 +92,8 @@ export interface ArgumentsBasculeMode {
  *   - refus si la cible est déjà le mode courant ;
  *   - refus dès la première saisie signée dans la promo (les deux sens — Q2) ;
  *   - vers `activites` : modèle rattaché requis, mappé sur LE référentiel de
- *     la formation, et balayage complet (Q6).
+ *     la formation, et **chaque activité mappée sur au moins une compétence
+ *     évaluable** (10 juillet 2026 — le balayage complet n'est plus exigé).
  */
 export function peutBasculerMode(args: ArgumentsBasculeMode): ResultatValidation {
   const { formation, cible, modele, referentiel, livretsPromo } = args;
@@ -120,11 +127,12 @@ export function peutBasculerMode(args: ArgumentsBasculeMode): ResultatValidation
     if (!referentiel) {
       return { ok: false, raison: 'Référentiel de la formation introuvable.' };
     }
-    const balayage = calculerBalayage(modele, referentiel);
-    if (!balayage.complet) {
+    const sansCompetence = activitesSansCompetenceEvaluable(modele, referentiel);
+    if (sansCompetence.length > 0) {
+      const libelles = sansCompetence.map((a) => `« ${a.libelle} »`).join(', ');
       return {
         ok: false,
-        raison: `Balayage incomplet : ${balayage.couvertes.length}/${balayage.total} compétences couvertes par le mapping. Complétez le mapping des activités avant de passer en mode activités.`,
+        raison: `${sansCompetence.length} activité${sansCompetence.length > 1 ? 's' : ''} sans compétence mappée (${libelles}) : chaque activité doit faire appel à au moins une compétence du référentiel pour passer en mode activités.`,
       };
     }
   }
@@ -149,7 +157,8 @@ export function formationsEnModeActivites(
 /**
  * Le réimport (remplacement intégral) d'un référentiel est bloqué tant qu'une
  * formation rattachée est en mode activités : les ids de compétences changent,
- * le mapping deviendrait orphelin et le balayage incomplet (Q6).
+ * le mapping deviendrait orphelin et des activités tomberaient à 0 compétence
+ * évaluable (Q6, invariant révisé le 10 juillet 2026).
  */
 export function peutReimporterReferentiel(
   referentielId: string,
@@ -175,24 +184,36 @@ export function peutChangerReferentielFormation(formation: Formation): ResultatV
 }
 
 /**
- * La réactivation d'une compétence exclue est bloquée si une formation
- * rattachée est en mode activités ET que le mapping du modèle ne couvre pas
- * cette compétence : le balayage redeviendrait incomplet (Q6). L'exclusion,
- * elle, reste toujours permise du point de vue du mode (elle ne peut que
- * compléter le balayage).
+ * L'EXCLUSION d'une compétence est bloquée si une formation rattachée est en
+ * mode activités ET qu'une activité de son modèle ne serait plus mappée sur
+ * aucune compétence évaluable après l'exclusion (invariant du 10 juillet 2026 :
+ * chaque activité fait appel à au moins une compétence). La RÉACTIVATION d'une
+ * compétence exclue est libre du point de vue du mode : elle ne fait qu'ajouter
+ * une compétence évaluable. (Les deux sens restent soumis au seuil de lignes
+ * évaluables — `peutBasculerExclusion`, lib `limite-referentiel`.)
  */
-export function peutReactiverCompetence(
+export function peutExclureCompetence(
   competenceId: string,
-  referentielId: string,
+  referentiel: Referentiel,
   formations: ReadonlyArray<Formation>,
   modeles: Record<string, ModeleActivites>,
 ): ResultatValidation {
-  for (const f of formationsEnModeActivites(referentielId, formations)) {
+  // Simule l'exclusion pour mesurer son effet sur les mappings.
+  const simule: Referentiel = {
+    ...referentiel,
+    blocs: referentiel.blocs.map((b) => ({
+      ...b,
+      competences: b.competences.map((c) => (c.id === competenceId ? { ...c, exclue: true } : c)),
+    })),
+  };
+  for (const f of formationsEnModeActivites(referentiel.id, formations)) {
     const modele = f.modeleActivitesId ? modeles[f.modeleActivitesId] : undefined;
-    if (!estCouverteParModele(modele, competenceId)) {
+    const enDefaut = activitesSansCompetenceEvaluable(modele, simule);
+    if (enDefaut.length > 0) {
+      const libelles = enDefaut.map((a) => `« ${a.libelle} »`).join(', ');
       return {
         ok: false,
-        raison: `Réactivation bloquée : « ${f.intitule} » est en mode activités et son mapping ne couvre pas cette compétence : le balayage redeviendrait incomplet. Mappez d’abord la compétence sur une activité.`,
+        raison: `Exclusion bloquée : « ${f.intitule} » est en mode activités et ${enDefaut.length > 1 ? 'les activités' : "l'activité"} ${libelles} ne ${enDefaut.length > 1 ? 'seraient' : 'serait'} plus mappée${enDefaut.length > 1 ? 's' : ''} sur aucune compétence. Mappez-l${enDefaut.length > 1 ? 'es' : 'a'} d'abord sur une autre compétence.`,
       };
     }
   }

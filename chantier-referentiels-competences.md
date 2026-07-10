@@ -277,12 +277,40 @@ nouveau store `livret-activites` v1, `livret-formations` v9 (mode + modeleActivi
 6. **Balayage redevenant incomplet** : **action bloquée** (réimport du référentiel,
    réactivation d'une compétence exclue, changement de référentiel de la formation)
    tant que la formation est en mode activités — pattern `referentiel-verrou`,
-   message explicite au coordo/admin.
+   message explicite au coordo/admin. _⚠ Révisé le 2026-07-10 — cf. « Révision
+   d'arbitrage » ci-dessous : l'invariant n'est plus le balayage complet._
 7. **Seuil** : **pas de limite** du nombre d'activités par modèle.
 8. **Échelle** : **mêmes 4 niveaux** entreprise (Maîtrisé / Partiel / Non maîtrisé /
    Non fait) — réutilise `NiveauMaitriseEntreprise`, projection directe.
 9. **Démo** : la promo **CAP Cuisine** passe en mode activités (fixtures existantes
    converties, périmètres E2E préservés au mieux).
+
+#### Révision d'arbitrage (2026-07-10, retour démo direction) — bascule à balayage partiel
+
+Le **balayage complet du référentiel n'est plus exigé** pour passer une formation en
+mode activités : la bascule est débloquée **dès que chaque activité du modèle fait
+appel à au moins une compétence évaluable** (`activitesSansCompetenceEvaluable`,
+lib `balayage-referentiel`), peu importe que toutes les compétences soient couvertes.
+Conséquences en cascade sur les gardes (le nouvel invariant remplace l'ancien
+partout) :
+
+- **Bascule** (`peutBasculerMode`) : refus uniquement si ≥ 1 activité sans compétence
+  (raison listant les activités en défaut) ; la jauge de balayage devient **informative**
+  (les compétences non couvertes n'apparaîtront simplement pas dans la Synthèse — la
+  restriction de la grille aux compétences couvertes par les activités retenues, déjà
+  en place, gère ce cas nativement).
+- **Réactivation d'une compétence exclue** : **libre** désormais (elle ne fait
+  qu'ajouter une compétence évaluable — l'ancienne garde `peutReactiverCompetence`
+  est supprimée) ; reste soumise au seuil de lignes évaluables (modif #2).
+- **Exclusion d'une compétence** : **nouvelle garde** `peutExclureCompetence` — bloquée
+  si une formation rattachée est en mode activités et qu'une activité ne serait plus
+  mappée sur rien (sous l'ancien invariant, l'exclusion était toujours permise).
+- **Retouche du mapping** (`setMappingActivite`) : en mode activités, refuse seulement
+  de laisser une activité à 0 compétence (découvrir une compétence du référentiel est
+  devenu libre).
+- **Inchangés** : réimport du référentiel et changement de référentiel de la formation
+  restent bloqués en mode activités (mappings orphelins → activités à 0 compétence),
+  verrou de bascule Q2 (première saisie signée), concordance modèle ↔ référentiel.
 
 #### Implémentation (2026-07-07) — repères pour les vagues suivantes
 
@@ -326,8 +354,9 @@ nouveau store `livret-activites` v1, `livret-formations` v9 (mode + modeleActivi
   `construireModeleActivites`), bouton « Télécharger le gabarit Excel » sur
   `/admin/activites` + lien dans la modale d'import (`modele-activites.xlsx`).
 - **Non fait (hors périmètre arbitré)** : alerte « balayage incomplet » au
-  centre d'alertes (inutile tant que les gardes imposent le balayage complet
-  en mode activités) ; seuil d'activités par modèle (Q7 : pas de limite).
+  centre d'alertes (sans objet depuis la révision du 2026-07-10 : le balayage
+  partiel est un état nominal) ; seuil d'activités par modèle (Q7 : pas de
+  limite).
 
 ---
 
