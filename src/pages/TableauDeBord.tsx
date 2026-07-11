@@ -17,6 +17,7 @@ import {
   trierApprentisParAnneePuisNom,
 } from '@/lib/apprentis-accessibles';
 import { calculerResumeLivret, classesBadgeCas, libelleCas } from '@/lib/etat-livret';
+import { modeEffectif } from '@/lib/mode-evaluation';
 import { statsPilotage } from '@/lib/pilotage';
 import type { AlerteTableauBord } from '@/lib/alertes';
 import { cn } from '@/lib/utils';
@@ -292,7 +293,7 @@ export function TableauDeBord() {
               data-testid={`groupe-formation-${groupe.formationId || 'aucune'}`}
               className="rounded-lg border border-border bg-card"
             >
-              <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg p-4 hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 rounded-lg p-4 hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
                 <ChevronRight
                   className="h-4 w-4 shrink-0 text-muted-foreground transition-transform [details[open]_&]:rotate-90"
                   aria-hidden="true"
@@ -302,6 +303,14 @@ export function TableauDeBord() {
                 <span className="text-xs text-muted-foreground">
                   · {groupe.apprentis.length} apprenti·e{groupe.apprentis.length > 1 ? 's' : ''}
                 </span>
+                {/* Mode de pédagogie de la formation (10 juillet 2026 —
+                    demande pilote) : compétences ou activités, cf. chantier #4. */}
+                {formations[groupe.formationId] && (
+                  <BadgePedagogie
+                    formationId={groupe.formationId}
+                    mode={modeEffectif(formations[groupe.formationId])}
+                  />
+                )}
                 {/* Mini-pilotage par promo (3 juillet 2026) — coordo / admin. */}
                 {(roleActif === 'coordo' || roleActif === 'admin') && (
                   <StatsGroupe apprentis={groupe.apprentis} livrets={livrets} />
@@ -327,6 +336,36 @@ export function TableauDeBord() {
         />
       )}
     </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Badge du mode de pédagogie d'une formation (10 juillet 2026 — demande pilote)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Affiche « Pédagogie en Compétences » ou « Pédagogie en Activités » dans
+ * l'en-tête de chaque groupe de formation du tableau de bord (cf. chantier #4
+ * — mode d'évaluation par formation). Même code couleur que le badge « Mode
+ * activités / compétences » des pages d'administration.
+ */
+function BadgePedagogie({
+  formationId,
+  mode,
+}: {
+  formationId: string;
+  mode: 'competences' | 'activites';
+}) {
+  return (
+    <span
+      data-testid={`pedagogie-${formationId}`}
+      className={cn(
+        'inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium',
+        mode === 'activites' ? 'bg-violet-100 text-violet-800' : 'bg-slate-100 text-slate-700',
+      )}
+    >
+      {mode === 'activites' ? 'Pédagogie en Activités' : 'Pédagogie en Compétences'}
+    </span>
   );
 }
 

@@ -128,6 +128,18 @@ test('les cartes sont regroupées par formation, sections repliables (1ᵉʳ jui
   await expect(groupe.locator('summary').getByText('CAP Cuisine (2025-2026)')).toBeVisible();
   await expect(groupe.getByRole('button', { name: /Ouvrir le livret de/i })).toHaveCount(6);
 
+  // Mode de pédagogie affiché à côté de chaque formation (10 juillet 2026) :
+  // CAP en mode activités, BTS en mode compétences (visible côté coordo).
+  await expect(groupe.getByTestId('pedagogie-f-cap-cuisine-2025')).toHaveText(
+    'Pédagogie en Activités',
+  );
+  await selectRole(page, 'Coordinateur·rice');
+  await expect(page.getByTestId('pedagogie-f-bts-mhr-2025')).toHaveText('Pédagogie en Compétences');
+  await expect(page.getByTestId('pedagogie-f-cap-cuisine-2025')).toHaveText(
+    'Pédagogie en Activités',
+  );
+  await selectRole(page, 'Formateur référent');
+
   // Replier la section → les cartes sont masquées.
   await groupe.locator('summary').click();
   await expect(
