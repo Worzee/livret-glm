@@ -88,7 +88,7 @@ LIVRET APPRENTISSAGE/
 └── src/
     ├── types/index.ts              ← modèle (CDC §7 + extensions v1.5)
     ├── lib/                        ← logique métier pure + 52 fichiers tests TDD
-    │   ├── droits.ts               ← matrice (48 ressources × 5 rôles)
+    │   ├── droits.ts               ← matrice (57 ressources × 5 rôles)
     │   ├── transitions-fiche.ts    ← R15/R16/R17/R21
     │   ├── validation-signature.ts ← R18/R20
     │   ├── regles-periode.ts       ← R11/R12/R13/R14

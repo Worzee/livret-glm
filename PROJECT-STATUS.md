@@ -61,7 +61,7 @@ Périmètre détaillé dans §12 et [`TODO-etape-2.md`](TODO-etape-2.md). Le cha
 | Aperçu général et démarrage                                     | [`README.md`](README.md)                                                                                  |
 | Modules livrés et périmètre fonctionnel                         | §4                                                                                                        |
 | Règles métier R1 → R24                                          | §5                                                                                                        |
-| État des tests (682 unit + 206 E2E)                             | §6                                                                                                        |
+| État des tests (715 unit + 213 E2E)                             | §6                                                                                                        |
 | Architecture des fichiers                                       | §7                                                                                                        |
 | Reste à faire                                                   | §8                                                                                                        |
 | Limites connues                                                 | §9                                                                                                        |
@@ -1157,7 +1157,7 @@ Toutes les règles du CDC v1.3 sont implémentées et testées. Quelques ajustem
 
 _Les modules `creation-livret.ts`, `couleurs-role.ts` et `utils.ts` sont couverts indirectement via les tests E2E._
 
-### Tests E2E Playwright (29 specs)
+### Tests E2E Playwright (30 specs)
 
 213 tests (Chromium desktop + mobile Pixel 5). **Vague du 10 juillet 2026 (documents administratifs)** : nouveau spec `documents-administratifs.spec.ts` (5 scénarios — visibilité par rôle du flag « réservé », signature manuscrite tactile de l'apprentie persistée, dépôt coordo + verrou de suppression d'un document attesté, alertes filtrées pour le formateur, bandeau du tableau de bord apprenti·e). **Vague du 10 juillet 2026 (bascule à balayage partiel)** : scénario `admin-activites.spec.ts` réécrit — import d'un modèle BTS (2 activités) → bascule désactivée + encart « 2 activités sans compétence mappée » ; 1 compétence cochée sur chaque activité → **bascule débloquée à 1/11 de couverture** (« partiel, non bloquant »). **Vague du 8 juillet 2026 (points d'alerte au coordo)** : +1 scénario dans `pilotage-alertes.spec.ts` (les 2 points d'alerte de Léa remontent dans « À traiter » du coordo Martine ; cocher « traité » retire le point, l'autre reste). **Vague du 8 juillet 2026 (activité libre détaillable)** : +1 scénario dans `entretien-selection-competences.spec.ts` (ajout d'une activité libre → zone de texte éditable → saisie de l'intitulé et des détails → persistance après rechargement). **Vague du 7 juillet 2026 (évaluation par activités — chantier #4)** : nouveau spec `admin-activites.spec.ts` (8 scénarios — accès refusé formateur, carte du modèle CAP avec jauge 10/10 et badge de mode, verrou de bascule « saisie signée » (Q2), import d'un modèle pour le BTS avec balayage incomplet → bascule désactivée, progression de la jauge dans l'éditeur de mapping, badges de mode sur la page Formations, réimport de référentiel bloqué en mode activités (Q6), verrou de suppression du modèle rattaché) ; `entretien-selection-competences.spec.ts` refondu — la promo CAP vit en mode activités (section « Activités prévues en entreprise », bandeaux et sélecteur « Ajouter une activité » sur les fiches, Synthèse restreinte aux compétences couvertes avec provenance « Via activité — Période N »), la mécanique compétences (réalignement au réimport) rejouée sur le BTS via Yanis ; `sprint4-evaluation-finale.spec.ts` adapté à la provenance de la projection (badge + modale d'écrasement nommant l'activité) ; `admin-referentiels.spec.ts` : les imports « pour une formation » ciblent le BTS (le référentiel CAP est figé). **Vague du 6 juillet 2026 (périodes en centre simplifiées + Synthèse)** : `sprint4-evaluation-finale.spec.ts` refondu sur la page « Synthèse » (+ 1 scénario « redirection de l'ancienne URL », + 1 « plus de colonne Acquis en centre », attitudes agrégées par période avec badge « Période N ») ; `fiches-periodes-centre.spec.ts` : fiche centre réduite aux observations (+ 1 scénario « le formateur signe sans exigence, l'apprenti·e reste bloqué·e ») ; `attitudes.spec.ts` : évaluation déplacée sur la fiche entreprise (compteur « il reste N attitudes », raison R20 « toutes les retenues ») ; `entretien-selection-competences` : la compétence non sélectionnée disparaît de la grille ; libellé/route « Synthèse » propagés (`sprint1`, `sprint5`, `pilotage-alertes`, `audit-mobile`) ; marqueur d'initialisation d'entretien déplacé vers la section de choix (`signature-tactile`, `sprint3`). **Vague du 6 juillet 2026 (limite des lignes évaluables)** : nouveau spec `limite-referentiel.spec.ts` (4 scénarios — seuil admin/coordo, import 2 niveaux > 40 avec cochage manuel, agrégation au niveau supérieur, seuil abaissé + gestion post-import des exclusions). **Vague du 6 juillet 2026 (entretien unique)** : suppression de `banque-questions.spec.ts` et `entretiens-multiples.spec.ts`, renommage `entretien-1-trame.spec.ts` → `entretien-trame.spec.ts`, route unique `/livret/entretien` partout ; `signature-tactile` / `attitudes` / `sprint3-droits-entretien` rejoués sur l'entretien frais de Sofia (celui de Léa est signé 3/3) ; `pilotage-alertes` adapté (alerte « à initialiser » portée par Yanis, entretien unique de Camille) ; `organisation-suivi` sans modalité (9 événements chez Léa). Ajouts de juin 2026 : 2 scénarios « ajout de compétence à la fiche ouvert au tuteur » + 1 « disparition de la colonne Évaluation GRETA CFA sur la fiche » (`entretien-selection-competences.spec.ts`), 3 scénarios « affectation des questions par le coordo », 5 scénarios « jusqu'à 4 entretiens », 3 scénarios « événements gérés par coordo/admin + liseré par rôle », 2 scénarios « motifs par rôle + séquencement », 4 scénarios « attitudes professionnelles » (`attitudes.spec.ts`), 1 scénario « confirmation avant écrasement d'un héritage », 1 scénario « bascule de périmètre coordo depuis la page Affectations », 2 scénarios « modalité présentiel/distanciel + verrou de la fiche de suivi par signature », 1 scénario « suppression d'un événement réservée au coordo/admin », 5 scénarios « exports PDF par période / entretien / fiches de suivi » (`export-pdf.spec.ts` — boutons par rôle + téléchargements non vides), 1 scénario « séquencement de visibilité des périodes » (accès direct à une période masquée bloqué), 5 scénarios « refonte de l'entretien 1 sur la trame officielle GRETA » (`entretien-1-trame.spec.ts` — rubriques, points d'alerte, représentant légal). **Ajouts des 17-18 juin 2026** : 4 scénarios « périodes en centre de formation » (`fiches-periodes-centre.spec.ts` — planning centre, page liste / détail, export PDF), 1 « forçage de l'affichage des périodes par le coordo », 1 « banque de questions réservée à l'admin », `tableau-de-bord-6-apprentis` adapté au récap apprenti·e, `attitudes` / `sprint4-evaluation-finale` adaptés au catalogue 12 attitudes. **Ajouts des 27-28 juin 2026** : nouveau spec `entreprises.spec.ts` (8 scénarios — CRUD entreprises, verrou, choix dans la modale apprenti·e, récap dashboard, traçabilité du changement, changement depuis Affectations) ; `admin-referentiels` / `entretien-selection-competences` / `sprint4-evaluation-finale` adaptés à l'affichage « libellé seul ». **Ajouts du 1ᵉʳ juillet 2026** : 2 scénarios « réalignement de la sélection + co-saisie du formateur » (`entretien-selection-competences`, `sprint3-droits-entretien`), 1 « aperçu lecture seule de l'entretien » (`entretiens-multiples`), 1 « tableau de bord groupé par formation » (`tableau-de-bord-6-apprentis`), 1 « pas d'erreur rouge avant tentative » + 1 « la modale Planning n'expose plus les questions » (`fiches-periodes`, `banque-questions`), 1 « suivi GRETA CFA absent de toutes les fiches (entreprise et centre) », 1 « le formateur ne signe plus mais verrouille », 1 « 3 commentaires individuels sur l'E1 » (`entretien-1-trame`) ; `sprint2-coedition` adapté aux 2 signataires. **Ajouts du 3 juillet 2026** : 1 scénario « les 4 attitudes obligatoires ouvrent la synthèse, au-dessus des optionnelles » (`sprint4-evaluation-finale.spec.ts`) ; nouveau spec `pilotage-alertes.spec.ts` (6 scénarios — KPI coordo + mini-stats par groupe, centre d'alertes formateur, navigation au clic, bascule de formateur Marc TISSIER, alertes du périmètre BTS, référentiel 3 niveaux + E3 sur le livret de Camille) ; `tableau-de-bord-6-apprentis` / `admin-affectations` / `admin-utilisateurs` adaptés aux 8 apprenti·e·s. Quelques specs ont été adaptés aux refontes :
 
@@ -1185,7 +1185,7 @@ LIVRET APPRENTISSAGE/
 ├── cahier-des-charges-livret-apprentissage-v1.5-addendum.md
 ├── design-system/MASTER.md         # palette équilibrée mai 2026
 ├── scripts/                        # déploiement VPS
-├── e2e/                            # tests Playwright (29 specs)
+├── e2e/                            # tests Playwright (30 specs)
 ├── playwright.config.ts            # 2 projets (desktop + mobile)
 ├── package.json
 └── src/
@@ -1193,7 +1193,7 @@ LIVRET APPRENTISSAGE/
     ├── styles/index.css            # variables CSS + utilities couleur-role
     ├── types/index.ts              # modèle (CDC §7 + chantiers mai 2026)
     ├── lib/                        # 55 modules + 52 fichiers tests
-    │   ├── droits.ts               # matrice §6 (50 ressources × 5 rôles)
+    │   ├── droits.ts               # matrice §6 (57 ressources × 5 rôles)
     │   ├── transitions-fiche.ts    # R15/R16/R17/R21
     │   ├── validation-signature.ts # R18/R20 par lieu (+ attitudes retenues, juillet 2026)
     │   ├── regles-periode.ts       # R11/R12/R13/R14
@@ -1244,7 +1244,7 @@ LIVRET APPRENTISSAGE/
     │   ├── couleurs-role.ts        # polish — mappings Tailwind par rôle
     │   ├── __fixtures__/
     │   └── utils.ts
-    ├── store/                      # 11 stores Zustand persistés
+    ├── store/                      # 12 stores Zustand persistés
     │   ├── useUserStore.ts
     │   ├── useLivretStore.ts       # v25 — sélection d'activités + lignes activiteId (chantier #4)
     │   ├── useApprentiActifStore.ts
@@ -1257,7 +1257,7 @@ LIVRET APPRENTISSAGE/
     │   ├── useEtablissementsStore.ts # v1
     │   ├── useEntreprisesStore.ts  # v1 — entreprises d'accueil (28 juin)
     │   └── useDocumentsStore.ts    # v1 — documents administratifs nominatifs (10 juillet)
-    ├── fixtures/                   # 8 livrets démo (6 CAP + 2 BTS MHR) + utilisateurs + formations + 2 référentiels (dont BTS 3 niveaux)
+    ├── fixtures/                   # 8 livrets démo (6 CAP + 2 BTS MHR) + utilisateurs + formations + 2 référentiels (dont BTS 3 niveaux) + documents administratifs (pdf-demo.ts, documents-demo.ts — 10 juillet)
     ├── components/
     │   ├── admin/
     │   │   ├── ModaleApprenti.tsx
@@ -1265,7 +1265,8 @@ LIVRET APPRENTISSAGE/
     │   │   ├── ModaleFormation.tsx
     │   │   ├── ModalePlanningPeriodes.tsx   # chantier #1
     │   │   ├── ModaleImportReferentiel.tsx  # + blocage mode activités (chantier #4)
-    │   │   └── ModaleImportModeleActivites.tsx # import des modèles d'activités (chantier #4)
+    │   │   ├── ModaleImportModeleActivites.tsx # import des modèles d'activités (chantier #4)
+    │   │   └── ModaleDepotDocument.tsx      # dépôt d'un document administratif nominatif (10 juillet)
     │   ├── layout/
     │   │   ├── AppShell.tsx                 # wrapper avec classe role-actif-X
     │   │   ├── RoleSwitcher.tsx             # icônes inactives colorées
@@ -1300,6 +1301,7 @@ LIVRET APPRENTISSAGE/
     │   ├── FicheSuiviPeriodes.tsx           # lecture seule (chantier #1)
     │   ├── FicheSuiviPeriodeDetail.tsx
     │   ├── Synthese.tsx                     # ex-EvaluationFinale — /livret/synthese (juillet 2026)
+    │   ├── DocumentsAdministratifs.tsx      # documents nominatifs + attestation signée (10 juillet)
     │   ├── PronoteWeb.tsx
     │   ├── AccesMobile.tsx                  # QR code d'accès (encadrement — 3 juillet)
     │   └── admin/
@@ -1398,8 +1400,8 @@ npm run dev            # serveur Vite sur http://localhost:5173
 ### Tests / qualité
 
 ```bash
-npm test               # 636 tests Vitest
-npm run e2e            # 196 tests E2E Playwright (build + preview + tests)
+npm test               # 715 tests Vitest
+npm run e2e            # 213 tests E2E Playwright (build + preview + tests)
 npm run e2e:ui         # UI Playwright pour debug
 npm run typecheck      # tsc --noEmit
 npm run lint           # ESLint
@@ -1450,7 +1452,7 @@ location.reload();
 - **2 entretiens par livret** (chantier #2) : `Livret.entretien1` + `entretien2`, mutations indexées par `numero: 1 | 2`. Auto-marquage de la sélection compétences à 3ᵉ signature E1 uniquement.
 - **Tests TDD ciblés** sur la logique métier pure (`lib/`) ; les composants UI sont testés via Playwright E2E
 - **Migration localStorage par bump de version** : reset complet à chaque bump (pas de migration logicielle, données fictives)
-- **11 stores Zustand persistés avec import croisé** : synchronisations cross-store dans les actions, cycle résolu par ESM
+- **12 stores Zustand persistés avec import croisé** : synchronisations cross-store dans les actions, cycle résolu par ESM
 - **Cohérence référentielle protectrice** : suppressions bloquées en cascade (apprenti·e si livret actif, maître/formateur si rattachements, formation si apprenti·e·s, référentiel si formations rattachées, période formation si fiches signées, événement organisation si verrouillé, question banque si utilisée, établissement si formation rattachée)
 - **Palette par rôle** (équilibrage mai 2026) : 5 tokens dans `tailwind.config.ts` + variable CSS `--ring` dynamique au niveau du wrapper AppShell pour propager la couleur du rôle actif à tous les focus/hover/sélection. PDF aligné sur la même charte.
 - **Mobile-first responsive** : drawer + RoleSwitcher compact + audit Playwright dédié 12 tests
