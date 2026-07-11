@@ -744,7 +744,8 @@ règlement…) rejoignent la maquette — **nominatifs, par apprenti·e**, avec
   et **Yanis ×1** (public non attesté) — PDF de démo 1 page générés par
   `fixtures/pdf-demo.ts` (⚠ btoa exige du latin-1 strict : sanitisation des
   apostrophes typographiques intégrée)
-- **UI** : page **`/livret/documents`** (sidebar tous rôles) — cartes avec
+- **UI** : page **`/livret/documents`** (sidebar tous rôles, **juste après le
+  Tableau de bord** — demande pilote du 10 juillet) — cartes avec
   badge « Réservé à l'apprenti·e », consultation (Blob éphémère — Chrome
   bloque les data-URL top-frame), dépôt via `ModaleDepotDocument`
   (fichier + titre pré-rempli + flag), **signature tactile** via `BoutonSigner`

@@ -48,6 +48,9 @@ interface LienItem {
 
 const LIENS_LIVRET: LienItem[] = [
   { to: '/', label: 'Tableau de bord', Icon: LayoutDashboard },
+  // Documents administratifs nominatifs (10 juillet 2026 — demande direction) :
+  // partie 1 du livret papier, en tête comme dans le document d'origine.
+  { to: '/livret/documents', label: 'Documents administratifs', Icon: FileText },
   { to: '/livret/organisation-suivi', label: 'Fiches de suivi', Icon: CalendarRange },
   // Le lien « Entretien tripartite » est inséré dynamiquement après ce point
   // (cf. NavContenu) — il n'apparaît que si l'événement correspondant existe
@@ -57,9 +60,6 @@ const LIENS_LIVRET: LienItem[] = [
   // « Synthèse » (juillet 2026 — anciennement « Évaluation finale ») :
   // compétences abordées en stage + attitudes professionnelles.
   { to: '/livret/synthese', label: 'Synthèse', Icon: Target },
-  // Documents administratifs nominatifs (10 juillet 2026 — demande direction) :
-  // partie 1 du livret papier, attestation obligatoire de l'apprenti·e.
-  { to: '/livret/documents', label: 'Documents administratifs', Icon: FileText },
   { to: '/livret/pronote', label: 'Pronote WEB', Icon: ExternalLink },
 ];
 
@@ -184,12 +184,14 @@ function NavContenu({ onNavigate }: { onNavigate?: () => void }) {
     });
   }
 
-  // Insertion entre « Fiches de suivi » (index 1) et « Période en Entreprise ».
+  // Insertion entre « Fiches de suivi » (index 2 — « Documents administratifs »
+  // occupe l'index 1 depuis le 10 juillet 2026) et « Période en Entreprise ».
   const liensLivret = [
     LIENS_LIVRET[0],
     LIENS_LIVRET[1],
+    LIENS_LIVRET[2],
     ...liensEntretiens,
-    ...LIENS_LIVRET.slice(2),
+    ...LIENS_LIVRET.slice(3),
   ];
 
   // Accès mobile (3 juillet 2026) : QR code d'accès à l'application — réservé
