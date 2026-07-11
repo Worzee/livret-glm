@@ -4,6 +4,7 @@ import { Briefcase, CalendarRange, ChevronRight, GraduationCap, Search } from 'l
 import type { Apprenti, Formation, Livret } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
+import { useDocumentsStore } from '@/store/useDocumentsStore';
 import { useApprentiActifStore } from '@/store/useApprentiActifStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
@@ -49,6 +50,7 @@ export function TableauDeBord() {
   const setFormateurActif = useUserStore((s) => s.setFormateurActif);
   const livrets = useLivretStore((s) => s.livrets);
   const basculerPointAlerteTraite = useLivretStore((s) => s.basculerPointAlerteTraite);
+  const documents = useDocumentsStore((s) => s.documents);
   const setApprentiActif = useApprentiActifStore((s) => s.setApprentiActif);
   const apprentis = useUtilisateursStore((s) => s.apprentis);
   const maitres = useUtilisateursStore((s) => s.maitres);
@@ -69,6 +71,7 @@ export function TableauDeBord() {
     [utilisateurActif, apprentis, formations],
   );
   const maitresList = useMemo(() => Object.values(maitres), [maitres]);
+  const documentsList = useMemo(() => Object.values(documents), [documents]);
   const formateursList = useMemo(() => Object.values(formateurs), [formateurs]);
   const apprentisList = useMemo(() => Object.values(apprentis), [apprentis]);
   const annees = useMemo(
@@ -230,6 +233,7 @@ export function TableauDeBord() {
           role={roleActif}
           apprentis={apprentisVisibles}
           livrets={livrets}
+          documents={documentsList}
           onOuvrir={ouvrirAlerte}
           onTraiter={peutEditer(roleActif, 'point-alerte.traiter') ? traiterPointAlerte : undefined}
         />

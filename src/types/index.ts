@@ -780,6 +780,53 @@ export interface Livret {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Documents administratifs (10 juillet 2026 — demande direction)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Document administratif NOMINATIF d'un·e apprenti·e (partie 1 du livret
+ * papier : engagements, convention, règlement…), déposé par la coordination
+ * (coordo / admin) et à faire signer par l'apprenti·e (signature manuscrite
+ * tactile obligatoire, rappelée dans le PDF de synthèse).
+ *
+ * Visibilité : tous les rôles ayant accès au livret, SAUF si `reserveApprenti`
+ * — le document n'est alors consultable que par l'apprenti·e, le coordo et
+ * l'admin (maître / tuteur et formateur exclus — cf. `lib/documents-administratifs`).
+ *
+ * ⚠ Maquette (étape 1) : le fichier vit en data-URL dans le localStorage
+ * (taille plafonnée à l'import). En étape 2, le binaire part sur **Nuage**
+ * (Nextcloud apps.education.fr) via WebDAV et `dataUrl` devient une référence
+ * — cf. STACK_GRETA_LYON.md §3.4 et TODO-etape-2.md.
+ */
+export interface DocumentAdministratif {
+  id: string;
+  /** Apprenti·e concerné·e — le document est nominatif. */
+  apprentiId: string;
+  /** Titre lisible (ex. « Partie 1 — Engagements du livret »). */
+  titre: string;
+  nomFichier: string;
+  /** Type MIME du fichier (PDF ou image — cf. `TYPES_DOCUMENT_AUTORISES`). */
+  mimeType: string;
+  /** Taille du fichier en octets (plafonnée à l'import). */
+  taille: number;
+  /** Contenu du fichier en data-URL (maquette — étape 2 : référence Nuage). */
+  dataUrl: string;
+  /** Consultation restreinte à l'apprenti·e + coordo + admin. */
+  reserveApprenti: boolean;
+  deposeParId: string;
+  deposeParNom: string;
+  deposeParRole: Role;
+  /** Horodatage ISO 8601 du dépôt. */
+  deposeLe: string;
+  /**
+   * Attestation de prise de connaissance par l'apprenti·e — signature
+   * manuscrite tactile (pattern `SignaturePartie` : horodatage R19, retrait
+   * impossible). `signe: false` tant que l'apprenti·e n'a pas signé.
+   */
+  attestation: SignaturePartie;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 12 — Historique et traçabilité
 // ─────────────────────────────────────────────────────────────────────────────
 

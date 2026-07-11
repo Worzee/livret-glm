@@ -18,6 +18,7 @@ import { GestionEntreprises } from '@/pages/admin/GestionEntreprises';
 import { GestionAttitudes } from '@/pages/admin/GestionAttitudes';
 import { PronoteWeb } from '@/pages/PronoteWeb';
 import { AccesMobile } from '@/pages/AccesMobile';
+import { DocumentsAdministratifs } from '@/pages/DocumentsAdministratifs';
 
 /**
  * Composition des routes de l'application.
@@ -46,6 +47,7 @@ export function App() {
         />
         {/* « Synthèse » (juillet 2026 — anciennement « Évaluation finale ») ;
             l'ancienne URL redirige pour ne casser aucun favori. */}
+        <Route path="livret/documents" element={<DocumentsAdministratifs />} />
         <Route path="livret/synthese" element={<Synthese />} />
         <Route
           path="livret/evaluation-finale"

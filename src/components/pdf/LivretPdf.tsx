@@ -7,6 +7,7 @@ import type {
   AttitudeProfessionnelle,
   BlocCompetences,
   Competence,
+  DocumentAdministratif,
   Entreprise,
   EntretienTripartite,
   Etablissement,
@@ -95,6 +96,13 @@ export interface LivretPdfProps {
    * « via activité X — Période N »). Absent en mode compétences.
    */
   modeleActivites?: ModeleActivites;
+  /**
+   * Documents administratifs nominatifs de l'apprenti·e (10 juillet 2026) —
+   * rappel des attestations de prise de connaissance dans le PDF (obligation
+   * pilote). Les documents « réservés à l'apprenti·e » n'exposent pas leur
+   * titre (le PDF circule au-delà du cercle apprenti + coordo + admin).
+   */
+  documents?: DocumentAdministratif[];
   /** ISO de la date d'export (test injectable). */
   dateExport?: string;
 }
@@ -111,6 +119,7 @@ export function LivretPdf({
   entreprise,
   attitudes,
   modeleActivites,
+  documents,
   dateExport,
 }: LivretPdfProps) {
   const date = dateExport ?? new Date().toISOString();
@@ -137,6 +146,9 @@ export function LivretPdf({
         livret={livret}
         dateExport={date}
       />
+      {/* Documents administratifs (10 juillet 2026) — miroir de la partie 1
+          du livret papier, en tête comme dans le document d'origine. */}
+      {documents && documents.length > 0 && <PageDocumentsAdministratifs documents={documents} />}
       <PageOrganisation livret={livret} />
       {livret.entretien && (
         <PageEntretien
@@ -686,6 +698,61 @@ function Ligne({ label, valeur }: { label: string; valeur: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Section : Fiches de suivi (anciennement « Organisation du suivi »)
 // ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Documents administratifs nominatifs (10 juillet 2026) — rappel des
+ * attestations de prise de connaissance (demande pilote : « rappel des
+ * documents signés dans le PDF de synthèse »). Les documents réservés à
+ * l'apprenti·e sont listés SANS leur titre : le PDF exporté circule au-delà
+ * du cercle apprenti·e + coordo + admin.
+ */
+export function PageDocumentsAdministratifs({ documents }: { documents: DocumentAdministratif[] }) {
+  const tries = [...documents].sort((a, b) => a.deposeLe.localeCompare(b.deposeLe));
+  return (
+    <Page size="A4" style={styles.page}>
+      <PiedDePage dateExport={new Date().toISOString()} />
+      <View>
+        <Text style={styles.h1}>Documents administratifs</Text>
+        <Text style={[styles.italique, { marginBottom: 12 }]}>
+          Documents nominatifs remis à l'apprenti·e (partie 1 du livret) : l'apprenti·e atteste de
+          leur prise de connaissance par une signature manuscrite, obligatoire pour chaque document.
+        </Text>
+        {tries.map((d) => (
+          <View key={d.id} style={[styles.encart, { marginBottom: 8 }]} wrap={false}>
+            <Text style={styles.h3}>
+              {d.reserveApprenti ? 'Document réservé à l’apprenti·e' : d.titre}
+            </Text>
+            <Text style={{ fontSize: 8, color: '#666', marginBottom: 4 }}>
+              Déposé le {formaterDateCourte(d.deposeLe)} par {d.deposeParNom}
+            </Text>
+            {d.attestation.signe ? (
+              <>
+                {d.attestation.trace && (
+                  <Image
+                    src={d.attestation.trace}
+                    style={{
+                      height: 28,
+                      objectFit: 'contain',
+                      objectPosition: 'left',
+                      marginBottom: 2,
+                    }}
+                  />
+                )}
+                <Text style={styles.signatureValeur}>
+                  Prise de connaissance attestée le {formaterDateHeure(d.attestation.dateSignature)}
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.signatureManquante}>
+                Attestation de prise de connaissance manquante (obligatoire)
+              </Text>
+            )}
+          </View>
+        ))}
+      </View>
+    </Page>
+  );
+}
 
 export function PageOrganisation({ livret }: { livret: Livret }) {
   const o = livret.organisationSuivi;

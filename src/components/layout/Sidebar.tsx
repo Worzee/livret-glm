@@ -8,6 +8,7 @@ import {
   ClipboardList,
   ExternalLink,
   FileSpreadsheet,
+  FileText,
   GraduationCap,
   LayoutDashboard,
   Library,
@@ -56,6 +57,9 @@ const LIENS_LIVRET: LienItem[] = [
   // « Synthèse » (juillet 2026 — anciennement « Évaluation finale ») :
   // compétences abordées en stage + attitudes professionnelles.
   { to: '/livret/synthese', label: 'Synthèse', Icon: Target },
+  // Documents administratifs nominatifs (10 juillet 2026 — demande direction) :
+  // partie 1 du livret papier, attestation obligatoire de l'apprenti·e.
+  { to: '/livret/documents', label: 'Documents administratifs', Icon: FileText },
   { to: '/livret/pronote', label: 'Pronote WEB', Icon: ExternalLink },
 ];
 

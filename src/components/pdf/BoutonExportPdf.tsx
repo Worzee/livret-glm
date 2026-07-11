@@ -3,6 +3,7 @@ import { AlertTriangle, FileDown } from 'lucide-react';
 import type {
   Apprenti,
   AttitudeProfessionnelle,
+  DocumentAdministratif,
   Entreprise,
   Etablissement,
   Formateur,
@@ -67,6 +68,11 @@ interface BoutonExportPdfProps {
    * chantier #4) : fiches par activités + Synthèse projetée dans le PDF.
    */
   modeleActivites?: ModeleActivites;
+  /**
+   * Documents administratifs nominatifs (10 juillet 2026) — rappel des
+   * attestations dans le PDF du livret complet.
+   */
+  documents?: DocumentAdministratif[];
   /** Document à générer (défaut : livret complet). */
   variante?: VarianteExportPdf;
   /** Libellé du bouton (défaut : « Exporter le livret »). */

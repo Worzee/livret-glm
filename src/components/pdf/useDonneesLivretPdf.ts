@@ -1,6 +1,7 @@
 import type {
   Apprenti,
   AttitudeProfessionnelle,
+  DocumentAdministratif,
   Entreprise,
   Etablissement,
   Formateur,
@@ -17,6 +18,7 @@ import { useEtablissementsStore } from '@/store/useEtablissementsStore';
 import { useEntreprisesStore } from '@/store/useEntreprisesStore';
 import { useAttitudesStore } from '@/store/useAttitudesStore';
 import { useActivitesStore } from '@/store/useActivitesStore';
+import { useDocumentsStore } from '@/store/useDocumentsStore';
 import { getMaitreByIdFromStore } from '@/store/useUtilisateursStore';
 import { modeEffectif } from '@/lib/mode-evaluation';
 import { referentielEvaluable } from '@/lib/limite-referentiel';
@@ -40,6 +42,11 @@ export interface DonneesLivretPdf {
    * (juillet 2026 — chantier #4) : fiches par activités + Synthèse projetée.
    */
   modeleActivites?: ModeleActivites;
+  /**
+   * Documents administratifs nominatifs de l'apprenti·e (10 juillet 2026) —
+   * rappel des attestations dans le PDF du livret complet.
+   */
+  documents: DocumentAdministratif[];
 }
 
 /**
@@ -59,6 +66,7 @@ export function useDonneesLivretPdf(): DonneesLivretPdf | null {
   const entreprises = useEntreprisesStore((s) => s.entreprises);
   const attitudesMap = useAttitudesStore((s) => s.attitudes);
   const modeles = useActivitesStore((s) => s.modeles);
+  const documentsMap = useDocumentsStore((s) => s.documents);
   const ctx = useApprentiActif();
 
   if (!ctx) return null;
@@ -92,5 +100,6 @@ export function useDonneesLivretPdf(): DonneesLivretPdf | null {
     entreprise,
     attitudes: Object.values(attitudesMap),
     modeleActivites,
+    documents: Object.values(documentsMap).filter((d) => d.apprentiId === apprenti.id),
   };
 }

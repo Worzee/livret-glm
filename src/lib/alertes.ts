@@ -1,7 +1,15 @@
-import type { Apprenti, FicheSuiviPeriode, LieuFiche, Livret, Role } from '@/types';
+import type {
+  Apprenti,
+  DocumentAdministratif,
+  FicheSuiviPeriode,
+  LieuFiche,
+  Livret,
+  Role,
+} from '@/types';
 import { calculerAlerteR7, entretienSigneParTous } from './regles-entretien';
 import { estMotifEntretienTripartite } from './organisation-suivi';
 import { pointsAlerteNonTraites } from './points-alerte';
+import { documentsApprentiVisibles, documentsNonAttestes } from './documents-administratifs';
 
 /**
  * Centre d'alertes du tableau de bord (3 juillet 2026 — préparation démo
@@ -22,6 +30,7 @@ export type TypeAlerte =
   | 'point-alerte-entretien'
   | 'signature-entretien'
   | 'signature-fiche'
+  | 'document-a-attester'
   | 'entretien-a-initialiser'
   | 'fiche-a-verrouiller'
   | 'affectation-incomplete';
@@ -73,6 +82,7 @@ export function alertesTableauBord(
   apprentis: ReadonlyArray<Apprenti>,
   livrets: Readonly<Record<string, Livret>>,
   maintenant: Date = new Date(),
+  documents: ReadonlyArray<DocumentAdministratif> = [],
 ): AlerteTableauBord[] {
   const alertes: AlerteTableauBord[] = [];
   const livretParApprenti = new Map(Object.values(livrets).map((l) => [l.apprentiId, l]));
@@ -81,6 +91,25 @@ export function alertesTableauBord(
     const livret = livretParApprenti.get(apprenti.id);
     if (!livret) continue;
     const nom = `${apprenti.prenom} ${apprenti.nom}`;
+
+    // ── Documents administratifs non attestés (10 juillet 2026) ────────────
+    //    Suivi de l'obligation par l'encadrement : formateur (documents non
+    //    réservés — `documentsApprentiVisibles` filtre), coordo et admin
+    //    (tous). L'apprenti·e a son bandeau dédié sur son tableau de bord.
+    if (role === 'formateur' || role === 'coordo' || role === 'admin') {
+      for (const d of documentsNonAttestes(
+        documentsApprentiVisibles(documents, apprenti.id, role),
+      )) {
+        alertes.push({
+          id: `document-${d.id}`,
+          type: 'document-a-attester',
+          apprentiId: apprenti.id,
+          apprentiNom: nom,
+          message: `Document « ${d.titre} » : signature de l'apprenti·e attendue`,
+          lien: '/livret/documents',
+        });
+      }
+    }
 
     // ── R7 : entretien tripartite en retard (formateur / coordo / admin) ───
     if (role === 'formateur' || role === 'coordo' || role === 'admin') {
@@ -208,9 +237,10 @@ export function alertesTableauBord(
     'point-alerte-entretien': 1,
     'signature-entretien': 2,
     'signature-fiche': 3,
-    'entretien-a-initialiser': 4,
-    'fiche-a-verrouiller': 5,
-    'affectation-incomplete': 6,
+    'document-a-attester': 4,
+    'entretien-a-initialiser': 5,
+    'fiche-a-verrouiller': 6,
+    'affectation-incomplete': 7,
   };
   return alertes.sort(
     (a, b) => ORDRE[a.type] - ORDRE[b.type] || a.apprentiNom.localeCompare(b.apprentiNom, 'fr'),

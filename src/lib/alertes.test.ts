@@ -220,6 +220,72 @@ describe('alertesTableauBord — coordo / admin (sans droit pédagogique)', () =
   });
 });
 
+describe('alertesTableauBord — documents administratifs non attestés (10 juillet 2026)', () => {
+  const docBase = {
+    apprentiId: 'a1',
+    nomFichier: 'x.pdf',
+    mimeType: 'application/pdf',
+    taille: 1000,
+    dataUrl: 'data:application/pdf;base64,JVBERi0xLjQ=',
+    deposeParId: 'u-coordo',
+    deposeParNom: 'Coordo TEST',
+    deposeParRole: 'coordo' as const,
+    deposeLe: '2026-07-01T10:00:00.000Z',
+  };
+  const docPublic = {
+    ...docBase,
+    id: 'doc-public',
+    titre: 'Partie 1',
+    reserveApprenti: false,
+    attestation: { signe: false },
+  };
+  const docReserve = {
+    ...docBase,
+    id: 'doc-reserve',
+    titre: 'Convention',
+    reserveApprenti: true,
+    attestation: { signe: false },
+  };
+  const docAtteste = {
+    ...docBase,
+    id: 'doc-ok',
+    titre: 'Règlement',
+    reserveApprenti: false,
+    attestation: { signe: true, dateSignature: '2026-07-02T10:00:00.000Z' },
+  };
+
+  function alertesDocs(role: 'apprenti' | 'maitre' | 'formateur' | 'coordo' | 'admin') {
+    return alertesTableauBord(
+      role,
+      [apprenti('a1')],
+      { l1: livret('a1', { entretien: entretienSigne3() }) },
+      MAINTENANT,
+      [docPublic, docReserve, docAtteste],
+    );
+  }
+
+  function entretienSigne3(): EntretienTripartite {
+    return entretien({
+      apprenti: { signe: true },
+      maitre: { signe: true },
+      formateur: { signe: true },
+    });
+  }
+
+  it("signale à l'encadrement un document non attesté — pas au maître", () => {
+    const coordo = alertesDocs('coordo').filter((x) => x.type === 'document-a-attester');
+    // Coordo : les 2 documents non attestés (public + réservé) ; l'attesté non.
+    expect(coordo.map((x) => x.id).sort()).toEqual(['document-doc-public', 'document-doc-reserve']);
+    expect(coordo[0].lien).toBe('/livret/documents');
+    expect(alertesDocs('maitre').map((x) => x.type)).not.toContain('document-a-attester');
+  });
+
+  it('le formateur ne voit pas les documents réservés à l’apprenti·e', () => {
+    const formateur = alertesDocs('formateur').filter((x) => x.type === 'document-a-attester');
+    expect(formateur.map((x) => x.id)).toEqual(['document-doc-public']);
+  });
+});
+
 describe("alertesTableauBord — points d'alerte de l'entretien (8 juillet 2026)", () => {
   // Entretien signé 3/3 avec une réponse en alerte (logement : alerteSi 'oui').
   const entretienAvecAlerte: EntretienTripartite = {

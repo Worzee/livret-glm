@@ -41,6 +41,14 @@ interface BoutonSignerProps {
    * Refonte mai 2026 (équilibrage graphique) : bg-role-X au lieu de bg-primary.
    */
   role: Extract<Role, 'apprenti' | 'maitre' | 'formateur'>;
+  /**
+   * Phrase de conséquence affichée dans l'encart d'engagement. Par défaut, la
+   * mention R10 des fiches / entretiens ; les documents administratifs
+   * (10 juillet 2026) passent leur propre mention (aucun déverrouillage).
+   */
+  mentionRetrait?: string;
+  /** Libellé du bouton initial (défaut : « Signer en tant que {nomCourt} »). */
+  libelleBouton?: string;
 }
 
 const CLASSE_BG_ROLE: Record<'apprenti' | 'maitre' | 'formateur', string> = {
@@ -56,6 +64,8 @@ export function BoutonSigner({
   raisonsBlocage,
   onConfirmer,
   role,
+  mentionRetrait = 'Elle sera horodatée à l’instant de la confirmation et ne pourra être retirée que via un déverrouillage par le formateur référent (R10).',
+  libelleBouton,
 }: BoutonSignerProps) {
   const [confirmation, setConfirmation] = useState(false);
   // Le tracé manuscrit est-il exploitable (≥ 60 px cumulés) ?
@@ -100,7 +110,7 @@ export function BoutonSigner({
         )}
       >
         <PenLine className="h-4 w-4" aria-hidden="true" />
-        Signer en tant que {nomCourt}
+        {libelleBouton ?? `Signer en tant que ${nomCourt}`}
       </button>
     );
   }
@@ -115,9 +125,8 @@ export function BoutonSigner({
         <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
         <p>
           Vous allez signer en tant que <strong>{libelleEngagement}</strong>.{' '}
-          <strong>Dessinez votre signature ci-dessous</strong> (au doigt, au stylet ou à la souris).
-          Elle sera horodatée à l'instant de la confirmation et ne pourra être retirée que via un
-          déverrouillage par le formateur référent (R10).
+          <strong>Dessinez votre signature ci-dessous</strong> (au doigt, au stylet ou à la souris).{' '}
+          {mentionRetrait}
         </p>
       </div>
 

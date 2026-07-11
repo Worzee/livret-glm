@@ -21,7 +21,9 @@ import { useFormationsStore } from '@/store/useFormationsStore';
 import { useEtablissementsStore } from '@/store/useEtablissementsStore';
 import { useEntreprisesStore } from '@/store/useEntreprisesStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
+import { useDocumentsStore } from '@/store/useDocumentsStore';
 import { useApprentiActifStore } from '@/store/useApprentiActifStore';
+import { documentsApprentiVisibles, documentsNonAttestes } from '@/lib/documents-administratifs';
 import { calculerResumeLivret, classesBadgeCas, libelleCas } from '@/lib/etat-livret';
 import { calculerAlerteR7 } from '@/lib/regles-entretien';
 import { libelleFichePeriode } from '@/lib/validation-fiche-periode';
@@ -56,6 +58,7 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
   const formations = useFormationsStore((s) => s.formations);
   const etablissements = useEtablissementsStore((s) => s.etablissements);
   const entreprises = useEntreprisesStore((s) => s.entreprises);
+  const documents = useDocumentsStore((s) => s.documents);
   const maitres = useUtilisateursStore((s) => s.maitres);
   const formateurs = useUtilisateursStore((s) => s.formateurs);
   const setApprentiActif = useApprentiActifStore((s) => s.setApprentiActif);
@@ -88,6 +91,10 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
   const progCen = progressionFiches(fichesCentre, 'centre');
   const entretienRealise = entretienTenu(livret);
   const jrContrat = joursRestants(apprenti.contratFin);
+  // Documents administratifs à signer (10 juillet 2026 — attestation obligatoire).
+  const documentsASigner = documentsNonAttestes(
+    documentsApprentiVisibles(Object.values(documents), apprenti.id, 'apprenti'),
+  );
 
   function aller(route: string) {
     setApprentiActif(apprenti.id);
@@ -128,6 +135,26 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
             référent.
           </p>
         </div>
+      )}
+
+      {/* Documents administratifs en attente de signature (10 juillet 2026). */}
+      {documentsASigner.length > 0 && (
+        <button
+          type="button"
+          data-testid="bandeau-apprenti-documents"
+          onClick={() => aller('/livret/documents')}
+          className="flex w-full items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-left text-sm text-amber-900 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <ClipboardList className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <span className="min-w-0 flex-1">
+            <strong>
+              {documentsASigner.length} document{documentsASigner.length > 1 ? 's' : ''}{' '}
+              administratif{documentsASigner.length > 1 ? 's' : ''} à signer
+            </strong>{' '}
+            : votre signature atteste que vous en avez pris connaissance (obligatoire).
+          </span>
+          <ArrowRight className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+        </button>
       )}
 
       <div className="grid gap-4 lg:grid-cols-3">

@@ -160,4 +160,22 @@ Pas critique pour la démo. À traiter lors du démarrage de l'étape 2.
 
 ---
 
+## 2026-07-10 — Documents administratifs : stockage des fichiers sur Nuage
+
+- **Déporter les binaires des documents administratifs sur Nuage** (Nextcloud
+  national de l'Éducation nationale, `apps.education.fr` — 100 Go, hébergé en
+  France) via **WebDAV côté backend** (o2switch). En maquette, les fichiers
+  vivent en **data-URL dans `livret-documents`** (localStorage), plafonnés à
+  2 Mo/fichier (`TAILLE_MAX_DOCUMENT_OCTETS`) — la limite navigateur ~5 Mo est
+  partagée avec les livrets, inadaptée à la production multi-promos.
+  Motif : l'intégration réelle exige un secret (mot de passe d'application
+  WebDAV) impossible à embarquer dans une SPA sans l'exposer ; c'est un pattern
+  backend étape 2. Recette complète : `STACK_GRETA_LYON.md` §3.4 (client
+  WebDAV, `.env`) et §7.5-7.7 (RGPD : durées de conservation, purge effective,
+  sous-traitance art. 28 — documents nominatifs). Le champ
+  `DocumentAdministratif.dataUrl` devient alors une référence (chemin Nuage).
+  Cadrage : [`chantier-demandes-direction-2026-07.md`](chantier-demandes-direction-2026-07.md).
+
+---
+
 _Maintenu à jour à chaque vague de livraison. Cf. PROJECT-STATUS.md §8 pour le statut courant._

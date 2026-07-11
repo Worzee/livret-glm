@@ -2,6 +2,7 @@ import { PDFDownloadLink } from '@react-pdf/renderer';
 import type {
   Apprenti,
   AttitudeProfessionnelle,
+  DocumentAdministratif,
   Entreprise,
   Etablissement,
   Formateur,
@@ -50,6 +51,8 @@ interface ExportPdfLazyProps {
   attitudes: ReadonlyArray<AttitudeProfessionnelle>;
   /** Modèle d'activités (mode activités — chantier #4, juillet 2026). */
   modeleActivites?: ModeleActivites;
+  /** Documents administratifs nominatifs (10 juillet 2026) — livret complet. */
+  documents?: DocumentAdministratif[];
 }
 
 export default function ExportPdfLazy({ variante, ...donnees }: ExportPdfLazyProps) {

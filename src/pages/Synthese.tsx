@@ -7,6 +7,7 @@ import { useReferentielsStore } from '@/store/useReferentielsStore';
 import { useEtablissementsStore } from '@/store/useEtablissementsStore';
 import { useAttitudesStore } from '@/store/useAttitudesStore';
 import { useActivitesStore } from '@/store/useActivitesStore';
+import { useDocumentsStore } from '@/store/useDocumentsStore';
 import { peutEditer } from '@/lib/droits';
 import { modeEffectif } from '@/lib/mode-evaluation';
 import { referentielEvaluable } from '@/lib/limite-referentiel';
@@ -46,6 +47,7 @@ export function Synthese() {
   const etablissements = useEtablissementsStore((s) => s.etablissements);
   const attitudesMap = useAttitudesStore((s) => s.attitudes);
   const modeles = useActivitesStore((s) => s.modeles);
+  const documentsMap = useDocumentsStore((s) => s.documents);
   const ctx = useApprentiActif();
 
   if (!ctx) return <AucunApprentiSelectionne />;
@@ -108,6 +110,7 @@ export function Synthese() {
           etablissement={etablissement}
           attitudes={Object.values(attitudesMap)}
           modeleActivites={modeleActivites}
+          documents={Object.values(documentsMap).filter((d) => d.apprentiId === apprenti.id)}
         />
       </header>
 

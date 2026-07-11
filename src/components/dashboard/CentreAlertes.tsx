@@ -5,6 +5,7 @@ import {
   Check,
   CheckCircle2,
   ChevronRight,
+  FileText,
   Flag,
   Lock,
   PenLine,
@@ -12,7 +13,7 @@ import {
   UserX,
   X,
 } from 'lucide-react';
-import type { Apprenti, Livret, Role } from '@/types';
+import type { Apprenti, DocumentAdministratif, Livret, Role } from '@/types';
 import { alertesTableauBord, type AlerteTableauBord, type TypeAlerte } from '@/lib/alertes';
 
 /**
@@ -24,6 +25,7 @@ import { alertesTableauBord, type AlerteTableauBord, type TypeAlerte } from '@/l
 const ICONES: Record<TypeAlerte, React.ReactNode> = {
   'alerte-r7': <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden="true" />,
   'point-alerte-entretien': <Flag className="h-4 w-4 text-amber-600" aria-hidden="true" />,
+  'document-a-attester': <FileText className="h-4 w-4 text-amber-600" aria-hidden="true" />,
   'signature-entretien': <PenLine className="texte-couleur-role h-4 w-4" aria-hidden="true" />,
   'signature-fiche': <PenLine className="texte-couleur-role h-4 w-4" aria-hidden="true" />,
   'entretien-a-initialiser': (
@@ -37,6 +39,8 @@ interface CentreAlertesProps {
   role: Role;
   apprentis: Apprenti[];
   livrets: Record<string, Livret>;
+  /** Documents administratifs (10 juillet 2026) — suivi des attestations. */
+  documents: DocumentAdministratif[];
   onOuvrir: (alerte: AlerteTableauBord) => void;
   /**
    * Marque « traité » un point d'alerte de l'entretien (8 juillet 2026 — coordo
@@ -50,12 +54,13 @@ export function CentreAlertes({
   role,
   apprentis,
   livrets,
+  documents,
   onOuvrir,
   onTraiter,
 }: CentreAlertesProps) {
   const alertes = useMemo(
-    () => alertesTableauBord(role, apprentis, livrets),
-    [role, apprentis, livrets],
+    () => alertesTableauBord(role, apprentis, livrets, new Date(), documents),
+    [role, apprentis, livrets, documents],
   );
 
   if (apprentis.length === 0) return null;

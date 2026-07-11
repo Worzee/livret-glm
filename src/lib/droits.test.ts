@@ -238,6 +238,21 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('maitre', 'cloturer-livret')).toBe(false);
     });
 
+    it('les documents administratifs : dépôt coordo / admin, attestation apprenti·e seul·e (10 juillet 2026)', () => {
+      // Dépôt / retrait / flag « réservé » = gestion administrative.
+      expect(peutEditer('coordo', 'documents.gerer')).toBe(true);
+      expect(peutEditer('admin', 'documents.gerer')).toBe(true);
+      expect(peutEditer('formateur', 'documents.gerer')).toBe(false);
+      expect(peutEditer('apprenti', 'documents.gerer')).toBe(false);
+      expect(peutEditer('maitre', 'documents.gerer')).toBe(false);
+      // L'attestation (signature tactile) est un acte personnel de l'apprenti·e.
+      expect(peutEditer('apprenti', 'documents.attester')).toBe(true);
+      expect(peutEditer('coordo', 'documents.attester')).toBe(false);
+      expect(peutEditer('admin', 'documents.attester')).toBe(false);
+      expect(peutEditer('formateur', 'documents.attester')).toBe(false);
+      expect(peutEditer('maitre', 'documents.attester')).toBe(false);
+    });
+
     it("le suivi des points d'alerte de l'entretien est réservé au coordo / admin (8 juillet 2026)", () => {
       // Acte de GESTION (marquer « traité ») — pas d'écriture pédagogique.
       expect(peutEditer('coordo', 'point-alerte.traiter')).toBe(true);

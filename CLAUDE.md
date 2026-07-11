@@ -1,7 +1,7 @@
 # Livret d'apprentissage — GRETA Lyon Métropole
 
 Maquette fonctionnelle (étape 1 du CDC v1.3, livrée + vagues post-livraison) d'un livret
-d'apprentissage dématérialisé. SPA Vite + React 18 + TypeScript strict, 11 stores Zustand
+d'apprentissage dématérialisé. SPA Vite + React 18 + TypeScript strict, 12 stores Zustand
 persistés en localStorage, **sans backend ni auth réelle** (c'est l'étape 2). Déployée sur
 https://livret-glm.duckdns.org (Basic Auth). Pilote métier : Guillaume FERRERI.
 
@@ -15,6 +15,9 @@ https://livret-glm.duckdns.org (Basic Auth). Pilote métier : Guillaume FERRERI.
 - **Chantier référentiels/compétences (modifications #1 à #4 livrées les 6-7 juillet 2026)** :
   `chantier-referentiels-competences.md` — carte complète du sous-système + arbitrages figés
   de chaque modification. LE document à lire avant de toucher aux référentiels / activités
+- **Demandes direction juillet 2026** : `chantier-demandes-direction-2026-07.md` — documents
+  administratifs nominatifs (livré le 2026-07-10, arbitrages + note Nuage/étape 2) et
+  entretiens individuels mi/fin de parcours (EN ATTENTE — questions à arbitrer avant de coder)
 - `STACK_GRETA_LYON.md` et `_kit-deploiement-o2switch/` : doctrine portefeuille Greta,
   **volontairement non commités** — ne pas les ajouter à un commit du livret
 
@@ -22,8 +25,8 @@ https://livret-glm.duckdns.org (Basic Auth). Pilote métier : Guillaume FERRERI.
 
 ```bash
 npm run dev            # Vite sur :5173
-npm test               # Vitest (701 tests au 2026-07-10)
-npm run e2e            # build + Playwright (208 tests) — c'est LA validation de référence
+npm test               # Vitest (715 tests au 2026-07-10)
+npm run e2e            # build + Playwright (213 tests) — c'est LA validation de référence
 npm run typecheck      # tsc --noEmit — ⚠ le build prod (tsc -b) voit PLUS que lui
 npm run build          # à passer avant tout push
 npm run lint && npm run format

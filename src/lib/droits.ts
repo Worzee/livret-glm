@@ -129,6 +129,12 @@ export type Ressource =
   // GESTION (n'écrit rien dans l'entretien ni dans les évaluations) → coordo +
   // admin, conforme à la doctrine « coordo/admin sans droit pédagogique ».
   | 'point-alerte.traiter'
+  // Documents administratifs nominatifs (10 juillet 2026 — demande direction) :
+  // dépôt / retrait / flag « réservé » par la coordination ; l'ATTESTATION
+  // (signature tactile de prise de connaissance) est un acte personnel de
+  // l'apprenti·e — coordo/admin exclus, doctrine inchangée.
+  | 'documents.gerer'
+  | 'documents.attester'
   | 'cloturer-livret'
   // ── Administration (rôle coordo, hors CDC v1.3 — extension métier) ────────
   | 'admin.utilisateurs.creer-apprenti'
@@ -247,6 +253,10 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'acces-mobile': ['formateur', 'coordo', 'admin'],
   // Suivi de gestion (8 juillet 2026) — pas de contenu pédagogique.
   'point-alerte.traiter': ['coordo', 'admin'],
+  // Documents administratifs (10 juillet 2026) : dépôt par la coordination,
+  // attestation personnelle de l'apprenti·e.
+  'documents.gerer': ['coordo', 'admin'],
+  'documents.attester': ['apprenti'],
   'cloturer-livret': ['formateur'],
 
   // ── Administration (rôles coordo, admin et formateur partiel) ──────────
