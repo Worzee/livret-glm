@@ -2,8 +2,8 @@
 
 Cadrage des deux demandes formulées par la direction du GRETA Lyon Métropole
 (transmises par le pilote le 2026-07-10). La demande 1 est **livrée** (vague du
-2026-07-10) ; la demande 2 est **en attente d'arbitrages** (« on verra plus
-tard » — pilote).
+2026-07-10) ; la demande 2 est **cadrée** (arbitrages du 2026-07-12), en
+attente des **trames officielles GRETA** avant de coder.
 
 ---
 
@@ -65,7 +65,7 @@ pièces nominatives). Tracé dans `TODO-etape-2.md`.
 
 ---
 
-## Demande 2 — Trames des entretiens individuels (mi-parcours / fin de parcours) ⏳ EN ATTENTE
+## Demande 2 — Trames des entretiens individuels (mi-parcours / fin de parcours) 🔶 CADRÉE
 
 > « Est-il possible d'intégrer en plus au livret les trames des entretiens
 > individuels de mi-parcours et fin de parcours (accessibles coordo et
@@ -77,21 +77,41 @@ tripartite). Cohérent avec le chantier #1 : le tripartite unique = première
 visite AVEC le maître ; ces entretiens individuels = un autre objet, sans le
 tuteur.
 
-### Questions à arbitrer AVANT de coder (pilote + direction)
+### Arbitrages du pilote (session de cadrage 2026-07-12)
 
-1. **Doctrine des droits (structurant)** : « accessibles coordo et formateur »
-   — le coordo **saisit** ou **consulte** ?
-   - (a) formateur saisit, coordo lecture seule → doctrine « coordo sans
-     droit pédagogique » intacte (option par défaut recommandée) ;
-   - (b) le coordo peut conduire et saisir ces entretiens → exception
-     documentée à la doctrine (défendable : accompagnement de parcours, pas
-     évaluation de compétences) ;
-   - (c) saisie aux deux, chacun le sien (traçabilité de l'auteur).
-2. **Visibilité apprenti·e** : voit-il/elle le contenu ? Le co-signe-t-il/elle ?
-   Confidentialité vis-à-vis du **maître / tuteur** (a priori oui — c'est le
-   sens d'« individuel ») ?
-3. **Trames officielles** : documents GRETA à fournir (rubriques / questions) —
-   figées en dur comme `lib/trame-entretien` (pattern trame E1).
-4. **Signatures** : aucune (compte-rendu) ou apprenti·e + conducteur ?
-5. **Déclenchement** : reliés aux fiches de suivi (motifs d'organisation du
-   suivi + alerte « à réaliser ») ou disponibles à tout moment ?
+1. **Doctrine des droits** : option (b) — le **coordo peut conduire et
+   saisir** ces entretiens, comme le formateur référent. **Exception
+   documentée** à la doctrine « coordo sans droit pédagogique » : l'entretien
+   individuel relève de l'accompagnement de parcours, pas de l'évaluation de
+   compétences. Le **conducteur est tracé** sur chaque compte-rendu (imposé
+   aussi par la signature, cf. point 3).
+2. **Visibilité** : l'**apprenti·e consulte** son entretien ; le **maître /
+   tuteur n'y a pas accès** (c'est le sens d'« individuel »). Coordo,
+   formateur référent et admin y accèdent.
+3. **Signatures** : **apprenti·e + conducteur** — double signature manuscrite
+   tactile horodatée (pattern `BoutonSigner` / `ZoneSignature`, comme les
+   documents administratifs de la demande 1).
+4. **Déclenchement** : **reliés aux fiches de suivi** — motifs d'organisation
+   du suivi + alerte « entretien à réaliser » dans le centre d'alertes.
+
+### Reste à fournir AVANT de coder
+
+- **Trames officielles GRETA** (mi-parcours et fin de parcours) : rubriques et
+  questions — à figer en dur comme `lib/trame-entretien` (pattern trame E1).
+  **Seul prérequis externe** ; c'est au pilote de transmettre les documents.
+
+### Notes d'implémentation (à trancher en début de vague)
+
+- **Conducteur** : proposition — celui (formateur ou coordo) qui **initialise**
+  l'entretien en devient le conducteur ; lui seul appose la signature côté
+  encadrement (l'autre consulte). La saisie des champs reste ouverte aux deux
+  (arbitrage 1) tant que non signé.
+- **Exception doctrine** : le test transverse « ni coordo ni admin n'ont de
+  droits pédagogiques » (`droits.test.ts`) devra exclure les ressources
+  `entretien-individuel.*` avec commentaire daté ; à refléter aussi dans
+  `REGLES-METIER.md` et le §3 du CLAUDE.md (doctrine).
+- **PDF du livret complet** : le maître / tuteur n'a pas accès à ces
+  entretiens, mais le PDF exporté circule — inclure le contenu complet, ou
+  seulement l'état (réalisé le … / signatures), comme les documents réservés
+  de la demande 1 (listés sans titre) ? À arbitrer avec le pilote au moment
+  de coder.
