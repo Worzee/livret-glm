@@ -17,7 +17,8 @@ https://livret-glm.duckdns.org (Basic Auth). Pilote métier : Guillaume FERRERI.
   de chaque modification. LE document à lire avant de toucher aux référentiels / activités
 - **Demandes direction juillet 2026** : `chantier-demandes-direction-2026-07.md` — documents
   administratifs nominatifs (livré le 2026-07-10, arbitrages + note Nuage/étape 2) et
-  entretiens individuels mi/fin de parcours (EN ATTENTE — questions à arbitrer avant de coder)
+  entretiens individuels mi/fin de parcours (ARBITRÉ le 2026-07-12 — ⛔ ne coder qu'après
+  réception des trames officielles GRETA, seul bloquant)
 - `STACK_GRETA_LYON.md` et `_kit-deploiement-o2switch/` : doctrine portefeuille Greta,
   **volontairement non commités** — ne pas les ajouter à un commit du livret
 
