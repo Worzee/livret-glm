@@ -219,7 +219,8 @@ référentiels), verrou de suppression (modèle utilisé), CSV en plus du XLSX (
 **G. Droits.** Nouvelles ressources : `admin.activites.gerer` (import + mapping + choix
 du mode — coordo + admin : ingénierie de formation, pas de contenu pédagogique, cohérent
 avec `admin.referentiels.gerer`) ; `fiche.activites` (tuteur — miroir de
-`fiche.evaluation-entreprise`). Matrice × 5 rôles + tests.
+`fiche.evaluation-entreprise`). Matrice × 5 rôles (6 depuis le 13 juillet 2026 —
+responsable légal) + tests.
 
 **H. UI.** Page/modale admin « Modèles d'activités » avec éditeur de mapping et **jauge
 de balayage** (« X/Y compétences couvertes », liste des manquantes) conditionnant le

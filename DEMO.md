@@ -151,7 +151,7 @@ Référence : cahier des charges v1.3, section 25.
 1. Ouvrir l'URL, saisir le Basic Auth devant le public.
    - 🗣️ _« L'accès est protégé par mot de passe et HTTPS, hébergé sur un VPS européen, sans aucun tracker ni télémétrie. »_
 2. L'application charge sur le **Tableau de bord du formateur référent** (rôle par défaut).
-3. Pointer le **role switcher** en haut à droite (5 rôles : apprenti·e, maître, formateur, coordo, admin). _(Le bandeau « MAQUETTE DE DÉMONSTRATION » a été retiré en juin 2026 — préciser oralement si besoin que les données sont fictives.)_
+3. Pointer le **role switcher** en haut à droite (6 rôles : apprenti·e, responsable légal — depuis le 13 juillet 2026 —, maître, formateur, coordo, admin). _(Le bandeau « MAQUETTE DE DÉMONSTRATION » a été retiré en juin 2026 — préciser oralement si besoin que les données sont fictives.)_
 4. Montrer rapidement les **6 cartes apprenti·e·s** du tableau de bord (Léa MARTIN — cas principal, Théo DUBOIS — « bon élève », Sofia PEREIRA — alerte R7, Minh NGUYEN — démarrage, Aya KOUAMÉ — désaccord R10, Luca BIANCHI — mi-parcours).
 5. Cliquer sur **« Ouvrir le livret de Léa MARTIN »**.
 

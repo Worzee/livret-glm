@@ -15,7 +15,7 @@ Maquette numérique du livret d'apprentissage, **étape 1 / 3** (CDC v1.3 + adde
 | **URL publique**  | https://livret-glm.duckdns.org                                           |
 | **Accès**         | Basic Auth `demo` / mdp partagé hors-canal                               |
 | **Pilote métier** | Guillaume FERRERI                                                        |
-| **État**          | Étape 1 livrée + 4 vagues post-livraison (CDC v1.5 + chantiers mai 2026) |
+| **État**          | Étape 1 livrée + vagues post-livraison (dernière : réunion DG 13/07/2026) |
 | **Tests**         | **767 unit ✓ · 220 E2E ✓**                                               |
 
 ---
@@ -39,7 +39,7 @@ npm run dev        # Vite serve sur http://localhost:5173
 ```
 
 L'app s'ouvre directement sur le tableau de bord du **formateur référent** (Sophie DUBOIS).
-Tu peux changer de rôle via le **role switcher** en haut à droite (5 rôles : apprenti·e, maître,
+Tu peux changer de rôle via le **role switcher** en haut à droite (6 rôles : apprenti·e, responsable légal, maître,
 formateur, coordo, admin).
 
 ---
@@ -87,8 +87,8 @@ LIVRET APPRENTISSAGE/
 ├── e2e/                                                   ← 30 specs Playwright
 └── src/
     ├── types/index.ts              ← modèle (CDC §7 + extensions v1.5)
-    ├── lib/                        ← logique métier pure + 52 fichiers tests TDD
-    │   ├── droits.ts               ← matrice (57 ressources × 5 rôles)
+    ├── lib/                        ← logique métier pure + 54 fichiers tests TDD
+    │   ├── droits.ts               ← matrice (57 ressources × 6 rôles)
     │   ├── transitions-fiche.ts    ← R15/R16/R17/R21
     │   ├── validation-signature.ts ← R18/R20
     │   ├── regles-periode.ts       ← R11/R12/R13/R14
@@ -114,7 +114,7 @@ LIVRET APPRENTISSAGE/
     │   ├── entretien/              ← sections + SectionSelectionCompetences (CDC v1.5)
     │   ├── evaluation/             ← grilles finales + BandeauCloture
     │   └── pdf/                    ← export lazy @react-pdf/renderer
-    └── pages/                      ← routes + sous-pages admin (5 rôles)
+    └── pages/                      ← routes + sous-pages admin (6 rôles)
 ```
 
 ---
@@ -217,4 +217,4 @@ Pour tout autre incident, consulter `PROJECT-STATUS.md §9` (limites connues) et
 
 ---
 
-_Étape 1 livrée + 4 vagues post-livraison (CDC v1.5 + chantiers métier mai 2026). Prochaine étape : SSO Entra + gestion comptes/mots de passe — cf. `PROJECT-STATUS.md §12`._
+_Étape 1 livrée + vagues post-livraison successives (dernière : réunion DG du 13 juillet 2026 — documents typés obligatoires, dépôt en masse par formation, responsables légaux des mineurs). Prochaine étape : SSO Entra + gestion comptes/mots de passe — cf. `PROJECT-STATUS.md §12`._

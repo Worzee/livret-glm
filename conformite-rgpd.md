@@ -12,6 +12,32 @@
 | **Périmètre**                 | Étape 2 et au-delà (mise en production avec auth réelle, backend, données réelles) |
 | **Responsable de traitement** | GRETA Lyon Métropole (à confirmer)                                                 |
 | **Pilote métier**             | Guillaume FERRERI                                                                  |
+| **⚠ Réexamen requis**         | **2026-07-13 — les MINEURS sont réintroduits** (voir encadré ci-dessous)           |
+
+---
+
+## ⚠ RÉEXAMEN REQUIS — réintroduction des mineurs (2026-07-13)
+
+> La demande 5 de la réunion pilote × directeur général du 2026-07-13
+> (**apprentis mineurs + responsables légaux** — cadrage :
+> [`chantier-demandes-direction-2026-07.md`](chantier-demandes-direction-2026-07.md))
+> **invalide l'hypothèse « apprenti·e·s majeur·e·s uniquement »** sur laquelle
+> repose la 2ᵉ passe de ce document. Le point de vigilance du §5 s'active :
+>
+> - le critère CNIL 7 « **personnes vulnérables (mineurs)** » est de nouveau
+>   rempli → l'**AIPD redevient vraisemblablement obligatoire** (R1 → à
+>   requalifier) ;
+> - les obligations écartées au §2.1 **reviennent au périmètre** : information
+>   des représentants légaux, consentement parental (< 15 ans — a priori sans
+>   objet pour des apprentis de 15+, à confirmer), langage adapté ;
+> - s'y ajoutent les **données des responsables légaux eux-mêmes** (identité,
+>   email, téléphone, lien de parenté — base légale et mentions d'information
+>   à définir) et, à l'étape 2, la **création de leurs comptes**
+>   (`TODO-etape-2.md`).
+>
+> **Action** : 3ᵉ passe de ce document à mener **avec le DPO du GRETA** avant
+> toute mise en production. Les §§1, 2.1, 5 et le classement R1 sont à
+> réviser ; le reste du document demeure valable.
 
 ---
 
@@ -179,6 +205,8 @@ L'**Analyse d'Impact relative à la Protection des Données** (art. 35 RGPD) est
 > **Obligation résiduelle légère** : il reste recommandé (accountability) de **documenter cette analyse de non-assujettissement** dans le registre — une demi-page suffit, attestant que les critères ont été examinés et qu'aucun n'est rempli. Ce n'est pas une AIPD, juste une trace de la décision.
 
 > **Point de vigilance** : si les **mineurs sont réintégrés** plus tard (livret numérique pour les < 18 ans), le critère 7 s'active et **l'AIPD redevient obligatoire**. À réévaluer à ce moment-là.
+>
+> **⚠ 2026-07-13 — ce point de vigilance est DÉCLENCHÉ** : les mineurs sont réintégrés (demande 5, réunion DG — responsables légaux). Voir l'encadré « Réexamen requis » en tête de document.
 
 ---
 

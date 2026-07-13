@@ -66,8 +66,14 @@ bash scripts/verifier-vps.sh    # 11 contrôles préflight (doit rendre 11/11)
 - `tsc --noEmit` passe mais `npm run build` échoue : typages plus stricts en build (ex.
   unions de props react-pdf). Toujours builder avant de conclure.
 - Les E2E comptent les fixtures (8 apprenti·e·s, 2 formations, périmètres Martine 5 /
-  Bernard 3, Karim 4 / Hélène 3, Sophie 6 / Marc 2) — toute fixture ajoutée casse des
-  compteurs à adapter.
+  Bernard 3, Karim 4 / Hélène 3, Sophie 6 / Marc 2, + 2 responsables légaux Thi/Duc
+  NGUYEN) — toute fixture ajoutée casse des compteurs à adapter.
+- **Minh NGUYEN est MINEUR** (né en 2009 — demande 5) : créer un·e apprenti·e né·e après
+  ~2008 (test, fixture, démo) déclenche l'obligation de responsables légaux ; la minorité
+  est recalculée à la date du jour (`lib/minorite`), une fixture « mineure » devient
+  majeure avec le temps.
+- Le RoleSwitcher affiche des libellés courts (« Resp. légal », « Admin ») : les helpers
+  E2E doivent matcher l'aria-label, pas le texte visible (cf. `e2e/helpers.ts`).
 - Le PDF (`src/components/pdf/LivretPdf.tsx`) utilise un wrapper `Text` local qui remplace
   les « — » par « - » : ne pas importer `Text` de react-pdf directement dans ce fichier.
 - Prettier reformate parfois des fichiers non touchés : écarter ce churn des commits.

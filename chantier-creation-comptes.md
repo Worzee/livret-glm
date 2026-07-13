@@ -11,6 +11,31 @@
 | **Périmètre** | Étape 2, chantiers 2.2 + 2.3 |
 | **Dépend de** | Étape 2.0 (backend Node + PostgreSQL) |
 | **Pilote métier** | Guillaume FERRERI |
+| **⚠ À re-cadrer** | **2026-07-13** — la décision 7 (« majeurs uniquement ») est invalidée (voir encadré) |
+
+---
+
+> **⚠ Mise à jour de périmètre (2026-07-13 — réunion DG, demande 5).** Les
+> apprentis **MINEURS entrent au périmètre**, avec **1 à 2 responsables
+> légaux** par mineur (données déjà saisies en maquette : inscription manuelle
+> + import Excel, rattachement fratrie par email). Conséquences sur cette
+> spec, à re-cadrer avant l'étape 2.2 :
+>
+> - **décision 7 invalidée** — la logique d'âge existe désormais
+>   (`lib/minorite`, recalcul au jour) et il y a des représentants légaux à
+>   informer ;
+> - **nouveau public de comptes** : les responsables légaux (email propre,
+>   unicité déjà contrôlée) — mêmes mécanismes lien d'activation / mot de
+>   passe que les apprentis et maîtres, avec un rôle en lecture seule +
+>   attestation des documents (cf. matrice 6 rôles) ;
+> - **question ouverte** : le compte de l'apprenti mineur est-il activé dès
+>   l'inscription ou à la majorité ? (en maquette, le mineur a son accès
+>   classique hors documents) ;
+> - **RGPD** : réexamen DPO requis (`conformite-rgpd.md`, encadré de tête —
+>   AIPD, information des représentants légaux).
+>
+> Cadrage métier : `chantier-demandes-direction-2026-07.md` (demande 5) ;
+> trace : `TODO-etape-2.md` (2026-07-13).
 
 ---
 
@@ -41,7 +66,7 @@
 | 4 | Authentification personnels GRETA | **SSO Entra ID** (étape 2.1) — 2FA imposé nativement par Microsoft |
 | 5 | 2FA apprenti·e + maître | **Aucun** — MdP robuste + rate limit + hashage argon2id jugés suffisants |
 | 6 | Branding emails | **Officiel GRETA** (domaine + logo + charte) — validation par la référente qualité GRETA |
-| 7 | Public concerné | **Apprenti·e·s majeur·e·s uniquement** — les mineur·e·s n'auront pas de livret numérique dans un premier temps (aucune logique d'âge ni information parentale à gérer) |
+| 7 | Public concerné | ~~**Apprenti·e·s majeur·e·s uniquement**~~ — **INVALIDÉE le 2026-07-13** (réunion DG, demande 5) : mineurs réintroduits avec responsables légaux → voir l'encadré de tête, décision à re-prendre |
 | 8 | Qui crée les comptes | **Coordo uniquement** pour la v1 — auto-inscription en piste pour 2027 selon retours |
 | 9 | Type de token d'activation | **Token aléatoire 32 octets**, hashé en BDD (SHA-256), usage unique |
 | 10 | Hashage des mots de passe | **argon2id** (lib `argon2` npm) — fallback bcrypt coût ≥ 12 acceptable |

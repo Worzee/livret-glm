@@ -168,6 +168,12 @@ Pas critique pour la démo. À traiter lors du démarrage de l'étape 2.
   vivent en **data-URL dans `livret-documents`** (localStorage), plafonnés à
   2 Mo/fichier (`TAILLE_MAX_DOCUMENT_OCTETS`) — la limite navigateur ~5 Mo est
   partagée avec les livrets, inadaptée à la production multi-promos.
+  **Mise à jour 2026-07-13 (demandes 3-4)** : concerne aussi les **documents
+  de FORMATION** (`documentsFormation` — dépôt en masse : un dossier Nuage
+  par promo serait naturel) ; en outre, le **remplacement** d'un document
+  (par type, individuel ou en masse) **supprime l'ancien binaire** en
+  maquette (budget localStorage) — l'étape 2 pourra **archiver les versions
+  remplacées** sur Nuage (traçabilité des attestations passées).
   Motif : l'intégration réelle exige un secret (mot de passe d'application
   WebDAV) impossible à embarquer dans une SPA sans l'exposer ; c'est un pattern
   backend étape 2. Recette complète : `STACK_GRETA_LYON.md` §3.4 (client

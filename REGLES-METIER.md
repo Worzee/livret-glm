@@ -7,7 +7,7 @@ plusieurs règles ont évolué depuis (addendum v1.5 + chantiers mai → juillet
 
 - Source d'origine : [`cahier-des-charges-livret-apprentissage-v1.3.md`](cahier-des-charges-livret-apprentissage-v1.3.md) §8
 - État consolidé courant : [`PROJECT-STATUS.md`](PROJECT-STATUS.md) §5
-- Dernière mise à jour de ce fichier : **2026-07-08**
+- Dernière mise à jour de ce fichier : **2026-07-13**
 
 > **Convention** : la logique de chaque règle vit dans une **lib pure testée** de
 > `src/lib/` (TDD) ; les composants sont couverts par les E2E Playwright.
@@ -42,6 +42,34 @@ plusieurs règles ont évolué depuis (addendum v1.5 + chantiers mai → juillet
 | **R22** | Clôture du livret : dernière période `verrouillée` + clic explicite « Clôturer » du formateur. | `cloture-livret` |
 | **R23** | Synthèse visuelle (par bloc) recalculée en temps réel à chaque saisie. | recalcul au render (`stats-bloc`) |
 | **R24** | L'apprenti·e consulte ses évaluations à tout moment, même partielles. | `droits` + bandeau lecture |
+
+### Extensions hors numérotation (13 juillet 2026 — réunion DG, demandes 3-5)
+
+Sans créer de nouvelle règle numérotée, la vague du 13 juillet 2026 étend
+l'**esprit** de plusieurs règles au module **documents administratifs** et au
+**6ᵉ rôle « Responsable légal »** :
+
+- **Attestation de prise de connaissance des documents** : horodatée au clic
+  (esprit **R19**), sans retrait possible — un document attesté est
+  insupprimable, on le remplace en redéposant le même type (esprit **R21**).
+  Conditionnée à la **lecture préalable** du document par l'attestataire.
+  Implémentation : `documents-administratifs` + `useDocumentsStore`.
+- **Attestataire selon la minorité** : l'apprenti·e **majeur·e** atteste
+  lui/elle-même ; pour un·e **mineur·e** (minorité recalculée au jour —
+  `minorite`), le **responsable légal** atteste en lieu et place (un seul des
+  deux suffit). Implémentation : `attestataireDocuments`.
+- **Périmètre du responsable légal** (analogue de R4/R5) : il ne voit que
+  son / ses enfants (`Apprenti.responsableLegalIds` — fratrie possible), en
+  **lecture seule** sur tout le livret sauf l'attestation des documents et la
+  signature du slot « représentant légal » de l'entretien (balayage exhaustif
+  de la matrice en test). Implémentation : `apprentis-accessibles` + `droits`.
+- **Obligation de dépôt** : 4 types de documents obligatoires par apprenti·e
+  (anomalie « dépôt à effectuer » au centre d'alertes coordo/admin tant qu'un
+  type manque) — couverte par un dépôt nominatif OU un document de FORMATION
+  (dépôt en masse, le nominatif prime). Implémentation :
+  `typesObligatoiresManquants` + `documentsEffectifsApprenti`.
+
+Cadrage complet : [`chantier-demandes-direction-2026-07.md`](chantier-demandes-direction-2026-07.md).
 
 ### Détail R20 — champs obligatoires avant signature (état juillet 2026)
 

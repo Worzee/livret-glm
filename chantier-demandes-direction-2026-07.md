@@ -4,9 +4,12 @@ Cadrage des demandes formulées par la direction du GRETA Lyon Métropole. Les
 demandes 1 et 2 ont été transmises par le pilote le 2026-07-10 : la demande 1
 est **livrée** (vague du 2026-07-10) ; la demande 2 est **cadrée** (arbitrages
 du 2026-07-12), en attente des **trames officielles GRETA** avant de coder.
-La demande 3 ouvre la **série issue de la réunion pilote × directeur général
-du 2026-07-13** (série en cours de recueil — d'autres demandes suivront) ;
-elle est **livrée** (vague du 2026-07-13).
+Les demandes 3, 4 et 5 forment la **série issue de la réunion pilote ×
+directeur général du 2026-07-13** (série en cours de recueil — d'autres
+demandes suivront) : toutes trois sont **livrées** (vagues du 2026-07-13 —
+documents typés obligatoires, dépôt en masse par formation, responsables
+légaux des mineurs / 6ᵉ rôle). ⚠ La demande 5 réintroduit les MINEURS →
+réexamen RGPD requis (`conformite-rgpd.md`, encadré de tête).
 
 ---
 
