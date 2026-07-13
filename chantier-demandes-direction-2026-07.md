@@ -3,7 +3,10 @@
 Cadrage des demandes formulées par la direction du GRETA Lyon Métropole. Les
 demandes 1 et 2 ont été transmises par le pilote le 2026-07-10 : la demande 1
 est **livrée** (vague du 2026-07-10) ; la demande 2 est **cadrée** (arbitrages
-du 2026-07-12), en attente des **trames officielles GRETA** avant de coder.
+du 2026-07-12) et **reportée après la phase de déploiement o2switch**
+(décision pilote du 2026-07-13 — trames officielles GRETA toujours non
+reçues ; elle sera implémentée directement dans la stack cible de l'étape 2,
+cf. `chantier-deploiement-o2switch.md`).
 Les demandes 3, 4 et 5 forment la **série issue de la réunion pilote ×
 directeur général du 2026-07-13** (série en cours de recueil — d'autres
 demandes suivront) : toutes trois sont **livrées** (vagues du 2026-07-13 —
@@ -71,7 +74,7 @@ pièces nominatives). Tracé dans `TODO-etape-2.md`.
 
 ---
 
-## Demande 2 — Trames des entretiens individuels (mi-parcours / fin de parcours) 🔶 CADRÉE
+## Demande 2 — Trames des entretiens individuels (mi-parcours / fin de parcours) 🔶 CADRÉE · ⏸ REPORTÉE POST-DÉPLOIEMENT
 
 > « Est-il possible d'intégrer en plus au livret les trames des entretiens
 > individuels de mi-parcours et fin de parcours (accessibles coordo et
@@ -105,6 +108,13 @@ tuteur.
 - **Trames officielles GRETA** (mi-parcours et fin de parcours) : rubriques et
   questions — à figer en dur comme `lib/trame-entretien` (pattern trame E1).
   **Seul prérequis externe** ; c'est au pilote de transmettre les documents.
+
+> ⏸ **Report (décision pilote 2026-07-13)** : les trames n'étant toujours pas
+> disponibles au gel du fonctionnel, la demande 2 est reportée **après la
+> phase de déploiement o2switch** (`chantier-deploiement-o2switch.md`). Elle
+> sera ainsi implémentée une seule fois, directement dans la stack cible de
+> l'étape 2 (backend réel), au lieu d'être codée en maquette puis portée.
+> Les arbitrages ci-dessus restent valables tels quels.
 
 ### Notes d'implémentation (à trancher en début de vague)
 

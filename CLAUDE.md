@@ -17,12 +17,16 @@ https://livret-glm.duckdns.org (Basic Auth). Pilote métier : Guillaume FERRERI.
   de chaque modification. LE document à lire avant de toucher aux référentiels / activités
 - **Demandes direction juillet 2026** : `chantier-demandes-direction-2026-07.md` — documents
   administratifs nominatifs (livré le 2026-07-10, arbitrages + note Nuage/étape 2),
-  entretiens individuels mi/fin de parcours (ARBITRÉ le 2026-07-12 — ⛔ ne coder qu'après
-  réception des trames officielles GRETA, seul bloquant) et **série réunion DG du
+  entretiens individuels mi/fin de parcours (arbitré le 2026-07-12, ⏸ REPORTÉ après le
+  déploiement o2switch — décision pilote 2026-07-13, trames officielles non reçues ; ne
+  coder qu'après réception des trames) et **série réunion DG du
   2026-07-13 en cours de recueil** — demandes 3 « documents v2 : 4 types obligatoires +
   attestation après lecture », 4 « documents au niveau formation (dépôt en masse) » et
   5 « apprentis mineurs : responsables légaux (6ᵉ rôle) » livrées le 2026-07-13.
   ⚠ La demande 5 réintroduit les MINEURS → dossier RGPD étape 2 à réexaminer (DPO/AIPD)
+- **Phase de déploiement o2switch (lancée le 2026-07-13, fonctionnel GELÉ)** :
+  `chantier-deploiement-o2switch.md` — prérequis administratifs (DPO/AIPD mineurs en
+  chemin critique), marqueurs du kit, brouillon de note DPO, séquence de bascule étape 2
 - `STACK_GRETA_LYON.md` et `_kit-deploiement-o2switch/` : doctrine portefeuille Greta,
   **volontairement non commités** — ne pas les ajouter à un commit du livret
 
