@@ -780,18 +780,50 @@ export interface Livret {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Documents administratifs (10 juillet 2026 — demande direction)
+// Documents administratifs (10 juillet 2026 — demande direction ;
+// v2 le 13 juillet 2026 — réunion DG : typologie + attestation sans signature)
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * Typologie des documents administratifs (13 juillet 2026 — réunion DG).
+ * Les 4 premiers types sont OBLIGATOIRES pour chaque apprenti·e (anomalie
+ * dans le centre d'alertes coordo/admin tant qu'ils ne sont pas déposés puis
+ * attestés) ; `autre` couvre les dépôts hors typologie (titre libre, seul
+ * type qui accepte le flag « réservé à l'apprenti·e »).
+ */
+export type TypeDocumentAdministratif =
+  | 'contrat-pedagogique'
+  | 'protection-donnees'
+  | 'droit-image'
+  | 'reglement-interieur'
+  | 'autre';
+
+/**
+ * Attestation de prise de connaissance d'un document par l'apprenti·e
+ * (13 juillet 2026 — réunion DG : simple confirmation horodatée, esprit R19,
+ * SANS signature manuscrite). Sans retrait possible (esprit R21) ; possible
+ * uniquement après consultation du document (`consulteParApprentiLe`).
+ */
+export interface AttestationLecture {
+  attestee: boolean;
+  /** Horodatage ISO 8601 de l'attestation. */
+  dateAttestation?: string;
+}
+
+/**
  * Document administratif NOMINATIF d'un·e apprenti·e (partie 1 du livret
- * papier : engagements, convention, règlement…), déposé par la coordination
- * (coordo / admin) et à faire signer par l'apprenti·e (signature manuscrite
- * tactile obligatoire, rappelée dans le PDF de synthèse).
+ * papier), déposé par la coordination (coordo / admin) sous un type de la
+ * typologie ; l'apprenti·e atteste en avoir pris connaissance après lecture
+ * (attestation simple horodatée, rappelée dans le PDF de synthèse).
+ *
+ * Un seul document actif par type obligatoire : redéposer le même type
+ * REMPLACE l'ancien document et remet l'attestation à zéro (arbitrage
+ * 2026-07-13).
  *
  * Visibilité : tous les rôles ayant accès au livret, SAUF si `reserveApprenti`
- * — le document n'est alors consultable que par l'apprenti·e, le coordo et
- * l'admin (maître / tuteur et formateur exclus — cf. `lib/documents-administratifs`).
+ * (type « autre » uniquement) — le document n'est alors consultable que par
+ * l'apprenti·e, le coordo et l'admin (maître / tuteur et formateur exclus —
+ * cf. `lib/documents-administratifs`).
  *
  * ⚠ Maquette (étape 1) : le fichier vit en data-URL dans le localStorage
  * (taille plafonnée à l'import). En étape 2, le binaire part sur **Nuage**
@@ -802,8 +834,13 @@ export interface DocumentAdministratif {
   id: string;
   /** Apprenti·e concerné·e — le document est nominatif. */
   apprentiId: string;
-  /** Titre lisible (ex. « Partie 1 — Engagements du livret »). */
-  titre: string;
+  /** Type du document — détermine le libellé affiché (hors « autre »). */
+  type: TypeDocumentAdministratif;
+  /**
+   * Titre lisible, saisi uniquement pour le type « autre » (les 4 types
+   * obligatoires tirent leur libellé de la typologie — `libelleDocument`).
+   */
+  titre?: string;
   nomFichier: string;
   /** Type MIME du fichier (PDF ou image — cf. `TYPES_DOCUMENT_AUTORISES`). */
   mimeType: string;
@@ -811,7 +848,7 @@ export interface DocumentAdministratif {
   taille: number;
   /** Contenu du fichier en data-URL (maquette — étape 2 : référence Nuage). */
   dataUrl: string;
-  /** Consultation restreinte à l'apprenti·e + coordo + admin. */
+  /** Consultation restreinte à l'apprenti·e + coordo + admin (« autre » seul). */
   reserveApprenti: boolean;
   deposeParId: string;
   deposeParNom: string;
@@ -819,11 +856,18 @@ export interface DocumentAdministratif {
   /** Horodatage ISO 8601 du dépôt. */
   deposeLe: string;
   /**
-   * Attestation de prise de connaissance par l'apprenti·e — signature
-   * manuscrite tactile (pattern `SignaturePartie` : horodatage R19, retrait
-   * impossible). `signe: false` tant que l'apprenti·e n'a pas signé.
+   * Horodatage ISO 8601 de la PREMIÈRE consultation du document par
+   * l'apprenti·e — prérequis de l'attestation (« lu et attesté »,
+   * 13 juillet 2026). `undefined` tant que l'apprenti·e n'a pas ouvert le
+   * fichier.
    */
-  attestation: SignaturePartie;
+  consulteParApprentiLe?: string;
+  /**
+   * Attestation de prise de connaissance par l'apprenti·e — confirmation
+   * horodatée sans signature manuscrite (13 juillet 2026), sans retrait
+   * possible. `attestee: false` tant que l'apprenti·e n'a pas attesté.
+   */
+  attestation: AttestationLecture;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

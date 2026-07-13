@@ -26,6 +26,7 @@ import type {
   SignaturesTripartite,
 } from '@/types';
 import { libelleRole } from '@/lib/droits';
+import { etatDocumentsObligatoires, libelleDocument } from '@/lib/documents-administratifs';
 import { synthetiserCompetences, valeurEffective } from '@/lib/synthese-evaluation';
 import { calculerStatsParBloc } from '@/lib/stats-bloc';
 import { grouperParSousFamille } from '@/lib/grouper-competences';
@@ -146,9 +147,12 @@ export function LivretPdf({
         livret={livret}
         dateExport={date}
       />
-      {/* Documents administratifs (10 juillet 2026) — miroir de la partie 1
-          du livret papier, en tête comme dans le document d'origine. */}
-      {documents && documents.length > 0 && <PageDocumentsAdministratifs documents={documents} />}
+      {/* Documents administratifs (10 juillet 2026 ; v2 13 juillet 2026) —
+          miroir de la partie 1 du livret papier, en tête comme dans le
+          document d'origine. Toujours rendue : l'état des 4 documents
+          OBLIGATOIRES (manquant / à attester / attesté) doit apparaître même
+          sans dépôt. */}
+      {documents && <PageDocumentsAdministratifs documents={documents} />}
       <PageOrganisation livret={livret} />
       {livret.entretien && (
         <PageEntretien
@@ -700,55 +704,75 @@ function Ligne({ label, valeur }: { label: string; valeur: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Documents administratifs nominatifs (10 juillet 2026) — rappel des
- * attestations de prise de connaissance (demande pilote : « rappel des
- * documents signés dans le PDF de synthèse »). Les documents réservés à
- * l'apprenti·e sont listés SANS leur titre : le PDF exporté circule au-delà
- * du cercle apprenti·e + coordo + admin.
+ * Documents administratifs nominatifs (10 juillet 2026 ; v2 13 juillet 2026 —
+ * réunion DG) — état des 4 documents OBLIGATOIRES (manquant / à attester /
+ * attesté) puis documents complémentaires. L'attestation est une confirmation
+ * horodatée sans signature manuscrite. Les documents réservés à l'apprenti·e
+ * (type « autre ») sont listés SANS leur titre : le PDF exporté circule
+ * au-delà du cercle apprenti·e + coordo + admin.
  */
 export function PageDocumentsAdministratifs({ documents }: { documents: DocumentAdministratif[] }) {
-  const tries = [...documents].sort((a, b) => a.deposeLe.localeCompare(b.deposeLe));
+  const etats = etatDocumentsObligatoires(documents);
+  const autres = documents
+    .filter((d) => d.type === 'autre')
+    .sort((a, b) => a.deposeLe.localeCompare(b.deposeLe));
   return (
     <Page size="A4" style={styles.page}>
       <PiedDePage dateExport={new Date().toISOString()} />
       <View>
         <Text style={styles.h1}>Documents administratifs</Text>
         <Text style={[styles.italique, { marginBottom: 12 }]}>
-          Documents nominatifs remis à l'apprenti·e (partie 1 du livret) : l'apprenti·e atteste de
-          leur prise de connaissance par une signature manuscrite, obligatoire pour chaque document.
+          Documents nominatifs remis à l'apprenti·e (partie 1 du livret) : 4 documents obligatoires,
+          dont l'apprenti·e atteste avoir pris connaissance après lecture (attestation horodatée,
+          obligatoire).
         </Text>
-        {tries.map((d) => (
-          <View key={d.id} style={[styles.encart, { marginBottom: 8 }]} wrap={false}>
-            <Text style={styles.h3}>
-              {d.reserveApprenti ? 'Document réservé à l’apprenti·e' : d.titre}
-            </Text>
-            <Text style={{ fontSize: 8, color: '#666', marginBottom: 4 }}>
-              Déposé le {formaterDateCourte(d.deposeLe)} par {d.deposeParNom}
-            </Text>
-            {d.attestation.signe ? (
-              <>
-                {d.attestation.trace && (
-                  <Image
-                    src={d.attestation.trace}
-                    style={{
-                      height: 28,
-                      objectFit: 'contain',
-                      objectPosition: 'left',
-                      marginBottom: 2,
-                    }}
-                  />
-                )}
-                <Text style={styles.signatureValeur}>
-                  Prise de connaissance attestée le {formaterDateHeure(d.attestation.dateSignature)}
-                </Text>
-              </>
-            ) : (
+        {etats.map((e) => (
+          <View key={e.type} style={[styles.encart, { marginBottom: 8 }]} wrap={false}>
+            <Text style={styles.h3}>{e.libelle}</Text>
+            {e.document ? (
+              <Text style={{ fontSize: 8, color: '#666', marginBottom: 4 }}>
+                Déposé le {formaterDateCourte(e.document.deposeLe)} par {e.document.deposeParNom}
+              </Text>
+            ) : null}
+            {e.etat === 'atteste' && e.document ? (
+              <Text style={styles.signatureValeur}>
+                Prise de connaissance attestée le{' '}
+                {formaterDateHeure(e.document.attestation.dateAttestation)}
+              </Text>
+            ) : e.etat === 'a-attester' ? (
               <Text style={styles.signatureManquante}>
                 Attestation de prise de connaissance manquante (obligatoire)
               </Text>
+            ) : (
+              <Text style={styles.signatureManquante}>Document non déposé (obligatoire)</Text>
             )}
           </View>
         ))}
+        {autres.length > 0 && (
+          <>
+            <Text style={[styles.h2, { marginTop: 8 }]}>Documents complémentaires</Text>
+            {autres.map((d) => (
+              <View key={d.id} style={[styles.encart, { marginBottom: 8 }]} wrap={false}>
+                <Text style={styles.h3}>
+                  {d.reserveApprenti ? 'Document réservé à l’apprenti·e' : libelleDocument(d)}
+                </Text>
+                <Text style={{ fontSize: 8, color: '#666', marginBottom: 4 }}>
+                  Déposé le {formaterDateCourte(d.deposeLe)} par {d.deposeParNom}
+                </Text>
+                {d.attestation.attestee ? (
+                  <Text style={styles.signatureValeur}>
+                    Prise de connaissance attestée le{' '}
+                    {formaterDateHeure(d.attestation.dateAttestation)}
+                  </Text>
+                ) : (
+                  <Text style={styles.signatureManquante}>
+                    Attestation de prise de connaissance manquante (obligatoire)
+                  </Text>
+                )}
+              </View>
+            ))}
+          </>
+        )}
       </View>
     </Page>
   );

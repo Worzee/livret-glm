@@ -245,7 +245,8 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('formateur', 'documents.gerer')).toBe(false);
       expect(peutEditer('apprenti', 'documents.gerer')).toBe(false);
       expect(peutEditer('maitre', 'documents.gerer')).toBe(false);
-      // L'attestation (signature tactile) est un acte personnel de l'apprenti·e.
+      // L'attestation (confirmation horodatée après lecture — 13 juillet 2026)
+      // est un acte personnel de l'apprenti·e.
       expect(peutEditer('apprenti', 'documents.attester')).toBe(true);
       expect(peutEditer('coordo', 'documents.attester')).toBe(false);
       expect(peutEditer('admin', 'documents.attester')).toBe(false);

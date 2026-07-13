@@ -9,7 +9,13 @@ import type {
 import { calculerAlerteR7, entretienSigneParTous } from './regles-entretien';
 import { estMotifEntretienTripartite } from './organisation-suivi';
 import { pointsAlerteNonTraites } from './points-alerte';
-import { documentsApprentiVisibles, documentsNonAttestes } from './documents-administratifs';
+import {
+  documentsApprentiVisibles,
+  documentsNonAttestes,
+  libelleDocument,
+  LIBELLES_TYPE_DOCUMENT,
+  typesObligatoiresManquants,
+} from './documents-administratifs';
 
 /**
  * Centre d'alertes du tableau de bord (3 juillet 2026 — préparation démo
@@ -18,8 +24,10 @@ import { documentsApprentiVisibles, documentsNonAttestes } from './documents-adm
  *   - apprenti / maître / formateur : signatures attendues (fiches dont la
  *     période est terminée, entretien initialisé), et pour le formateur :
  *     fiches signées à verrouiller, entretien à initialiser, alertes R7.
- *   - coordo / admin : alertes R7 du périmètre + affectations incomplètes
- *     (aucun droit pédagogique — doctrine inchangée).
+ *   - coordo / admin : alertes R7 du périmètre + affectations incomplètes +
+ *     documents obligatoires MANQUANTS (13 juillet 2026 — réunion DG : les
+ *     déposants sont alertés tant qu'un des 4 types n'est pas déposé).
+ *     (Aucun droit pédagogique — doctrine inchangée.)
  *
  * Le périmètre (`apprentis`) est celui du rôle actif, calculé en amont par
  * `apprentis-accessibles`. Pures fonctions — pas d'effet de bord.
@@ -30,6 +38,7 @@ export type TypeAlerte =
   | 'point-alerte-entretien'
   | 'signature-entretien'
   | 'signature-fiche'
+  | 'document-manquant'
   | 'document-a-attester'
   | 'entretien-a-initialiser'
   | 'fiche-a-verrouiller'
@@ -105,7 +114,25 @@ export function alertesTableauBord(
           type: 'document-a-attester',
           apprentiId: apprenti.id,
           apprentiNom: nom,
-          message: `Document « ${d.titre} » : signature de l'apprenti·e attendue`,
+          message: `Document « ${libelleDocument(d)} » : attestation de l'apprenti·e attendue`,
+          lien: '/livret/documents',
+        });
+      }
+    }
+
+    // ── Documents obligatoires MANQUANTS (13 juillet 2026 — réunion DG) ─────
+    //    Anomalie côté DÉPOSANTS (coordo / admin — `documents.gerer`) : une
+    //    alerte par type obligatoire non déposé. Le formateur n'est pas
+    //    concerné (il ne dépose pas).
+    if (role === 'coordo' || role === 'admin') {
+      const documentsApprenti = documents.filter((d) => d.apprentiId === apprenti.id);
+      for (const type of typesObligatoiresManquants(documentsApprenti)) {
+        alertes.push({
+          id: `document-manquant-${apprenti.id}-${type}`,
+          type: 'document-manquant',
+          apprentiId: apprenti.id,
+          apprentiNom: nom,
+          message: `Document « ${LIBELLES_TYPE_DOCUMENT[type]} » : dépôt à effectuer (obligatoire)`,
           lien: '/livret/documents',
         });
       }
@@ -237,10 +264,11 @@ export function alertesTableauBord(
     'point-alerte-entretien': 1,
     'signature-entretien': 2,
     'signature-fiche': 3,
-    'document-a-attester': 4,
-    'entretien-a-initialiser': 5,
-    'fiche-a-verrouiller': 6,
-    'affectation-incomplete': 7,
+    'document-manquant': 4,
+    'document-a-attester': 5,
+    'entretien-a-initialiser': 6,
+    'fiche-a-verrouiller': 7,
+    'affectation-incomplete': 8,
   };
   return alertes.sort(
     (a, b) => ORDRE[a.type] - ORDRE[b.type] || a.apprentiNom.localeCompare(b.apprentiNom, 'fr'),

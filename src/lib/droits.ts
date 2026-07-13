@@ -129,10 +129,11 @@ export type Ressource =
   // GESTION (n'écrit rien dans l'entretien ni dans les évaluations) → coordo +
   // admin, conforme à la doctrine « coordo/admin sans droit pédagogique ».
   | 'point-alerte.traiter'
-  // Documents administratifs nominatifs (10 juillet 2026 — demande direction) :
-  // dépôt / retrait / flag « réservé » par la coordination ; l'ATTESTATION
-  // (signature tactile de prise de connaissance) est un acte personnel de
-  // l'apprenti·e — coordo/admin exclus, doctrine inchangée.
+  // Documents administratifs nominatifs (10 juillet 2026 — demande direction ;
+  // v2 13 juillet 2026 — réunion DG) : dépôt typé / retrait / flag « réservé »
+  // par la coordination ; l'ATTESTATION (confirmation horodatée de prise de
+  // connaissance, après lecture) est un acte personnel de l'apprenti·e —
+  // coordo/admin exclus, doctrine inchangée.
   | 'documents.gerer'
   | 'documents.attester'
   | 'cloturer-livret'

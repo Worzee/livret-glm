@@ -1,9 +1,12 @@
 # Chantier — demandes de la direction GRETA (juillet 2026)
 
-Cadrage des deux demandes formulées par la direction du GRETA Lyon Métropole
-(transmises par le pilote le 2026-07-10). La demande 1 est **livrée** (vague du
-2026-07-10) ; la demande 2 est **cadrée** (arbitrages du 2026-07-12), en
-attente des **trames officielles GRETA** avant de coder.
+Cadrage des demandes formulées par la direction du GRETA Lyon Métropole. Les
+demandes 1 et 2 ont été transmises par le pilote le 2026-07-10 : la demande 1
+est **livrée** (vague du 2026-07-10) ; la demande 2 est **cadrée** (arbitrages
+du 2026-07-12), en attente des **trames officielles GRETA** avant de coder.
+La demande 3 ouvre la **série issue de la réunion pilote × directeur général
+du 2026-07-13** (série en cours de recueil — d'autres demandes suivront) ;
+elle est **livrée** (vague du 2026-07-13).
 
 ---
 
@@ -115,3 +118,65 @@ tuteur.
   seulement l'état (réalisé le … / signatures), comme les documents réservés
   de la demande 1 (listés sans titre) ? À arbitrer avec le pilote au moment
   de coder.
+
+---
+
+## Demande 3 — Documents administratifs v2 : 4 types obligatoires, attestation sans signature (réunion DG 2026-07-13) ✅ LIVRÉE
+
+> L'apprenti·e n'a plus besoin de signer, mais uniquement d'**attester** le
+> dépôt de documents. Prévoir **4 types de documents distincts** sélectionnables
+> par le coordo ou l'admin via une liste déroulante (pas besoin de titre dans ce
+> cas) : Contrat pédagogique · Information relative à la protection des données ·
+> Droit à l'image · Accusé réception du règlement intérieur. Ces 4 documents
+> sont **obligatoires** et une **anomalie doit remonter** tant qu'ils n'ont pas
+> été déposés par le coordo **ou** lus et attestés par l'apprenti·e.
+
+### Arbitrages du pilote (session de cadrage 2026-07-13)
+
+1. **Attestation** : simple bouton « J'atteste avoir pris connaissance » avec
+   confirmation, **horodaté** (esprit R19), **sans tracé manuscrit**.
+   Irréversibilité conservée : pas de retrait d'attestation, document attesté
+   **insupprimable** (esprit R21).
+2. **Lecture obligatoire** : l'attestation n'est possible qu'**après ouverture
+   du document** par l'apprenti·e (bouton grisé tant que le fichier n'a pas
+   été consulté — champ `consulteParApprentiLe`, horodaté).
+3. **Typologie** : liste déroulante à **5 entrées** — les 4 types obligatoires
+   + « **Autre document** » (titre libre, seul cas où le titre est saisi).
+4. **Remplacement** : redéposer un document d'un type déjà déposé (même
+   attesté) est permis → le nouveau document **remplace** l'ancien et
+   **l'attestation repart de zéro**. Un seul document actif par type (hors
+   « Autre »). ⚠ Maquette : l'ancien binaire est supprimé du localStorage
+   (budget ~5 Mo) — en étape 2, l'archivage des versions se fera sur Nuage.
+5. **Flag « réservé à l'apprenti·e »** : **interdit sur les 4 types
+   obligatoires** (toujours visibles de tous les rôles du livret), disponible
+   uniquement pour « Autre ».
+6. **Anomalie « document manquant »** : remonte au **coordo + admin** (ce sont
+   les déposants — le formateur n'est pas concerné) dans le centre d'alertes,
+   une alerte par type manquant et par apprenti·e. L'alerte « attestation
+   attendue » existante est conservée (formateur hors réservés, coordo/admin
+   tout, bandeau apprenti·e). L'**état des 4 obligatoires** (manquant / déposé /
+   attesté) est reflété dans le **PDF de synthèse** — la page « Documents
+   administratifs » est désormais toujours présente dans l'export complet.
+
+### Implémentation (2026-07-13) — repères
+
+- **Type** : `TypeDocumentAdministratif` (4 types + `autre`) ; attestation
+  portée par `AttestationLecture` (`attestee` / `dateAttestation`) — la
+  signature manuscrite (`SignaturePartie`) ne concerne plus les documents.
+- **Lib pure** : `documents-administratifs` — libellés de types, état des
+  obligatoires (`etatDocumentsObligatoires`), types manquants, verrou
+  d'attestation (`peutAttesterDocument` : lecture préalable), validation de
+  dépôt (titre exigé seulement pour « Autre », flag réservé refusé hors
+  « Autre »).
+- **Store** : `livret-documents` **v2** (reset fixtures) — remplacement par
+  type au dépôt, `marquerConsultationApprenti`, attestation sans tracé.
+- **Fixtures** : 6 apprenti·e·s au dossier complet (4 attestés) ; cas de démo
+  portés par Léa (protection des données à attester, droit à l'image
+  MANQUANT, convention « Autre » réservée à attester) et Yanis (contrat
+  pédagogique à attester, visible de son formateur Marc).
+- **UI** : liste déroulante de type dans `ModaleDepotDocument` (titre et flag
+  réservé affichés seulement pour « Autre », avertissement de remplacement),
+  bandeau d'état des 4 obligatoires sur la page, bouton d'attestation à
+  confirmation (sans canvas), consultation traçante côté apprenti·e.
+- **PDF** : page « Documents administratifs » toujours rendue — état des 4
+  obligatoires + autres documents (réservés toujours listés sans titre).

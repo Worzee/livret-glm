@@ -91,8 +91,9 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
   const progCen = progressionFiches(fichesCentre, 'centre');
   const entretienRealise = entretienTenu(livret);
   const jrContrat = joursRestants(apprenti.contratFin);
-  // Documents administratifs à signer (10 juillet 2026 — attestation obligatoire).
-  const documentsASigner = documentsNonAttestes(
+  // Documents administratifs à attester (10 juillet 2026 ; v2 13 juillet 2026 —
+  // attestation simple après lecture, obligatoire).
+  const documentsAAttester = documentsNonAttestes(
     documentsApprentiVisibles(Object.values(documents), apprenti.id, 'apprenti'),
   );
 
@@ -137,8 +138,8 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
         </div>
       )}
 
-      {/* Documents administratifs en attente de signature (10 juillet 2026). */}
-      {documentsASigner.length > 0 && (
+      {/* Documents administratifs en attente d'attestation (13 juillet 2026). */}
+      {documentsAAttester.length > 0 && (
         <button
           type="button"
           data-testid="bandeau-apprenti-documents"
@@ -148,10 +149,10 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
           <ClipboardList className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <span className="min-w-0 flex-1">
             <strong>
-              {documentsASigner.length} document{documentsASigner.length > 1 ? 's' : ''}{' '}
-              administratif{documentsASigner.length > 1 ? 's' : ''} à signer
+              {documentsAAttester.length} document{documentsAAttester.length > 1 ? 's' : ''}{' '}
+              administratif{documentsAAttester.length > 1 ? 's' : ''} à attester
             </strong>{' '}
-            : votre signature atteste que vous en avez pris connaissance (obligatoire).
+            : consultez chaque document puis attestez en avoir pris connaissance (obligatoire).
           </span>
           <ArrowRight className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
         </button>

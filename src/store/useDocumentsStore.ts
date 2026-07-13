@@ -1,13 +1,15 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { DocumentAdministratif, Role } from '@/types';
+import type { DocumentAdministratif, Role, TypeDocumentAdministratif } from '@/types';
 import { documentsDemo } from '@/fixtures/documents-demo';
 import { peutSupprimerDocument } from '@/lib/documents-administratifs';
 
 /**
  * Store des documents administratifs nominatifs (10 juillet 2026 — demande
- * direction). Cf. `lib/documents-administratifs` pour les règles (visibilité
- * « réservé à l'apprenti·e », attestation obligatoire, verrou de suppression).
+ * direction ; v2 le 13 juillet 2026 — réunion DG). Cf.
+ * `lib/documents-administratifs` pour les règles (typologie 4 obligatoires +
+ * « autre », visibilité « réservé », attestation après lecture, verrou de
+ * suppression).
  *
  * ⚠ Maquette : les fichiers vivent en data-URL dans le localStorage (taille
  * plafonnée à l'import — `TAILLE_MAX_DOCUMENT_OCTETS`). Étape 2 : binaires
@@ -17,7 +19,9 @@ import { peutSupprimerDocument } from '@/lib/documents-administratifs';
 
 interface DepotDocumentInput {
   apprentiId: string;
-  titre: string;
+  /** Type de la typologie — le titre n'est saisi que pour « autre ». */
+  type: TypeDocumentAdministratif;
+  titre?: string;
   nomFichier: string;
   mimeType: string;
   taille: number;
@@ -34,20 +38,31 @@ interface DocumentsStore {
   /**
    * Dépose un document pour un·e apprenti·e (coordo / admin — ressource
    * `documents.gerer`). La validation du formulaire (`validerDepotDocument`)
-   * est faite côté UI. @returns l'id du document créé.
+   * est faite côté UI. Un type obligatoire déjà déposé est REMPLACÉ (même
+   * attesté — l'attestation repart de zéro, arbitrage 2026-07-13) ; l'ancien
+   * binaire est supprimé (budget localStorage — l'étape 2 archivera sur
+   * Nuage). @returns l'id du document créé.
    */
   deposerDocument: (input: DepotDocumentInput) => string;
 
   /**
-   * Attestation de prise de connaissance par l'apprenti·e (ressource
-   * `documents.attester`) — signature manuscrite tactile, horodatée (R19),
-   * sans retrait possible. No-op si le document est déjà attesté.
+   * Trace la PREMIÈRE consultation du document par l'apprenti·e (« lu et
+   * attesté », 13 juillet 2026) — prérequis de l'attestation. No-op si déjà
+   * consulté.
    */
-  attesterDocument: (id: string, trace: string) => void;
+  marquerConsultationApprenti: (id: string) => void;
+
+  /**
+   * Attestation de prise de connaissance par l'apprenti·e (ressource
+   * `documents.attester`) — confirmation horodatée sans signature manuscrite
+   * (13 juillet 2026), sans retrait possible. No-op si le document est déjà
+   * attesté ou n'a pas été consulté.
+   */
+  attesterDocument: (id: string) => void;
 
   /**
    * Supprime un document non attesté (coordo / admin). Bloqué si l'apprenti·e
-   * a signé (`peutSupprimerDocument` — acte engagé, esprit R21).
+   * a attesté (`peutSupprimerDocument` — acte engagé, esprit R21).
    * @returns true si supprimé, false si bloqué.
    */
   supprimerDocument: (id: string) => boolean;
@@ -57,8 +72,12 @@ interface DocumentsStore {
 }
 
 // v1 — création du store (10 juillet 2026, demande direction) : 3 documents
-//      de démo (Léa ×2 dont 1 réservé, Yanis ×1 non attesté).
-const VERSION_SCHEMA = 1;
+//      de démo, attestation par signature manuscrite tactile.
+// v2 — 13 juillet 2026 (réunion DG) : typologie (4 types obligatoires +
+//      « autre »), attestation simple sans tracé conditionnée à la lecture
+//      (`consulteParApprentiLe`), remplacement par type. Fixtures : 6
+//      apprenti·e·s au dossier complet + cas de démo sur Léa et Yanis.
+const VERSION_SCHEMA = 2;
 
 function etatInitial(): Pick<DocumentsStore, 'documents'> {
   return {
@@ -76,28 +95,49 @@ export const useDocumentsStore = create<DocumentsStore>()(
         const document: DocumentAdministratif = {
           id,
           ...input,
-          titre: input.titre.trim(),
+          titre: input.type === 'autre' ? input.titre?.trim() : undefined,
           deposeLe: new Date().toISOString(),
-          attestation: { signe: false },
+          attestation: { attestee: false },
         };
-        set({ documents: { ...get().documents, [id]: document } });
+        const documents = { ...get().documents };
+        // Un seul document actif par type obligatoire : le nouveau dépôt
+        // remplace l'ancien (attestation remise à zéro — arbitrage 2026-07-13).
+        if (input.type !== 'autre') {
+          for (const existant of Object.values(documents)) {
+            if (existant.apprentiId === input.apprentiId && existant.type === input.type) {
+              delete documents[existant.id];
+            }
+          }
+        }
+        documents[id] = document;
+        set({ documents });
         return id;
       },
 
-      attesterDocument: (id, trace) =>
+      marquerConsultationApprenti: (id) =>
         set((s) => {
           const document = s.documents[id];
-          if (!document || document.attestation.signe) return s;
+          if (!document || document.consulteParApprentiLe) return s;
+          return {
+            documents: {
+              ...s.documents,
+              [id]: { ...document, consulteParApprentiLe: new Date().toISOString() },
+            },
+          };
+        }),
+
+      attesterDocument: (id) =>
+        set((s) => {
+          const document = s.documents[id];
+          if (!document || document.attestation.attestee || !document.consulteParApprentiLe) {
+            return s;
+          }
           return {
             documents: {
               ...s.documents,
               [id]: {
                 ...document,
-                attestation: {
-                  signe: true,
-                  dateSignature: new Date().toISOString(),
-                  trace: trace || undefined,
-                },
+                attestation: { attestee: true, dateAttestation: new Date().toISOString() },
               },
             },
           };

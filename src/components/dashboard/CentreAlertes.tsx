@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   ChevronRight,
   FileText,
+  FileWarning,
   Flag,
   Lock,
   PenLine,
@@ -25,6 +26,7 @@ import { alertesTableauBord, type AlerteTableauBord, type TypeAlerte } from '@/l
 const ICONES: Record<TypeAlerte, React.ReactNode> = {
   'alerte-r7': <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden="true" />,
   'point-alerte-entretien': <Flag className="h-4 w-4 text-amber-600" aria-hidden="true" />,
+  'document-manquant': <FileWarning className="h-4 w-4 text-amber-600" aria-hidden="true" />,
   'document-a-attester': <FileText className="h-4 w-4 text-amber-600" aria-hidden="true" />,
   'signature-entretien': <PenLine className="texte-couleur-role h-4 w-4" aria-hidden="true" />,
   'signature-fiche': <PenLine className="texte-couleur-role h-4 w-4" aria-hidden="true" />,

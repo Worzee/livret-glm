@@ -1,5 +1,16 @@
-import { useMemo, useState } from 'react';
-import { CheckCircle2, Eye, FileText, FileUp, Info, Lock, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  BadgeCheck,
+  CheckCircle2,
+  CircleDashed,
+  Eye,
+  FileText,
+  FileUp,
+  Info,
+  Lock,
+  ShieldAlert,
+  Trash2,
+} from 'lucide-react';
 import type { DocumentAdministratif } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
@@ -8,25 +19,31 @@ import { peutEditer } from '@/lib/droits';
 import {
   documentsApprentiVisibles,
   documentsNonAttestes,
+  etatDocumentsObligatoires,
+  libelleDocument,
+  peutAttesterDocument,
   peutSupprimerDocument,
 } from '@/lib/documents-administratifs';
 import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelectionne';
-import { BoutonSigner } from '@/components/common/BoutonSigner';
 import { BoutonSupprimer } from '@/components/common/BoutonSupprimer';
 import { ModaleDepotDocument } from '@/components/admin/ModaleDepotDocument';
 import { cn } from '@/lib/utils';
 
 /**
  * Documents administratifs nominatifs du livret (10 juillet 2026 — demande
- * direction) : la « partie 1 » du livret papier (engagements, convention,
- * règlement…), déposée par la coordination pour chaque apprenti·e.
+ * direction ; v2 le 13 juillet 2026 — réunion DG) : typologie de 4 documents
+ * OBLIGATOIRES (contrat pédagogique, protection des données, droit à l'image,
+ * règlement intérieur) + « Autre document » (titre libre).
  *
- *   - Dépôt / suppression : coordo + admin (`documents.gerer`).
+ *   - Dépôt / suppression : coordo + admin (`documents.gerer`) — redéposer un
+ *     type existant le REMPLACE (attestation remise à zéro).
  *   - Consultation : tous les rôles du livret, sauf documents « réservés à
- *     l'apprenti·e » (apprenti·e + coordo + admin).
- *   - Attestation de prise de connaissance : SIGNATURE MANUSCRITE TACTILE de
- *     l'apprenti·e, obligatoire, document par document (`documents.attester`) —
- *     suivie par le centre d'alertes et rappelée dans le PDF de synthèse.
+ *     l'apprenti·e » (type « autre » uniquement).
+ *   - Attestation de prise de connaissance : confirmation horodatée SANS
+ *     signature manuscrite (`documents.attester`), possible uniquement APRÈS
+ *     lecture du document — suivie par le centre d'alertes (attestations
+ *     attendues + types obligatoires manquants côté coordo/admin) et rappelée
+ *     dans le PDF de synthèse.
  */
 
 export function DocumentsAdministratifs() {
@@ -39,6 +56,17 @@ export function DocumentsAdministratifs() {
     () =>
       ctx ? documentsApprentiVisibles(Object.values(documents), ctx.apprenti.id, roleActif) : [],
     [documents, ctx, roleActif],
+  );
+  // Les 4 obligatoires ne sont jamais « réservés » : l'état est identique
+  // quel que soit le rôle (calculé hors filtre de visibilité).
+  const etatsObligatoires = useMemo(
+    () =>
+      ctx
+        ? etatDocumentsObligatoires(
+            Object.values(documents).filter((d) => d.apprentiId === ctx.apprenti.id),
+          )
+        : [],
+    [documents, ctx],
   );
 
   if (!ctx) return <AucunApprentiSelectionne />;
@@ -60,9 +88,9 @@ export function DocumentsAdministratifs() {
             <strong>
               {apprenti.prenom} {apprenti.nom}
             </strong>{' '}
-            (partie 1 du livret papier : engagements, convention, règlement…). L'apprenti·e atteste
-            de leur prise de connaissance par une signature manuscrite, obligatoire pour chaque
-            document.
+            : 4 documents obligatoires (contrat pédagogique, protection des données, droit à
+            l'image, règlement intérieur) et documents complémentaires. L'apprenti·e atteste avoir
+            pris connaissance de chaque document, après lecture (obligatoire).
           </p>
         </div>
         {peutGerer && (
@@ -78,19 +106,57 @@ export function DocumentsAdministratifs() {
         )}
       </header>
 
-      {/* Bandeau apprenti·e : documents en attente de sa signature. */}
+      {/* État des 4 documents obligatoires (13 juillet 2026 — réunion DG). */}
+      <section
+        aria-label="État des documents obligatoires"
+        data-testid="etat-documents-obligatoires"
+        className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4"
+      >
+        {etatsObligatoires.map((e) => (
+          <div
+            key={e.type}
+            data-testid={`etat-doc-${e.type}`}
+            className={cn(
+              'flex items-start gap-2 rounded-md border p-2.5 text-xs',
+              e.etat === 'atteste' && 'border-emerald-200 bg-emerald-50 text-emerald-900',
+              e.etat === 'a-attester' && 'border-amber-200 bg-amber-50 text-amber-900',
+              e.etat === 'manquant' && 'border-red-200 bg-red-50 text-red-900',
+            )}
+          >
+            {e.etat === 'atteste' ? (
+              <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            ) : e.etat === 'a-attester' ? (
+              <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            ) : (
+              <CircleDashed className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            )}
+            <span className="min-w-0">
+              <span className="block font-medium">{e.libelle}</span>
+              <span className="block">
+                {e.etat === 'atteste'
+                  ? 'Attesté'
+                  : e.etat === 'a-attester'
+                    ? "Attestation de l'apprenti·e attendue"
+                    : 'Non déposé (obligatoire)'}
+              </span>
+            </span>
+          </div>
+        ))}
+      </section>
+
+      {/* Bandeau apprenti·e : documents en attente de son attestation. */}
       {peutAttester && enAttente.length > 0 && (
         <div
           role="status"
-          data-testid="bandeau-documents-a-signer"
+          data-testid="bandeau-documents-a-attester"
           className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
         >
           <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <p>
             <strong>
-              {enAttente.length} document{enAttente.length > 1 ? 's' : ''} à signer
+              {enAttente.length} document{enAttente.length > 1 ? 's' : ''} à attester
             </strong>{' '}
-            : votre signature atteste que vous en avez pris connaissance (obligatoire).
+            : consultez chaque document puis attestez en avoir pris connaissance (obligatoire).
           </p>
         </div>
       )}
@@ -107,7 +173,7 @@ export function DocumentsAdministratifs() {
               document={d}
               peutGerer={peutGerer}
               peutAttester={peutAttester}
-              prenomApprenti={apprenti.prenom}
+              roleApprenti={roleActif === 'apprenti'}
               nomApprenti={`${apprenti.prenom} ${apprenti.nom}`}
             />
           ))}
@@ -131,18 +197,28 @@ function CarteDocument({
   document: doc,
   peutGerer,
   peutAttester,
-  prenomApprenti,
+  roleApprenti,
   nomApprenti,
 }: {
   document: DocumentAdministratif;
   peutGerer: boolean;
   peutAttester: boolean;
-  prenomApprenti: string;
+  /** Le rôle actif est l'apprenti·e : sa consultation est tracée (« lu »). */
+  roleApprenti: boolean;
   nomApprenti: string;
 }) {
   const attester = useDocumentsStore((s) => s.attesterDocument);
+  const marquerConsultation = useDocumentsStore((s) => s.marquerConsultationApprenti);
   const supprimer = useDocumentsStore((s) => s.supprimerDocument);
   const suppression = peutSupprimerDocument(doc);
+  const libelle = libelleDocument(doc);
+
+  function consulter() {
+    ouvrirDocument(doc);
+    // « Lu et attesté » : seule la consultation PAR L'APPRENTI·E déverrouille
+    // l'attestation (13 juillet 2026).
+    if (roleApprenti) marquerConsultation(doc.id);
+  }
 
   return (
     <li
@@ -153,7 +229,7 @@ function CarteDocument({
         <div className="min-w-0 space-y-1">
           <h2 className="flex flex-wrap items-center gap-2 font-medium">
             <FileText className="h-4 w-4 shrink-0 texte-couleur-role" aria-hidden="true" />
-            <span>{doc.titre}</span>
+            <span>{libelle}</span>
             {doc.reserveApprenti && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
                 <Lock className="h-3 w-3" aria-hidden="true" />
@@ -169,7 +245,7 @@ function CarteDocument({
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
-            onClick={() => ouvrirDocument(doc)}
+            onClick={consulter}
             data-testid={`consulter-${doc.id}`}
             className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
@@ -179,7 +255,7 @@ function CarteDocument({
           {peutGerer &&
             (suppression.ok ? (
               <BoutonSupprimer
-                ariaLabel={`Supprimer le document ${doc.titre}`}
+                ariaLabel={`Supprimer le document ${libelle}`}
                 question="Supprimer ?"
                 onConfirmer={() => supprimer(doc.id)}
                 variant="icon"
@@ -188,7 +264,7 @@ function CarteDocument({
               <button
                 type="button"
                 disabled
-                aria-label={`Supprimer le document ${doc.titre}`}
+                aria-label={`Supprimer le document ${libelle}`}
                 title={suppression.raison}
                 className="cursor-not-allowed rounded-md p-1 text-muted-foreground opacity-40"
               >
@@ -198,8 +274,8 @@ function CarteDocument({
         </div>
       </div>
 
-      {/* Attestation de prise de connaissance. */}
-      {doc.attestation.signe ? (
+      {/* Attestation de prise de connaissance (sans signature — 13 juillet 2026). */}
+      {doc.attestation.attestee ? (
         <div
           data-testid={`attestation-${doc.id}`}
           className="flex flex-wrap items-center gap-3 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900"
@@ -207,27 +283,16 @@ function CarteDocument({
           <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span>
             Prise de connaissance attestée par l'apprenti·e le{' '}
-            {doc.attestation.dateSignature
-              ? new Date(doc.attestation.dateSignature).toLocaleString('fr-FR')
+            {doc.attestation.dateAttestation
+              ? new Date(doc.attestation.dateAttestation).toLocaleString('fr-FR')
               : '-'}
           </span>
-          {doc.attestation.trace && (
-            <img
-              src={doc.attestation.trace}
-              alt="Signature manuscrite de l'apprenti·e"
-              className="h-12 rounded border border-emerald-200 bg-white"
-            />
-          )}
         </div>
       ) : peutAttester ? (
-        <BoutonSigner
-          nomCourt={prenomApprenti}
-          libelleEngagement={`Apprenti·e — ${nomApprenti} — prise de connaissance du document « ${doc.titre} »`}
-          disabled={false}
-          onConfirmer={(trace) => attester(doc.id, trace)}
-          role="apprenti"
-          libelleBouton="J'atteste en avoir pris connaissance — signer"
-          mentionRetrait="Elle sera horodatée à l’instant de la confirmation et atteste que vous avez pris connaissance de ce document (sans retrait possible)."
+        <BoutonAttester
+          document={doc}
+          nomApprenti={nomApprenti}
+          onConfirmer={() => attester(doc.id)}
         />
       ) : (
         <p
@@ -235,10 +300,104 @@ function CarteDocument({
             'rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900',
           )}
         >
-          En attente de la signature de l'apprenti·e (attestation obligatoire).
+          En attente de l'attestation de l'apprenti·e (obligatoire, après lecture).
         </p>
       )}
     </li>
+  );
+}
+
+/**
+ * Bouton d'attestation à confirmation explicite (13 juillet 2026 — réunion
+ * DG) : plus de signature manuscrite, mais la friction anti-réflexe est
+ * conservée (2 clics, mention d'irréversibilité, Esc / 30 s pour annuler).
+ * Grisé tant que l'apprenti·e n'a pas CONSULTÉ le document (« lu et attesté »).
+ */
+function BoutonAttester({
+  document: doc,
+  nomApprenti,
+  onConfirmer,
+}: {
+  document: DocumentAdministratif;
+  nomApprenti: string;
+  onConfirmer: () => void;
+}) {
+  const [confirmation, setConfirmation] = useState(false);
+  const verdict = peutAttesterDocument(doc);
+
+  useEffect(() => {
+    if (!confirmation) return;
+    const t = setTimeout(() => setConfirmation(false), 30_000);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setConfirmation(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [confirmation]);
+
+  if (!confirmation) {
+    return (
+      <div className="space-y-1.5">
+        <button
+          type="button"
+          data-testid={`attester-${doc.id}`}
+          disabled={!verdict.ok}
+          title={verdict.ok ? undefined : verdict.raison}
+          onClick={() => setConfirmation(true)}
+          className={cn(
+            'inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            verdict.ok
+              ? 'bg-role-apprenti text-white hover:opacity-90'
+              : 'bg-muted text-muted-foreground cursor-not-allowed',
+          )}
+        >
+          <BadgeCheck className="h-4 w-4" aria-hidden="true" />
+          J'atteste avoir pris connaissance
+        </button>
+        {!verdict.ok && <p className="text-xs text-muted-foreground">{verdict.raison}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      role="group"
+      aria-label="Confirmer l'attestation"
+      className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3"
+    >
+      <div className="flex items-start gap-2 text-xs text-amber-900">
+        <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+        <p>
+          Vous allez attester, en tant que <strong>{nomApprenti}</strong>, avoir pris connaissance
+          du document <strong>« {libelleDocument(doc)} »</strong>. Votre attestation sera horodatée
+          à l'instant de la confirmation, sans retrait possible.
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={() => setConfirmation(false)}
+          className="rounded-md border border-amber-300 bg-white px-3 py-1.5 text-sm font-medium text-amber-900 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          Annuler
+        </button>
+        <button
+          type="button"
+          data-testid={`confirmer-attester-${doc.id}`}
+          onClick={() => {
+            onConfirmer();
+            setConfirmation(false);
+          }}
+          className="inline-flex items-center gap-1.5 rounded-md bg-role-apprenti px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <BadgeCheck className="h-4 w-4" aria-hidden="true" />
+          Confirmer
+        </button>
+      </div>
+    </div>
   );
 }
 

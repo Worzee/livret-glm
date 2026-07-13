@@ -1,17 +1,24 @@
-import { useEffect, useId, useState } from 'react';
-import { FileUp, X } from 'lucide-react';
-import type { Apprenti } from '@/types';
-import { TAILLE_MAX_DOCUMENT_OCTETS, validerDepotDocument } from '@/lib/documents-administratifs';
+import { useEffect, useId, useMemo, useState } from 'react';
+import { FileUp, RefreshCw, X } from 'lucide-react';
+import type { Apprenti, TypeDocumentAdministratif } from '@/types';
+import {
+  LIBELLES_TYPE_DOCUMENT,
+  TAILLE_MAX_DOCUMENT_OCTETS,
+  TYPES_DOCUMENTS_OBLIGATOIRES,
+  validerDepotDocument,
+} from '@/lib/documents-administratifs';
 import { useDocumentsStore } from '@/store/useDocumentsStore';
 import { useUserStore } from '@/store/useUserStore';
 import { cn } from '@/lib/utils';
 
 /**
  * Modale de dépôt d'un document administratif nominatif (10 juillet 2026 —
- * demande direction). Réservée au coordo / admin (`documents.gerer`) : fichier
- * PDF ou image (≤ 2 Mo — maquette localStorage, Nuage en étape 2), titre
- * lisible, et flag « réservé à l'apprenti·e » (consultation restreinte à
- * l'apprenti·e + coordo + admin).
+ * demande direction ; v2 le 13 juillet 2026 — réunion DG). Réservée au coordo
+ * / admin (`documents.gerer`) : type choisi dans la TYPOLOGIE (4 obligatoires
+ * + « Autre document »), fichier PDF ou image (≤ 2 Mo — maquette localStorage,
+ * Nuage en étape 2). Le titre et le flag « réservé à l'apprenti·e » ne
+ * concernent que le type « Autre ». Redéposer un type déjà déposé le REMPLACE
+ * (attestation remise à zéro) — un avertissement le rappelle.
  */
 
 interface ModaleDepotDocumentProps {
@@ -30,18 +37,30 @@ interface FichierChoisi {
 
 export function ModaleDepotDocument({ ouvert, apprenti, onFermer }: ModaleDepotDocumentProps) {
   const deposer = useDocumentsStore((s) => s.deposerDocument);
+  const documents = useDocumentsStore((s) => s.documents);
   const utilisateurActif = useUserStore((s) => s.utilisateurActif);
   const roleActif = useUserStore((s) => s.roleActif);
   const titreId = useId();
 
+  const [type, setType] = useState<TypeDocumentAdministratif | ''>('');
   const [titre, setTitre] = useState('');
   const [reserve, setReserve] = useState(false);
   const [fichier, setFichier] = useState<FichierChoisi | null>(null);
   const [tentative, setTentative] = useState(false);
 
+  // Document déjà déposé pour ce type obligatoire → le dépôt le remplacera.
+  const documentRemplace = useMemo(
+    () =>
+      type && type !== 'autre'
+        ? Object.values(documents).find((d) => d.apprentiId === apprenti.id && d.type === type)
+        : undefined,
+    [documents, apprenti.id, type],
+  );
+
   useEffect(() => {
     if (!ouvert) return;
     // Formulaire vierge à chaque ouverture.
+    setType('');
     setTitre('');
     setReserve(false);
     setFichier(null);
@@ -60,11 +79,13 @@ export function ModaleDepotDocument({ ouvert, apprenti, onFermer }: ModaleDepotD
   if (!ouvert) return null;
 
   const erreurs: string[] = [];
+  if (!type) erreurs.push('Sélectionnez le type de document.');
   if (!fichier) erreurs.push('Choisissez un fichier à déposer.');
-  const validation = fichier ? validerDepotDocument({ titre, ...fichier }) : null;
+  const validation =
+    type && fichier
+      ? validerDepotDocument({ type, titre, reserveApprenti: reserve, ...fichier })
+      : null;
   if (validation && !validation.ok) erreurs.push(...validation.erreurs);
-  else if (fichier && titre.trim().length === 0)
-    erreurs.push('Le titre du document est obligatoire.');
 
   function onChangerFichier(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -77,7 +98,7 @@ export function ModaleDepotDocument({ ouvert, apprenti, onFermer }: ModaleDepotD
         taille: f.size,
         dataUrl: String(lecteur.result ?? ''),
       });
-      // Pré-remplit le titre depuis le nom du fichier (sans extension).
+      // Pré-remplit le titre (« Autre ») depuis le nom du fichier.
       setTitre((t) => (t.trim() ? t : f.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ')));
     };
     lecteur.readAsDataURL(f);
@@ -85,12 +106,13 @@ export function ModaleDepotDocument({ ouvert, apprenti, onFermer }: ModaleDepotD
 
   function valider() {
     setTentative(true);
-    if (!fichier || erreurs.length > 0) return;
+    if (!type || !fichier || erreurs.length > 0) return;
     deposer({
       apprentiId: apprenti.id,
-      titre,
+      type,
+      titre: type === 'autre' ? titre : undefined,
       ...fichier,
-      reserveApprenti: reserve,
+      reserveApprenti: type === 'autre' ? reserve : false,
       deposeParId: utilisateurActif.id,
       deposeParNom: `${utilisateurActif.prenom} ${utilisateurActif.nom}`,
       deposeParRole: roleActif,
@@ -125,7 +147,7 @@ export function ModaleDepotDocument({ ouvert, apprenti, onFermer }: ModaleDepotD
                   {apprenti.prenom} {apprenti.nom}
                 </strong>{' '}
                 : PDF ou image (JPEG, PNG), {Math.round(TAILLE_MAX_DOCUMENT_OCTETS / 1024 / 1024)}{' '}
-                Mo maximum. L'apprenti·e devra attester en avoir pris connaissance (signature).
+                Mo maximum. L'apprenti·e devra attester en avoir pris connaissance, après lecture.
               </p>
             </div>
           </div>
@@ -140,6 +162,43 @@ export function ModaleDepotDocument({ ouvert, apprenti, onFermer }: ModaleDepotD
         </div>
 
         <div className="space-y-4 overflow-y-auto p-4">
+          <div className="space-y-1">
+            <label htmlFor="depot-doc-type" className="text-xs font-medium">
+              Type de document
+            </label>
+            <select
+              id="depot-doc-type"
+              data-testid="depot-doc-type"
+              value={type}
+              onChange={(e) => setType(e.target.value as TypeDocumentAdministratif | '')}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="">— Sélectionner le type —</option>
+              {TYPES_DOCUMENTS_OBLIGATOIRES.map((t) => (
+                <option key={t} value={t}>
+                  {LIBELLES_TYPE_DOCUMENT[t]} (obligatoire)
+                </option>
+              ))}
+              <option value="autre">{LIBELLES_TYPE_DOCUMENT.autre} (titre libre)</option>
+            </select>
+          </div>
+
+          {documentRemplace && (
+            <div
+              data-testid="depot-doc-remplacement"
+              className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"
+            >
+              <RefreshCw className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <p>
+                Un document <strong>« {type ? LIBELLES_TYPE_DOCUMENT[type] : ''} »</strong> est déjà
+                déposé pour {apprenti.prenom} : ce nouveau dépôt le <strong>remplacera</strong>
+                {documentRemplace.attestation.attestee
+                  ? " et l'attestation de l'apprenti·e repartira de zéro."
+                  : '.'}
+              </p>
+            </div>
+          )}
+
           <div className="space-y-1">
             <label htmlFor="depot-doc-fichier" className="text-xs font-medium">
               Fichier (PDF, JPEG ou PNG)
@@ -159,37 +218,44 @@ export function ModaleDepotDocument({ ouvert, apprenti, onFermer }: ModaleDepotD
             )}
           </div>
 
-          <div className="space-y-1">
-            <label htmlFor="depot-doc-titre" className="text-xs font-medium">
-              Titre du document
-            </label>
-            <input
-              id="depot-doc-titre"
-              data-testid="depot-doc-titre"
-              type="text"
-              value={titre}
-              onChange={(e) => setTitre(e.target.value)}
-              placeholder="Ex. : Partie 1 - Engagements du livret"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
+          {/* Titre et flag « réservé » : type « Autre » uniquement (arbitrage
+              2026-07-13 — les 4 obligatoires tirent leur libellé de la
+              typologie et restent visibles de tous). */}
+          {type === 'autre' && (
+            <>
+              <div className="space-y-1">
+                <label htmlFor="depot-doc-titre" className="text-xs font-medium">
+                  Titre du document
+                </label>
+                <input
+                  id="depot-doc-titre"
+                  data-testid="depot-doc-titre"
+                  type="text"
+                  value={titre}
+                  onChange={(e) => setTitre(e.target.value)}
+                  placeholder="Ex. : Convention de formation nominative"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
 
-          <label className="flex cursor-pointer items-start gap-2 text-sm">
-            <input
-              type="checkbox"
-              data-testid="depot-doc-reserve"
-              checked={reserve}
-              onChange={(e) => setReserve(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-input accent-[hsl(var(--ring))]"
-            />
-            <span>
-              <span className="font-medium">Document réservé à l'apprenti·e</span>
-              <span className="block text-xs text-muted-foreground">
-                Consultation restreinte à l'apprenti·e, au coordo et à l'admin (invisible du maître
-                / tuteur et du formateur référent).
-              </span>
-            </span>
-          </label>
+              <label className="flex cursor-pointer items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  data-testid="depot-doc-reserve"
+                  checked={reserve}
+                  onChange={(e) => setReserve(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-input accent-[hsl(var(--ring))]"
+                />
+                <span>
+                  <span className="font-medium">Document réservé à l'apprenti·e</span>
+                  <span className="block text-xs text-muted-foreground">
+                    Consultation restreinte à l'apprenti·e, au coordo et à l'admin (invisible du
+                    maître / tuteur et du formateur référent).
+                  </span>
+                </span>
+              </label>
+            </>
+          )}
 
           {tentative && erreurs.length > 0 && (
             <ul

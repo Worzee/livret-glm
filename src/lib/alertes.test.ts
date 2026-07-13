@@ -212,15 +212,17 @@ describe('alertesTableauBord — coordo / admin (sans droit pédagogique)', () =
       }),
       orphelin,
     );
-    expect(r).toHaveLength(1);
-    expect(r[0].type).toBe('affectation-incomplete');
-    expect(r[0].message).toContain('maître / tuteur');
-    expect(r[0].message).toContain('entreprise');
-    expect(r[0].lien).toBe('/admin/affectations');
+    // Sans document passé, les 4 anomalies « document manquant » remontent
+    // aussi (13 juillet 2026) — on isole l'affectation.
+    const affectations = r.filter((x) => x.type === 'affectation-incomplete');
+    expect(affectations).toHaveLength(1);
+    expect(affectations[0].message).toContain('maître / tuteur');
+    expect(affectations[0].message).toContain('entreprise');
+    expect(affectations[0].lien).toBe('/admin/affectations');
   });
 });
 
-describe('alertesTableauBord — documents administratifs non attestés (10 juillet 2026)', () => {
+describe('alertesTableauBord — documents administratifs (10 juillet 2026, v2 le 13 juillet 2026)', () => {
   const docBase = {
     apprentiId: 'a1',
     nomFichier: 'x.pdf',
@@ -235,23 +237,25 @@ describe('alertesTableauBord — documents administratifs non attestés (10 juil
   const docPublic = {
     ...docBase,
     id: 'doc-public',
-    titre: 'Partie 1',
+    type: 'contrat-pedagogique' as const,
     reserveApprenti: false,
-    attestation: { signe: false },
+    attestation: { attestee: false },
   };
   const docReserve = {
     ...docBase,
     id: 'doc-reserve',
+    type: 'autre' as const,
     titre: 'Convention',
     reserveApprenti: true,
-    attestation: { signe: false },
+    attestation: { attestee: false },
   };
   const docAtteste = {
     ...docBase,
     id: 'doc-ok',
-    titre: 'Règlement',
+    type: 'reglement-interieur' as const,
     reserveApprenti: false,
-    attestation: { signe: true, dateSignature: '2026-07-02T10:00:00.000Z' },
+    consulteParApprentiLe: '2026-07-02T09:00:00.000Z',
+    attestation: { attestee: true, dateAttestation: '2026-07-02T10:00:00.000Z' },
   };
 
   function alertesDocs(role: 'apprenti' | 'maitre' | 'formateur' | 'coordo' | 'admin') {
@@ -277,12 +281,54 @@ describe('alertesTableauBord — documents administratifs non attestés (10 juil
     // Coordo : les 2 documents non attestés (public + réservé) ; l'attesté non.
     expect(coordo.map((x) => x.id).sort()).toEqual(['document-doc-public', 'document-doc-reserve']);
     expect(coordo[0].lien).toBe('/livret/documents');
+    // Le libellé vient de la typologie (le titre n'existe que pour « autre »).
+    expect(coordo.map((x) => x.message)).toContain(
+      "Document « Contrat pédagogique » : attestation de l'apprenti·e attendue",
+    );
     expect(alertesDocs('maitre').map((x) => x.type)).not.toContain('document-a-attester');
   });
 
   it('le formateur ne voit pas les documents réservés à l’apprenti·e', () => {
     const formateur = alertesDocs('formateur').filter((x) => x.type === 'document-a-attester');
     expect(formateur.map((x) => x.id)).toEqual(['document-doc-public']);
+  });
+
+  it('signale au coordo / admin les types obligatoires MANQUANTS (13 juillet 2026)', () => {
+    // Déposés : contrat (public) + règlement (attesté) → manquent protection
+    // des données et droit à l'image. « Autre » (convention) ne compte pas.
+    for (const role of ['coordo', 'admin'] as const) {
+      const manquants = alertesDocs(role).filter((x) => x.type === 'document-manquant');
+      expect(manquants.map((x) => x.id)).toEqual([
+        'document-manquant-a1-protection-donnees',
+        'document-manquant-a1-droit-image',
+      ]);
+      expect(manquants[0].message).toBe(
+        'Document « Information relative à la protection des données » : dépôt à effectuer (obligatoire)',
+      );
+      expect(manquants[0].lien).toBe('/livret/documents');
+    }
+  });
+
+  it("l'anomalie « document manquant » ne remonte PAS au formateur ni au maître", () => {
+    expect(alertesDocs('formateur').map((x) => x.type)).not.toContain('document-manquant');
+    expect(alertesDocs('maitre').map((x) => x.type)).not.toContain('document-manquant');
+  });
+
+  it('aucune anomalie quand les 4 types sont déposés', () => {
+    const complets = [
+      { ...docPublic, id: 'd1', type: 'contrat-pedagogique' as const },
+      { ...docPublic, id: 'd2', type: 'protection-donnees' as const },
+      { ...docPublic, id: 'd3', type: 'droit-image' as const },
+      { ...docPublic, id: 'd4', type: 'reglement-interieur' as const },
+    ];
+    const r = alertesTableauBord(
+      'coordo',
+      [apprenti('a1')],
+      { l1: livret('a1', { entretien: entretienSigne3() }) },
+      MAINTENANT,
+      complets,
+    );
+    expect(r.filter((x) => x.type === 'document-manquant')).toHaveLength(0);
   });
 });
 
