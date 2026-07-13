@@ -23,7 +23,7 @@ import { useEntreprisesStore } from '@/store/useEntreprisesStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { useDocumentsStore } from '@/store/useDocumentsStore';
 import { useApprentiActifStore } from '@/store/useApprentiActifStore';
-import { documentsApprentiVisibles, documentsNonAttestes } from '@/lib/documents-administratifs';
+import { documentsEffectifsApprenti, documentsNonAttestes } from '@/lib/documents-administratifs';
 import { calculerResumeLivret, classesBadgeCas, libelleCas } from '@/lib/etat-livret';
 import { calculerAlerteR7 } from '@/lib/regles-entretien';
 import { libelleFichePeriode } from '@/lib/validation-fiche-periode';
@@ -59,6 +59,7 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
   const etablissements = useEtablissementsStore((s) => s.etablissements);
   const entreprises = useEntreprisesStore((s) => s.entreprises);
   const documents = useDocumentsStore((s) => s.documents);
+  const documentsFormation = useDocumentsStore((s) => s.documentsFormation);
   const maitres = useUtilisateursStore((s) => s.maitres);
   const formateurs = useUtilisateursStore((s) => s.formateurs);
   const setApprentiActif = useApprentiActifStore((s) => s.setApprentiActif);
@@ -91,10 +92,15 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
   const progCen = progressionFiches(fichesCentre, 'centre');
   const entretienRealise = entretienTenu(livret);
   const jrContrat = joursRestants(apprenti.contratFin);
-  // Documents administratifs à attester (10 juillet 2026 ; v2 13 juillet 2026 —
-  // attestation simple après lecture, obligatoire).
+  // Documents administratifs à attester (10 juillet 2026 ; v2/v3 13 juillet
+  // 2026 — attestation simple après lecture, documents de formation inclus).
   const documentsAAttester = documentsNonAttestes(
-    documentsApprentiVisibles(Object.values(documents), apprenti.id, 'apprenti'),
+    documentsEffectifsApprenti(
+      Object.values(documents),
+      Object.values(documentsFormation),
+      apprenti,
+      'apprenti',
+    ),
   );
 
   function aller(route: string) {

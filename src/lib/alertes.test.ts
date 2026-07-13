@@ -330,6 +330,84 @@ describe('alertesTableauBord — documents administratifs (10 juillet 2026, v2 l
     );
     expect(r.filter((x) => x.type === 'document-manquant')).toHaveLength(0);
   });
+
+  // ── Documents au niveau FORMATION (13 juillet 2026 — demande 4) ───────────
+
+  const docFormation = {
+    id: 'docform-reglement',
+    formationId: 'f-test',
+    type: 'reglement-interieur' as const,
+    nomFichier: 'reglement.pdf',
+    mimeType: 'application/pdf',
+    taille: 1000,
+    dataUrl: 'data:application/pdf;base64,JVBERi0xLjQ=',
+    deposeParId: 'u-coordo',
+    deposeParNom: 'Coordo TEST',
+    deposeParRole: 'coordo' as const,
+    deposeLe: '2026-07-01T09:00:00.000Z',
+    consultations: {},
+    attestations: {},
+  };
+
+  it('un document de formation non attesté remonte par apprenti·e (id préfixé)', () => {
+    const r = alertesTableauBord(
+      'coordo',
+      [apprenti('a1'), apprenti('a2')],
+      {
+        l1: livret('a1', { entretien: entretienSigne3() }),
+        l2: livret('a2', { id: 'livret-a2', entretien: entretienSigne3() }),
+      },
+      MAINTENANT,
+      [],
+      [docFormation],
+    );
+    const attestations = r.filter((x) => x.type === 'document-a-attester');
+    expect(attestations.map((x) => x.id).sort()).toEqual([
+      'document-a1-docform-reglement',
+      'document-a2-docform-reglement',
+    ]);
+    // Le formateur le voit aussi (document de promo public).
+    const formateur = alertesTableauBord(
+      'formateur',
+      [apprenti('a1')],
+      { l1: livret('a1', { entretien: entretienSigne3() }) },
+      MAINTENANT,
+      [],
+      [docFormation],
+    );
+    expect(formateur.map((x) => x.id)).toContain('document-a1-docform-reglement');
+  });
+
+  it("un dépôt de formation couvre l'obligation (plus d'anomalie « manquant » pour ce type)", () => {
+    const r = alertesTableauBord(
+      'coordo',
+      [apprenti('a1')],
+      { l1: livret('a1', { entretien: entretienSigne3() }) },
+      MAINTENANT,
+      [],
+      [docFormation],
+    );
+    const manquants = r.filter((x) => x.type === 'document-manquant').map((x) => x.id);
+    expect(manquants).not.toContain('document-manquant-a1-reglement-interieur');
+    expect(manquants).toHaveLength(3);
+  });
+
+  it("l'apprenti·e ayant attesté le document de formation ne génère plus d'alerte", () => {
+    const atteste = {
+      ...docFormation,
+      consultations: { a1: '2026-07-02T08:00:00.000Z' },
+      attestations: { a1: { attestee: true, dateAttestation: '2026-07-02T09:00:00.000Z' } },
+    };
+    const r = alertesTableauBord(
+      'coordo',
+      [apprenti('a1')],
+      { l1: livret('a1', { entretien: entretienSigne3() }) },
+      MAINTENANT,
+      [],
+      [atteste],
+    );
+    expect(r.filter((x) => x.type === 'document-a-attester')).toHaveLength(0);
+  });
 });
 
 describe("alertesTableauBord — points d'alerte de l'entretien (8 juillet 2026)", () => {

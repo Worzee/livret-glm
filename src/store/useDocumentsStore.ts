@@ -1,15 +1,28 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { DocumentAdministratif, Role, TypeDocumentAdministratif } from '@/types';
-import { documentsDemo } from '@/fixtures/documents-demo';
-import { peutSupprimerDocument } from '@/lib/documents-administratifs';
+import type {
+  DocumentAdministratif,
+  DocumentFormation,
+  Role,
+  TypeDocumentAdministratif,
+} from '@/types';
+import { documentsDemo, documentsFormationDemo } from '@/fixtures/documents-demo';
+import {
+  peutSupprimerDocument,
+  peutSupprimerDocumentFormation,
+} from '@/lib/documents-administratifs';
 
 /**
- * Store des documents administratifs nominatifs (10 juillet 2026 — demande
- * direction ; v2 le 13 juillet 2026 — réunion DG). Cf.
- * `lib/documents-administratifs` pour les règles (typologie 4 obligatoires +
- * « autre », visibilité « réservé », attestation après lecture, verrou de
- * suppression).
+ * Store des documents administratifs (10 juillet 2026 — demande direction ;
+ * v2 puis v3 le 13 juillet 2026 — réunion DG). Deux portées :
+ *
+ *   - `documents` : documents NOMINATIFS, par apprenti·e ;
+ *   - `documentsFormation` : documents déposés AU NIVEAU FORMATION (dépôt en
+ *     masse — demande 4), stockés une fois, attestations individuelles
+ *     indexées par apprenti·e.
+ *
+ * Cf. `lib/documents-administratifs` pour les règles (typologie, primauté du
+ * nominatif, attestation après lecture, verrous de suppression).
  *
  * ⚠ Maquette : les fichiers vivent en data-URL dans le localStorage (taille
  * plafonnée à l'import — `TAILLE_MAX_DOCUMENT_OCTETS`). Étape 2 : binaires
@@ -32,18 +45,41 @@ interface DepotDocumentInput {
   deposeParRole: Role;
 }
 
+interface DepotDocumentFormationInput {
+  formationId: string;
+  /** Jamais `contrat-pedagogique` (validé par `validerDepotDocumentFormation`). */
+  type: TypeDocumentAdministratif;
+  titre?: string;
+  nomFichier: string;
+  mimeType: string;
+  taille: number;
+  dataUrl: string;
+  deposeParId: string;
+  deposeParNom: string;
+  deposeParRole: Role;
+}
+
 interface DocumentsStore {
   documents: Record<string, DocumentAdministratif>;
+  documentsFormation: Record<string, DocumentFormation>;
 
   /**
-   * Dépose un document pour un·e apprenti·e (coordo / admin — ressource
-   * `documents.gerer`). La validation du formulaire (`validerDepotDocument`)
-   * est faite côté UI. Un type obligatoire déjà déposé est REMPLACÉ (même
-   * attesté — l'attestation repart de zéro, arbitrage 2026-07-13) ; l'ancien
-   * binaire est supprimé (budget localStorage — l'étape 2 archivera sur
-   * Nuage). @returns l'id du document créé.
+   * Dépose un document NOMINATIF pour un·e apprenti·e (coordo / admin —
+   * ressource `documents.gerer`). La validation du formulaire
+   * (`validerDepotDocument`) est faite côté UI. Un type obligatoire déjà
+   * déposé est REMPLACÉ (même attesté — l'attestation repart de zéro,
+   * arbitrage 2026-07-13) ; l'ancien binaire est supprimé (budget
+   * localStorage — l'étape 2 archivera sur Nuage). @returns l'id créé.
    */
   deposerDocument: (input: DepotDocumentInput) => string;
+
+  /**
+   * Dépose un document AU NIVEAU FORMATION (dépôt en masse — demande 4,
+   * 13 juillet 2026). Un type (≠ « autre ») déjà déposé pour la formation est
+   * REMPLACÉ : toutes les attestations de la promo repartent de zéro.
+   * @returns l'id créé.
+   */
+  deposerDocumentFormation: (input: DepotDocumentFormationInput) => string;
 
   /**
    * Trace la PREMIÈRE consultation du document par l'apprenti·e (« lu et
@@ -51,6 +87,9 @@ interface DocumentsStore {
    * consulté.
    */
   marquerConsultationApprenti: (id: string) => void;
+
+  /** Consultation d'un document de FORMATION par un·e apprenti·e. */
+  marquerConsultationFormationApprenti: (id: string, apprentiId: string) => void;
 
   /**
    * Attestation de prise de connaissance par l'apprenti·e (ressource
@@ -60,12 +99,22 @@ interface DocumentsStore {
    */
   attesterDocument: (id: string) => void;
 
+  /** Attestation individuelle d'un document de FORMATION. */
+  attesterDocumentFormation: (id: string, apprentiId: string) => void;
+
   /**
-   * Supprime un document non attesté (coordo / admin). Bloqué si l'apprenti·e
-   * a attesté (`peutSupprimerDocument` — acte engagé, esprit R21).
-   * @returns true si supprimé, false si bloqué.
+   * Supprime un document nominatif non attesté (coordo / admin). Bloqué si
+   * l'apprenti·e a attesté (`peutSupprimerDocument` — acte engagé, esprit
+   * R21). @returns true si supprimé, false si bloqué.
    */
   supprimerDocument: (id: string) => boolean;
+
+  /**
+   * Supprime un document de formation tant que PERSONNE n'a attesté
+   * (`peutSupprimerDocumentFormation` — arbitrage 5, demande 4).
+   * @returns true si supprimé, false si bloqué.
+   */
+  supprimerDocumentFormation: (id: string) => boolean;
 
   /** Réinitialise le store aux fixtures (utilisé par BoutonReinitialiserDemo). */
   reinitialiser: () => void;
@@ -73,15 +122,19 @@ interface DocumentsStore {
 
 // v1 — création du store (10 juillet 2026, demande direction) : 3 documents
 //      de démo, attestation par signature manuscrite tactile.
-// v2 — 13 juillet 2026 (réunion DG) : typologie (4 types obligatoires +
-//      « autre »), attestation simple sans tracé conditionnée à la lecture
-//      (`consulteParApprentiLe`), remplacement par type. Fixtures : 6
-//      apprenti·e·s au dossier complet + cas de démo sur Léa et Yanis.
-const VERSION_SCHEMA = 2;
+// v2 — 13 juillet 2026 (réunion DG, demande 3) : typologie (4 types
+//      obligatoires + « autre »), attestation simple sans tracé conditionnée
+//      à la lecture (`consulteParApprentiLe`), remplacement par type.
+// v3 — 13 juillet 2026 (réunion DG, demande 4) : documents AU NIVEAU
+//      FORMATION (`documentsFormation` — dépôt en masse, attestations
+//      individuelles indexées par apprenti·e). Fixtures : le règlement
+//      intérieur devient un document de formation (CAP + BTS).
+const VERSION_SCHEMA = 3;
 
-function etatInitial(): Pick<DocumentsStore, 'documents'> {
+function etatInitial(): Pick<DocumentsStore, 'documents' | 'documentsFormation'> {
   return {
     documents: Object.fromEntries(documentsDemo.map((d) => [d.id, d])),
+    documentsFormation: Object.fromEntries(documentsFormationDemo.map((d) => [d.id, d])),
   };
 }
 
@@ -114,6 +167,31 @@ export const useDocumentsStore = create<DocumentsStore>()(
         return id;
       },
 
+      deposerDocumentFormation: (input) => {
+        const id = `docform-${crypto.randomUUID().slice(0, 8)}`;
+        const document: DocumentFormation = {
+          id,
+          ...input,
+          titre: input.type === 'autre' ? input.titre?.trim() : undefined,
+          deposeLe: new Date().toISOString(),
+          consultations: {},
+          attestations: {},
+        };
+        const documentsFormation = { ...get().documentsFormation };
+        // Remplacement par type pour la formation : les attestations de toute
+        // la promo repartent de zéro (arbitrage 4, demande 4).
+        if (input.type !== 'autre') {
+          for (const existant of Object.values(documentsFormation)) {
+            if (existant.formationId === input.formationId && existant.type === input.type) {
+              delete documentsFormation[existant.id];
+            }
+          }
+        }
+        documentsFormation[id] = document;
+        set({ documentsFormation });
+        return id;
+      },
+
       marquerConsultationApprenti: (id) =>
         set((s) => {
           const document = s.documents[id];
@@ -122,6 +200,24 @@ export const useDocumentsStore = create<DocumentsStore>()(
             documents: {
               ...s.documents,
               [id]: { ...document, consulteParApprentiLe: new Date().toISOString() },
+            },
+          };
+        }),
+
+      marquerConsultationFormationApprenti: (id, apprentiId) =>
+        set((s) => {
+          const document = s.documentsFormation[id];
+          if (!document || document.consultations[apprentiId]) return s;
+          return {
+            documentsFormation: {
+              ...s.documentsFormation,
+              [id]: {
+                ...document,
+                consultations: {
+                  ...document.consultations,
+                  [apprentiId]: new Date().toISOString(),
+                },
+              },
             },
           };
         }),
@@ -143,6 +239,30 @@ export const useDocumentsStore = create<DocumentsStore>()(
           };
         }),
 
+      attesterDocumentFormation: (id, apprentiId) =>
+        set((s) => {
+          const document = s.documentsFormation[id];
+          if (
+            !document ||
+            document.attestations[apprentiId]?.attestee ||
+            !document.consultations[apprentiId]
+          ) {
+            return s;
+          }
+          return {
+            documentsFormation: {
+              ...s.documentsFormation,
+              [id]: {
+                ...document,
+                attestations: {
+                  ...document.attestations,
+                  [apprentiId]: { attestee: true, dateAttestation: new Date().toISOString() },
+                },
+              },
+            },
+          };
+        }),
+
       supprimerDocument: (id) => {
         const document = get().documents[id];
         if (!document) return false;
@@ -150,6 +270,16 @@ export const useDocumentsStore = create<DocumentsStore>()(
         const { [id]: _retire, ...sansLui } = get().documents;
         void _retire;
         set({ documents: sansLui });
+        return true;
+      },
+
+      supprimerDocumentFormation: (id) => {
+        const document = get().documentsFormation[id];
+        if (!document) return false;
+        if (!peutSupprimerDocumentFormation(document).ok) return false;
+        const { [id]: _retire, ...sansLui } = get().documentsFormation;
+        void _retire;
+        set({ documentsFormation: sansLui });
         return true;
       },
 

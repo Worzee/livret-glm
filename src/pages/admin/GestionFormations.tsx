@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   CalendarDays,
   CalendarRange,
+  FileText,
   GraduationCap,
   Lock,
   MapPin,
@@ -16,12 +17,14 @@ import { useUserStore } from '@/store/useUserStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
 import { useEtablissementsStore } from '@/store/useEtablissementsStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
+import { useDocumentsStore } from '@/store/useDocumentsStore';
 import { libelleRole, peutEditer } from '@/lib/droits';
 import { evaluerVerrouFormation } from '@/lib/formation-verrou';
 import { modeEffectif } from '@/lib/mode-evaluation';
 import { BadgeMode } from '@/pages/admin/GestionActivites';
 import { ModaleFormation } from '@/components/admin/ModaleFormation';
 import { ModalePlanningPeriodes } from '@/components/admin/ModalePlanningPeriodes';
+import { ModaleDepotDocument } from '@/components/admin/ModaleDepotDocument';
 import { cn } from '@/lib/utils';
 
 /**
@@ -31,6 +34,11 @@ import { cn } from '@/lib/utils';
  * CRUD complet réservé aux rôles `coordo` et `admin`. Édition par ligne via
  * ModaleFormation. Suppression bloquée tant qu'au moins un·e apprenti·e est
  * rattaché·e à la formation (cohérence référentielle, cf. `formation-verrou`).
+ *
+ * Documents de la promotion (13 juillet 2026 — réunion DG, demande 4) : le
+ * bouton « Documents » de chaque carte ouvre la modale de dépôt EN MASSE
+ * (ressource `documents.gerer`) — point d'entrée unique du dépôt au niveau
+ * formation.
  */
 
 export function GestionFormations() {
@@ -39,11 +47,13 @@ export function GestionFormations() {
   const supprimerFormation = useFormationsStore((s) => s.supprimerFormation);
   const etablissements = useEtablissementsStore((s) => s.etablissements);
   const apprentis = useUtilisateursStore((s) => s.apprentis);
+  const documentsFormation = useDocumentsStore((s) => s.documentsFormation);
 
   const [requete, setRequete] = useState('');
   const [modaleOuverte, setModaleOuverte] = useState(false);
   const [formationEnEdition, setFormationEnEdition] = useState<Formation | undefined>();
   const [formationEnPlanning, setFormationEnPlanning] = useState<Formation | undefined>();
+  const [formationEnDocuments, setFormationEnDocuments] = useState<Formation | undefined>();
   const [confirmationSuppression, setConfirmationSuppression] = useState<string | null>(null);
 
   // Auto-annulation 10 s de la confirmation (cohérent avec les autres patterns).
@@ -56,8 +66,17 @@ export function GestionFormations() {
   const peutCreer = peutEditer(roleActif, 'admin.formations.creer');
   const peutModifier = peutEditer(roleActif, 'admin.formations.modifier');
   const peutSupprimer = peutEditer(roleActif, 'admin.formations.supprimer');
+  const peutGererDocuments = peutEditer(roleActif, 'documents.gerer');
 
   const apprentisListe = useMemo(() => Object.values(apprentis), [apprentis]);
+  // Nombre de documents de promo par formation (badge du bouton « Documents »).
+  const compteursDocuments = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const d of Object.values(documentsFormation)) {
+      m[d.formationId] = (m[d.formationId] ?? 0) + 1;
+    }
+    return m;
+  }, [documentsFormation]);
   // Pré-calcul du nombre d'apprenti·e·s rattaché·e·s à chaque formation.
   const compteurs = useMemo(() => {
     const m: Record<string, number> = {};
@@ -179,6 +198,21 @@ export function GestionFormations() {
                     </div>
                   </div>
                   <div className="inline-flex items-center gap-1">
+                    {peutGererDocuments && (
+                      <button
+                        type="button"
+                        onClick={() => setFormationEnDocuments(f)}
+                        aria-label={`Documents de la promotion ${f.intitule}`}
+                        title="Documents de la promotion (dépôt en masse)"
+                        className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-2 py-1.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        data-testid={`documents-formation-${f.id}`}
+                      >
+                        <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+                        <span className="hidden sm:inline">
+                          Documents ({compteursDocuments[f.id] ?? 0})
+                        </span>
+                      </button>
+                    )}
                     {editable && (
                       <button
                         type="button"
@@ -331,6 +365,16 @@ export function GestionFormations() {
           ouvert
           formation={formationEnPlanning}
           onFermer={() => setFormationEnPlanning(undefined)}
+        />
+      )}
+
+      {/* Documents de la promotion — dépôt en masse (demande 4). */}
+      {formationEnDocuments && (
+        <ModaleDepotDocument
+          key={`documents-${formationEnDocuments.id}`}
+          ouvert
+          cible={{ portee: 'formation', formation: formationEnDocuments }}
+          onFermer={() => setFormationEnDocuments(undefined)}
         />
       )}
     </div>

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { DocumentAdministratif } from '@/types';
+import type { DocumentAdministratif, DocumentFormation } from '@/types';
 import {
   documentsApprentiVisibles,
+  documentsEffectifsApprenti,
   documentsNonAttestes,
   etatDocumentsObligatoires,
   libelleDocument,
@@ -9,10 +10,13 @@ import {
   peutAttesterDocument,
   peutConsulterDocument,
   peutSupprimerDocument,
+  peutSupprimerDocumentFormation,
   TAILLE_MAX_DOCUMENT_OCTETS,
+  TYPES_DOCUMENT_FORMATION,
   TYPES_DOCUMENTS_OBLIGATOIRES,
   typesObligatoiresManquants,
   validerDepotDocument,
+  validerDepotDocumentFormation,
 } from './documents-administratifs';
 
 /**
@@ -280,5 +284,173 @@ describe('validerDepotDocument', () => {
     });
     expect(r.ok).toBe(false);
     expect(r.erreurs).toHaveLength(3);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Documents au niveau formation (13 juillet 2026 — réunion DG, demande 4)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function docForm(sur: Partial<DocumentFormation> = {}): DocumentFormation {
+  return {
+    id: 'docform-1',
+    formationId: 'f-cap',
+    type: 'reglement-interieur',
+    nomFichier: 'reglement.pdf',
+    mimeType: 'application/pdf',
+    taille: 10_000,
+    dataUrl: 'data:application/pdf;base64,JVBERi0xLjQ=',
+    deposeParId: 'u-coordo-martine',
+    deposeParNom: 'Martine LEFÈVRE',
+    deposeParRole: 'coordo',
+    deposeLe: '2026-07-05T10:00:00.000Z',
+    consultations: {},
+    attestations: {},
+    ...sur,
+  };
+}
+
+describe('TYPES_DOCUMENT_FORMATION', () => {
+  it('autorise tous les types SAUF le contrat pédagogique (nominatif par nature)', () => {
+    expect(TYPES_DOCUMENT_FORMATION).toEqual([
+      'protection-donnees',
+      'droit-image',
+      'reglement-interieur',
+      'autre',
+    ]);
+  });
+});
+
+describe('documentsEffectifsApprenti — fusion nominatif + formation', () => {
+  const apprenti = { id: 'a1', formationId: 'f-cap' };
+
+  it("projette un document de formation pour l'apprenti·e (attestation individuelle)", () => {
+    const forme = docForm({
+      consultations: { a1: '2026-07-06T08:00:00.000Z' },
+      attestations: { a1: { attestee: true, dateAttestation: '2026-07-06T09:00:00.000Z' } },
+    });
+    const r = documentsEffectifsApprenti([], [forme], apprenti, 'apprenti');
+    expect(r).toHaveLength(1);
+    expect(r[0].id).toBe('docform-1');
+    expect(r[0].apprentiId).toBe('a1');
+    expect(r[0].porteeFormation).toBe(true);
+    expect(r[0].consulteParApprentiLe).toBe('2026-07-06T08:00:00.000Z');
+    expect(r[0].attestation.attestee).toBe(true);
+    // Pour un·e autre apprenti·e de la formation, l'attestation est vierge.
+    const autre = documentsEffectifsApprenti(
+      [],
+      [forme],
+      { id: 'a2', formationId: 'f-cap' },
+      'apprenti',
+    );
+    expect(autre[0].attestation.attestee).toBe(false);
+    expect(autre[0].consulteParApprentiLe).toBeUndefined();
+  });
+
+  it('exclut les documents des autres formations', () => {
+    const r = documentsEffectifsApprenti(
+      [],
+      [docForm({ formationId: 'f-bts' })],
+      apprenti,
+      'apprenti',
+    );
+    expect(r).toHaveLength(0);
+  });
+
+  it('le nominatif PRIME sur le document de formation du même type (arbitrage 3)', () => {
+    const nominatif = doc({ id: 'd-nominatif', apprentiId: 'a1', type: 'reglement-interieur' });
+    const r = documentsEffectifsApprenti([nominatif], [docForm()], apprenti, 'coordo');
+    expect(r.map((d) => d.id)).toEqual(['d-nominatif']);
+    // Sans nominatif du type, le document de formation s'applique.
+    const sans = documentsEffectifsApprenti([], [docForm()], apprenti, 'coordo');
+    expect(sans.map((d) => d.id)).toEqual(['docform-1']);
+  });
+
+  it('les documents « autre » coexistent (pas de règle de primauté)', () => {
+    const nominatif = doc({ id: 'd-autre', apprentiId: 'a1', type: 'autre', titre: 'Convention' });
+    const forme = docForm({ id: 'docform-autre', type: 'autre', titre: 'Charte informatique' });
+    const r = documentsEffectifsApprenti([nominatif], [forme], apprenti, 'coordo');
+    expect(r.map((d) => d.id).sort()).toEqual(['d-autre', 'docform-autre']);
+  });
+
+  it('applique la visibilité du rôle aux nominatifs réservés, trié par date de dépôt', () => {
+    const reserve = doc({
+      id: 'd-reserve',
+      apprentiId: 'a1',
+      type: 'autre',
+      titre: 'Convention',
+      reserveApprenti: true,
+      deposeLe: '2026-07-01T10:00:00.000Z',
+    });
+    const forme = docForm({ deposeLe: '2026-07-02T10:00:00.000Z' });
+    expect(
+      documentsEffectifsApprenti([reserve], [forme], apprenti, 'formateur').map((d) => d.id),
+    ).toEqual(['docform-1']);
+    expect(
+      documentsEffectifsApprenti([reserve], [forme], apprenti, 'coordo').map((d) => d.id),
+    ).toEqual(['d-reserve', 'docform-1']);
+  });
+
+  it("un dépôt de formation satisfait l'obligation (plus de type manquant)", () => {
+    const effectifs = documentsEffectifsApprenti(
+      [doc({ id: 'd1', apprentiId: 'a1', type: 'contrat-pedagogique' })],
+      [docForm()],
+      apprenti,
+      'coordo',
+    );
+    expect(typesObligatoiresManquants(effectifs)).toEqual(['protection-donnees', 'droit-image']);
+  });
+});
+
+describe('peutSupprimerDocumentFormation — verrou à la première attestation (arbitrage 5)', () => {
+  it("supprimable tant que personne n'a attesté", () => {
+    expect(peutSupprimerDocumentFormation(docForm()).ok).toBe(true);
+    expect(
+      peutSupprimerDocumentFormation(docForm({ consultations: { a1: '2026-07-06T08:00:00.000Z' } }))
+        .ok,
+    ).toBe(true);
+  });
+
+  it("verrouillé dès qu'UN·E apprenti·e a attesté", () => {
+    const r = peutSupprimerDocumentFormation(
+      docForm({
+        attestations: { a1: { attestee: true, dateAttestation: '2026-07-06T09:00:00.000Z' } },
+      }),
+    );
+    expect(r.ok).toBe(false);
+    expect(r.raison).toMatch(/attesté/i);
+  });
+});
+
+describe('validerDepotDocumentFormation', () => {
+  const depotValide = {
+    type: 'reglement-interieur' as const,
+    titre: '',
+    nomFichier: 'reglement.pdf',
+    mimeType: 'application/pdf',
+    taille: 100_000,
+  };
+
+  it('accepte un type autorisé sans titre', () => {
+    expect(validerDepotDocumentFormation(depotValide).ok).toBe(true);
+  });
+
+  it('refuse le contrat pédagogique (nominatif par nature — arbitrage 2)', () => {
+    const r = validerDepotDocumentFormation({ ...depotValide, type: 'contrat-pedagogique' });
+    expect(r.ok).toBe(false);
+    expect(r.erreurs.join(' ')).toMatch(/nominatif/i);
+  });
+
+  it('exige un titre pour « autre », contrôle format et taille', () => {
+    expect(validerDepotDocumentFormation({ ...depotValide, type: 'autre' }).ok).toBe(false);
+    expect(
+      validerDepotDocumentFormation({ ...depotValide, type: 'autre', titre: 'Charte' }).ok,
+    ).toBe(true);
+    expect(validerDepotDocumentFormation({ ...depotValide, mimeType: 'application/zip' }).ok).toBe(
+      false,
+    );
+    expect(
+      validerDepotDocumentFormation({ ...depotValide, taille: TAILLE_MAX_DOCUMENT_OCTETS + 1 }).ok,
+    ).toBe(false);
   });
 });

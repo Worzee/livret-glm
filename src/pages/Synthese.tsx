@@ -11,6 +11,7 @@ import { useDocumentsStore } from '@/store/useDocumentsStore';
 import { peutEditer } from '@/lib/droits';
 import { modeEffectif } from '@/lib/mode-evaluation';
 import { referentielEvaluable } from '@/lib/limite-referentiel';
+import { documentsEffectifsApprenti } from '@/lib/documents-administratifs';
 import { libelleRole } from '@/lib/droits';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
 import { formatriceSophieDubois, maitreKarimBenali } from '@/fixtures/utilisateurs';
@@ -48,6 +49,7 @@ export function Synthese() {
   const attitudesMap = useAttitudesStore((s) => s.attitudes);
   const modeles = useActivitesStore((s) => s.modeles);
   const documentsMap = useDocumentsStore((s) => s.documents);
+  const documentsFormationMap = useDocumentsStore((s) => s.documentsFormation);
   const ctx = useApprentiActif();
 
   if (!ctx) return <AucunApprentiSelectionne />;
@@ -110,7 +112,12 @@ export function Synthese() {
           etablissement={etablissement}
           attitudes={Object.values(attitudesMap)}
           modeleActivites={modeleActivites}
-          documents={Object.values(documentsMap).filter((d) => d.apprentiId === apprenti.id)}
+          documents={documentsEffectifsApprenti(
+            Object.values(documentsMap),
+            Object.values(documentsFormationMap),
+            apprenti,
+            'admin',
+          )}
         />
       </header>
 

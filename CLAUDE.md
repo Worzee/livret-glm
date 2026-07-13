@@ -20,7 +20,8 @@ https://livret-glm.duckdns.org (Basic Auth). Pilote métier : Guillaume FERRERI.
   entretiens individuels mi/fin de parcours (ARBITRÉ le 2026-07-12 — ⛔ ne coder qu'après
   réception des trames officielles GRETA, seul bloquant) et **série réunion DG du
   2026-07-13 en cours de recueil** — demande 3 « documents v2 : 4 types obligatoires +
-  attestation après lecture » livrée le 2026-07-13
+  attestation après lecture » et demande 4 « documents au niveau formation (dépôt en
+  masse) » livrées le 2026-07-13
 - `STACK_GRETA_LYON.md` et `_kit-deploiement-o2switch/` : doctrine portefeuille Greta,
   **volontairement non commités** — ne pas les ajouter à un commit du livret
 
@@ -28,8 +29,8 @@ https://livret-glm.duckdns.org (Basic Auth). Pilote métier : Guillaume FERRERI.
 
 ```bash
 npm run dev            # Vite sur :5173
-npm test               # Vitest (730 tests au 2026-07-13)
-npm run e2e            # build + Playwright (214 tests) — c'est LA validation de référence
+npm test               # Vitest (745 tests au 2026-07-13)
+npm run e2e            # build + Playwright (216 tests) — c'est LA validation de référence
 npm run typecheck      # tsc --noEmit — ⚠ le build prod (tsc -b) voit PLUS que lui
 npm run build          # à passer avant tout push
 npm run lint && npm run format

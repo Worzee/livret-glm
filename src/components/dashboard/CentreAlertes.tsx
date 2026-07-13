@@ -14,7 +14,7 @@ import {
   UserX,
   X,
 } from 'lucide-react';
-import type { Apprenti, DocumentAdministratif, Livret, Role } from '@/types';
+import type { Apprenti, DocumentAdministratif, DocumentFormation, Livret, Role } from '@/types';
 import { alertesTableauBord, type AlerteTableauBord, type TypeAlerte } from '@/lib/alertes';
 
 /**
@@ -43,6 +43,8 @@ interface CentreAlertesProps {
   livrets: Record<string, Livret>;
   /** Documents administratifs (10 juillet 2026) — suivi des attestations. */
   documents: DocumentAdministratif[];
+  /** Documents au niveau formation (13 juillet 2026 — dépôt en masse). */
+  documentsFormation: DocumentFormation[];
   onOuvrir: (alerte: AlerteTableauBord) => void;
   /**
    * Marque « traité » un point d'alerte de l'entretien (8 juillet 2026 — coordo
@@ -57,12 +59,13 @@ export function CentreAlertes({
   apprentis,
   livrets,
   documents,
+  documentsFormation,
   onOuvrir,
   onTraiter,
 }: CentreAlertesProps) {
   const alertes = useMemo(
-    () => alertesTableauBord(role, apprentis, livrets, new Date(), documents),
-    [role, apprentis, livrets, documents],
+    () => alertesTableauBord(role, apprentis, livrets, new Date(), documents, documentsFormation),
+    [role, apprentis, livrets, documents, documentsFormation],
   );
 
   if (apprentis.length === 0) return null;

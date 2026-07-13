@@ -51,6 +51,7 @@ export function TableauDeBord() {
   const livrets = useLivretStore((s) => s.livrets);
   const basculerPointAlerteTraite = useLivretStore((s) => s.basculerPointAlerteTraite);
   const documents = useDocumentsStore((s) => s.documents);
+  const documentsFormation = useDocumentsStore((s) => s.documentsFormation);
   const setApprentiActif = useApprentiActifStore((s) => s.setApprentiActif);
   const apprentis = useUtilisateursStore((s) => s.apprentis);
   const maitres = useUtilisateursStore((s) => s.maitres);
@@ -72,6 +73,10 @@ export function TableauDeBord() {
   );
   const maitresList = useMemo(() => Object.values(maitres), [maitres]);
   const documentsList = useMemo(() => Object.values(documents), [documents]);
+  const documentsFormationList = useMemo(
+    () => Object.values(documentsFormation),
+    [documentsFormation],
+  );
   const formateursList = useMemo(() => Object.values(formateurs), [formateurs]);
   const apprentisList = useMemo(() => Object.values(apprentis), [apprentis]);
   const annees = useMemo(
@@ -234,6 +239,7 @@ export function TableauDeBord() {
           apprentis={apprentisVisibles}
           livrets={livrets}
           documents={documentsList}
+          documentsFormation={documentsFormationList}
           onOuvrir={ouvrirAlerte}
           onTraiter={peutEditer(roleActif, 'point-alerte.traiter') ? traiterPointAlerte : undefined}
         />

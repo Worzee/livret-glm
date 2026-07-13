@@ -1,4 +1,9 @@
-import type { DocumentAdministratif, Role, TypeDocumentAdministratif } from '@/types';
+import type {
+  DocumentAdministratif,
+  DocumentFormation,
+  Role,
+  TypeDocumentAdministratif,
+} from '@/types';
 
 /**
  * Documents administratifs nominatifs (10 juillet 2026 — demande direction ;
@@ -140,9 +145,9 @@ export function peutAttesterDocument(document: DocumentAdministratif): ResultatA
 }
 
 /** Documents encore en attente de l'attestation de l'apprenti·e. */
-export function documentsNonAttestes(
-  documents: ReadonlyArray<DocumentAdministratif>,
-): DocumentAdministratif[] {
+export function documentsNonAttestes<T extends DocumentAdministratif>(
+  documents: ReadonlyArray<T>,
+): T[] {
   return documents.filter((d) => !d.attestation.attestee);
 }
 
@@ -192,10 +197,32 @@ export interface ResultatValidationDepot {
   erreurs: string[];
 }
 
+/** Contrôles communs à tout dépôt : titre pour « autre », format, taille. */
+function erreursDepotCommunes(depot: {
+  type: TypeDocumentAdministratif;
+  titre: string;
+  mimeType: string;
+  taille: number;
+}): string[] {
+  const erreurs: string[] = [];
+  if (depot.type === 'autre' && depot.titre.trim().length === 0) {
+    erreurs.push('Le titre du document est obligatoire pour un « Autre document ».');
+  }
+  if (!TYPES_DOCUMENT_AUTORISES.includes(depot.mimeType)) {
+    erreurs.push('Format non pris en charge : déposez un PDF ou une image (JPEG, PNG).');
+  }
+  if (depot.taille > TAILLE_MAX_DOCUMENT_OCTETS) {
+    erreurs.push(
+      `Fichier trop volumineux : la taille est plafonnée à ${Math.round(TAILLE_MAX_DOCUMENT_OCTETS / 1024 / 1024)} Mo dans la maquette (stockage Nuage prévu en étape 2).`,
+    );
+  }
+  return erreurs;
+}
+
 /**
- * Validation du formulaire de dépôt : titre exigé pour « autre » seulement,
- * flag « réservé » refusé hors « autre » (arbitrage 2026-07-13), type de
- * fichier et taille plafonnée.
+ * Validation du dépôt NOMINATIF : titre exigé pour « autre » seulement, flag
+ * « réservé » refusé hors « autre » (arbitrage 2026-07-13), type de fichier
+ * et taille plafonnée.
  */
 export function validerDepotDocument(depot: {
   type: TypeDocumentAdministratif;
@@ -205,21 +232,126 @@ export function validerDepotDocument(depot: {
   taille: number;
   reserveApprenti: boolean;
 }): ResultatValidationDepot {
-  const erreurs: string[] = [];
-  if (depot.type === 'autre' && depot.titre.trim().length === 0) {
-    erreurs.push('Le titre du document est obligatoire pour un « Autre document ».');
-  }
+  const erreurs = erreursDepotCommunes(depot);
   if (depot.type !== 'autre' && depot.reserveApprenti) {
     erreurs.push(
       "Les 4 documents obligatoires sont visibles de tous les rôles du livret : seul un « Autre document » peut être réservé à l'apprenti·e.",
     );
   }
-  if (!TYPES_DOCUMENT_AUTORISES.includes(depot.mimeType)) {
-    erreurs.push('Format non pris en charge : déposez un PDF ou une image (JPEG, PNG).');
+  return { ok: erreurs.length === 0, erreurs };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Documents au niveau formation (13 juillet 2026 — réunion DG, demande 4)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Types autorisés au dépôt EN MASSE (niveau formation) : tous SAUF le contrat
+ * pédagogique, nominatif par nature (arbitrage 2026-07-13, demande 4). Jamais
+ * de flag « réservé » en masse (document générique).
+ */
+export const TYPES_DOCUMENT_FORMATION: ReadonlyArray<TypeDocumentAdministratif> = [
+  'protection-donnees',
+  'droit-image',
+  'reglement-interieur',
+  'autre',
+];
+
+/**
+ * Document effectif présenté à un·e apprenti·e : nominatif tel quel, ou
+ * projection d'un document de formation (attestation/consultation de CET·TE
+ * apprenti·e). `porteeFormation` distingue les mutations à router (store) et
+ * l'affichage (badge « Document de la formation », pas de suppression depuis
+ * la page apprenti·e).
+ */
+export interface DocumentApprentiEffectif extends DocumentAdministratif {
+  porteeFormation?: boolean;
+}
+
+/** Projette un document de formation sur un·e apprenti·e donné·e. */
+export function projeterDocumentFormation(
+  document: DocumentFormation,
+  apprentiId: string,
+): DocumentApprentiEffectif {
+  return {
+    id: document.id,
+    apprentiId,
+    type: document.type,
+    titre: document.titre,
+    nomFichier: document.nomFichier,
+    mimeType: document.mimeType,
+    taille: document.taille,
+    dataUrl: document.dataUrl,
+    reserveApprenti: false,
+    deposeParId: document.deposeParId,
+    deposeParNom: document.deposeParNom,
+    deposeParRole: document.deposeParRole,
+    deposeLe: document.deposeLe,
+    consulteParApprentiLe: document.consultations[apprentiId],
+    attestation: document.attestations[apprentiId] ?? { attestee: false },
+    porteeFormation: true,
+  };
+}
+
+/**
+ * Documents EFFECTIFS d'un·e apprenti·e, visibles par le rôle actif : ses
+ * documents nominatifs (règle du flag « réservé ») + les documents de SA
+ * formation projetés. **Le nominatif prime** : un document de formation d'un
+ * type obligatoire est écarté si l'apprenti·e possède un nominatif du même
+ * type (arbitrage 3, demande 4) ; les « autre » coexistent. Trié par date de
+ * dépôt. C'est LA liste à utiliser partout (page, alertes, bandeaux, PDF).
+ */
+export function documentsEffectifsApprenti(
+  nominatifs: ReadonlyArray<DocumentAdministratif>,
+  documentsFormation: ReadonlyArray<DocumentFormation>,
+  apprenti: { id: string; formationId?: string },
+  role: Role,
+): DocumentApprentiEffectif[] {
+  const propres = documentsApprentiVisibles(nominatifs, apprenti.id, role);
+  const typesNominatifs = new Set(propres.filter((d) => d.type !== 'autre').map((d) => d.type));
+  const projetes = documentsFormation
+    .filter(
+      (d) =>
+        d.formationId === apprenti.formationId &&
+        (d.type === 'autre' || !typesNominatifs.has(d.type)),
+    )
+    .map((d) => projeterDocumentFormation(d, apprenti.id));
+  return [...propres, ...projetes].sort((a, b) => a.deposeLe.localeCompare(b.deposeLe));
+}
+
+/**
+ * Un document de formation devient insupprimable dès qu'UN·E apprenti·e a
+ * attesté (esprit R21 — arbitrage 5, demande 4). On remplace en redéposant le
+ * même type (les attestations de toute la promo repartent alors de zéro).
+ */
+export function peutSupprimerDocumentFormation(
+  document: DocumentFormation,
+): ResultatSuppressionDocument {
+  if (Object.values(document.attestations).some((a) => a.attestee)) {
+    return {
+      ok: false,
+      raison:
+        'Suppression impossible : au moins un·e apprenti·e a attesté ce document (attestation engagée). Redéposez un document du même type si celui-ci est périmé — les attestations repartiront de zéro.',
+    };
   }
-  if (depot.taille > TAILLE_MAX_DOCUMENT_OCTETS) {
+  return { ok: true };
+}
+
+/**
+ * Validation du dépôt AU NIVEAU FORMATION : contrat pédagogique refusé
+ * (nominatif par nature), titre exigé pour « autre », format et taille.
+ */
+export function validerDepotDocumentFormation(depot: {
+  type: TypeDocumentAdministratif;
+  titre: string;
+  nomFichier: string;
+  mimeType: string;
+  taille: number;
+}): ResultatValidationDepot {
+  const erreurs = erreursDepotCommunes(depot);
+  if (depot.type === 'contrat-pedagogique') {
     erreurs.push(
-      `Fichier trop volumineux : la taille est plafonnée à ${Math.round(TAILLE_MAX_DOCUMENT_OCTETS / 1024 / 1024)} Mo dans la maquette (stockage Nuage prévu en étape 2).`,
+      'Le contrat pédagogique est nominatif par nature : déposez-le apprenti·e par apprenti·e depuis la page Documents administratifs.',
     );
   }
   return { ok: erreurs.length === 0, erreurs };

@@ -870,6 +870,48 @@ export interface DocumentAdministratif {
   attestation: AttestationLecture;
 }
 
+/**
+ * Document administratif déposé AU NIVEAU FORMATION (13 juillet 2026 —
+ * réunion DG, demande 4) : stocké une seule fois, visible de tous les
+ * apprenti·e·s actuels et futurs de la formation (dépôt en masse — ex.
+ * règlement intérieur). Tous les types SAUF « contrat-pedagogique »
+ * (nominatif par nature) ; jamais « réservé » (document générique).
+ *
+ * Chaque apprenti·e consulte puis atteste individuellement : les lectures et
+ * attestations sont portées par le document, indexées par `apprentiId`.
+ * Un document nominatif du même type PRIME sur le document de formation pour
+ * l'apprenti·e concerné·e (cf. `lib/documents-administratifs`,
+ * `documentsEffectifsApprenti`). Redéposer le même type pour la formation
+ * REMPLACE le document (toutes les attestations repartent de zéro) ;
+ * suppression verrouillée dès la première attestation (esprit R21).
+ */
+export interface DocumentFormation {
+  id: string;
+  /** Formation concernée — le document vaut pour toute la promo. */
+  formationId: string;
+  /** Type du document — jamais `contrat-pedagogique` (nominatif par nature). */
+  type: TypeDocumentAdministratif;
+  /** Titre lisible, saisi uniquement pour le type « autre ». */
+  titre?: string;
+  nomFichier: string;
+  mimeType: string;
+  taille: number;
+  /** Contenu du fichier en data-URL (maquette — étape 2 : référence Nuage). */
+  dataUrl: string;
+  deposeParId: string;
+  deposeParNom: string;
+  deposeParRole: Role;
+  /** Horodatage ISO 8601 du dépôt. */
+  deposeLe: string;
+  /**
+   * Première consultation du document par chaque apprenti·e (« lu et
+   * attesté ») — clé : id de l'apprenti·e, valeur : horodatage ISO 8601.
+   */
+  consultations: Record<string, string>;
+  /** Attestations individuelles — clé : id de l'apprenti·e. */
+  attestations: Record<string, AttestationLecture>;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 12 — Historique et traçabilité
 // ─────────────────────────────────────────────────────────────────────────────

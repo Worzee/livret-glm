@@ -21,6 +21,7 @@ import { useActivitesStore } from '@/store/useActivitesStore';
 import { useDocumentsStore } from '@/store/useDocumentsStore';
 import { getMaitreByIdFromStore } from '@/store/useUtilisateursStore';
 import { modeEffectif } from '@/lib/mode-evaluation';
+import { documentsEffectifsApprenti } from '@/lib/documents-administratifs';
 import { referentielEvaluable } from '@/lib/limite-referentiel';
 import { referentielCapCuisine } from '@/fixtures/referentiel-cap-cuisine';
 import { formationCapCuisine } from '@/fixtures/formations';
@@ -43,7 +44,8 @@ export interface DonneesLivretPdf {
    */
   modeleActivites?: ModeleActivites;
   /**
-   * Documents administratifs nominatifs de l'apprenti·e (10 juillet 2026) —
+   * Documents administratifs EFFECTIFS de l'apprenti·e (10 juillet 2026 ;
+   * v3 : nominatifs + documents de formation projetés, le nominatif prime) —
    * rappel des attestations dans le PDF du livret complet.
    */
   documents: DocumentAdministratif[];
@@ -67,6 +69,7 @@ export function useDonneesLivretPdf(): DonneesLivretPdf | null {
   const attitudesMap = useAttitudesStore((s) => s.attitudes);
   const modeles = useActivitesStore((s) => s.modeles);
   const documentsMap = useDocumentsStore((s) => s.documents);
+  const documentsFormationMap = useDocumentsStore((s) => s.documentsFormation);
   const ctx = useApprentiActif();
 
   if (!ctx) return null;
@@ -100,6 +103,13 @@ export function useDonneesLivretPdf(): DonneesLivretPdf | null {
     entreprise,
     attitudes: Object.values(attitudesMap),
     modeleActivites,
-    documents: Object.values(documentsMap).filter((d) => d.apprentiId === apprenti.id),
+    // Rôle « admin » : le PDF présente aussi les documents réservés (sans
+    // titre) — la fusion inclut les documents de formation (le nominatif prime).
+    documents: documentsEffectifsApprenti(
+      Object.values(documentsMap),
+      Object.values(documentsFormationMap),
+      apprenti,
+      'admin',
+    ),
   };
 }

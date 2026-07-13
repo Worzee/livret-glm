@@ -180,3 +180,38 @@ tuteur.
   confirmation (sans canvas), consultation traçante côté apprenti·e.
 - **PDF** : page « Documents administratifs » toujours rendue — état des 4
   obligatoires + autres documents (réservés toujours listés sans titre).
+
+---
+
+## Demande 4 — Dépôt de documents au niveau formation (réunion DG 2026-07-13) ✅ LIVRÉE
+
+> Il faut pouvoir déposer un document de manière globale à tous les apprentis
+> d'une même formation pour simplifier le travail du coordo — utile pour les
+> documents généraux ou génériques non nominatifs (ex. règlement intérieur).
+> Solution possible via le menu « Formations » pour déposer en masse ;
+> l'apprenti retrouverait le document sur son tableau de bord.
+
+### Arbitrages du pilote (session de cadrage 2026-07-13)
+
+1. **Rattachement à la formation** (pas de copie au moment T) : le document
+   est stocké UNE fois, visible de tous les apprenti·e·s actuels **et futurs**
+   de la formation. Chaque apprenti·e **atteste individuellement** (après
+   lecture, comme la demande 3).
+2. **Types autorisés en masse** : tous **sauf « Contrat pédagogique »**
+   (nominatif par nature — il reste déposé apprenti·e par apprenti·e). Pas de
+   flag « réservé à l'apprenti·e » en masse (un document de promo est
+   générique, pas confidentiel).
+3. **Le nominatif prime** : si un·e apprenti·e possède un document nominatif
+   du même type, c'est lui qui s'applique (le document de formation couvre
+   les autres). Un dépôt en masse d'un type obligatoire fait tomber les
+   anomalies « dépôt à effectuer » de la promo.
+4. **Remplacement en masse** : redéposer un type déjà déposé pour la formation
+   remplace le document pour toute la promo — **toutes les attestations
+   repartent de zéro** (nouvelle version = nouvelle lecture, avertissement
+   dans la modale).
+5. **Suppression** : possible tant que **personne** n'a attesté ; verrouillée
+   dès la première attestation (esprit R21 — on remplace, on ne supprime pas).
+6. **Point d'entrée unique** : page **Formations** — bouton « Documents » par
+   carte de formation (dépôt + liste des documents de la promo avec compteur
+   d'attestations et suppression). La modale de la page Documents reste
+   apprenti·e seule.

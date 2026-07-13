@@ -6,23 +6,24 @@ import {
   Eye,
   FileText,
   FileUp,
+  GraduationCap,
   Info,
   Lock,
   ShieldAlert,
   Trash2,
 } from 'lucide-react';
-import type { DocumentAdministratif } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { useDocumentsStore } from '@/store/useDocumentsStore';
 import { peutEditer } from '@/lib/droits';
 import {
-  documentsApprentiVisibles,
+  documentsEffectifsApprenti,
   documentsNonAttestes,
   etatDocumentsObligatoires,
   libelleDocument,
   peutAttesterDocument,
   peutSupprimerDocument,
+  type DocumentApprentiEffectif,
 } from '@/lib/documents-administratifs';
 import { AucunApprentiSelectionne } from '@/components/common/AucunApprentiSelectionne';
 import { BoutonSupprimer } from '@/components/common/BoutonSupprimer';
@@ -30,15 +31,18 @@ import { ModaleDepotDocument } from '@/components/admin/ModaleDepotDocument';
 import { cn } from '@/lib/utils';
 
 /**
- * Documents administratifs nominatifs du livret (10 juillet 2026 — demande
- * direction ; v2 le 13 juillet 2026 — réunion DG) : typologie de 4 documents
+ * Documents administratifs du livret (10 juillet 2026 — demande direction ;
+ * v2/v3 le 13 juillet 2026 — réunion DG) : typologie de 4 documents
  * OBLIGATOIRES (contrat pédagogique, protection des données, droit à l'image,
- * règlement intérieur) + « Autre document » (titre libre).
+ * règlement intérieur) + « Autre document » (titre libre). La page fusionne
+ * les documents NOMINATIFS et ceux de la FORMATION (dépôt en masse — demande
+ * 4, badge « Document de la formation », le nominatif prime à type égal).
  *
  *   - Dépôt / suppression : coordo + admin (`documents.gerer`) — redéposer un
- *     type existant le REMPLACE (attestation remise à zéro).
+ *     type existant le REMPLACE (attestation remise à zéro). Les documents de
+ *     formation se gèrent depuis la page Formations.
  *   - Consultation : tous les rôles du livret, sauf documents « réservés à
- *     l'apprenti·e » (type « autre » uniquement).
+ *     l'apprenti·e » (type « autre » nominatif uniquement).
  *   - Attestation de prise de connaissance : confirmation horodatée SANS
  *     signature manuscrite (`documents.attester`), possible uniquement APRÈS
  *     lecture du document — suivie par le centre d'alertes (attestations
@@ -50,24 +54,25 @@ export function DocumentsAdministratifs() {
   const roleActif = useUserStore((s) => s.roleActif);
   const ctx = useApprentiActif();
   const documents = useDocumentsStore((s) => s.documents);
+  const documentsFormation = useDocumentsStore((s) => s.documentsFormation);
   const [modaleOuverte, setModaleOuverte] = useState(false);
 
+  // Nominatifs + documents de la formation projetés (le nominatif prime).
   const visibles = useMemo(
     () =>
-      ctx ? documentsApprentiVisibles(Object.values(documents), ctx.apprenti.id, roleActif) : [],
-    [documents, ctx, roleActif],
-  );
-  // Les 4 obligatoires ne sont jamais « réservés » : l'état est identique
-  // quel que soit le rôle (calculé hors filtre de visibilité).
-  const etatsObligatoires = useMemo(
-    () =>
       ctx
-        ? etatDocumentsObligatoires(
-            Object.values(documents).filter((d) => d.apprentiId === ctx.apprenti.id),
+        ? documentsEffectifsApprenti(
+            Object.values(documents),
+            Object.values(documentsFormation),
+            ctx.apprenti,
+            roleActif,
           )
         : [],
-    [documents, ctx],
+    [documents, documentsFormation, ctx, roleActif],
   );
+  // Les 4 obligatoires ne sont jamais « réservés » : l'état calculé sur la
+  // liste effective est identique quel que soit le rôle.
+  const etatsObligatoires = useMemo(() => etatDocumentsObligatoires(visibles), [visibles]);
 
   if (!ctx) return <AucunApprentiSelectionne />;
   const { apprenti } = ctx;
@@ -182,7 +187,7 @@ export function DocumentsAdministratifs() {
 
       <ModaleDepotDocument
         ouvert={modaleOuverte}
-        apprenti={apprenti}
+        cible={{ portee: 'apprenti', apprenti }}
         onFermer={() => setModaleOuverte(false)}
       />
     </div>
@@ -200,7 +205,7 @@ function CarteDocument({
   roleApprenti,
   nomApprenti,
 }: {
-  document: DocumentAdministratif;
+  document: DocumentApprentiEffectif;
   peutGerer: boolean;
   peutAttester: boolean;
   /** Le rôle actif est l'apprenti·e : sa consultation est tracée (« lu »). */
@@ -208,7 +213,11 @@ function CarteDocument({
   nomApprenti: string;
 }) {
   const attester = useDocumentsStore((s) => s.attesterDocument);
+  const attesterFormation = useDocumentsStore((s) => s.attesterDocumentFormation);
   const marquerConsultation = useDocumentsStore((s) => s.marquerConsultationApprenti);
+  const marquerConsultationFormation = useDocumentsStore(
+    (s) => s.marquerConsultationFormationApprenti,
+  );
   const supprimer = useDocumentsStore((s) => s.supprimerDocument);
   const suppression = peutSupprimerDocument(doc);
   const libelle = libelleDocument(doc);
@@ -216,8 +225,16 @@ function CarteDocument({
   function consulter() {
     ouvrirDocument(doc);
     // « Lu et attesté » : seule la consultation PAR L'APPRENTI·E déverrouille
-    // l'attestation (13 juillet 2026).
-    if (roleApprenti) marquerConsultation(doc.id);
+    // l'attestation (13 juillet 2026). Les documents de formation tracent la
+    // lecture PAR apprenti·e.
+    if (!roleApprenti) return;
+    if (doc.porteeFormation) marquerConsultationFormation(doc.id, doc.apprentiId);
+    else marquerConsultation(doc.id);
+  }
+
+  function confirmerAttestation() {
+    if (doc.porteeFormation) attesterFormation(doc.id, doc.apprentiId);
+    else attester(doc.id);
   }
 
   return (
@@ -234,6 +251,12 @@ function CarteDocument({
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
                 <Lock className="h-3 w-3" aria-hidden="true" />
                 Réservé à l'apprenti·e
+              </span>
+            )}
+            {doc.porteeFormation && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                <GraduationCap className="h-3 w-3" aria-hidden="true" />
+                Document de la formation
               </span>
             )}
           </h2>
@@ -253,7 +276,14 @@ function CarteDocument({
             Consulter
           </button>
           {peutGerer &&
-            (suppression.ok ? (
+            (doc.porteeFormation ? (
+              <span
+                className="text-xs italic text-muted-foreground"
+                title="Document déposé pour toute la promotion : gérez-le depuis la page Formations (bouton « Documents »)."
+              >
+                Géré via Formations
+              </span>
+            ) : suppression.ok ? (
               <BoutonSupprimer
                 ariaLabel={`Supprimer le document ${libelle}`}
                 question="Supprimer ?"
@@ -292,7 +322,7 @@ function CarteDocument({
         <BoutonAttester
           document={doc}
           nomApprenti={nomApprenti}
-          onConfirmer={() => attester(doc.id)}
+          onConfirmer={confirmerAttestation}
         />
       ) : (
         <p
@@ -318,7 +348,7 @@ function BoutonAttester({
   nomApprenti,
   onConfirmer,
 }: {
-  document: DocumentAdministratif;
+  document: DocumentApprentiEffectif;
   nomApprenti: string;
   onConfirmer: () => void;
 }) {
@@ -405,7 +435,7 @@ function BoutonAttester({
  * Ouvre le document dans un nouvel onglet. Chrome bloque la navigation
  * top-frame vers les data-URL : on passe par un Blob éphémère.
  */
-function ouvrirDocument(doc: DocumentAdministratif) {
+function ouvrirDocument(doc: DocumentApprentiEffectif) {
   const [entete, base64] = doc.dataUrl.split(',');
   if (!base64) return;
   void entete;

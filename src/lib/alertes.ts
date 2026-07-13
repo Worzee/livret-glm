@@ -1,6 +1,7 @@
 import type {
   Apprenti,
   DocumentAdministratif,
+  DocumentFormation,
   FicheSuiviPeriode,
   LieuFiche,
   Livret,
@@ -10,7 +11,7 @@ import { calculerAlerteR7, entretienSigneParTous } from './regles-entretien';
 import { estMotifEntretienTripartite } from './organisation-suivi';
 import { pointsAlerteNonTraites } from './points-alerte';
 import {
-  documentsApprentiVisibles,
+  documentsEffectifsApprenti,
   documentsNonAttestes,
   libelleDocument,
   LIBELLES_TYPE_DOCUMENT,
@@ -92,6 +93,7 @@ export function alertesTableauBord(
   livrets: Readonly<Record<string, Livret>>,
   maintenant: Date = new Date(),
   documents: ReadonlyArray<DocumentAdministratif> = [],
+  documentsFormation: ReadonlyArray<DocumentFormation> = [],
 ): AlerteTableauBord[] {
   const alertes: AlerteTableauBord[] = [];
   const livretParApprenti = new Map(Object.values(livrets).map((l) => [l.apprentiId, l]));
@@ -101,16 +103,18 @@ export function alertesTableauBord(
     if (!livret) continue;
     const nom = `${apprenti.prenom} ${apprenti.nom}`;
 
-    // ── Documents administratifs non attestés (10 juillet 2026) ────────────
+    // ── Documents administratifs non attestés (10 juillet 2026 ; v3 : les
+    //    documents de FORMATION comptent aussi, attestation par apprenti·e).
     //    Suivi de l'obligation par l'encadrement : formateur (documents non
-    //    réservés — `documentsApprentiVisibles` filtre), coordo et admin
-    //    (tous). L'apprenti·e a son bandeau dédié sur son tableau de bord.
+    //    réservés — la fusion filtre), coordo et admin (tous). L'apprenti·e a
+    //    son bandeau dédié sur son tableau de bord.
     if (role === 'formateur' || role === 'coordo' || role === 'admin') {
-      for (const d of documentsNonAttestes(
-        documentsApprentiVisibles(documents, apprenti.id, role),
-      )) {
+      const effectifs = documentsEffectifsApprenti(documents, documentsFormation, apprenti, role);
+      for (const d of documentsNonAttestes(effectifs)) {
         alertes.push({
-          id: `document-${d.id}`,
+          // Un document de formation est partagé par la promo : l'id d'alerte
+          // est préfixé par l'apprenti·e pour rester unique.
+          id: d.porteeFormation ? `document-${apprenti.id}-${d.id}` : `document-${d.id}`,
           type: 'document-a-attester',
           apprentiId: apprenti.id,
           apprentiNom: nom,
@@ -118,23 +122,22 @@ export function alertesTableauBord(
           lien: '/livret/documents',
         });
       }
-    }
 
-    // ── Documents obligatoires MANQUANTS (13 juillet 2026 — réunion DG) ─────
-    //    Anomalie côté DÉPOSANTS (coordo / admin — `documents.gerer`) : une
-    //    alerte par type obligatoire non déposé. Le formateur n'est pas
-    //    concerné (il ne dépose pas).
-    if (role === 'coordo' || role === 'admin') {
-      const documentsApprenti = documents.filter((d) => d.apprentiId === apprenti.id);
-      for (const type of typesObligatoiresManquants(documentsApprenti)) {
-        alertes.push({
-          id: `document-manquant-${apprenti.id}-${type}`,
-          type: 'document-manquant',
-          apprentiId: apprenti.id,
-          apprentiNom: nom,
-          message: `Document « ${LIBELLES_TYPE_DOCUMENT[type]} » : dépôt à effectuer (obligatoire)`,
-          lien: '/livret/documents',
-        });
+      // ── Documents obligatoires MANQUANTS (13 juillet 2026 — réunion DG) ──
+      //    Anomalie côté DÉPOSANTS (coordo / admin — `documents.gerer`) : une
+      //    alerte par type obligatoire non couvert (nominatif OU formation).
+      //    Le formateur n'est pas concerné (il ne dépose pas).
+      if (role === 'coordo' || role === 'admin') {
+        for (const type of typesObligatoiresManquants(effectifs)) {
+          alertes.push({
+            id: `document-manquant-${apprenti.id}-${type}`,
+            type: 'document-manquant',
+            apprentiId: apprenti.id,
+            apprentiNom: nom,
+            message: `Document « ${LIBELLES_TYPE_DOCUMENT[type]} » : dépôt à effectuer (obligatoire)`,
+            lien: '/livret/documents',
+          });
+        }
       }
     }
 
