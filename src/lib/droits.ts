@@ -211,8 +211,10 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'entretien.signature-formateur': ['formateur'],
   // Trame officielle de l'entretien : co-saisie formateur + maître (juin 2026)
   'entretien.trame': ['formateur', 'maitre'],
-  // Signature du représentant légal : apposée par le formateur référent
-  'entretien.signature-representant-legal': ['formateur'],
+  // Signature du représentant légal : le RESPONSABLE LÉGAL signe lui-même
+  // (13 juillet 2026 — demande 5, identité remplie depuis son compte) ; le
+  // formateur référent conserve la capacité historique (fallback en séance).
+  'entretien.signature-representant-legal': ['formateur', 'responsable'],
   // Sélection des compétences abordées en entreprise : maître / tuteur +
   // formateur référent décochent (1ᵉʳ juillet 2026 — tout est coché par défaut).
   'entretien.selection-competences-entreprise': ['maitre', 'formateur'],
@@ -254,10 +256,13 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   'acces-mobile': ['formateur', 'coordo', 'admin'],
   // Suivi de gestion (8 juillet 2026) — pas de contenu pédagogique.
   'point-alerte.traiter': ['coordo', 'admin'],
-  // Documents administratifs (10 juillet 2026) : dépôt par la coordination,
-  // attestation personnelle de l'apprenti·e.
+  // Documents administratifs (10 juillet 2026) : dépôt par la coordination.
+  // Attestation : l'apprenti·e MAJEUR·E, ou le RESPONSABLE LÉGAL en lieu et
+  // place d'un·e mineur·e (13 juillet 2026 — demande 5). La matrice ouvre la
+  // capacité aux deux rôles ; c'est `attestataireDocuments` (minorité,
+  // recalculée au jour) qui tranche lequel est actif pour un·e apprenti·e.
   'documents.gerer': ['coordo', 'admin'],
-  'documents.attester': ['apprenti'],
+  'documents.attester': ['apprenti', 'responsable'],
   'cloturer-livret': ['formateur'],
 
   // ── Administration (rôles coordo, admin et formateur partiel) ──────────
@@ -287,6 +292,13 @@ const MATRICE: Record<Ressource, ReadonlyArray<Role>> = {
   // #4) : ingénierie de formation, coordo + admin (cf. admin.referentiels.gerer).
   'admin.activites.gerer': ['coordo', 'admin'],
 };
+
+/**
+ * Liste exhaustive des ressources de la matrice — pour les tests transverses
+ * (balayage « le responsable légal est en lecture seule partout », 13 juillet
+ * 2026) et tout audit de couverture.
+ */
+export const TOUTES_RESSOURCES = Object.keys(MATRICE) as ReadonlyArray<Ressource>;
 
 /**
  * Détermine si un rôle peut éditer une ressource donnée.
@@ -348,5 +360,7 @@ export function libelleRole(role: Role): string {
       return 'Coordinateur·rice';
     case 'admin':
       return 'Administrateur·rice';
+    case 'responsable':
+      return 'Responsable légal';
   }
 }

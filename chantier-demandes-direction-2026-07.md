@@ -215,3 +215,77 @@ tuteur.
    carte de formation (dépôt + liste des documents de la promo avec compteur
    d'attestations et suppression). La modale de la page Documents reste
    apprenti·e seule.
+
+---
+
+## Demande 5 — Apprentis mineurs : responsables légaux (réunion DG 2026-07-13) ✅ LIVRÉE
+
+> Si l'apprenti est mineur au moment de l'inscription, renseigner les
+> coordonnées de un ou deux responsables légaux avec emails différents de
+> celui de l'apprenti — sur le modèle Excel d'import ET dans l'inscription
+> manuelle. À terme, cela créera les comptes des responsables légaux. Les
+> responsables légaux attestent les documents administratifs en lieu et place
+> des apprentis mineurs, avec un accès en lecture seule à tous les autres
+> menus. L'apprenti mineur a un accès en lecture aux documents administratifs
+> et garde son accès classique partout ailleurs.
+
+### Arbitrages du pilote (session de cadrage 2026-07-13)
+
+1. **Minorité recalculée en continu** (date de naissance vs date du jour) :
+   à la majorité, l'apprenti·e récupère automatiquement l'attestation des
+   documents, le responsable passe en simple lecture.
+2. **Champs par responsable** : prénom, nom, email (obligatoires) +
+   téléphone et lien de parenté (optionnels). **1 responsable minimum
+   obligatoire si mineur**, 2 maximum.
+3. **6ᵉ rôle « Responsable légal »** dans le sélecteur de rôles de la
+   maquette, avec sélecteur de responsable actif (pattern maîtres /
+   formateurs) et périmètre limité à son / ses enfants.
+4. **Un seul des deux responsables suffit** pour attester un document.
+5. **Documents « réservés à l'apprenti·e »** : le cercle devient apprenti·e
+   + responsables légaux + coordo + admin.
+6. **Emails** : différents de celui de l'apprenti·e, uniques par rapport à
+   tous les utilisateurs — SAUF **rattachement fratrie** : un email déjà
+   connu comme responsable légal désigne la même personne, rattachée au
+   nouvel apprenti (pas de doublon de compte).
+7. **Entretien tripartite** : le slot optionnel « représentant légal »
+   devient signable par le rôle responsable légal, identité remplie depuis le
+   compte du signataire (en maquette : le responsable actif). Le formateur
+   conserve la capacité historique (fallback).
+
+### ⚠ Alerte RGPD (à porter à la direction)
+
+Le recentrage du 2026-05-26 avait **retiré les mineurs** du périmètre, ce qui
+rendait l'**AIPD non obligatoire** (`conformite-rgpd.md` §5 — aucun des 9
+critères CNIL rempli). Cette demande **réintroduit les mineurs** (personnes
+vulnérables = critère CNIL) : le dossier RGPD de l'étape 2 devra être
+**réexaminé avec le DPO** (AIPD probablement requise, mentions d'information
+spécifiques aux représentants légaux, base légale de leurs données).
+
+### Implémentation (2026-07-13) — repères
+
+- **Types** : `ResponsableLegal` (6ᵉ type — prénom, nom, email + téléphone,
+  lien de parenté), `Apprenti.responsableLegalIds` (1-2),
+  `AttestationLecture.attestePar*` (auteur·rice tracé·e).
+- **Libs pures** : `minorite` (`estMineur` — recalcul au jour, bissextiles),
+  `responsables-legaux` (`validerResponsablesLegaux` — partagée modale /
+  import), `attestataireDocuments` (mineur → responsable),
+  `apprentis-accessibles` (périmètre = ses enfants), `TOUTES_RESSOURCES`
+  (balayage du test de lecture seule).
+- **Stores** : `livret-utilisateurs` **v7** (record `responsables`,
+  `enregistrerResponsablesApprenti` — création OU rattachement fratrie par
+  email ; Minh NGUYEN devient MINEUR, responsables Thi + Duc) ;
+  `livret-documents` **v4** (auteur d'attestation ; protection des données de
+  Minh non attestée) ; `useUserStore` (responsable actif).
+- **UI** : RoleSwitcher 6 rôles (cyan `#0e7490`, libellé court
+  « Resp. légal »), sélecteur de responsable actif (tableau de bord), section
+  « Responsables légaux » de `ModaleApprenti` (conditionnée à la minorité de
+  la date saisie), page Documents (mention mineur·e, bouton et bandeau routés
+  vers l'attestataire, wording « attestée par X, responsable légal »),
+  entretien (slot représentant légal signé par le responsable, identité
+  auto), liste Utilisateurs (lecture — « Géré via l'apprenti·e »).
+- **Import Excel** : 10 colonnes « resp. légal 1/2 » au modèle,
+  **optionnelles à l'en-tête** ; 1 responsable exigé par ligne mineure ;
+  création / rattachement à l'insertion.
+- ⚠ Pièges : le libellé court du RoleSwitcher casse les helpers E2E qui
+  matchent le texte (fix : aria-label) ; toute fixture d'apprenti·e né·e
+  après ~2008 devient MINEURE et exige des responsables (tests de création).

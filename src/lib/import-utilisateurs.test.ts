@@ -3,7 +3,12 @@
 
 import { describe, expect, it } from 'vitest';
 import { genererXlsx } from './generer-xlsx-modele';
-import { importerDepuisXlsx, MODELES, normaliserDate } from './import-utilisateurs';
+import {
+  importerDepuisXlsx,
+  MODELES,
+  normaliserDate,
+  type LigneApprentiValide,
+} from './import-utilisateurs';
 
 /**
  * Helper : génère un XLSX en mémoire à partir d'en-têtes + lignes, puis
@@ -14,13 +19,86 @@ function importerLignes(
   type: 'apprenti' | 'maitre' | 'formateur',
   lignes: string[][],
   emailsExistants: ReadonlySet<string> = new Set(),
+  emailsResponsablesExistants: ReadonlySet<string> = new Set(),
+  entetes: string[] = MODELES[type].entetes,
 ) {
-  const entetes = MODELES[type].entetes;
   const bytes = genererXlsx({ entetes, exemples: lignes });
   const ab = new ArrayBuffer(bytes.byteLength);
   new Uint8Array(ab).set(bytes);
-  return importerDepuisXlsx(ab, type, emailsExistants);
+  return importerDepuisXlsx(ab, type, emailsExistants, emailsResponsablesExistants);
 }
+
+describe('importerDepuisXlsx — responsables légaux des mineur·e·s (13 juillet 2026, demande 5)', () => {
+  // Née en 2010 → mineure quelle que soit l'année d'exécution des tests
+  // (jusqu'en 2028) ; les autres fixtures (2006-2007) restent majeures.
+  const BASE_MINEURE = [
+    'Nadia',
+    'Saadi',
+    'nadia@demo.fr',
+    '2010-01-20',
+    '2025-09-02',
+    '2027-09-01',
+  ];
+
+  it('refuse un·e mineur·e sans responsable légal', () => {
+    const r = importerLignes('apprenti', [BASE_MINEURE]);
+    expect(r.ok).toBe(false);
+    expect(
+      r.erreurs.some((e) => e.colonne === 'Responsables légaux' && /mineur/i.test(e.message)),
+    ).toBe(true);
+  });
+
+  it('accepte un·e mineur·e avec un responsable complet, repris dans la ligne valide', () => {
+    const r = importerLignes('apprenti', [
+      [...BASE_MINEURE, 'Yasmina', 'SAADI', 'yasmina@demo.fr', '06 12 34 56 78', 'Mère'],
+    ]);
+    expect(r.ok).toBe(true);
+    const ligne = r.lignes[0] as LigneApprentiValide;
+    expect(ligne.responsables).toHaveLength(1);
+    expect(ligne.responsables[0]).toMatchObject({
+      prenom: 'Yasmina',
+      nom: 'SAADI',
+      email: 'yasmina@demo.fr',
+      telephone: '06 12 34 56 78',
+      lienParente: 'Mère',
+    });
+  });
+
+  it("refuse un email de responsable identique à celui de l'apprenti·e", () => {
+    const r = importerLignes('apprenti', [
+      [...BASE_MINEURE, 'Yasmina', 'SAADI', 'nadia@demo.fr', '', ''],
+    ]);
+    expect(r.ok).toBe(false);
+    expect(r.erreurs.some((e) => e.colonne === 'Responsables légaux')).toBe(true);
+  });
+
+  it('bloque un email de responsable pris par un autre compte, mais accepte le rattachement fratrie', () => {
+    const ligne = [...BASE_MINEURE, 'Yasmina', 'SAADI', 'yasmina@demo.fr', '', ''];
+    // Email déjà pris par un compte NON responsable → bloquant.
+    const bloque = importerLignes('apprenti', [ligne], new Set(['yasmina@demo.fr']));
+    expect(bloque.ok).toBe(false);
+    // Même email connu comme RESPONSABLE → même personne, rattachement OK.
+    const fratrie = importerLignes(
+      'apprenti',
+      [ligne],
+      new Set(['yasmina@demo.fr']),
+      new Set(['yasmina@demo.fr']),
+    );
+    expect(fratrie.ok).toBe(true);
+  });
+
+  it('un fichier SANS les colonnes responsables reste importable pour des majeur·e·s', () => {
+    const r = importerLignes(
+      'apprenti',
+      [['Léa', 'Martin', 'lea@demo.fr', '2007-04-15', '2025-09-02', '2027-09-01']],
+      new Set(),
+      new Set(),
+      ['Prénom', 'Nom', 'Email', 'Date de naissance', 'Début de contrat', 'Fin de contrat'],
+    );
+    expect(r.ok).toBe(true);
+    expect((r.lignes[0] as LigneApprentiValide).responsables).toEqual([]);
+  });
+});
 
 describe('importerDepuisXlsx — Apprenti·e', () => {
   it('accepte un fichier conforme avec une ligne valide', () => {

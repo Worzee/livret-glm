@@ -16,6 +16,7 @@ import {
   formatriceSophieDubois,
   maitreHeleneRoche,
   maitreKarimBenali,
+  responsableThiNguyen,
 } from '@/fixtures/utilisateurs';
 import {
   anneesFormationsDisponibles,
@@ -42,6 +43,11 @@ describe('apprentisAccessibles — filtre par rôle', () => {
   it("apprenti ne voit pas le livret d'un·e autre apprenti·e (R3)", () => {
     const r = apprentisAccessibles(apprentiLeaMartin, apprentisDemo);
     expect(r.some((a) => a.id === apprentiTheoDubois.id)).toBe(false);
+  });
+
+  it('responsable légale Thi ne voit que son fils Minh (13 juillet 2026 — demande 5)', () => {
+    const r = apprentisAccessibles(responsableThiNguyen, apprentisDemo);
+    expect(r.map((a) => a.id)).toEqual([apprentiMinhNguyen.id]);
   });
 
   it('maître Karim voit ses 4 apprenti·e·s (Léa, Théo, Sofia + Luca en second — juin 2026)', () => {

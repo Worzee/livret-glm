@@ -25,7 +25,7 @@ interface BlocSignaturesEntretienProps {
 }
 
 const SIGNATAIRES: Array<{
-  role: Exclude<Role, 'coordo' | 'admin'>;
+  role: Extract<Role, 'apprenti' | 'maitre' | 'formateur'>;
   Icon: typeof GraduationCap;
   cleSig: 'apprenti' | 'maitre' | 'formateur';
   classeBordure: string;
@@ -165,12 +165,15 @@ export function BlocSignaturesEntretien({
         })}
       </div>
 
-      {/* Représentant légal — 4e signataire facultatif, apposé par le
-          formateur référent (apprenti·e mineur·e). Hors décompte R9. */}
+      {/* Représentant légal — 4e signataire facultatif (apprenti·e mineur·e),
+          hors décompte R9. Depuis le 13 juillet 2026 (demande 5), le
+          RESPONSABLE LÉGAL signe lui-même avec l'identité de son compte ; le
+          formateur référent conserve la capacité historique (fallback). */}
       {(() => {
         const sig = entretien.signatures.representantLegal;
         const peutSigner =
           peutEditer(roleActif, 'entretien.signature-representant-legal') && !ficheVerrouillee;
+        const signeEnResponsable = roleActif === 'responsable';
         return (
           <article className="rounded-lg border border-l-4 border-border border-l-muted-foreground/40 bg-card p-4 space-y-3 sm:max-w-sm">
             <header className="flex items-center gap-2">
@@ -207,16 +210,21 @@ export function BlocSignaturesEntretien({
               </div>
             ) : peutSigner ? (
               <BoutonSigner
-                role="formateur"
-                nomCourt="le représentant légal"
-                libelleEngagement="Représentant légal de l'apprenti·e"
+                role={signeEnResponsable ? 'responsable' : 'formateur'}
+                nomCourt={signeEnResponsable ? utilisateurActif.prenom : 'le représentant légal'}
+                libelleEngagement={
+                  // Identité remplie depuis le compte du signataire (demande 5).
+                  signeEnResponsable
+                    ? `Représentant légal : ${utilisateurActif.prenom} ${utilisateurActif.nom}`
+                    : "Représentant légal de l'apprenti·e"
+                }
                 disabled={false}
                 onConfirmer={(trace) => signer(livretId, 'representantLegal', trace)}
               />
             ) : (
               <p className="text-xs italic text-muted-foreground">
-                Signature facultative : apposée par le formateur référent si le représentant légal
-                est présent.
+                Signature facultative : apposée par le responsable légal depuis son compte, ou par
+                le formateur référent si le représentant légal est présent en séance.
               </p>
             )}
           </article>

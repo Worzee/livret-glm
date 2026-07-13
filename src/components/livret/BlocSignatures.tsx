@@ -29,7 +29,7 @@ interface BlocSignaturesProps {
 }
 
 const SIGNATAIRES: Array<{
-  role: Exclude<Role, 'coordo' | 'admin'>;
+  role: Extract<Role, 'apprenti' | 'maitre' | 'formateur'>;
   Icon: typeof GraduationCap;
   cleSig: 'apprenti' | 'maitre' | 'formateur';
   classeBordure: string;

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Briefcase, CalendarRange, ChevronRight, GraduationCap, Search } from 'lucide-react';
+import { Briefcase, CalendarRange, ChevronRight, GraduationCap, Search, Users } from 'lucide-react';
 import type { Apprenti, Formation, Livret } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
 import { useLivretStore } from '@/store/useLivretStore';
@@ -48,6 +48,8 @@ export function TableauDeBord() {
   const setMaitreActif = useUserStore((s) => s.setMaitreActif);
   const formateurActifId = useUserStore((s) => s.formateurActifId);
   const setFormateurActif = useUserStore((s) => s.setFormateurActif);
+  const responsableActifId = useUserStore((s) => s.responsableActifId);
+  const setResponsableActif = useUserStore((s) => s.setResponsableActif);
   const livrets = useLivretStore((s) => s.livrets);
   const basculerPointAlerteTraite = useLivretStore((s) => s.basculerPointAlerteTraite);
   const documents = useDocumentsStore((s) => s.documents);
@@ -56,6 +58,7 @@ export function TableauDeBord() {
   const apprentis = useUtilisateursStore((s) => s.apprentis);
   const maitres = useUtilisateursStore((s) => s.maitres);
   const formateurs = useUtilisateursStore((s) => s.formateurs);
+  const responsables = useUtilisateursStore((s) => s.responsables);
   const formations = useFormationsStore((s) => s.formations);
   const navigate = useNavigate();
   const [requete, setRequete] = useState('');
@@ -78,6 +81,7 @@ export function TableauDeBord() {
     [documentsFormation],
   );
   const formateursList = useMemo(() => Object.values(formateurs), [formateurs]);
+  const responsablesList = useMemo(() => Object.values(responsables), [responsables]);
   const apprentisList = useMemo(() => Object.values(apprentis), [apprentis]);
   const annees = useMemo(
     () => anneesFormationsDisponibles(apprentisVisibles, formations),
@@ -212,6 +216,48 @@ export function TableauDeBord() {
                     className={cn('text-xs', actif ? 'text-white/85' : 'text-muted-foreground')}
                   >
                     · {nbApprentis} apprenti·e{nbApprentis > 1 ? 's' : ''}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+      )}
+
+      {/* Sélecteur de responsable légal (13 juillet 2026 — demande 5) : même
+          mécanique que le sélecteur de formateur — chaque responsable ne voit
+          que son / ses enfants (Thi ↔ Duc NGUYEN, parents de Minh). */}
+      {roleActif === 'responsable' && responsablesList.length > 1 && (
+        <fieldset className="rounded-lg border border-role-responsable/40 bg-role-responsable/5 p-3">
+          <legend className="flex items-center gap-1.5 px-1.5 text-xs font-medium text-role-responsable">
+            <Users className="h-3.5 w-3.5" aria-hidden="true" />
+            Responsable légal actif
+          </legend>
+          <div className="flex flex-wrap gap-2">
+            {responsablesList.map((r) => {
+              const actif = r.id === responsableActifId;
+              const nbEnfants = apprentisAccessibles(r, apprentisList).length;
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => setResponsableActif(r.id)}
+                  aria-pressed={actif}
+                  className={cn(
+                    'inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    actif
+                      ? 'border-role-responsable bg-role-responsable text-white'
+                      : 'border-input bg-background hover:bg-secondary',
+                  )}
+                >
+                  <span className="font-medium">
+                    {r.prenom} {r.nom}
+                  </span>
+                  <span
+                    className={cn('text-xs', actif ? 'text-white/85' : 'text-muted-foreground')}
+                  >
+                    {r.lienParente ? `· ${r.lienParente}` : ''} · {nbEnfants} apprenti·e
+                    {nbEnfants > 1 ? 's' : ''}
                   </span>
                 </button>
               );

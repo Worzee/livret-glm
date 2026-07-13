@@ -6,6 +6,7 @@ import {
   coordoMartineLefevre,
   formatriceSophieDubois,
   maitreKarimBenali,
+  responsableThiNguyen,
   utilisateursDemo,
 } from '@/fixtures/utilisateurs';
 import { useApprentiActifStore } from './useApprentiActifStore';
@@ -14,6 +15,7 @@ import {
   getCoordoByIdFromStore,
   getFormateurByIdFromStore,
   getMaitreByIdFromStore,
+  getResponsableByIdFromStore,
   useUtilisateursStore,
 } from './useUtilisateursStore';
 
@@ -52,6 +54,8 @@ interface UserStore {
   coordoActifId: string;
   /** Id du formateur actif quand `roleActif === 'formateur'`. Persisté. */
   formateurActifId: string;
+  /** Id du responsable légal actif quand `roleActif === 'responsable'` (13 juillet 2026). */
+  responsableActifId: string;
   changerRole: (role: Role) => void;
   /** Bascule entre les maîtres d'apprentissage (réinit l'apprenti·e actif·ve). */
   setMaitreActif: (id: string) => void;
@@ -59,6 +63,8 @@ interface UserStore {
   setCoordoActif: (id: string) => void;
   /** Bascule entre les formateurs (réinit l'apprenti·e actif·ve sur sa promo). */
   setFormateurActif: (id: string) => void;
+  /** Bascule entre les responsables légaux (réinit sur son 1ᵉʳ enfant). */
+  setResponsableActif: (id: string) => void;
 }
 
 function utilisateurPourRole(
@@ -66,6 +72,7 @@ function utilisateurPourRole(
   maitreActifId: string,
   coordoActifId: string,
   formateurActifId: string,
+  responsableActifId: string,
 ): Utilisateur {
   if (role === 'apprenti') {
     const id = useApprentiActifStore.getState().apprentiActifId;
@@ -80,6 +87,9 @@ function utilisateurPourRole(
   if (role === 'formateur') {
     return getFormateurByIdFromStore(formateurActifId) || formatriceSophieDubois;
   }
+  if (role === 'responsable') {
+    return getResponsableByIdFromStore(responsableActifId) || responsableThiNguyen;
+  }
   return utilisateursDemo[role];
 }
 
@@ -92,7 +102,8 @@ export const useUserStore = create<UserStore>()(
       maitreActifId: maitreKarimBenali.id,
       coordoActifId: coordoMartineLefevre.id,
       formateurActifId: formatriceSophieDubois.id,
-      changerRole: (role) =>
+      responsableActifId: responsableThiNguyen.id,
+      changerRole: (role) => {
         set({
           roleActif: role,
           utilisateurActif: utilisateurPourRole(
@@ -100,8 +111,22 @@ export const useUserStore = create<UserStore>()(
             get().maitreActifId,
             get().coordoActifId,
             get().formateurActifId,
+            get().responsableActifId,
           ),
-        }),
+        });
+        // Le périmètre du responsable légal se limite à ses enfants : si
+        // l'apprenti·e actif·ve n'en fait pas partie, replier sur le 1ᵉʳ enfant
+        // (13 juillet 2026 — demande 5).
+        if (role === 'responsable') {
+          const responsable = get().utilisateurActif;
+          const apprentis = Object.values(useUtilisateursStore.getState().apprentis);
+          const enfants = apprentis.filter((a) => a.responsableLegalIds?.includes(responsable.id));
+          const actifId = useApprentiActifStore.getState().apprentiActifId;
+          if (enfants.length > 0 && !enfants.some((a) => a.id === actifId)) {
+            useApprentiActifStore.getState().setApprentiActif(enfants[0].id);
+          }
+        }
+      },
       setMaitreActif: (id) => {
         const maitre = getMaitreByIdFromStore(id) ?? maitreKarimBenali;
         set({
@@ -146,6 +171,21 @@ export const useUserStore = create<UserStore>()(
           useApprentiActifStore.getState().setApprentiActif(premierApprenti.id);
         }
       },
+      setResponsableActif: (id) => {
+        const responsable = getResponsableByIdFromStore(id) ?? responsableThiNguyen;
+        set({
+          responsableActifId: responsable.id,
+          utilisateurActif:
+            get().roleActif === 'responsable' ? responsable : get().utilisateurActif,
+        });
+        // Réinit l'apprenti·e actif·ve sur le 1ᵉʳ enfant du responsable.
+        const premierEnfant = Object.values(useUtilisateursStore.getState().apprentis).find((a) =>
+          a.responsableLegalIds?.includes(responsable.id),
+        );
+        if (premierEnfant) {
+          useApprentiActifStore.getState().setApprentiActif(premierEnfant.id);
+        }
+      },
     }),
     {
       name: 'livret-role-actif',
@@ -154,6 +194,7 @@ export const useUserStore = create<UserStore>()(
         maitreActifId: state.maitreActifId,
         coordoActifId: state.coordoActifId,
         formateurActifId: state.formateurActifId,
+        responsableActifId: state.responsableActifId,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
@@ -162,6 +203,7 @@ export const useUserStore = create<UserStore>()(
             state.maitreActifId ?? maitreKarimBenali.id,
             state.coordoActifId ?? coordoMartineLefevre.id,
             state.formateurActifId ?? formatriceSophieDubois.id,
+            state.responsableActifId ?? responsableThiNguyen.id,
           );
         }
       },

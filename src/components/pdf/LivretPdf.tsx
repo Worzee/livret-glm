@@ -736,8 +736,11 @@ export function PageDocumentsAdministratifs({ documents }: { documents: Document
             ) : null}
             {e.etat === 'atteste' && e.document ? (
               <Text style={styles.signatureValeur}>
-                Prise de connaissance attestée le{' '}
-                {formaterDateHeure(e.document.attestation.dateAttestation)}
+                Prise de connaissance attestée{' '}
+                {e.document.attestation.attesteParRole === 'responsable'
+                  ? `par ${e.document.attestation.attesteParNom} (responsable légal) `
+                  : ''}
+                le {formaterDateHeure(e.document.attestation.dateAttestation)}
               </Text>
             ) : e.etat === 'a-attester' ? (
               <Text style={styles.signatureManquante}>
@@ -761,8 +764,11 @@ export function PageDocumentsAdministratifs({ documents }: { documents: Document
                 </Text>
                 {d.attestation.attestee ? (
                   <Text style={styles.signatureValeur}>
-                    Prise de connaissance attestée le{' '}
-                    {formaterDateHeure(d.attestation.dateAttestation)}
+                    Prise de connaissance attestée{' '}
+                    {d.attestation.attesteParRole === 'responsable'
+                      ? `par ${d.attestation.attesteParNom} (responsable légal) `
+                      : ''}
+                    le {formaterDateHeure(d.attestation.dateAttestation)}
                   </Text>
                 ) : (
                   <Text style={styles.signatureManquante}>

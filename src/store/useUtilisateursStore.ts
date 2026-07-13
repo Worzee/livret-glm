@@ -1,13 +1,15 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Admin, Apprenti, Coordo, Formateur, Maitre } from '@/types';
+import type { Admin, Apprenti, Coordo, Formateur, Maitre, ResponsableLegal } from '@/types';
 import {
   adminGuillaumeFerreri,
   apprentisDemo,
   coordosDemo,
   formateursDemo,
   maitresDemo,
+  responsablesDemo,
 } from '@/fixtures/utilisateurs';
+import type { SaisieResponsable } from '@/lib/responsables-legaux';
 import { useLivretStore } from './useLivretStore';
 import { useApprentiActifStore } from './useApprentiActifStore';
 import { useFormationsStore } from './useFormationsStore';
@@ -48,6 +50,8 @@ interface UtilisateursStore {
   formateurs: Record<string, Formateur>;
   coordos: Record<string, Coordo>;
   admins: Record<string, Admin>;
+  /** Responsables légaux des apprenti·e·s mineur·e·s (13 juillet 2026 — demande 5). */
+  responsables: Record<string, ResponsableLegal>;
 
   // ── Apprenti·e·s ─────────────────────────────────────────────────────────
   /**
@@ -105,6 +109,20 @@ interface UtilisateursStore {
   /** Suppression libre — aucune référence vers le coordo dans les autres types. */
   supprimerCoordo: (id: string) => void;
 
+  // ── Responsables légaux (13 juillet 2026 — demande 5) ───────────────────
+  /**
+   * Enregistre les responsables légaux d'un·e apprenti·e (inscription
+   * manuelle ou import Excel). Pour chaque saisie : si l'email correspond à
+   * un responsable EXISTANT, il est rattaché (fratrie — arbitrage 6, ses
+   * coordonnées existantes font foi) ; sinon un nouveau responsable est créé.
+   * Remplace la liste `responsableLegalIds` de l'apprenti·e. La validation
+   * (`validerResponsablesLegaux`) est faite en amont par l'appelant.
+   */
+  enregistrerResponsablesApprenti: (
+    apprentiId: string,
+    saisies: ReadonlyArray<SaisieResponsable>,
+  ) => void;
+
   /** Réinitialise le store aux fixtures (utilisé par BoutonReinitialiserDemo). */
   reinitialiser: () => void;
 }
@@ -115,12 +133,15 @@ interface UtilisateursStore {
 //      traçabilité des changements d'entreprise en cours de contrat.
 // v6 — 2ᵉ promo de démo BTS MHR 2025-2027 (3 juillet 2026) : 2 apprenti·e·s,
 //      2 tuteurs, formateur Marc TISSIER.
-const VERSION_SCHEMA = 6;
+// v7 — responsables légaux des apprenti·e·s mineur·e·s (13 juillet 2026 —
+//      réunion DG, demande 5) : Minh NGUYEN devient MINEUR (né en 2009),
+//      2 responsables de démo (Thi + Duc NGUYEN).
+const VERSION_SCHEMA = 7;
 
 /** État initial calculé depuis les fixtures. */
 function etatInitial(): Pick<
   UtilisateursStore,
-  'apprentis' | 'maitres' | 'formateurs' | 'coordos' | 'admins'
+  'apprentis' | 'maitres' | 'formateurs' | 'coordos' | 'admins' | 'responsables'
 > {
   return {
     apprentis: Object.fromEntries(apprentisDemo.map((a) => [a.id, a])),
@@ -128,6 +149,7 @@ function etatInitial(): Pick<
     formateurs: Object.fromEntries(formateursDemo.map((f) => [f.id, f])),
     coordos: Object.fromEntries(coordosDemo.map((c) => [c.id, c])),
     admins: { [adminGuillaumeFerreri.id]: adminGuillaumeFerreri },
+    responsables: Object.fromEntries(responsablesDemo.map((r) => [r.id, r])),
   };
 }
 
@@ -407,6 +429,47 @@ export const useUtilisateursStore = create<UtilisateursStore>()(
           return { coordos: sansLui };
         }),
 
+      // ── Responsables légaux (13 juillet 2026 — demande 5) ─────────────
+      enregistrerResponsablesApprenti: (apprentiId, saisies) => {
+        const s = get();
+        const apprenti = s.apprentis[apprentiId];
+        if (!apprenti) return;
+        const responsables = { ...s.responsables };
+        const parEmail = new Map(
+          Object.values(responsables).map((r) => [r.email.trim().toLowerCase(), r]),
+        );
+        const ids: string[] = [];
+        for (const saisie of saisies.slice(0, 2)) {
+          const email = saisie.email.trim().toLowerCase();
+          const existant = parEmail.get(email);
+          if (existant) {
+            // Rattachement fratrie : même email = même personne (arbitrage 6).
+            if (!ids.includes(existant.id)) ids.push(existant.id);
+            continue;
+          }
+          const id = `u-responsable-${crypto.randomUUID().slice(0, 8)}`;
+          const responsable: ResponsableLegal = {
+            id,
+            role: 'responsable',
+            prenom: saisie.prenom.trim(),
+            nom: saisie.nom.trim(),
+            email: saisie.email.trim(),
+            telephone: saisie.telephone?.trim() || undefined,
+            lienParente: saisie.lienParente?.trim() || undefined,
+          };
+          responsables[id] = responsable;
+          parEmail.set(email, responsable);
+          ids.push(id);
+        }
+        set({
+          responsables,
+          apprentis: {
+            ...s.apprentis,
+            [apprentiId]: { ...apprenti, responsableLegalIds: ids },
+          },
+        });
+      },
+
       reinitialiser: () => set(etatInitial()),
     }),
     {
@@ -442,4 +505,9 @@ export function getCoordoByIdFromStore(id: string): Coordo | undefined {
 /** Lookup non-réactif d'un formateur par id (3 juillet 2026). */
 export function getFormateurByIdFromStore(id: string): Formateur | undefined {
   return useUtilisateursStore.getState().formateurs[id];
+}
+
+/** Lookup non-réactif d'un responsable légal par id (13 juillet 2026). */
+export function getResponsableByIdFromStore(id: string): ResponsableLegal | undefined {
+  return useUtilisateursStore.getState().responsables[id];
 }

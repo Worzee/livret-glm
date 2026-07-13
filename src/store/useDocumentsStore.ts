@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type {
+  AttestationLecture,
   DocumentAdministratif,
   DocumentFormation,
   Role,
@@ -29,6 +30,13 @@ import {
  * déportés sur Nuage (Nextcloud apps.education.fr) via WebDAV, le store ne
  * conservant qu'une référence (STACK_GRETA_LYON.md §3.4, TODO-etape-2.md).
  */
+
+/** Auteur·rice d'une attestation (13 juillet 2026 — demande 5). */
+interface AuteurAttestation {
+  id: string;
+  nom: string;
+  role: Role;
+}
 
 interface DepotDocumentInput {
   apprentiId: string;
@@ -92,15 +100,17 @@ interface DocumentsStore {
   marquerConsultationFormationApprenti: (id: string, apprentiId: string) => void;
 
   /**
-   * Attestation de prise de connaissance par l'apprenti·e (ressource
-   * `documents.attester`) — confirmation horodatée sans signature manuscrite
-   * (13 juillet 2026), sans retrait possible. No-op si le document est déjà
-   * attesté ou n'a pas été consulté.
+   * Attestation de prise de connaissance (ressource `documents.attester`) —
+   * confirmation horodatée sans signature manuscrite (13 juillet 2026), sans
+   * retrait possible. `auteur` : l'apprenti·e majeur·e, ou un responsable
+   * légal en lieu et place d'un·e mineur·e (demande 5 — tracé dans
+   * l'attestation). No-op si le document est déjà attesté ou n'a pas été
+   * consulté.
    */
-  attesterDocument: (id: string) => void;
+  attesterDocument: (id: string, auteur: AuteurAttestation) => void;
 
   /** Attestation individuelle d'un document de FORMATION. */
-  attesterDocumentFormation: (id: string, apprentiId: string) => void;
+  attesterDocumentFormation: (id: string, apprentiId: string, auteur: AuteurAttestation) => void;
 
   /**
    * Supprime un document nominatif non attesté (coordo / admin). Bloqué si
@@ -129,7 +139,11 @@ interface DocumentsStore {
 //      FORMATION (`documentsFormation` — dépôt en masse, attestations
 //      individuelles indexées par apprenti·e). Fixtures : le règlement
 //      intérieur devient un document de formation (CAP + BTS).
-const VERSION_SCHEMA = 3;
+// v4 — 13 juillet 2026 (réunion DG, demande 5) : auteur·rice tracé·e dans
+//      l'attestation (`attestePar*` — apprenti·e majeur·e ou responsable
+//      légal d'un·e mineur·e). Fixtures : la protection des données de Minh
+//      (MINEUR) passe non attestée — c'est à ses responsables d'attester.
+const VERSION_SCHEMA = 4;
 
 function etatInitial(): Pick<DocumentsStore, 'documents' | 'documentsFormation'> {
   return {
@@ -222,24 +236,25 @@ export const useDocumentsStore = create<DocumentsStore>()(
           };
         }),
 
-      attesterDocument: (id) =>
+      attesterDocument: (id, auteur) =>
         set((s) => {
           const document = s.documents[id];
           if (!document || document.attestation.attestee || !document.consulteParApprentiLe) {
             return s;
           }
+          const attestation: AttestationLecture = {
+            attestee: true,
+            dateAttestation: new Date().toISOString(),
+            attesteParId: auteur.id,
+            attesteParNom: auteur.nom,
+            attesteParRole: auteur.role,
+          };
           return {
-            documents: {
-              ...s.documents,
-              [id]: {
-                ...document,
-                attestation: { attestee: true, dateAttestation: new Date().toISOString() },
-              },
-            },
+            documents: { ...s.documents, [id]: { ...document, attestation } },
           };
         }),
 
-      attesterDocumentFormation: (id, apprentiId) =>
+      attesterDocumentFormation: (id, apprentiId, auteur) =>
         set((s) => {
           const document = s.documentsFormation[id];
           if (
@@ -249,15 +264,19 @@ export const useDocumentsStore = create<DocumentsStore>()(
           ) {
             return s;
           }
+          const attestation: AttestationLecture = {
+            attestee: true,
+            dateAttestation: new Date().toISOString(),
+            attesteParId: auteur.id,
+            attesteParNom: auteur.nom,
+            attesteParRole: auteur.role,
+          };
           return {
             documentsFormation: {
               ...s.documentsFormation,
               [id]: {
                 ...document,
-                attestations: {
-                  ...document.attestations,
-                  [apprentiId]: { attestee: true, dateAttestation: new Date().toISOString() },
-                },
+                attestations: { ...document.attestations, [apprentiId]: attestation },
               },
             },
           };

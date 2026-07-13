@@ -70,6 +70,10 @@
 .role-actif-admin {
   --ring: 38 92% 33%;
 }
+/* responsable légal #0e7490 cyan-700 → 193 82% 31% (13 juillet 2026 — demande 5) */
+.role-actif-responsable {
+  --ring: 193 82% 31%;
+}
 
 /*
  * Utilities suivant la couleur du rôle actif via la variable CSS `--ring`.

@@ -18,6 +18,7 @@ export const TEXTE_ROLE: Record<Role, string> = {
   formateur: 'text-role-formateur',
   coordo: 'text-role-coordo',
   admin: 'text-role-admin',
+  responsable: 'text-role-responsable',
 };
 
 /** Fond plein par rôle (`bg-role-X`). */
@@ -27,6 +28,7 @@ export const FOND_PLEIN_ROLE: Record<Role, string> = {
   formateur: 'bg-role-formateur',
   coordo: 'bg-role-coordo',
   admin: 'bg-role-admin',
+  responsable: 'bg-role-responsable',
 };
 
 /** Fond léger 10% par rôle (`bg-role-X/10`) — pour les états « actif / sélectionné ». */
@@ -36,6 +38,7 @@ export const FOND_LEGER_ROLE: Record<Role, string> = {
   formateur: 'bg-role-formateur/10',
   coordo: 'bg-role-coordo/10',
   admin: 'bg-role-admin/10',
+  responsable: 'bg-role-responsable/10',
 };
 
 /** Bordure gauche 4px par rôle (`border-l-4 border-l-role-X`). */
@@ -45,6 +48,7 @@ export const BORDURE_GAUCHE_ROLE: Record<Role, string> = {
   formateur: 'border-l-4 border-l-role-formateur',
   coordo: 'border-l-4 border-l-role-coordo',
   admin: 'border-l-4 border-l-role-admin',
+  responsable: 'border-l-4 border-l-role-responsable',
 };
 
 /** Bordure complète 2px par rôle (`border-2 border-role-X`). */
@@ -54,6 +58,7 @@ export const BORDURE_COMPLETE_ROLE: Record<Role, string> = {
   formateur: 'border-2 border-role-formateur',
   coordo: 'border-2 border-role-coordo',
   admin: 'border-2 border-role-admin',
+  responsable: 'border-2 border-role-responsable',
 };
 
 /**
@@ -67,4 +72,5 @@ export const SELECTION_ROLE: Record<Role, string> = {
   formateur: 'bg-role-formateur/10 border-role-formateur text-role-formateur',
   coordo: 'bg-role-coordo/10 border-role-coordo text-role-coordo',
   admin: 'bg-role-admin/10 border-role-admin text-role-admin',
+  responsable: 'bg-role-responsable/10 border-role-responsable text-role-responsable',
 };

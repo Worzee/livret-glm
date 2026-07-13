@@ -27,15 +27,16 @@ test('le coordo voit la table restreinte à son périmètre (juin 2026)', async 
   await selectRole(page, 'Coordinateur·rice');
   await page.goto('/admin/utilisateurs');
   // Martine ne liste que SES 5 apprenti·e·s (Léa, Théo, Sofia + Camille, Yanis)
-  // + le staff complet : 4 maîtres + 2 formateurs + 2 coordos + 1 admin = 9.
+  // + le staff complet : 4 maîtres + 2 formateurs + 2 coordos + 1 admin = 9
+  // + les 2 responsables légaux de Minh (13 juillet 2026) = 16 lignes.
   const lignes = page.locator('tbody tr');
-  await expect(lignes).toHaveCount(14);
+  await expect(lignes).toHaveCount(16);
   await expect(page.locator('tbody tr', { hasText: /Minh NGUYEN/ })).toHaveCount(0);
 
-  // L'admin voit tout : 8 apprenti·e·s + 9 staff = 17 lignes.
+  // L'admin voit tout : 8 apprenti·e·s + 9 staff + 2 responsables = 19 lignes.
   await selectRole(page, 'Admin');
   await page.goto('/admin/utilisateurs');
-  await expect(page.locator('tbody tr')).toHaveCount(17);
+  await expect(page.locator('tbody tr')).toHaveCount(19);
 });
 
 test('le coordo crée un·e nouvel·le apprenti·e — la carte apparaît au tableau de bord', async ({
@@ -65,8 +66,9 @@ test('le coordo crée un·e nouvel·le apprenti·e — la carte apparaît au tab
 
   // La modale se ferme
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  // 15 lignes maintenant (périmètre Martine : 5 + Sarah auto-affectée + 9 staff)
-  await expect(page.locator('tbody tr')).toHaveCount(15);
+  // 17 lignes maintenant (périmètre Martine : 5 + Sarah auto-affectée + 9
+  // staff + 2 responsables légaux).
+  await expect(page.locator('tbody tr')).toHaveCount(17);
 
   // Sur le tableau de bord (toujours en coordo), la carte apparaît
   await page.goto('/');
@@ -132,7 +134,9 @@ test("suppression libre d'un·e apprenti·e dont le contrat n'a pas démarré", 
   await modale.getByTestId('apprenti-prenom').fill('Lina');
   await modale.getByTestId('apprenti-nom').fill('Test');
   await modale.getByTestId('apprenti-email').fill('lina.test@demo.fr');
-  await modale.getByTestId('apprenti-naissance').fill('2010-01-01');
+  // Majeure : une naissance mineure exigerait un responsable légal
+  // (13 juillet 2026 — hors sujet ici, le test porte sur le verrou).
+  await modale.getByTestId('apprenti-naissance').fill('2000-01-01');
   await modale.getByTestId('apprenti-contrat-debut').fill('2027-09-01');
   await modale.getByTestId('apprenti-contrat-fin').fill('2029-08-31');
   await modale.getByRole('button', { name: /Créer l'apprenti·e/i }).click();

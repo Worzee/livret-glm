@@ -161,9 +161,27 @@ export const documentsDemo: DocumentAdministratif[] = [
   ...dossierComplet('theo', 'martine', '2025-09-03T10:00:00.000Z', '2025-09-08T09:00:00.000Z'),
   ...dossierComplet('sofia', 'martine', '2025-09-03T10:30:00.000Z', '2025-09-09T11:00:00.000Z'),
   ...dossierComplet('camille', 'martine', '2025-09-04T09:00:00.000Z', '2025-09-10T16:00:00.000Z'),
-  ...dossierComplet('minh', 'bernard', '2025-09-04T10:00:00.000Z', '2025-09-09T10:00:00.000Z'),
   ...dossierComplet('aya', 'bernard', '2025-09-04T10:30:00.000Z', '2025-09-10T14:00:00.000Z'),
   ...dossierComplet('luca', 'bernard', '2025-09-05T09:00:00.000Z', '2025-09-11T09:30:00.000Z'),
+
+  // ── Minh NGUYEN (CAP, MINEUR — demande 5) ─────────────────────────────────
+  //    Contrat et droit à l'image attestés (historique) ; la protection des
+  //    données attend l'attestation de ses RESPONSABLES LÉGAUX (Thi ou Duc).
+  docDemo('minh', 'contrat-pedagogique', {
+    coordo: 'bernard',
+    deposeLe: '2025-09-04T10:00:00.000Z',
+    attesteLe: '2025-09-09T10:00:00.000Z',
+  }),
+  docDemo('minh', 'protection-donnees', {
+    coordo: 'bernard',
+    deposeLe: '2025-09-04T10:02:00.000Z',
+    // Non attestée → alerte « attestation du responsable légal attendue ».
+  }),
+  docDemo('minh', 'droit-image', {
+    coordo: 'bernard',
+    deposeLe: '2025-09-04T10:04:00.000Z',
+    attesteLe: '2025-09-09T10:05:00.000Z',
+  }),
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────

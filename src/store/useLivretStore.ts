@@ -665,10 +665,11 @@ export const useLivretStore = create<LivretStore>()(
       signer: (livretId, ficheId, role, trace, lieu = 'entreprise') =>
         set((s) =>
           muterFiche(s, livretId, ficheId, lieu, (f) => {
-            // Ni coordo ni admin ne signent en leur nom propre.
-            // Pour signer côté admin, l'UI appelle signer() avec le rôle
-            // métier ciblé (apprenti/maitre/formateur), pas 'admin'.
-            if (role === 'coordo' || role === 'admin') return f;
+            // Ni coordo, ni admin, ni responsable légal ne signent une fiche
+            // en leur nom propre (le responsable est en lecture seule sur les
+            // fiches — 13 juillet 2026). Pour signer côté admin, l'UI appelle
+            // signer() avec le rôle métier ciblé (apprenti/maitre/formateur).
+            if (role === 'coordo' || role === 'admin' || role === 'responsable') return f;
             const signatures = { ...f.signatures };
             signatures[role] = {
               signe: true,

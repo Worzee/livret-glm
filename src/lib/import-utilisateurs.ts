@@ -1,6 +1,7 @@
 import type { Apprenti, Formateur, Maitre } from '@/types';
 import type { ModeleXlsx } from './generer-xlsx-modele';
 import { parserXlsxBuffer } from './parser-xlsx';
+import { validerResponsablesLegaux, type SaisieResponsable } from './responsables-legaux';
 
 /**
  * Import par lot d'utilisateur·rice·s depuis un fichier Excel.
@@ -8,7 +9,10 @@ import { parserXlsxBuffer } from './parser-xlsx';
  * Périmètre (mai 2026) — 3 types supportés :
  *   - Apprenti·e   : identité + dates de contrat (les rattachements
  *                    formation / maître / formateur se font ensuite via
- *                    /admin/affectations)
+ *                    /admin/affectations) + responsables légaux si MINEUR·E
+ *                    (13 juillet 2026 — demande 5 : colonnes « resp. légal »
+ *                    OPTIONNELLES dans l'en-tête, mais 1 responsable exigé
+ *                    dès que la date de naissance donne un·e mineur·e)
  *   - Maître       : identité + entreprise + fonction (cohérent avec la
  *                    modale création maître, cf. chantier #4)
  *   - Formateur·rice : identité seule
@@ -17,7 +21,8 @@ import { parserXlsxBuffer } from './parser-xlsx';
  *   - **Refus total dès la moindre erreur** : si une seule ligne ne passe
  *     pas, l'import entier est rejeté. L'admin corrige le fichier puis
  *     re-tente.
- *   - **Doublons (email existant)** : traités comme erreur bloquante.
+ *   - **Doublons (email existant)** : traités comme erreur bloquante — SAUF
+ *     l'email d'un responsable légal déjà connu (rattachement fratrie).
  *   - **Lignes vides** : ignorées (au cas où l'utilisateur·rice laisse
  *     des séparateurs de ligne en fin de fichier).
  */
@@ -28,16 +33,50 @@ export type TypeImport = 'apprenti' | 'maitre' | 'formateur';
 // Modèles téléchargeables (en-têtes + lignes d'exemple)
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Colonnes OBLIGATOIRES de l'en-tête apprenti — les 10 colonnes
+ * « responsable légal » du modèle sont optionnelles (un fichier sans elles
+ * reste importable tant qu'il ne contient que des majeur·e·s).
+ */
+const ENTETES_REQUISES_APPRENTI = [
+  'Prénom',
+  'Nom',
+  'Email',
+  'Date de naissance',
+  'Début de contrat',
+  'Fin de contrat',
+];
+
 export const MODELES: Record<TypeImport, ModeleXlsx> = {
   apprenti: {
-    entetes: ['Prénom', 'Nom', 'Email', 'Date de naissance', 'Début de contrat', 'Fin de contrat'],
+    entetes: [
+      ...ENTETES_REQUISES_APPRENTI,
+      // Responsables légaux (13 juillet 2026 — demande 5) : obligatoires
+      // seulement pour les apprenti·e·s mineur·e·s (1 minimum, 2 maximum).
+      'Prénom resp. légal 1',
+      'Nom resp. légal 1',
+      'Email resp. légal 1',
+      'Téléphone resp. légal 1',
+      'Lien resp. légal 1',
+      'Prénom resp. légal 2',
+      'Nom resp. légal 2',
+      'Email resp. légal 2',
+      'Téléphone resp. légal 2',
+      'Lien resp. légal 2',
+    ],
     // Colonnes 3, 4, 5 = dates → formatées en cellules date Excel
     // (numFmt yyyy-mm-dd). Évite les saisies texte ambiguës type
     // « 20/01/1988 » qui ne passeraient pas la validation ISO.
     colonnesDate: [3, 4, 5],
     exemples: [
-      ['Léa', 'MARTIN', 'lea.martin@demo.fr', '2007-04-15', '2025-09-02', '2027-09-01'],
-      ['Théo', 'DUBOIS', 'theo.dubois@demo.fr', '2006-11-23', '2025-09-02', '2027-09-01'],
+      // Majeur·e·s : colonnes responsables laissées vides.
+      // prettier-ignore
+      ['Léa', 'MARTIN', 'lea.martin@demo.fr', '2007-04-15', '2025-09-02', '2027-09-01', '', '', '', '', '', '', '', '', '', ''],
+      // prettier-ignore
+      ['Théo', 'DUBOIS', 'theo.dubois@demo.fr', '2006-11-23', '2025-09-02', '2027-09-01', '', '', '', '', '', '', '', '', '', ''],
+      // Mineur·e : au moins le responsable légal 1 (prénom, nom, email).
+      // prettier-ignore
+      ['Nadia', 'SAADI', 'nadia.saadi@demo.fr', '2009-01-20', '2025-09-02', '2027-09-01', 'Yasmina', 'SAADI', 'yasmina.saadi@demo.fr', '06 12 34 56 78', 'Mère', '', '', '', '', ''],
     ],
   },
   maitre: {
@@ -56,11 +95,16 @@ export const MODELES: Record<TypeImport, ModeleXlsx> = {
 // Types des lignes parsées + valides
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Données parsées pour un·e apprenti·e (sans rattachements — affectation post-import). */
+/**
+ * Données parsées pour un·e apprenti·e (sans rattachements — affectation
+ * post-import). `responsables` : responsables légaux saisis (0 à 2 — au
+ * moins 1 pour un·e mineur·e, demande 5), créés / rattachés à l'insertion
+ * via `enregistrerResponsablesApprenti`.
+ */
 export type LigneApprentiValide = Pick<
   Apprenti,
   'prenom' | 'nom' | 'email' | 'dateNaissance' | 'contratDebut' | 'contratFin'
->;
+> & { responsables: SaisieResponsable[] };
 
 /** Données parsées pour un maître d'apprentissage. */
 export type LigneMaitreValide = Pick<
@@ -121,11 +165,15 @@ const REGEX_DATE_ISO = /^\d{4}-\d{2}-\d{2}$/;
  * @param type              Type d'utilisateur·rice à importer.
  * @param emailsExistants   Emails déjà présents dans le store (toutes
  *                          catégories confondues — la collision est globale).
+ * @param emailsResponsablesExistants  Emails des responsables légaux déjà
+ *                          connus (13 juillet 2026 — un email de responsable
+ *                          connu = même personne, rattachement fratrie).
  */
 export function importerDepuisXlsx<T extends TypeImport>(
   buffer: ArrayBuffer,
   type: T,
   emailsExistants: ReadonlySet<string>,
+  emailsResponsablesExistants: ReadonlySet<string> = new Set(),
 ): RapportImport<T> {
   let lignesBrutes: string[][];
   try {
@@ -145,8 +193,16 @@ export function importerDepuisXlsx<T extends TypeImport>(
     };
   }
 
-  const modele = MODELES[type];
-  return validerLignes(lignesBrutes, type, modele.entetes, emailsExistants);
+  // En-tête apprenti : seules les 6 colonnes de base sont exigées — les
+  // colonnes « resp. légal » du modèle sont optionnelles (demande 5).
+  const entetesRequises = type === 'apprenti' ? ENTETES_REQUISES_APPRENTI : MODELES[type].entetes;
+  return validerLignes(
+    lignesBrutes,
+    type,
+    entetesRequises,
+    emailsExistants,
+    emailsResponsablesExistants,
+  );
 }
 
 function validerLignes<T extends TypeImport>(
@@ -154,6 +210,7 @@ function validerLignes<T extends TypeImport>(
   type: T,
   entetesAttendues: string[],
   emailsExistants: ReadonlySet<string>,
+  emailsResponsablesExistants: ReadonlySet<string>,
 ): RapportImport<T> {
   const erreurs: ErreurLigne[] = [];
 
@@ -262,6 +319,34 @@ function validerLignes<T extends TypeImport>(
         });
       }
 
+      // Responsables légaux (demande 5) : blocs saisis (prénom, nom ou email
+      // renseigné) — 1 minimum exigé si la date de naissance donne un·e
+      // MINEUR·E, emails différents de l'apprenti·e et uniques (sauf
+      // responsable déjà connu — fratrie).
+      const responsables: SaisieResponsable[] = [1, 2]
+        .map((n) => ({
+          prenom: lit(`Prénom resp. légal ${n}`),
+          nom: lit(`Nom resp. légal ${n}`),
+          email: lit(`Email resp. légal ${n}`),
+          telephone: lit(`Téléphone resp. légal ${n}`) || undefined,
+          lienParente: lit(`Lien resp. légal ${n}`) || undefined,
+        }))
+        .filter((r) => `${r.prenom}${r.nom}${r.email}`.trim() !== '');
+      if (REGEX_DATE_ISO.test(dateNaissance)) {
+        const vr = validerResponsablesLegaux({
+          emailApprenti: email,
+          dateNaissance,
+          responsables,
+          contexte: {
+            emailsAutresUtilisateurs: [...emailsExistants],
+            emailsResponsablesExistants: [...emailsResponsablesExistants],
+          },
+        });
+        for (const message of vr.erreurs) {
+          erreurs.push({ ligne: numLigne, colonne: 'Responsables légaux', message });
+        }
+      }
+
       // On ne pousse la ligne dans `lignesValides` que si tous ses champs
       // sont OK (sinon on accumule juste les erreurs).
       const erreursAvantPush = erreurs.filter((e) => e.ligne === numLigne).length;
@@ -273,6 +358,7 @@ function validerLignes<T extends TypeImport>(
           dateNaissance,
           contratDebut,
           contratFin,
+          responsables,
         } as LigneValide<T>);
       }
     } else if (type === 'maitre') {

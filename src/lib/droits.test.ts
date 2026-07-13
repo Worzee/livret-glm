@@ -4,6 +4,7 @@ import {
   peutContournerSequencement,
   peutEditer,
   rolesAutorises,
+  TOUTES_RESSOURCES,
   type Ressource,
 } from './droits';
 import type { Role } from '@/types';
@@ -238,20 +239,39 @@ describe('peutEditer — droits par ressource (CDC §6)', () => {
       expect(peutEditer('maitre', 'cloturer-livret')).toBe(false);
     });
 
-    it('les documents administratifs : dépôt coordo / admin, attestation apprenti·e seul·e (10 juillet 2026)', () => {
+    it('les documents administratifs : dépôt coordo / admin, attestation apprenti·e ou responsable légal (10 et 13 juillet 2026)', () => {
       // Dépôt / retrait / flag « réservé » = gestion administrative.
       expect(peutEditer('coordo', 'documents.gerer')).toBe(true);
       expect(peutEditer('admin', 'documents.gerer')).toBe(true);
       expect(peutEditer('formateur', 'documents.gerer')).toBe(false);
       expect(peutEditer('apprenti', 'documents.gerer')).toBe(false);
       expect(peutEditer('maitre', 'documents.gerer')).toBe(false);
+      expect(peutEditer('responsable', 'documents.gerer')).toBe(false);
       // L'attestation (confirmation horodatée après lecture — 13 juillet 2026)
-      // est un acte personnel de l'apprenti·e.
+      // est un acte personnel : apprenti·e majeur·e OU responsable légal d'un·e
+      // mineur·e (demande 5 — `attestataireDocuments` tranche selon la minorité).
       expect(peutEditer('apprenti', 'documents.attester')).toBe(true);
+      expect(peutEditer('responsable', 'documents.attester')).toBe(true);
       expect(peutEditer('coordo', 'documents.attester')).toBe(false);
       expect(peutEditer('admin', 'documents.attester')).toBe(false);
       expect(peutEditer('formateur', 'documents.attester')).toBe(false);
       expect(peutEditer('maitre', 'documents.attester')).toBe(false);
+    });
+
+    it('le responsable légal est en LECTURE SEULE partout, sauf attestation des documents et signature « représentant légal » (13 juillet 2026 — demande 5)', () => {
+      // Seules 2 capacités : attester les documents d'un·e mineur·e et signer
+      // le slot optionnel « représentant légal » de l'entretien tripartite.
+      expect(peutEditer('responsable', 'documents.attester')).toBe(true);
+      expect(peutEditer('responsable', 'entretien.signature-representant-legal')).toBe(true);
+      // Tout le reste est fermé — balayage exhaustif de la matrice.
+      const exceptions: Ressource[] = [
+        'documents.attester',
+        'entretien.signature-representant-legal',
+      ];
+      for (const ressource of TOUTES_RESSOURCES) {
+        if (exceptions.includes(ressource)) continue;
+        expect(peutEditer('responsable', ressource), `responsable × ${ressource}`).toBe(false);
+      }
     });
 
     it("le suivi des points d'alerte de l'entretien est réservé au coordo / admin (8 juillet 2026)", () => {

@@ -87,10 +87,11 @@ test('la sidebar permanente est cachée sur mobile (pas de doublon)', async ({ p
 test('le RoleSwitcher est compact (icônes seules) et reste cliquable', async ({ page }) => {
   await page.goto('/');
   const radios = page.getByRole('radio');
-  expect(await radios.count()).toBe(5);
+  // 6 rôles depuis le 13 juillet 2026 (demande 5 — responsable légal).
+  expect(await radios.count()).toBe(6);
 
   // Chaque bouton est cliquable (touch target ≥ 36px) sans débordement.
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 6; i++) {
     const box = await radios.nth(i).boundingBox();
     expect(box).not.toBeNull();
     expect(box!.width).toBeGreaterThanOrEqual(32);

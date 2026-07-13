@@ -1,4 +1,4 @@
-import { Crown, GraduationCap, HardHat, ShieldCheck, UserCog } from 'lucide-react';
+import { Crown, GraduationCap, HardHat, ShieldCheck, UserCog, Users } from 'lucide-react';
 import { useUserStore } from '@/store/useUserStore';
 import { libelleRole } from '@/lib/droits';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,15 @@ const ROLES_CONFIG: Array<{
     Icon: GraduationCap,
     classeActive: 'bg-role-apprenti text-white',
     classeIconeInactive: 'text-role-apprenti',
+  },
+  {
+    // Responsable légal (13 juillet 2026 — demande 5) : placé juste après
+    // l'apprenti·e — c'est le rôle « famille », périmètre limité à ses enfants.
+    role: 'responsable',
+    Icon: Users,
+    classeActive: 'bg-role-responsable text-white',
+    classeIconeInactive: 'text-role-responsable',
+    libelleCourt: 'Resp. légal',
   },
   {
     role: 'maitre',

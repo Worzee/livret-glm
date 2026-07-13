@@ -6,18 +6,21 @@ import type { Apprenti, Formateur, Maitre, Utilisateur } from '@/types';
  * Référence : cahier des charges v1.3, sections 6 (matrice droits) et 10.3.
  *
  * Règles :
- *   - apprenti  → uniquement lui/elle-même (R3)
- *   - maitre    → ses apprenti·e·s (champ `apprentiIds`)
- *   - formateur → la promo dont il/elle est référent·e (champ `promoIds`,
- *                 résolu via `formationId` de l'apprenti·e) **ET** les
- *                 apprenti·e·s dont il/elle est directement référent·e
- *                 (`Apprenti.formateurReferentId` — fix 1ᵉʳ juillet 2026 :
- *                 `promoIds` n'est pas maintenu pour les formations créées en
- *                 ligne, une apprentie devenait invisible de son formateur)
- *   - coordo    → les apprenti·e·s qui lui sont affecté·e·s par l'admin
- *                 (champ `Apprenti.coordoId` — juin 2026 ; un·e apprenti·e
- *                 sans coordo n'est visible que de l'admin)
- *   - admin     → tous les apprenti·e·s du dispositif
+ *   - apprenti     → uniquement lui/elle-même (R3)
+ *   - maitre       → ses apprenti·e·s (champ `apprentiIds`)
+ *   - formateur    → la promo dont il/elle est référent·e (champ `promoIds`,
+ *                    résolu via `formationId` de l'apprenti·e) **ET** les
+ *                    apprenti·e·s dont il/elle est directement référent·e
+ *                    (`Apprenti.formateurReferentId` — fix 1ᵉʳ juillet 2026 :
+ *                    `promoIds` n'est pas maintenu pour les formations créées
+ *                    en ligne, une apprentie devenait invisible de son
+ *                    formateur)
+ *   - coordo       → les apprenti·e·s qui lui sont affecté·e·s par l'admin
+ *                    (champ `Apprenti.coordoId` — juin 2026 ; un·e apprenti·e
+ *                    sans coordo n'est visible que de l'admin)
+ *   - responsable  → son / ses enfants (`Apprenti.responsableLegalIds` —
+ *                    13 juillet 2026, demande 5 ; fratrie possible)
+ *   - admin        → tous les apprenti·e·s du dispositif
  */
 export function apprentisAccessibles(utilisateur: Utilisateur, apprentis: Apprenti[]): Apprenti[] {
   switch (utilisateur.role) {
@@ -35,6 +38,8 @@ export function apprentisAccessibles(utilisateur: Utilisateur, apprentis: Appren
     }
     case 'coordo':
       return apprentis.filter((a) => a.coordoId === utilisateur.id);
+    case 'responsable':
+      return apprentis.filter((a) => a.responsableLegalIds?.includes(utilisateur.id));
     case 'admin':
       return [...apprentis];
   }

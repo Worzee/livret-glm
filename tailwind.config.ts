@@ -65,6 +65,7 @@ export default {
           formateur: '#7c3aed', // violet (violet-600)
           coordo: '#c2410c', // orange foncé (orange-700) — coordination
           admin: '#a16207', // or foncé (yellow-700) — super-utilisateur
+          responsable: '#0e7490', // cyan foncé (cyan-700) — famille de l'apprenti·e (13 juillet 2026)
         },
         niveau: {
           maitrise: '#059669',

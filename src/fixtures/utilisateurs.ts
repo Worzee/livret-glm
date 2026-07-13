@@ -1,4 +1,4 @@
-import type { Admin, Apprenti, Coordo, Formateur, Maitre } from '@/types';
+import type { Admin, Apprenti, Coordo, Formateur, Maitre, ResponsableLegal } from '@/types';
 
 /**
  * Utilisateurs fictifs de démonstration.
@@ -107,7 +107,9 @@ export const apprentiMinhNguyen: Apprenti = {
   prenom: 'Minh',
   email: 'minh.nguyen@demo.fr',
   telephone: '01 99 99 99 13',
-  dateNaissance: '2007-02-19',
+  // MINEUR (13 juillet 2026 — demande 5) : 17 ans au moment de la démo — ses
+  // documents administratifs sont attestés par ses responsables légaux.
+  dateNaissance: '2009-03-15',
   formationId: 'f-cap-cuisine-2025',
   entrepriseId: 'e-brasserie-rhone',
   historiqueEntreprises: [
@@ -123,6 +125,7 @@ export const apprentiMinhNguyen: Apprenti = {
   maitreApprentissageId: 'u-maitre-helene',
   formateurReferentId: 'u-formateur-sophie',
   coordoId: 'u-coordo-bernard',
+  responsableLegalIds: ['u-responsable-thi', 'u-responsable-duc'],
   contratDebut: '2025-09-02',
   contratFin: '2027-09-01',
 };
@@ -403,6 +406,37 @@ export const adminGuillaumeFerreri: Admin = {
   email: 'guillaume.ferreri@gmail.com',
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Responsables légaux (13 juillet 2026 — réunion DG, demande 5)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Les deux responsables légaux de Minh NGUYEN (apprenti MINEUR de démo) —
+ * ils attestent ses documents administratifs en lieu et place et consultent
+ * son livret en lecture seule. Thi est la responsable par défaut du sélecteur.
+ */
+export const responsableThiNguyen: ResponsableLegal = {
+  id: 'u-responsable-thi',
+  role: 'responsable',
+  nom: 'NGUYEN',
+  prenom: 'Thi',
+  email: 'thi.nguyen@demo.fr',
+  telephone: '01 99 99 99 21',
+  lienParente: 'Mère',
+};
+
+export const responsableDucNguyen: ResponsableLegal = {
+  id: 'u-responsable-duc',
+  role: 'responsable',
+  nom: 'NGUYEN',
+  prenom: 'Duc',
+  email: 'duc.nguyen@demo.fr',
+  telephone: '01 99 99 99 22',
+  lienParente: 'Père',
+};
+
+export const responsablesDemo: ResponsableLegal[] = [responsableThiNguyen, responsableDucNguyen];
+
 /**
  * Catalogue des utilisateurs accessibles via le role switcher (CDC §4.2).
  * 5 rôles : 3 métier + coordo + admin (super-utilisateur).
@@ -420,6 +454,9 @@ export const utilisateursDemo = {
   formateur: formatriceSophieDubois,
   coordo: coordoMartineLefevre,
   admin: adminGuillaumeFerreri,
+  // Responsable légal par défaut (13 juillet 2026 — demande 5) : Thi NGUYEN,
+  // mère de Minh (apprenti mineur de démo).
+  responsable: responsableThiNguyen,
 } as const;
 
 // Note : `getApprentiById` / `getMaitreById` ont été déplacés vers

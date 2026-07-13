@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { GraduationCap, History, X } from 'lucide-react';
+import { GraduationCap, History, Users, X } from 'lucide-react';
 import type { AffectationEntreprise, Apprenti, Entreprise, Maitre } from '@/types';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { useFormationsStore } from '@/store/useFormationsStore';
@@ -7,6 +7,8 @@ import { useEntreprisesStore } from '@/store/useEntreprisesStore';
 import { useUserStore } from '@/store/useUserStore';
 import { libelleRole } from '@/lib/droits';
 import { type SaisieApprenti, validerSaisieApprenti } from '@/lib/validation-apprenti';
+import { estMineur } from '@/lib/minorite';
+import { validerResponsablesLegaux, type SaisieResponsable } from '@/lib/responsables-legaux';
 import { cn } from '@/lib/utils';
 
 /**
@@ -46,12 +48,24 @@ const SAISIE_VIDE: SaisieApprenti = {
   formateurReferentId: '',
 };
 
+const RESPONSABLE_VIDE: SaisieResponsable = {
+  prenom: '',
+  nom: '',
+  email: '',
+  telephone: '',
+  lienParente: '',
+};
+
 export function ModaleApprenti({ ouvert, apprenti, onAnnuler, onValide }: ModaleApprentiProps) {
   const ajouter = useUtilisateursStore((s) => s.ajouterApprenti);
   const modifier = useUtilisateursStore((s) => s.modifierApprenti);
   const maitres = useUtilisateursStore((s) => s.maitres);
   const formateurs = useUtilisateursStore((s) => s.formateurs);
   const coordos = useUtilisateursStore((s) => s.coordos);
+  const admins = useUtilisateursStore((s) => s.admins);
+  const apprentisStore = useUtilisateursStore((s) => s.apprentis);
+  const responsablesStore = useUtilisateursStore((s) => s.responsables);
+  const enregistrerResponsables = useUtilisateursStore((s) => s.enregistrerResponsablesApprenti);
   const formations = useFormationsStore((s) => s.formations);
   const entreprises = useEntreprisesStore((s) => s.entreprises);
   const roleActif = useUserStore((s) => s.roleActif);
@@ -98,6 +112,24 @@ export function ModaleApprenti({ ouvert, apprenti, onAnnuler, onValide }: Modale
   const [saisie, setSaisie] = useState<SaisieApprenti>(valeurInitiale);
   const [tentativeSoumission, setTentativeSoumission] = useState(false);
 
+  // ── Responsables légaux (13 juillet 2026 — demande 5) ────────────────────
+  // Pré-remplis en édition depuis les responsables existants de l'apprenti·e.
+  function responsableInitial(index: number): SaisieResponsable {
+    const id = apprenti?.responsableLegalIds?.[index];
+    const r = id ? responsablesStore[id] : undefined;
+    return r
+      ? {
+          prenom: r.prenom,
+          nom: r.nom,
+          email: r.email,
+          telephone: r.telephone ?? '',
+          lienParente: r.lienParente ?? '',
+        }
+      : RESPONSABLE_VIDE;
+  }
+  const [responsable1, setResponsable1] = useState<SaisieResponsable>(() => responsableInitial(0));
+  const [responsable2, setResponsable2] = useState<SaisieResponsable>(() => responsableInitial(1));
+
   // Le state est initialisé via `useState(valeurInitiale)` au mount. Pas de
   // re-set ici : il causait une race avec les inputs sous Playwright (le
   // setSaisie pouvait écraser un fill en cours après que la modale soit
@@ -125,6 +157,30 @@ export function ModaleApprenti({ ouvert, apprenti, onAnnuler, onValide }: Modale
 
   const validation = validerSaisieApprenti(saisie);
   const erreurs = tentativeSoumission ? validation.erreurs : {};
+
+  // Minorité recalculée en direct sur la date saisie : la section
+  // « Responsables légaux » apparaît / disparaît avec elle (demande 5).
+  const mineur = estMineur(saisie.dateNaissance);
+  const saisiesResponsables = [responsable1, responsable2].filter(
+    (r) => `${r.prenom}${r.nom}${r.email}`.trim() !== '',
+  );
+  const validationResponsables = mineur
+    ? validerResponsablesLegaux({
+        emailApprenti: saisie.email,
+        dateNaissance: saisie.dateNaissance,
+        responsables: saisiesResponsables,
+        contexte: {
+          emailsAutresUtilisateurs: [
+            ...Object.values(apprentisStore).filter((a) => a.id !== apprenti?.id),
+            ...maitresList,
+            ...formateursList,
+            ...coordosList,
+            ...Object.values(admins),
+          ].map((u) => u.email),
+          emailsResponsablesExistants: Object.values(responsablesStore).map((r) => r.email),
+        },
+      })
+    : { ok: true, erreurs: [] };
   // Les avertissements sont visibles en permanence dès que l'utilisateur·rice
   // a saisi les champs concernés — pas besoin d'attendre la soumission.
   const avertissements = validation.avertissements;
@@ -138,7 +194,7 @@ export function ModaleApprenti({ ouvert, apprenti, onAnnuler, onValide }: Modale
   function soumettre(e: React.FormEvent) {
     e.preventDefault();
     setTentativeSoumission(true);
-    if (!validation.ok) return;
+    if (!validation.ok || !validationResponsables.ok) return;
     const nettoyee: SaisieApprenti = {
       ...saisie,
       prenom: saisie.prenom.trim(),
@@ -147,12 +203,21 @@ export function ModaleApprenti({ ouvert, apprenti, onAnnuler, onValide }: Modale
       telephone: saisie.telephone?.trim(),
       maitreApprentissageSecondId: saisie.maitreApprentissageSecondId || undefined,
     };
+    let idApprenti: string;
     if (apprenti) {
       modifier(apprenti.id, nettoyee, auteur);
+      idApprenti = apprenti.id;
       onValide?.({ ...apprenti, ...nettoyee });
     } else {
       const cree = ajouter(nettoyee, auteur);
+      idApprenti = cree.id;
       onValide?.(cree);
+    }
+    // Responsables légaux d'un·e mineur·e : création ou rattachement fratrie
+    // par email (demande 5). Un·e majeur·e conserve ses responsables
+    // historiques tels quels (lecture des données passées).
+    if (mineur) {
+      enregistrerResponsables(idApprenti, saisiesResponsables);
     }
     onAnnuler();
   }
@@ -349,6 +414,47 @@ export function ModaleApprenti({ ouvert, apprenti, onAnnuler, onValide }: Modale
             )}
           </Section>
 
+          {/* ── Responsables légaux (13 juillet 2026 — demande 5) ────────
+              Visible dès que la date de naissance saisie donne un·e MINEUR·E
+              (recalcul en direct) : 1 responsable obligatoire, 2 maximum,
+              emails différents de celui de l'apprenti·e. */}
+          {mineur && (
+            <fieldset className="space-y-3" data-testid="section-responsables">
+              <legend className="flex items-center gap-1.5 text-sm font-medium">
+                <Users className="h-4 w-4 text-role-responsable" aria-hidden="true" />
+                Responsables légaux
+                <span className="rounded-full bg-role-responsable/10 px-2 py-0.5 text-xs font-medium text-role-responsable">
+                  Apprenti·e mineur·e
+                </span>
+              </legend>
+              <p className="text-xs text-muted-foreground">
+                L'apprenti·e est mineur·e à ce jour : renseignez <strong>au moins un</strong>{' '}
+                responsable légal (2 maximum), avec un email différent du sien. Les responsables
+                attestent les documents administratifs en lieu et place de l'apprenti·e et
+                consultent le livret en lecture seule. Un email déjà connu comme responsable
+                rattache la même personne (fratrie).
+              </p>
+              <BlocResponsable
+                index={1}
+                valeur={responsable1}
+                onChange={setResponsable1}
+                obligatoire
+              />
+              <BlocResponsable index={2} valeur={responsable2} onChange={setResponsable2} />
+              {tentativeSoumission && !validationResponsables.ok && (
+                <ul
+                  role="alert"
+                  data-testid="erreurs-responsables"
+                  className="list-disc space-y-1 rounded-md border border-red-200 bg-red-50 p-3 pl-7 text-xs text-red-800"
+                >
+                  {validationResponsables.erreurs.map((err) => (
+                    <li key={err}>{err}</li>
+                  ))}
+                </ul>
+              )}
+            </fieldset>
+          )}
+
           {/* Historique des affectations d'entreprise (édition uniquement) */}
           {apprenti?.historiqueEntreprises && apprenti.historiqueEntreprises.length > 0 && (
             <HistoriqueEntreprises
@@ -421,6 +527,71 @@ function HistoriqueEntreprises({
         ))}
       </ol>
     </section>
+  );
+}
+
+/**
+ * Bloc de saisie d'un responsable légal (demande 5) : prénom, nom, email
+ * obligatoires (validés globalement par `validerResponsablesLegaux`),
+ * téléphone et lien de parenté optionnels.
+ */
+function BlocResponsable({
+  index,
+  valeur,
+  onChange,
+  obligatoire,
+}: {
+  index: 1 | 2;
+  valeur: SaisieResponsable;
+  onChange: (v: SaisieResponsable) => void;
+  obligatoire?: boolean;
+}) {
+  return (
+    <div className="space-y-2 rounded-md border border-border bg-secondary/20 p-3">
+      <p className="text-xs font-medium">
+        Responsable légal {index}
+        {obligatoire ? <span className="text-red-600"> *</span> : ' (optionnel)'}
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Champ
+          label="Prénom"
+          valeur={valeur.prenom}
+          onChange={(v) => onChange({ ...valeur, prenom: v })}
+          obligatoire={obligatoire}
+          testId={`responsable${index}-prenom`}
+        />
+        <Champ
+          label="Nom"
+          valeur={valeur.nom}
+          onChange={(v) => onChange({ ...valeur, nom: v })}
+          obligatoire={obligatoire}
+          testId={`responsable${index}-nom`}
+        />
+        <Champ
+          label="Email"
+          type="email"
+          valeur={valeur.email}
+          onChange={(v) => onChange({ ...valeur, email: v })}
+          obligatoire={obligatoire}
+          hint="Différent de l'email de l'apprenti·e"
+          testId={`responsable${index}-email`}
+        />
+        <Champ
+          label="Téléphone"
+          type="tel"
+          valeur={valeur.telephone ?? ''}
+          onChange={(v) => onChange({ ...valeur, telephone: v })}
+          testId={`responsable${index}-telephone`}
+        />
+        <Champ
+          label="Lien de parenté"
+          valeur={valeur.lienParente ?? ''}
+          onChange={(v) => onChange({ ...valeur, lienParente: v })}
+          hint="Ex. : Mère, Père, Tuteur légal"
+          testId={`responsable${index}-lien`}
+        />
+      </div>
+    </div>
   );
 }
 

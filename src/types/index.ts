@@ -24,7 +24,7 @@
  *                  Ne possède pas de slot de signature en propre : signe au
  *                  nom des 3 rôles métier.
  */
-export type Role = 'apprenti' | 'maitre' | 'formateur' | 'coordo' | 'admin';
+export type Role = 'apprenti' | 'maitre' | 'formateur' | 'coordo' | 'admin' | 'responsable';
 
 export interface Utilisateur {
   id: string;
@@ -188,6 +188,13 @@ export interface Apprenti extends Utilisateur {
    * apprenti·e non réparti·e, visible de l'admin seul (côté coordo).
    */
   coordoId?: string;
+  /**
+   * Responsables légaux (13 juillet 2026 — réunion DG, demande 5) : 1 à 2
+   * ids quand l'apprenti·e est inscrit·e mineur·e (obligatoire), absent ou
+   * vide sinon. La minorité effective se recalcule à la date du jour
+   * (`lib/minorite`) — les ids restent après la majorité (historique).
+   */
+  responsableLegalIds?: string[];
   contratDebut: string;
   contratFin: string;
 }
@@ -204,6 +211,26 @@ export interface Maitre extends Utilisateur {
 export interface Formateur extends Utilisateur {
   role: 'formateur';
   promoIds: string[];
+}
+
+/**
+ * Responsable légal d'un·e apprenti·e MINEUR·E (13 juillet 2026 — réunion DG,
+ * demande 5). Saisi à l'inscription (manuelle ou import Excel) quand
+ * l'apprenti·e est mineur·e : 1 obligatoire, 2 maximum, emails différents de
+ * celui de l'apprenti·e. Une même personne (même email) peut couvrir
+ * plusieurs apprenti·e·s (fratrie) — la relation est portée par
+ * `Apprenti.responsableLegalIds`.
+ *
+ * Droits (tant que l'apprenti·e est mineur·e — recalcul à la date du jour,
+ * cf. `lib/minorite`) : ATTESTE les documents administratifs en lieu et place
+ * du mineur, signe le slot optionnel « représentant légal » de l'entretien
+ * tripartite, et consulte tout le reste du livret en LECTURE SEULE.
+ * À terme (étape 2) : ces données créeront les comptes des responsables.
+ */
+export interface ResponsableLegal extends Utilisateur {
+  role: 'responsable';
+  /** Lien de parenté (ex. « Mère », « Père », « Tuteur légal ») — optionnel. */
+  lienParente?: string;
 }
 
 export interface Coordo extends Utilisateur {
@@ -808,6 +835,15 @@ export interface AttestationLecture {
   attestee: boolean;
   /** Horodatage ISO 8601 de l'attestation. */
   dateAttestation?: string;
+  /**
+   * Auteur·rice de l'attestation (13 juillet 2026 — demande 5) : l'apprenti·e
+   * majeur·e, ou un responsable légal en lieu et place d'un·e mineur·e.
+   * Absent sur les attestations antérieures (fixtures incluses) — l'UI
+   * affiche alors le libellé historique « par l'apprenti·e ».
+   */
+  attesteParId?: string;
+  attesteParNom?: string;
+  attesteParRole?: Role;
 }
 
 /**

@@ -28,12 +28,24 @@ export async function resetState(page: Page): Promise<void> {
  */
 export async function selectRole(
   page: Page,
-  label: 'Apprenti·e' | 'Maître / Tuteur' | 'Formateur référent' | 'Coordinateur·rice' | 'Admin',
+  label:
+    | 'Apprenti·e'
+    | 'Maître / Tuteur'
+    | 'Formateur référent'
+    | 'Coordinateur·rice'
+    | 'Admin'
+    | 'Responsable légal',
 ): Promise<void> {
   await page.getByRole('radio', { name: label }).click();
-  // Petite attente que l'état Zustand soit propagé.
+  // Petite attente que l'état Zustand soit propagé. Le bouton actif se
+  // reconnaît par son texte visible OU son aria-label — certains rôles
+  // affichent un libellé court (« Resp. légal », « Admin »).
   await page.waitForFunction((expected) => {
     const radios = Array.from(document.querySelectorAll('[role="radio"]')) as HTMLElement[];
-    return radios.some((r) => r.getAttribute('aria-checked') === 'true' && r.textContent?.includes(expected));
+    return radios.some(
+      (r) =>
+        r.getAttribute('aria-checked') === 'true' &&
+        (r.textContent?.includes(expected) || r.getAttribute('aria-label') === expected),
+    );
   }, label);
 }

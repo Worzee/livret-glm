@@ -178,4 +178,24 @@ Pas critique pour la démo. À traiter lors du démarrage de l'étape 2.
 
 ---
 
+## 2026-07-13 — Responsables légaux : comptes réels + RGPD mineurs
+
+- **Créer les comptes des responsables légaux** à partir des données saisies
+  (inscription manuelle + import Excel — demande 5, réunion DG) : les
+  responsables ont leur email propre, l'étape 2 (chantiers 2.2/2.3 —
+  création de comptes + validation email) doit les couvrir comme les
+  apprentis et maîtres. En maquette, le 6ᵉ rôle « Responsable légal » simule
+  leurs droits (attestation des documents d'un·e mineur·e, lecture seule
+  ailleurs, signature du slot « représentant légal » de l'entretien).
+  Motif : « à terme, cela créera également les comptes pour les responsables
+  légaux » (demande DG) — nécessite le backend d'auth.
+- **⚠ RGPD — réexamen du dossier étape 2 avec le DPO** : la demande 5
+  réintroduit les MINEURS, retirés au recentrage du 2026-05-26 qui rendait
+  l'AIPD non obligatoire (`conformite-rgpd.md` §5). Personnes vulnérables =
+  critère CNIL → AIPD probablement requise + mentions d'information
+  spécifiques aux représentants légaux + base légale de leurs données.
+  Cadrage : `chantier-demandes-direction-2026-07.md` (demande 5).
+
+---
+
 _Maintenu à jour à chaque vague de livraison. Cf. PROJECT-STATUS.md §8 pour le statut courant._

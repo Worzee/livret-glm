@@ -39,8 +39,9 @@ interface BoutonSignerProps {
   /**
    * Rôle qui signe — détermine la couleur de fond du bouton.
    * Refonte mai 2026 (équilibrage graphique) : bg-role-X au lieu de bg-primary.
+   * + `responsable` depuis le 13 juillet 2026 (slot « représentant légal »).
    */
-  role: Extract<Role, 'apprenti' | 'maitre' | 'formateur'>;
+  role: Extract<Role, 'apprenti' | 'maitre' | 'formateur' | 'responsable'>;
   /**
    * Phrase de conséquence affichée dans l'encart d'engagement. Par défaut, la
    * mention R10 des fiches / entretiens ; les documents administratifs
@@ -51,10 +52,11 @@ interface BoutonSignerProps {
   libelleBouton?: string;
 }
 
-const CLASSE_BG_ROLE: Record<'apprenti' | 'maitre' | 'formateur', string> = {
+const CLASSE_BG_ROLE: Record<'apprenti' | 'maitre' | 'formateur' | 'responsable', string> = {
   apprenti: 'bg-role-apprenti text-white',
   maitre: 'bg-role-maitre text-white',
   formateur: 'bg-role-formateur text-white',
+  responsable: 'bg-role-responsable text-white',
 };
 
 export function BoutonSigner({

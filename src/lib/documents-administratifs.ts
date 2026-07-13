@@ -4,6 +4,7 @@ import type {
   Role,
   TypeDocumentAdministratif,
 } from '@/types';
+import { estMineur } from './minorite';
 
 /**
  * Documents administratifs nominatifs (10 juillet 2026 — demande direction ;
@@ -33,8 +34,12 @@ import type {
  * Pures fonctions — pas d'effet de bord.
  */
 
-/** Rôles autorisés à consulter un document « réservé à l'apprenti·e ». */
-const ROLES_DOCUMENT_RESERVE: ReadonlyArray<Role> = ['apprenti', 'coordo', 'admin'];
+/**
+ * Rôles autorisés à consulter un document « réservé à l'apprenti·e ».
+ * Le responsable légal en fait partie (13 juillet 2026 — demande 5) : il
+ * atteste en lieu et place du mineur, il doit donc pouvoir tout consulter.
+ */
+const ROLES_DOCUMENT_RESERVE: ReadonlyArray<Role> = ['apprenti', 'responsable', 'coordo', 'admin'];
 
 /** Plafond de taille d'un fichier déposé (maquette localStorage : 2 Mo). */
 export const TAILLE_MAX_DOCUMENT_OCTETS = 2 * 1024 * 1024;
@@ -126,8 +131,22 @@ export interface ResultatAttestation {
 }
 
 /**
+ * Qui atteste les documents administratifs de cet·te apprenti·e (13 juillet
+ * 2026 — demande 5) ? Le **responsable légal** en lieu et place d'un·e
+ * MINEUR·E (recalcul à la date du jour — à la majorité, l'apprenti·e
+ * récupère automatiquement l'attestation), l'apprenti·e sinon.
+ */
+export function attestataireDocuments(
+  apprenti: { dateNaissance: string },
+  reference: Date = new Date(),
+): 'apprenti' | 'responsable' {
+  return estMineur(apprenti.dateNaissance, reference) ? 'responsable' : 'apprenti';
+}
+
+/**
  * « Lu et attesté » (13 juillet 2026) : l'attestation n'est possible qu'après
- * consultation du document par l'apprenti·e (`consulteParApprentiLe`), et une
+ * consultation du document par la personne qui atteste (`consulteParApprentiLe`
+ * — l'apprenti·e majeur·e ou le responsable légal d'un·e mineur·e), et une
  * seule fois (pas de retrait — esprit R21).
  */
 export function peutAttesterDocument(document: DocumentAdministratif): ResultatAttestation {

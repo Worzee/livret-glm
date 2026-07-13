@@ -17,6 +17,7 @@ import { useApprentiActif } from '@/store/useApprentiActifStore';
 import { useDocumentsStore } from '@/store/useDocumentsStore';
 import { peutEditer } from '@/lib/droits';
 import {
+  attestataireDocuments,
   documentsEffectifsApprenti,
   documentsNonAttestes,
   etatDocumentsObligatoires,
@@ -77,7 +78,11 @@ export function DocumentsAdministratifs() {
   if (!ctx) return <AucunApprentiSelectionne />;
   const { apprenti } = ctx;
   const peutGerer = peutEditer(roleActif, 'documents.gerer');
-  const peutAttester = peutEditer(roleActif, 'documents.attester');
+  // Qui atteste (demande 5) : l'apprenti·e majeur·e, ou le responsable légal
+  // en lieu et place d'un·e MINEUR·E — la matrice ouvre la capacité aux deux
+  // rôles, la minorité (recalculée au jour) tranche.
+  const attestataire = attestataireDocuments(apprenti);
+  const peutAttester = peutEditer(roleActif, 'documents.attester') && roleActif === attestataire;
   const enAttente = documentsNonAttestes(visibles);
 
   return (
@@ -94,8 +99,19 @@ export function DocumentsAdministratifs() {
               {apprenti.prenom} {apprenti.nom}
             </strong>{' '}
             : 4 documents obligatoires (contrat pédagogique, protection des données, droit à
-            l'image, règlement intérieur) et documents complémentaires. L'apprenti·e atteste avoir
-            pris connaissance de chaque document, après lecture (obligatoire).
+            l'image, règlement intérieur) et documents complémentaires.{' '}
+            {attestataire === 'responsable' ? (
+              <span data-testid="mention-attestataire-responsable">
+                {apprenti.prenom} est <strong>mineur·e</strong> : l'attestation de prise de
+                connaissance relève de ses <strong>responsables légaux</strong> (après lecture,
+                obligatoire) — {apprenti.prenom} consulte les documents en lecture.
+              </span>
+            ) : (
+              <>
+                L'apprenti·e atteste avoir pris connaissance de chaque document, après lecture
+                (obligatoire).
+              </>
+            )}
           </p>
         </div>
         {peutGerer && (
@@ -141,7 +157,9 @@ export function DocumentsAdministratifs() {
                 {e.etat === 'atteste'
                   ? 'Attesté'
                   : e.etat === 'a-attester'
-                    ? "Attestation de l'apprenti·e attendue"
+                    ? attestataire === 'responsable'
+                      ? 'Attestation du responsable légal attendue'
+                      : "Attestation de l'apprenti·e attendue"
                     : 'Non déposé (obligatoire)'}
               </span>
             </span>
@@ -178,7 +196,7 @@ export function DocumentsAdministratifs() {
               document={d}
               peutGerer={peutGerer}
               peutAttester={peutAttester}
-              roleApprenti={roleActif === 'apprenti'}
+              attestataire={attestataire}
               nomApprenti={`${apprenti.prenom} ${apprenti.nom}`}
             />
           ))}
@@ -202,16 +220,18 @@ function CarteDocument({
   document: doc,
   peutGerer,
   peutAttester,
-  roleApprenti,
+  attestataire,
   nomApprenti,
 }: {
   document: DocumentApprentiEffectif;
   peutGerer: boolean;
   peutAttester: boolean;
-  /** Le rôle actif est l'apprenti·e : sa consultation est tracée (« lu »). */
-  roleApprenti: boolean;
+  /** Qui atteste pour cet·te apprenti·e : lui/elle-même ou son responsable légal. */
+  attestataire: 'apprenti' | 'responsable';
   nomApprenti: string;
 }) {
+  const roleActif = useUserStore((s) => s.roleActif);
+  const utilisateurActif = useUserStore((s) => s.utilisateurActif);
   const attester = useDocumentsStore((s) => s.attesterDocument);
   const attesterFormation = useDocumentsStore((s) => s.attesterDocumentFormation);
   const marquerConsultation = useDocumentsStore((s) => s.marquerConsultationApprenti);
@@ -224,17 +244,23 @@ function CarteDocument({
 
   function consulter() {
     ouvrirDocument(doc);
-    // « Lu et attesté » : seule la consultation PAR L'APPRENTI·E déverrouille
-    // l'attestation (13 juillet 2026). Les documents de formation tracent la
-    // lecture PAR apprenti·e.
-    if (!roleApprenti) return;
+    // « Lu et attesté » : seule la consultation par la personne QUI ATTESTE
+    // (apprenti·e majeur·e ou responsable légal d'un·e mineur·e — demande 5)
+    // déverrouille l'attestation. Les documents de formation tracent la
+    // lecture par apprenti·e.
+    if (roleActif !== attestataire) return;
     if (doc.porteeFormation) marquerConsultationFormation(doc.id, doc.apprentiId);
     else marquerConsultation(doc.id);
   }
 
   function confirmerAttestation() {
-    if (doc.porteeFormation) attesterFormation(doc.id, doc.apprentiId);
-    else attester(doc.id);
+    const auteur = {
+      id: utilisateurActif.id,
+      nom: `${utilisateurActif.prenom} ${utilisateurActif.nom}`,
+      role: roleActif,
+    };
+    if (doc.porteeFormation) attesterFormation(doc.id, doc.apprentiId, auteur);
+    else attester(doc.id, auteur);
   }
 
   return (
@@ -312,7 +338,13 @@ function CarteDocument({
         >
           <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span>
-            Prise de connaissance attestée par l'apprenti·e le{' '}
+            {/* Auteur·rice tracé·e depuis la demande 5 ; libellé historique
+                « par l'apprenti·e » pour les attestations antérieures. */}
+            Prise de connaissance attestée par{' '}
+            {doc.attestation.attesteParRole === 'responsable'
+              ? `${doc.attestation.attesteParNom}, responsable légal,`
+              : "l'apprenti·e"}{' '}
+            le{' '}
             {doc.attestation.dateAttestation
               ? new Date(doc.attestation.dateAttestation).toLocaleString('fr-FR')
               : '-'}
@@ -330,7 +362,9 @@ function CarteDocument({
             'rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900',
           )}
         >
-          En attente de l'attestation de l'apprenti·e (obligatoire, après lecture).
+          {attestataire === 'responsable'
+            ? "En attente de l'attestation du responsable légal (obligatoire, après lecture)."
+            : "En attente de l'attestation de l'apprenti·e (obligatoire, après lecture)."}
         </p>
       )}
     </li>
@@ -352,8 +386,14 @@ function BoutonAttester({
   nomApprenti: string;
   onConfirmer: () => void;
 }) {
+  const roleActif = useUserStore((s) => s.roleActif);
+  const utilisateurActif = useUserStore((s) => s.utilisateurActif);
   const [confirmation, setConfirmation] = useState(false);
   const verdict = peutAttesterDocument(doc);
+  // Le responsable légal atteste en son nom, en lieu et place du mineur
+  // (demande 5) ; l'apprenti·e majeur·e atteste en son propre nom.
+  const enResponsable = roleActif === 'responsable';
+  const classeBouton = enResponsable ? 'bg-role-responsable' : 'bg-role-apprenti';
 
   useEffect(() => {
     if (!confirmation) return;
@@ -380,7 +420,7 @@ function BoutonAttester({
           className={cn(
             'inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
             verdict.ok
-              ? 'bg-role-apprenti text-white hover:opacity-90'
+              ? cn(classeBouton, 'text-white hover:opacity-90')
               : 'bg-muted text-muted-foreground cursor-not-allowed',
           )}
         >
@@ -401,9 +441,14 @@ function BoutonAttester({
       <div className="flex items-start gap-2 text-xs text-amber-900">
         <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
         <p>
-          Vous allez attester, en tant que <strong>{nomApprenti}</strong>, avoir pris connaissance
-          du document <strong>« {libelleDocument(doc)} »</strong>. Votre attestation sera horodatée
-          à l'instant de la confirmation, sans retrait possible.
+          Vous allez attester, en tant que{' '}
+          <strong>
+            {enResponsable
+              ? `${utilisateurActif.prenom} ${utilisateurActif.nom}, responsable légal de ${nomApprenti},`
+              : nomApprenti}
+          </strong>{' '}
+          avoir pris connaissance du document <strong>« {libelleDocument(doc)} »</strong>. Votre
+          attestation sera horodatée à l'instant de la confirmation, sans retrait possible.
         </p>
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2">
@@ -421,7 +466,10 @@ function BoutonAttester({
             onConfirmer();
             setConfirmation(false);
           }}
-          className="inline-flex items-center gap-1.5 rounded-md bg-role-apprenti px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className={cn(
+            'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            classeBouton,
+          )}
         >
           <BadgeCheck className="h-4 w-4" aria-hidden="true" />
           Confirmer

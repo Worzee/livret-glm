@@ -11,6 +11,7 @@ import { calculerAlerteR7, entretienSigneParTous } from './regles-entretien';
 import { estMotifEntretienTripartite } from './organisation-suivi';
 import { pointsAlerteNonTraites } from './points-alerte';
 import {
+  attestataireDocuments,
   documentsEffectifsApprenti,
   documentsNonAttestes,
   libelleDocument,
@@ -104,11 +105,15 @@ export function alertesTableauBord(
     const nom = `${apprenti.prenom} ${apprenti.nom}`;
 
     // ── Documents administratifs non attestés (10 juillet 2026 ; v3 : les
-    //    documents de FORMATION comptent aussi, attestation par apprenti·e).
+    //    documents de FORMATION comptent aussi, attestation par apprenti·e ;
+    //    demande 5 : le RESPONSABLE LÉGAL atteste pour un·e mineur·e).
     //    Suivi de l'obligation par l'encadrement : formateur (documents non
-    //    réservés — la fusion filtre), coordo et admin (tous). L'apprenti·e a
-    //    son bandeau dédié sur son tableau de bord.
-    if (role === 'formateur' || role === 'coordo' || role === 'admin') {
+    //    réservés — la fusion filtre), coordo et admin (tous) ; le responsable
+    //    légal voit SES actions (documents de ses enfants mineurs).
+    //    L'apprenti·e majeur·e a son bandeau dédié sur son tableau de bord.
+    const attestataire = attestataireDocuments(apprenti, maintenant);
+    const roleSuiviDocuments = role === 'formateur' || role === 'coordo' || role === 'admin';
+    if (roleSuiviDocuments || (role === 'responsable' && attestataire === 'responsable')) {
       const effectifs = documentsEffectifsApprenti(documents, documentsFormation, apprenti, role);
       for (const d of documentsNonAttestes(effectifs)) {
         alertes.push({
@@ -118,7 +123,12 @@ export function alertesTableauBord(
           type: 'document-a-attester',
           apprentiId: apprenti.id,
           apprentiNom: nom,
-          message: `Document « ${libelleDocument(d)} » : attestation de l'apprenti·e attendue`,
+          message:
+            role === 'responsable'
+              ? `Document « ${libelleDocument(d)} » : votre attestation est attendue`
+              : `Document « ${libelleDocument(d)} » : attestation ${
+                  attestataire === 'responsable' ? 'du responsable légal' : "de l'apprenti·e"
+                } attendue`,
           lien: '/livret/documents',
         });
       }

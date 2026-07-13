@@ -19,7 +19,7 @@ interface ZoneObservationProps {
 }
 
 const ROLES_AVEC_OBSERVATION: Array<{
-  role: Exclude<Role, 'coordo' | 'admin'>;
+  role: Extract<Role, 'apprenti' | 'maitre' | 'formateur'>;
   ressource: Ressource;
   bordure: string;
   Icon: typeof GraduationCap;

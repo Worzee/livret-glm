@@ -19,9 +19,10 @@ https://livret-glm.duckdns.org (Basic Auth). Pilote métier : Guillaume FERRERI.
   administratifs nominatifs (livré le 2026-07-10, arbitrages + note Nuage/étape 2),
   entretiens individuels mi/fin de parcours (ARBITRÉ le 2026-07-12 — ⛔ ne coder qu'après
   réception des trames officielles GRETA, seul bloquant) et **série réunion DG du
-  2026-07-13 en cours de recueil** — demande 3 « documents v2 : 4 types obligatoires +
-  attestation après lecture » et demande 4 « documents au niveau formation (dépôt en
-  masse) » livrées le 2026-07-13
+  2026-07-13 en cours de recueil** — demandes 3 « documents v2 : 4 types obligatoires +
+  attestation après lecture », 4 « documents au niveau formation (dépôt en masse) » et
+  5 « apprentis mineurs : responsables légaux (6ᵉ rôle) » livrées le 2026-07-13.
+  ⚠ La demande 5 réintroduit les MINEURS → dossier RGPD étape 2 à réexaminer (DPO/AIPD)
 - `STACK_GRETA_LYON.md` et `_kit-deploiement-o2switch/` : doctrine portefeuille Greta,
   **volontairement non commités** — ne pas les ajouter à un commit du livret
 
@@ -29,8 +30,8 @@ https://livret-glm.duckdns.org (Basic Auth). Pilote métier : Guillaume FERRERI.
 
 ```bash
 npm run dev            # Vite sur :5173
-npm test               # Vitest (745 tests au 2026-07-13)
-npm run e2e            # build + Playwright (216 tests) — c'est LA validation de référence
+npm test               # Vitest (767 tests au 2026-07-13)
+npm run e2e            # build + Playwright (220 tests) — c'est LA validation de référence
 npm run typecheck      # tsc --noEmit — ⚠ le build prod (tsc -b) voit PLUS que lui
 npm run build          # à passer avant tout push
 npm run lint && npm run format
@@ -46,8 +47,10 @@ bash scripts/verifier-vps.sh    # 11 contrôles préflight (doit rendre 11/11)
    fixtures, pas de migration logicielle) + commentaire de version daté dans le store.
    Toute modification de fixtures persiste seulement après bump.
 3. **Droits** : toute nouvelle capacité passe par une ressource dans `src/lib/droits.ts`
-   (matrice × 5 rôles) + test dans `droits.test.ts`. Doctrine : coordo/admin n'ont AUCUN
-   droit pédagogique (saisies, signatures, évaluations).
+   (matrice × 6 rôles) + test dans `droits.test.ts`. Doctrines : coordo/admin n'ont AUCUN
+   droit pédagogique (saisies, signatures, évaluations) ; le responsable légal (6ᵉ rôle,
+   2026-07-13) est en LECTURE SEULE partout sauf attestation des documents d'un mineur et
+   signature du slot « représentant légal » de l'entretien.
 4. **Vérification visuelle** : spec Playwright temporaire qui capture des screenshots (ou
    télécharge le PDF et le rasterise via pdf.js CDN), lu puis supprimé. Ne JAMAIS lancer
    deux suites Playwright en parallèle (port 4173 et localStorage partagés → échecs en masse).

@@ -23,7 +23,11 @@ import { useEntreprisesStore } from '@/store/useEntreprisesStore';
 import { useUtilisateursStore } from '@/store/useUtilisateursStore';
 import { useDocumentsStore } from '@/store/useDocumentsStore';
 import { useApprentiActifStore } from '@/store/useApprentiActifStore';
-import { documentsEffectifsApprenti, documentsNonAttestes } from '@/lib/documents-administratifs';
+import {
+  attestataireDocuments,
+  documentsEffectifsApprenti,
+  documentsNonAttestes,
+} from '@/lib/documents-administratifs';
 import { calculerResumeLivret, classesBadgeCas, libelleCas } from '@/lib/etat-livret';
 import { calculerAlerteR7 } from '@/lib/regles-entretien';
 import { libelleFichePeriode } from '@/lib/validation-fiche-periode';
@@ -94,14 +98,19 @@ export function TableauBordApprenti({ apprenti, livret }: TableauBordApprentiPro
   const jrContrat = joursRestants(apprenti.contratFin);
   // Documents administratifs à attester (10 juillet 2026 ; v2/v3 13 juillet
   // 2026 — attestation simple après lecture, documents de formation inclus).
-  const documentsAAttester = documentsNonAttestes(
-    documentsEffectifsApprenti(
-      Object.values(documents),
-      Object.values(documentsFormation),
-      apprenti,
-      'apprenti',
-    ),
-  );
+  // Un·e apprenti·e MINEUR·E n'atteste pas (demande 5 — ses responsables
+  // légaux s'en chargent) : pas de bandeau d'action pour lui/elle.
+  const documentsAAttester =
+    attestataireDocuments(apprenti) === 'apprenti'
+      ? documentsNonAttestes(
+          documentsEffectifsApprenti(
+            Object.values(documents),
+            Object.values(documentsFormation),
+            apprenti,
+            'apprenti',
+          ),
+        )
+      : [];
 
   function aller(route: string) {
     setApprentiActif(apprenti.id);

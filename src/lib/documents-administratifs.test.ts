@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DocumentAdministratif, DocumentFormation } from '@/types';
 import {
+  attestataireDocuments,
   documentsApprentiVisibles,
   documentsEffectifsApprenti,
   documentsNonAttestes,
@@ -83,13 +84,28 @@ describe('peutConsulterDocument', () => {
     }
   });
 
-  it("un document réservé n'est consultable que par l'apprenti·e, le coordo et l'admin", () => {
+  it("un document réservé n'est consultable que par l'apprenti·e, ses responsables légaux, le coordo et l'admin", () => {
     const d = doc({ type: 'autre', titre: 'Convention', reserveApprenti: true });
     expect(peutConsulterDocument('apprenti', d)).toBe(true);
+    // Demande 5 (13 juillet 2026) : le responsable légal atteste à la place
+    // du mineur → il accède aussi aux documents réservés (arbitrage 5).
+    expect(peutConsulterDocument('responsable', d)).toBe(true);
     expect(peutConsulterDocument('coordo', d)).toBe(true);
     expect(peutConsulterDocument('admin', d)).toBe(true);
     expect(peutConsulterDocument('maitre', d)).toBe(false);
     expect(peutConsulterDocument('formateur', d)).toBe(false);
+  });
+});
+
+describe('attestataireDocuments — mineur·e vs majeur·e (demande 5)', () => {
+  const reference = new Date('2026-07-13T12:00:00.000Z');
+
+  it("l'apprenti·e majeur·e atteste ses documents", () => {
+    expect(attestataireDocuments({ dateNaissance: '2000-01-01' }, reference)).toBe('apprenti');
+  });
+
+  it('le responsable légal atteste en lieu et place du mineur', () => {
+    expect(attestataireDocuments({ dateNaissance: '2009-03-15' }, reference)).toBe('responsable');
   });
 });
 

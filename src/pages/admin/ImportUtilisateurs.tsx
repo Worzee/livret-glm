@@ -71,8 +71,16 @@ export function ImportUtilisateurs() {
     for (const f of Object.values(utilisateursStore.formateurs)) s.add(f.email.toLowerCase());
     for (const c of Object.values(utilisateursStore.coordos)) s.add(c.email.toLowerCase());
     for (const a of Object.values(utilisateursStore.admins)) s.add(a.email.toLowerCase());
+    for (const r of Object.values(utilisateursStore.responsables)) s.add(r.email.toLowerCase());
     return s;
   }, [utilisateursStore]);
+
+  // Un email de responsable légal déjà connu n'est PAS un doublon bloquant :
+  // c'est la même personne, rattachée au nouvel apprenti (fratrie — demande 5).
+  const emailsResponsablesExistants = useMemo(
+    () => new Set(Object.values(utilisateursStore.responsables).map((r) => r.email.toLowerCase())),
+    [utilisateursStore],
+  );
 
   // Garde-fou : accès réservé coordo + admin. Early return placé APRÈS les
   // hooks pour respecter rules-of-hooks.
@@ -104,7 +112,7 @@ export function ImportUtilisateurs() {
     setResultatImport(null);
     setNomFichier(file.name);
     const buffer = await file.arrayBuffer();
-    const r = importerDepuisXlsx(buffer, type, emailsExistants);
+    const r = importerDepuisXlsx(buffer, type, emailsExistants, emailsResponsablesExistants);
     setRapport(r);
   }
 
@@ -141,9 +149,10 @@ export function ImportUtilisateurs() {
       // et répartit ensuite via /admin/affectations.
       const lignes = rapport.lignes as LigneApprentiValide[];
       for (const ligne of lignes) {
-        utilisateursStore.ajouterApprenti(
+        const { responsables, ...donnees } = ligne;
+        const cree = utilisateursStore.ajouterApprenti(
           {
-            ...ligne,
+            ...donnees,
             telephone: '',
             formationId: '',
             entrepriseId: '',
@@ -157,6 +166,11 @@ export function ImportUtilisateurs() {
             role: roleActif,
           },
         );
+        // Responsables légaux d'un·e mineur·e (demande 5) : création ou
+        // rattachement fratrie par email.
+        if (responsables.length > 0) {
+          utilisateursStore.enregistrerResponsablesApprenti(cree.id, responsables);
+        }
       }
       setResultatImport({ nb: lignes.length });
     } else if (type === 'maitre') {

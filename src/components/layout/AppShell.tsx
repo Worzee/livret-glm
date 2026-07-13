@@ -25,6 +25,7 @@ const CLASSE_ROLE_ACTIF: Record<Role, string> = {
   formateur: 'role-actif-formateur',
   coordo: 'role-actif-coordo',
   admin: 'role-actif-admin',
+  responsable: 'role-actif-responsable',
 };
 
 /**

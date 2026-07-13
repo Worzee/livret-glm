@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Trash2,
   UserCog,
+  Users,
 } from 'lucide-react';
 import type { Apprenti, Coordo, Formateur, Maitre, Role, Utilisateur } from '@/types';
 import { useUserStore } from '@/store/useUserStore';
@@ -47,6 +48,7 @@ export function GestionUtilisateurs() {
   const formateurs = useUtilisateursStore((s) => s.formateurs);
   const coordos = useUtilisateursStore((s) => s.coordos);
   const admins = useUtilisateursStore((s) => s.admins);
+  const responsables = useUtilisateursStore((s) => s.responsables);
   const supprimerApprenti = useUtilisateursStore((s) => s.supprimerApprenti);
   const livrets = useLivretStore((s) => s.livrets);
   const supprimerMaitre = useUtilisateursStore((s) => s.supprimerMaitre);
@@ -82,8 +84,11 @@ export function GestionUtilisateurs() {
       ...Object.values(formateurs),
       ...Object.values(coordos),
       ...Object.values(admins),
+      // Responsables légaux (13 juillet 2026 — demande 5) : listés en lecture,
+      // leur gestion passe par la fiche de l'apprenti·e mineur·e.
+      ...Object.values(responsables),
     ],
-    [utilisateurActif, apprentis, maitres, formateurs, coordos, admins],
+    [utilisateurActif, apprentis, maitres, formateurs, coordos, admins, responsables],
   );
 
   const filtres = useMemo(() => {
@@ -334,9 +339,12 @@ export function GestionUtilisateurs() {
                 const enConfirmation = confirmationSuppression === u.id;
                 const blocage = suppressionBloquee(u);
                 // Le rôle admin n'est pas modifiable depuis cette page (compte
-                // pilote unique). Tout le reste l'est si le rôle actif a les droits.
-                const editable = u.role !== 'admin' && peutModifier;
-                const supprimable = u.role !== 'admin' && peutSupprimer && !blocage.bloque;
+                // pilote unique) ; un responsable légal se gère depuis la fiche
+                // de son apprenti·e mineur·e (demande 5). Tout le reste l'est
+                // si le rôle actif a les droits.
+                const nonGerable = u.role === 'admin' || u.role === 'responsable';
+                const editable = !nonGerable && peutModifier;
+                const supprimable = !nonGerable && peutSupprimer && !blocage.bloque;
                 const classeBordureRole = BORDURES_ROLE[u.role];
                 const classeLibelleRole = cn(LIBELLES_ROLE[u.role], 'font-medium');
                 return (
@@ -371,7 +379,15 @@ export function GestionUtilisateurs() {
                             <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                           </button>
                         )}
-                        {peutSupprimer && u.role !== 'admin' && (
+                        {u.role === 'responsable' && (
+                          <span
+                            className="text-xs italic text-muted-foreground"
+                            title="Un responsable légal se gère depuis la fiche de son apprenti·e mineur·e (modale de modification)."
+                          >
+                            Géré via l'apprenti·e
+                          </span>
+                        )}
+                        {peutSupprimer && !nonGerable && (
                           <button
                             type="button"
                             disabled={!supprimable}
@@ -448,6 +464,7 @@ const ICONES_ROLE = {
   formateur: { Icon: UserCog, classe: 'text-role-formateur' },
   coordo: { Icon: ShieldCheck, classe: 'text-role-coordo' },
   admin: { Icon: ShieldCheck, classe: 'text-role-admin' },
+  responsable: { Icon: Users, classe: 'text-role-responsable' },
 } as const;
 
 // Classes Tailwind explicites — évite le bricolage `border-l-role-${role}`
@@ -458,6 +475,7 @@ const BORDURES_ROLE: Record<Role, string> = {
   formateur: 'border-l-4 border-l-role-formateur',
   coordo: 'border-l-4 border-l-role-coordo',
   admin: 'border-l-4 border-l-role-admin',
+  responsable: 'border-l-4 border-l-role-responsable',
 };
 
 const LIBELLES_ROLE: Record<Role, string> = {
@@ -466,6 +484,7 @@ const LIBELLES_ROLE: Record<Role, string> = {
   formateur: 'text-role-formateur',
   coordo: 'text-role-coordo',
   admin: 'text-role-admin',
+  responsable: 'text-role-responsable',
 };
 
 function IconeRole({ role }: { role: Role }) {
@@ -514,6 +533,7 @@ function FiltreRoleSelect({ valeur, onChange }: FiltreRoleSelectProps) {
     >
       <option value="tous">Tous les rôles</option>
       <option value="apprenti">Apprenti·e·s</option>
+      <option value="responsable">Responsables légaux</option>
       <option value="maitre">Maîtres / Tuteurs</option>
       <option value="formateur">Formateurs référents</option>
       <option value="coordo">Coordinateur·rice·s</option>
