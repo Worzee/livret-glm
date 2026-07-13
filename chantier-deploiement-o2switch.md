@@ -84,22 +84,24 @@ obligatoire** (`conformite-rgpd.md`, encadré de tête + §5).
 - [ ] Décision **sauvegarde séparée** des fichiers Nuage (hors JetBackup)
 - [ ] Durées de conservation des documents définies (purge effective — §7.6)
 
-### Lot C — Microsoft Entra ID (SSO personnels GRETA)
+### Lot C — Microsoft Entra ID (SSO personnels GRETA) 🔵 EN COURS (2026-07-13)
 
 Procédure détaillée : `playbook-sso-entra-greta.md` phase B +
 `STACK_GRETA_LYON.md` §4.4. Tenant : `GRETA CFA Lyon Métropole`
-(`bc139aaa-fea0-465b-8d3d-be26ed74675d`).
+(`bc139aaa-fea0-465b-8d3d-be26ed74675d`). **Fiche d'exécution pré-remplie :
+§2bis ci-dessous.**
 
 - [ ] **App Registration dédiée** « Livret d'apprentissage — GRETA CFA Lyon
       Métropole » (single tenant, une App Registration PAR projet)
-- [ ] Redirect URI **Web** du domaine cible (+ celle du VPS si test préalable)
-- [ ] **App Roles** créés : `admin`, `coordo`, `formateur` (les apprenti·e·s,
+- [ ] Redirect URIs **Web** (pattern Auth.js v5 — cf. §2bis, écart E2)
+- [ ] **App Roles** créés : `Admin`, `Coordo`, `Formateur` (les apprenti·e·s,
       maîtres et responsables légaux sont hors tenant → login classique,
       chantiers 2.2/2.3)
 - [ ] **Client Secret** 24 mois + **rappel agenda à 18 mois** (rotation)
 - [ ] Claims optionnels `given_name`, `family_name`, `email`
 - [ ] **Admin consent** accordé pour l'organisation (piège P2 du playbook)
-- [ ] « Affectation requise » = **No** (JIT, rôle minimal par défaut)
+- [ ] « Affectation requise » = **No** (JIT — rôle par défaut : cf. §2bis, écart E4)
+- [ ] **Client ID relevé** dans la fiche §2bis (le secret, lui, va au coffre)
 
 ### Lot D — o2switch / cPanel
 
@@ -140,6 +142,82 @@ gratuite 200 emails/jour).
       chantier maquette) ou après (dans la stack cible) — à trancher
 - [ ] Sort des **données de démo** : a priori fixtures re-seedées dans MariaDB
       (aucune donnée réelle en maquette — rien à migrer), à confirmer
+
+---
+
+## 2bis. Lot C — fiche d'exécution Entra ID (2026-07-13)
+
+Base : `playbook-sso-entra-greta.md` phase B (~20 min, portail
+<https://entra.microsoft.com>, compte Global Admin). Les **4 écarts** entre le
+playbook (écrit en mai 2026 pour la stack VPS/Express/openid-client) et la
+doctrine o2switch (juin 2026, plus récente) sont réconciliés ici — c'est cette
+fiche qui fait foi pour le livret.
+
+### Écarts vs playbook (réconciliés)
+
+| # | Sujet | Playbook (mai 2026) | Retenu pour le livret (doctrine o2switch) |
+|---|---|---|---|
+| E1 | Bibliothèque OIDC | `openid-client` v5 (D6) | **Auth.js v5**, provider `microsoft-entra-id` (`STACK_GRETA_LYON.md` §4.3 : « pas openid-client brut ») |
+| E2 | Redirect URI | `https://<domaine>/auth/callback` | Pattern Auth.js : **`/api/auth/callback/microsoft-entra-id`** |
+| E3 | App Roles | `Admin` / `Reader` | **`Admin` / `Coordo` / `Formateur`** (rôles internes GRETA du livret ; pas de rôle « lecteur » dans la matrice) |
+| E4 | Rôle JIT par défaut | `lecteur` | ⚠ Aucun rôle du livret n'est anodin (le formateur crée apprenti·e·s et maîtres). Recommandation : « Affectation requise = No » (doctrine) MAIS l'utilisateur tenant **sans App Role** arrive sur un écran « **compte en attente d'affectation** » (aucun droit). À figer au chantier technique — sans impact sur l'App Registration. |
+
+La phase A du playbook (DNS/Traefik/HTTPS sur VPS) ne concerne pas ce lot ;
+sur o2switch elle est remplacée par cPanel/AutoSSL + middleware Next.js (§6.2
+de la stack). Les phases C-E (code) relèvent du chantier technique.
+
+### Pas-à-pas portail (valeurs pré-remplies)
+
+1. **App registrations → + New registration**
+   - Nom : `Livret d'apprentissage — GRETA CFA Lyon Métropole`
+   - Supported account types : **Single tenant**
+   - Redirect URI (type **Web**) :
+     - `http://localhost:3000/api/auth/callback/microsoft-entra-id` (dev)
+   - **Register**, puis onglet **Authentication → + Add URI** :
+     - `https://livret-glm.duckdns.org/api/auth/callback/microsoft-entra-id`
+       (amorçage VPS — recommandé, coût nul)
+     - ⏳ celle du domaine o2switch sera ajoutée à la validation du lot D
+       (`https://livret.gretacfalyon.com/api/auth/callback/microsoft-entra-id`
+       si la proposition est retenue — changement trivial, playbook §9)
+2. **Relever les identifiants** (page Overview) → fiche de relevé ci-dessous
+3. **Certificates & secrets → + New client secret**
+   - Description : `livret-prod-2026` · Expiration : **24 months**
+   - ⚠ Copier la **Value** immédiatement (affichée une seule fois — piège P6)
+     → coffre / futur `.env` serveur. **JAMAIS dans le dépôt, ni dans une
+     conversation.**
+   - 📅 Poser le **rappel agenda janvier 2028** (rotation à 18 mois)
+4. **App roles → + Create app role** (× 3) :
+
+   | Display name | Value | Allowed member types | Description |
+   |---|---|---|---|
+   | Admin | `Admin` | Users/Groups | Administration complète du livret |
+   | Coordo | `Coordo` | Users/Groups | Coordonnateur·rice pédagogique |
+   | Formateur | `Formateur` | Users/Groups | Formateur·rice référent·e |
+
+5. **Token configuration → + Add optional claim** → Token type **ID** →
+   cocher `given_name`, `family_name`, `email` (piège P3 : sinon display
+   names vides au JIT)
+6. **Enterprise applications →** l'app **→ Properties** →
+   « Assignment required? » = **No** → Save (décision D3 / piège P5)
+7. **Enterprise applications →** l'app **→ Permissions** →
+   **Grant admin consent for GRETA CFA Lyon Métropole** (parade proactive du
+   piège P2 — évite l'écran « approbation administrateur requise » aux
+   premiers utilisateurs)
+8. **Users and groups → + Add user/group** : s'assigner le rôle **Admin**
+   (les coordos/formateurs réels seront assignés au fil du rollout)
+
+### Fiche de relevé (à compléter après la phase portail)
+
+| Donnée | Variable `.env` cible (Auth.js v5) | Valeur |
+|---|---|---|
+| Application (client) ID | `AUTH_MICROSOFT_ENTRA_ID_ID` | _à relever_ |
+| Directory (tenant) ID | `AUTH_MICROSOFT_ENTRA_ID_ISSUER` = `https://login.microsoftonline.com/bc139aaa-fea0-465b-8d3d-be26ed74675d/v2.0` | acquis |
+| Client Secret (Value) | `AUTH_MICROSOFT_ENTRA_ID_SECRET` | 🔒 coffre uniquement |
+| Date de création du secret / échéance rotation | — | _à relever_ / +18 mois |
+
+**Critère de sortie du lot C** : App Registration créée avec les 3 App Roles,
+claims optionnels posés, admin consent accordé, secret au coffre + rappel
+agenda, Client ID reporté dans la fiche ci-dessus.
 
 ---
 
@@ -225,3 +303,4 @@ Reprise de PROJECT-STATUS §12.4 + doctrine du kit :
 | Date | Événement |
 |---|---|
 | 2026-07-13 | Création du document. Décision pilote : gel du fonctionnel, report de la demande 2 post-déploiement, lancement des prérequis administratifs (§2). |
+| 2026-07-13 | **Lot C ouvert** (décision pilote : commencer par Entra). Fiche d'exécution §2bis rédigée sur la base du playbook, 4 écarts réconciliés avec la doctrine o2switch (Auth.js v5, pattern de redirect URI, App Roles Admin/Coordo/Formateur, rôle JIT par défaut « en attente d'affectation »). Phase portail à dérouler par le pilote. |
