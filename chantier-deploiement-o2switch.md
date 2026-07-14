@@ -29,21 +29,38 @@ marqueurs du kit, brouillon de note DPO, séquence du chantier technique.
   `chantier-creation-comptes.md` (comptes + email, décisions Mailjet actées),
   `conformite-rgpd.md` (33 obligations + réexamen mineurs), `TODO-etape-2.md`.
 
-### ⚠ Arbitrage d'architecture à prendre en OUVERTURE du chantier technique
+### ✅ Arbitrage d'architecture — TRANCHÉ le 2026-07-14 : portage Next.js
 
 La maquette est une **SPA Vite + React sans backend** ; le kit et la doctrine
 ciblent **Next.js 16 standalone + Prisma 6 + MariaDB 11.4 + Auth.js v5**.
-Deux options à trancher avant la première ligne de code étape 2 :
+**Décision pilote du 2026-07-14** (sur analyse du kit) : **option 1 — portage
+de l'application dans Next.js 16 (App Router)**. L'option écartée : front
+Vite conservé + API séparée.
 
-1. **Portage dans Next.js (App Router)** — option du kit, éprouvée sur ASR :
-   un seul projet front + back, Server Actions, runbook réutilisable tel quel.
-2. **Front Vite conservé + API séparée** — moins de portage UI, mais sort du
-   kit (déploiement, auth, headers à réinventer) et double la surface à
-   maintenir.
+Justification (analyse du kit, 2026-07-14) :
 
-La doctrine et le kit militent pour l'option 1. **Décision à acter ici** avec
-ses conséquences (réutilisation des libs pures `src/lib/` : elles sont
-framework-agnostiques et se portent telles quelles, tests Vitest compris).
+- **Le kit n'est pas un kit o2switch générique, c'est un kit Next.js** : ses
+  pièces (`start.cjs` Passenger, `package-standalone.mjs`, snippets
+  `next.config.ts`/Prisma, runbook + tableau de dépannage d'erreurs
+  réellement rencontrées sur ASR) sont toutes spécifiques au mode
+  `output: "standalone"`. L'option 2 aurait rejoué la campagne
+  d'apprentissage o2switch déjà soldée : 2 applications à faire cohabiter
+  sur cPanel, CORS/cookies cross-origin sur le callback OIDC, headers à
+  poser à 2 endroits, auth openid-client recodée à la main, zéro runbook.
+- **L'actif à préserver n'est pas le code des stores** : les 12 stores
+  localStorage doivent être réécrits quoi qu'il arrive pour parler au
+  serveur. Ce qui se préserve vraiment se porte aussi bien dans Next.js :
+  **libs pures `src/lib/`** (R1-R24, framework-agnostiques, tests Vitest
+  compris), composants de présentation, sélecteurs `data-testid` des E2E.
+- Sur o2switch, **les headers de sécurité ne peuvent être posés que par
+  l'application** (LiteSpeed géré par o2switch) — pattern intégré au
+  snippet A du kit.
+
+Conséquences : bootstrap par le kit (fichiers copiés, snippets fusionnés,
+marqueurs §3), schéma Prisma dérivé de `src/types/index.ts` (les 12 stores
+deviennent des tables), matrice `droits.ts` réappliquée **côté serveur**.
+**Prochain livrable : plan de portage** (ordre des modules, schéma, stratégie
+de reprise des E2E).
 
 ---
 
@@ -84,12 +101,17 @@ obligatoire** (`conformite-rgpd.md`, encadré de tête + §5).
 - [ ] Décision **sauvegarde séparée** des fichiers Nuage (hors JetBackup)
 - [ ] Durées de conservation des documents définies (purge effective — §7.6)
 
-### Lot C — Microsoft Entra ID (SSO personnels GRETA) 🔵 EN COURS (2026-07-13)
+### Lot C — Microsoft Entra ID (SSO personnels GRETA) ⏸ EN PAUSE (2026-07-14)
 
 Procédure détaillée : `playbook-sso-entra-greta.md` phase B +
 `STACK_GRETA_LYON.md` §4.4. Tenant : `GRETA CFA Lyon Métropole`
 (`bc139aaa-fea0-465b-8d3d-be26ed74675d`). **Fiche d'exécution pré-remplie :
 §2bis ci-dessous.**
+
+> ⏸ Mis en pause le 2026-07-14 (réordonnancement pilote) : à dérouler **juste
+> avant le chantier SSO** (étape 4 de la séquence §5), une fois le domaine
+> o2switch acté — l'App Registration pourra alors être créée directement avec
+> la bonne redirect URI. La fiche §2bis reste valable telle quelle.
 
 - [ ] **App Registration dédiée** « Livret d'apprentissage — GRETA CFA Lyon
       Métropole » (single tenant, une App Registration PAR projet)
@@ -120,11 +142,18 @@ Accès et identifiants : `STACK_GRETA_LYON.md` §2.4 (non commité).
 - [ ] Adresse email de contact / notifications du projet créée (marqueur
       `<EMAIL-CONTACT>` — pattern ASR : `glm.livret@ac-lyon.fr` ? à valider)
 
-### Lot E — Mailjet (emails transactionnels, chantiers 2.2/2.3)
+### Lot E — Emails transactionnels (chantiers 2.2/2.3)
 
-Décisions déjà actées dans `chantier-creation-comptes.md` §1 (formule
-gratuite 200 emails/jour).
+Décision « Mailjet » actée dans `chantier-creation-comptes.md` §1 (mai 2026,
+formule gratuite 200 emails/jour) — **à ré-arbitrer** :
 
+- [ ] ⚠ **Ré-arbitrage Mailjet vs SMTP académique** (découverte kit,
+      2026-07-14) : ASR tourne en production sur le **relais académique**
+      (`smtps.region-academique-auvergne-rhone-alpes.fr`, 587/STARTTLS,
+      compte `@ac-lyon.fr` — cf. `env.example` du kit). Un sous-traitant de
+      moins (pas de DPA Mailjet, pas de SPF/DKIM à poser), dossier RGPD
+      allégé. La décision Mailjet prédate ce retour d'expérience. Les points
+      suivants ne valent que si Mailjet est finalement confirmé :
 - [ ] Compte Mailjet créé (avec l'email fonctionnel du projet)
 - [ ] **Domaine d'envoi validé** : SPF + DKIM posés sur le DNS du domaine
 - [ ] DPA Mailjet accepté (recoupe le lot A)
@@ -280,7 +309,7 @@ démarrage du chantier technique :
 
 Reprise de PROJECT-STATUS §12.4 + doctrine du kit :
 
-1. **Arbitrage d'architecture** (§1) — portage Next.js vs front Vite + API
+1. ✅ **Arbitrage d'architecture** (§1) — TRANCHÉ le 2026-07-14 : portage Next.js
 2. **Bootstrap stack cible** (kit : fichiers copiés, snippets fusionnés,
    marqueurs remplacés) + modèle de données Prisma dérivé des types actuels
    (`src/types/index.ts` — les 12 stores deviennent des tables)
@@ -304,3 +333,5 @@ Reprise de PROJECT-STATUS §12.4 + doctrine du kit :
 |---|---|
 | 2026-07-13 | Création du document. Décision pilote : gel du fonctionnel, report de la demande 2 post-déploiement, lancement des prérequis administratifs (§2). |
 | 2026-07-13 | **Lot C ouvert** (décision pilote : commencer par Entra). Fiche d'exécution §2bis rédigée sur la base du playbook, 4 écarts réconciliés avec la doctrine o2switch (Auth.js v5, pattern de redirect URI, App Roles Admin/Coordo/Formateur, rôle JIT par défaut « en attente d'affectation »). Phase portail à dérouler par le pilote. |
+| 2026-07-14 | **Réordonnancement pilote** : lot C mis en pause (sera déroulé juste avant le chantier SSO, domaine connu) ; priorités = 1) note DPO, 2) domaine + ressources cPanel, 3) chantier technique. |
+| 2026-07-14 | **Arbitrage d'architecture TRANCHÉ** (pilote, sur analyse du kit) : **portage Next.js 16 App Router** — le kit est intégralement spécifique à Next.js standalone, l'option « Vite + API séparée » aurait rejoué les pièges o2switch déjà soldés par ASR. §1 mis à jour avec la justification. Découverte connexe : ASR utilise le SMTP académique en prod → ré-arbitrage Mailjet ajouté au lot E. Prochain livrable : plan de portage. |
