@@ -59,8 +59,9 @@ Justification (analyse du kit, 2026-07-14) :
 Conséquences : bootstrap par le kit (fichiers copiés, snippets fusionnés,
 marqueurs §3), schéma Prisma dérivé de `src/types/index.ts` (les 12 stores
 deviennent des tables), matrice `droits.ts` réappliquée **côté serveur**.
-**Prochain livrable : plan de portage** (ordre des modules, schéma, stratégie
-de reprise des E2E).
+**Plan de portage : LIVRÉ le 2026-07-14** —
+[`plan-portage-nextjs.md`](plan-portage-nextjs.md) (inventaire de
+réutilisation, schéma cible ~22 tables, vagues V0-V7, stratégie E2E).
 
 ---
 
@@ -316,6 +317,9 @@ démarrage du chantier technique :
 
 ## 5. Séquence du chantier technique (après / en parallèle des prérequis)
 
+> Détail opérationnel : [`plan-portage-nextjs.md`](plan-portage-nextjs.md)
+> (vagues V0-V7, critères de sortie, estimations — livré le 2026-07-14).
+
 Reprise de PROJECT-STATUS §12.4 + doctrine du kit :
 
 1. ✅ **Arbitrage d'architecture** (§1) — TRANCHÉ le 2026-07-14 : portage Next.js
@@ -346,3 +350,4 @@ Reprise de PROJECT-STATUS §12.4 + doctrine du kit :
 | 2026-07-14 | **Arbitrage d'architecture TRANCHÉ** (pilote, sur analyse du kit) : **portage Next.js 16 App Router** — le kit est intégralement spécifique à Next.js standalone, l'option « Vite + API séparée » aurait rejoué les pièges o2switch déjà soldés par ASR. §1 mis à jour avec la justification. Découverte connexe : ASR utilise le SMTP académique en prod → ré-arbitrage Mailjet ajouté au lot E. Prochain livrable : plan de portage. |
 | 2026-07-14 | **Domaine ACTÉ** : `livret.gretacfalyon.com` (lot D — marqueur `<DOMAINE>` figé, redirect URI Entra définitive connue). |
 | 2026-07-14 | **Note DPO différée à la mise en ligne** (décision pilote — aucune donnée apprenti·e avant début septembre 2026). Garde-fou : mise en ligne avec fixtures sans attendre le DPO, mais **pas de données réelles avant sa validation** (AIPD mineurs). Le chemin critique de la phase devient le **chantier technique**. |
+| 2026-07-14 | **Plan de portage LIVRÉ** ([`plan-portage-nextjs.md`](plan-portage-nextjs.md)) : inventaire de réutilisation (57 libs copiées telles quelles, composants adaptés, 12 stores réécrits en Prisma/Server Actions), schéma cible ~22 tables, 8 vagues V0-V7 (~13-18 j), stratégie E2E (auth + seed), 5 micro-décisions pour V0. En attente du GO pilote pour V0 (bootstrap). |
