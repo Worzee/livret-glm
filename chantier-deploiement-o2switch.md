@@ -69,11 +69,20 @@ de reprise des E2E).
 Responsable par défaut : **Guillaume FERRERI** (pilote, Global Admin tenant).
 Les lots sont indépendants et parallélisables. Cocher + dater à l'avancement.
 
-### Lot A — RGPD / DPO ⚠ CHEMIN CRITIQUE (délai externe le plus long)
+### Lot A — RGPD / DPO ⏸ DIFFÉRÉ à la mise en ligne (décision pilote 2026-07-14)
 
 La demande 5 (2026-07-13) a **réintroduit les mineurs** → le critère CNIL
 « personnes vulnérables » est actif et l'**AIPD redevient vraisemblablement
 obligatoire** (`conformite-rgpd.md`, encadré de tête + §5).
+
+> ⏸ **Décision pilote (2026-07-14)** : la note DPO partira une fois
+> l'application en ligne — **aucune donnée d'apprenti·e réelle avant début
+> septembre 2026**. Garde-fou associé : la mise **en ligne** (données de
+> démo / fixtures) n'attend pas le DPO, mais la mise **en données réelles**
+> (rentrée 2026) reste conditionnée à sa validation (AIPD mineurs).
+> ⚠ Risque calendrier assumé : une réponse DPO peut prendre des semaines et
+> l'été est une période creuse — si elle tarde, c'est l'entrée des données
+> de la rentrée qui glisse, pas la mise en ligne.
 
 - [ ] Contacter le **DPO du GRETA** : transmettre la note du §4 (brouillon prêt)
 - [ ] **3ᵉ passe de `conformite-rgpd.md` avec le DPO** : requalification AIPD
@@ -129,8 +138,8 @@ Procédure détaillée : `playbook-sso-entra-greta.md` phase B +
 
 Accès et identifiants : `STACK_GRETA_LYON.md` §2.4 (non commité).
 
-- [ ] **Domaine définitif choisi** — proposition : `livret.gretacfalyon.com`
-      (pattern ASR) — à valider, puis créer le sous-domaine cPanel
+- [x] **Domaine définitif ACTÉ (2026-07-14)** : `livret.gretacfalyon.com`
+- [ ] Créer le sous-domaine dans cPanel (Domaines — Document Root par défaut)
 - [ ] **AutoSSL** vérifié actif sur le domaine
 - [ ] **Base MariaDB** créée en `utf8mb4` + collation `utf8mb4_unicode_ci`
       (⚠ pas le défaut `latin1` — piège §8.1 de la stack)
@@ -205,9 +214,9 @@ de la stack). Les phases C-E (code) relèvent du chantier technique.
    - **Register**, puis onglet **Authentication → + Add URI** :
      - `https://livret-glm.duckdns.org/api/auth/callback/microsoft-entra-id`
        (amorçage VPS — recommandé, coût nul)
-     - ⏳ celle du domaine o2switch sera ajoutée à la validation du lot D
-       (`https://livret.gretacfalyon.com/api/auth/callback/microsoft-entra-id`
-       si la proposition est retenue — changement trivial, playbook §9)
+     - `https://livret.gretacfalyon.com/api/auth/callback/microsoft-entra-id`
+       (domaine ACTÉ le 2026-07-14 — lot D ; les 3 URIs peuvent donc être
+       créées d'un coup au déroulé de la fiche)
 2. **Relever les identifiants** (page Overview) → fiche de relevé ci-dessous
 3. **Certificates & secrets → + New client secret**
    - Description : `livret-prod-2026` · Expiration : **24 months**
@@ -258,7 +267,7 @@ démarrage du chantier technique :
 | Marqueur | Valeur proposée | Statut |
 |---|---|---|
 | `<PROJET>` | `livret` | proposé |
-| `<DOMAINE>` | `livret.gretacfalyon.com` | **à valider (lot D)** |
+| `<DOMAINE>` | `livret.gretacfalyon.com` | **ACTÉ (2026-07-14)** |
 | `<USER>` | compte cPanel Greta — cf. `STACK_GRETA_LYON.md` §2.4 | acquis |
 | `<BASE>` | `<USER>_livret` | proposé |
 | `<DB-USER>` | user MySQL GLM existant ou dédié `<USER>_livret` | **à trancher (lot D)** |
@@ -267,7 +276,7 @@ démarrage du chantier technique :
 
 ---
 
-## 4. Brouillon de note au DPO (à adapter et envoyer par le pilote)
+## 4. Brouillon de note au DPO — ⏸ envoi différé à la mise en ligne (décision 2026-07-14)
 
 > **Objet : Livret d'apprentissage dématérialisé — réexamen RGPD avant mise
 > en production (réintroduction d'apprentis mineurs)**
@@ -335,3 +344,5 @@ Reprise de PROJECT-STATUS §12.4 + doctrine du kit :
 | 2026-07-13 | **Lot C ouvert** (décision pilote : commencer par Entra). Fiche d'exécution §2bis rédigée sur la base du playbook, 4 écarts réconciliés avec la doctrine o2switch (Auth.js v5, pattern de redirect URI, App Roles Admin/Coordo/Formateur, rôle JIT par défaut « en attente d'affectation »). Phase portail à dérouler par le pilote. |
 | 2026-07-14 | **Réordonnancement pilote** : lot C mis en pause (sera déroulé juste avant le chantier SSO, domaine connu) ; priorités = 1) note DPO, 2) domaine + ressources cPanel, 3) chantier technique. |
 | 2026-07-14 | **Arbitrage d'architecture TRANCHÉ** (pilote, sur analyse du kit) : **portage Next.js 16 App Router** — le kit est intégralement spécifique à Next.js standalone, l'option « Vite + API séparée » aurait rejoué les pièges o2switch déjà soldés par ASR. §1 mis à jour avec la justification. Découverte connexe : ASR utilise le SMTP académique en prod → ré-arbitrage Mailjet ajouté au lot E. Prochain livrable : plan de portage. |
+| 2026-07-14 | **Domaine ACTÉ** : `livret.gretacfalyon.com` (lot D — marqueur `<DOMAINE>` figé, redirect URI Entra définitive connue). |
+| 2026-07-14 | **Note DPO différée à la mise en ligne** (décision pilote — aucune donnée apprenti·e avant début septembre 2026). Garde-fou : mise en ligne avec fixtures sans attendre le DPO, mais **pas de données réelles avant sa validation** (AIPD mineurs). Le chemin critique de la phase devient le **chantier technique**. |
