@@ -42,6 +42,10 @@
 >   explicite ultérieure) ;
 > - **mot de passe oublié d'un compte jamais activé** → renvoi d'un lien
 >   d'ACTIVATION (cas non prévu par la spec, l'impasse se résout seule) ;
+> - **décision 2 amendée le 2026-07-15** (pilote) : lien d'activation valable
+>   **30 jours** au lieu de 7 (les mentions « 7 jours » des écrans §4 et
+>   templates §7 ci-dessous se lisent « 30 jours ») ; la notification coordo
+>   §7.3 se déclenche à l'expiration du lien, donc à J+30 ;
 > - la page `/mentions-legales` (v1.0-2026-07, version tracée à
 >   l'acceptation) est une **version de travail à valider par le DPO**.
 
@@ -93,7 +97,7 @@
 | # | Question | Décision |
 |---|---|---|
 | 1 | Service mail | **Mailjet** (formule gratuite, 200 emails/jour) |
-| 2 | Validité du lien d'activation | **7 jours**, avec mention explicite dans l'email |
+| 2 | Validité du lien d'activation | ~~**7 jours**~~ → **30 jours** (amendée pilote le **2026-07-15**, à la livraison V6 — commit `42952a1`), avec mention explicite dans l'email. La réinitialisation reste à **1 heure** |
 | 3 | Politique mot de passe | **Option A** — 12 caractères minimum, aucune complexité, aucune rotation forcée |
 | 4 | Authentification personnels GRETA | **SSO Entra ID** (étape 2.1) — 2FA imposé nativement par Microsoft |
 | 5 | 2FA apprenti·e + maître | **Aucun** — MdP robuste + rate limit + hashage argon2id jugés suffisants |
