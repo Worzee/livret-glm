@@ -7,11 +7,43 @@
 | | |
 |---|---|
 | **Date de rédaction** | 2026-05-26 |
-| **Statut** | Cadrage validé pilote — à valider par référente qualité GRETA et DPO |
+| **Statut** | ✅ **IMPLÉMENTÉ le 2026-07-15 (vague V6 du portage)** — voir l'encadré d'implémentation ; recette qualité/DPO à mener (§12) |
 | **Périmètre** | Étape 2, chantiers 2.2 + 2.3 |
-| **Dépend de** | Étape 2.0 (backend Node + PostgreSQL) |
+| **Dépend de** | ~~Étape 2.0 (backend Node + PostgreSQL)~~ → stack cible réelle : Next.js 16 + Prisma + MariaDB (arbitrage 2026-07-14) |
 | **Pilote métier** | Guillaume FERRERI |
-| **⚠ À re-cadrer** | **2026-07-13** — la décision 7 (« majeurs uniquement ») est invalidée (voir encadré) |
+| **⚠ À re-cadrer** | **2026-07-13** — la décision 7 (« majeurs uniquement ») est invalidée (voir encadré) → **défaut V6 posé, à confirmer pilote** |
+
+---
+
+> **✅ Implémentation (2026-07-15 — vague V6 du portage, commit `b98ba61` de
+> `livret-glm-app`, 812 Vitest + 234 E2E verts).** Cette spec est réalisée
+> dans la stack cible avec les **écarts délibérés** suivants, tous documentés
+> au journal du [`plan-portage-nextjs.md`](plan-portage-nextjs.md) :
+>
+> - **architecture** : Server Actions + pages Next.js remplacent les endpoints
+>   REST du §5 (mêmes contrats fonctionnels, mêmes règles §8) ; PostgreSQL du
+>   §6 → MariaDB/Prisma (`jetons_compte` — une table UNIQUE pour activation +
+>   réinitialisation —, `evenements_audit` sans FK, `tentatives_connexion`) ;
+> - **hashage** : bcrypt coût 12 (bcryptjs pur JS) — le repli de la décision
+>   10 est assumé : argon2 est un module natif, risque d'installation sur le
+>   mutualisé CloudLinux ;
+> - **transport email AGNOSTIQUE** (SMTP nodemailer) : la décision 1
+>   « Mailjet » reste ré-arbitrable en pure configuration (lot E du chantier
+>   de déploiement) ; en dev/E2E, repli fichier `.emails-dev/` ;
+> - **anti-énumération renforcée** : les endpoints publics ne rendent JAMAIS
+>   de 429 différencié (le rate limit y est silencieux — plus étanche que les
+>   réponses 429 du §5.5/§5.6) ;
+> - **décision 7 re-cadrée par défaut** (parité maquette, à confirmer
+>   pilote) : le compte d'un·e mineur·e s'active dès l'inscription, ses
+>   responsables légaux reçoivent leurs propres liens d'activation ;
+> - **notification coordo J+7 (§7.3) + purges** : route
+>   `/api/cron/quotidien` (Bearer `CRON_SECRET`) — cron cPanel à câbler en
+>   V7 ; l'import XLSX n'envoie PAS de liens (envoi en masse = décision
+>   explicite ultérieure) ;
+> - **mot de passe oublié d'un compte jamais activé** → renvoi d'un lien
+>   d'ACTIVATION (cas non prévu par la spec, l'impasse se résout seule) ;
+> - la page `/mentions-legales` (v1.0-2026-07, version tracée à
+>   l'acceptation) est une **version de travail à valider par le DPO**.
 
 ---
 

@@ -157,6 +157,12 @@ Accès et identifiants : `STACK_GRETA_LYON.md` §2.4 (non commité).
 Décision « Mailjet » actée dans `chantier-creation-comptes.md` §1 (mai 2026,
 formule gratuite 200 emails/jour) — **à ré-arbitrer** :
 
+> **V6 livrée (2026-07-15)** : le code est **agnostique du fournisseur**
+> (transport SMTP nodemailer configuré par `SMTP_*` — relais académique
+> comme Mailjet exposent un SMTP). Le ré-arbitrage ci-dessous devient une
+> pure décision de compte + configuration `.env`, sans impact code. Sans
+> SMTP configuré, l'app écrit les emails dans `.emails-dev/` (dev/E2E).
+
 - [ ] ⚠ **Ré-arbitrage Mailjet vs SMTP académique** (découverte kit,
       2026-07-14) : ASR tourne en production sur le **relais académique**
       (`smtps.region-academique-auvergne-rhone-alpes.fr`, 587/STARTTLS,
@@ -169,7 +175,15 @@ formule gratuite 200 emails/jour) — **à ré-arbitrer** :
 - [ ] DPA Mailjet accepté (recoupe le lot A)
 - [ ] ⚠ Re-cadrage de la **décision 7** (« majeurs uniquement », invalidée le
       2026-07-13 par la demande 5) : les mineurs et responsables légaux entrent
-      au périmètre des comptes — à re-trancher avec le pilote au chantier 2.2
+      au périmètre des comptes — **implémenté PAR DÉFAUT en V6 (parité
+      maquette : le compte du/de la mineur·e s'active dès l'inscription, les
+      responsables légaux reçoivent leurs propres liens) ; à confirmer pilote**
+- [ ] **Cron cPanel à câbler en V7** : `curl -fsS -H "Authorization: Bearer
+      $CRON_SECRET" https://<DOMAINE>/api/cron/quotidien` quotidien
+      (notifications comptes non activés J+7 + purges RGPD — V6)
+- [ ] ⚠ **Page `/mentions-legales` (v1.0-2026-07) à faire VALIDER par le DPO**
+      avant toute donnée réelle (le texte V6 est une version de travail ;
+      recoupe le garde-fou du lot A)
 
 ### Lot F — Divers
 
@@ -357,3 +371,4 @@ Reprise de PROJECT-STATUS §12.4 + doctrine du kit :
 | 2026-07-14 | **V3 (livret pédagogique) LIVRÉE** — la plus grosse vague du plan, en 5 modules : tableau de bord complet (pilotage, alertes, récap apprenti·e, « apprenti·e actif·ve » = cookie re-validé par périmètre), fiches de période entreprise/centre (co-édition, signatures tactiles, R10/R17/R20/R21 côté serveur), organisation du suivi (verrous R9), entretien tripartite (trame, sélections §12, R8/R9, auto-marquage), synthèse + clôture R22. Patterns capitalisés : auto-save débouncé, cases optimistes à file séquentielle. **767 Vitest + 192 E2E verts** (6 fixme restants → V4 documents / V5 PDF). Détail : journal du [`plan-portage-nextjs.md`](plan-portage-nextjs.md). Prochaines vagues : V4 (documents + Nuage), V5 (PDF + mobile). |
 | 2026-07-14 | **V4 (documents + Nuage) LIVRÉE** — le binaire quitte la base (doctrine §3.4) : couche stockage WebDAV Nuage en fetch natif (§10.8, repli disque local en dev — pilote choisi par `NEXTCLOUD_WEBDAV_URL`, prêt à basculer dès que le compte fonctionnel du **lot B** sera fourni), colonne `cheminFichier` en base, routes de consultation gardées (session + périmètre + flag « réservé »), attestataire mineur·e/responsable re-validé côté serveur, dépôt en masse actif sur la page Formations. **767 Vitest + 203 E2E verts** (3 fixme restants → V5 PDF). Détail : journal du [`plan-portage-nextjs.md`](plan-portage-nextjs.md). Prochaine vague : V5 (PDF + mobile), puis V6 (comptes externes + emails), V7 (déploiement + recette). |
 | 2026-07-15 | **V5 (PDF + mobile) LIVRÉE — la suite E2E de la maquette est intégralement portée : 767 Vitest + 225 E2E verts (213 desktop + 12 mobile Pixel 5), 0 fixme.** Export PDF lazy complet (livret 13 pages vérifié visuellement, périodes entreprise/centre, entretien, fiches de suivi), page Accès mobile (QR), audit responsive réintroduit (2 défauts mobiles réels corrigés dont une régression de parité V1). La suite E2E teste désormais le BUILD de production (doctrine maquette). Détail : journal du [`plan-portage-nextjs.md`](plan-portage-nextjs.md). Prochaine vague : V6 (comptes externes + emails — ré-arbitrage Mailjet vs SMTP académique du lot E à trancher), puis V7 (déploiement + recette, lots C/D à dérouler). |
+| 2026-07-15 | **V6 (comptes externes + emails) LIVRÉE — chantiers 2.2/2.3 implémentés dans la stack cible : 812 Vitest + 234 E2E verts, 0 fixme.** Activation par email (lien 7 j, usage unique, mentions d'information OBLIGATOIRES tracées en base), mot de passe oublié (lien 1 h), changement depuis « Mon compte », rate limiting (connexion, renvois, anti-scan de jetons), journal d'audit RGPD, notifications coordo J+7 + purges via `/api/cron/quotidien` (protégé `CRON_SECRET` — **cron cPanel à câbler en V7**). **Le transport email est AGNOSTIQUE (SMTP nodemailer, variables du kit) : le ré-arbitrage du lot E devient une pure décision de compte/configuration** — relais académique comme Mailjet sont du SMTP, aucun code à changer. ⚠ Page `/mentions-legales` (version `v1.0-2026-07`) rédigée en VERSION DE TRAVAIL : à valider par le DPO avant toute donnée réelle (garde-fou lot A inchangé). ⚠ Décision 7 re-cadrée PAR DÉFAUT (parité maquette) : le compte d'un·e mineur·e s'active dès l'inscription, ses responsables légaux ont leurs propres comptes — à confirmer pilote (lot E, dernier point). Détail : journal du [`plan-portage-nextjs.md`](plan-portage-nextjs.md). Prochaine vague : **V7 (déploiement + recette)** — lots B/C/D/E deviennent le chemin critique (comptes, domaine, SMTP). |
