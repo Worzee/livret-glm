@@ -5,6 +5,16 @@ d'apprentissage dématérialisé. SPA Vite + React 18 + TypeScript strict, 12 st
 persistés en localStorage, **sans backend ni auth réelle** (c'est l'étape 2). Déployée sur
 https://livret-glm.duckdns.org (Basic Auth). Pilote métier : Guillaume FERRERI.
 
+> ⚠ **CE DÉPÔT EST GELÉ (2026-07-13) — le développement actif est dans
+> `../livret-glm-app`** (portage Next.js 16 / Prisma / MariaDB, étape 2 :
+> V0-V7 technique TERMINÉ le 2026-07-18, 813 Vitest + 236 E2E). Pour toute
+> session de travail sur l'application : ouvrir `../livret-glm-app` et lire
+> son `AGENTS.md` (état, point de reprise, pièges). Prochaine étape :
+> dérouler `../livret-glm-app/docs/RUNBOOK_BASCULE.md` (mise en ligne
+> o2switch). La maquette reste LA référence métier (règles R1-R24, CDC,
+> chantiers, arbitrages) et le lieu des JOURNAUX de la phase de déploiement
+> (`plan-portage-nextjs.md`, `chantier-deploiement-o2switch.md`).
+
 ## Où chercher quoi
 
 - **État complet du projet** (modules livrés, règles R1-R24, architecture, reste à faire) :
@@ -25,8 +35,11 @@ https://livret-glm.duckdns.org (Basic Auth). Pilote métier : Guillaume FERRERI.
   5 « apprentis mineurs : responsables légaux (6ᵉ rôle) » livrées le 2026-07-13.
   ⚠ La demande 5 réintroduit les MINEURS → dossier RGPD étape 2 à réexaminer (DPO/AIPD)
 - **Phase de déploiement o2switch (lancée le 2026-07-13, fonctionnel GELÉ)** :
-  `chantier-deploiement-o2switch.md` — prérequis administratifs (DPO/AIPD mineurs en
-  chemin critique), marqueurs du kit, brouillon de note DPO, séquence de bascule étape 2
+  `chantier-deploiement-o2switch.md` — lots A-F. Au 2026-07-18 : lot B Nuage ✅ testé,
+  lot E SMTP ✅ tranché (relais académique, exit Mailjet) et testé, email fonctionnel
+  ✅ `glm-referentnumerique@ac-lyon.fr` ; restent lot D cPanel (= le runbook), lot C
+  Entra (optionnel à la bascule), lot A DPO (bloque les données réelles seulement).
+  Le journal du portage : `plan-portage-nextjs.md` §8
 - `STACK_GRETA_LYON.md` et `_kit-deploiement-o2switch/` : doctrine portefeuille Greta,
   **volontairement non commités** — ne pas les ajouter à un commit du livret
 
