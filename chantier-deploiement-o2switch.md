@@ -148,13 +148,20 @@ Procédure détaillée : `playbook-sso-entra-greta.md` phase B +
 Accès et identifiants : `STACK_GRETA_LYON.md` §2.4 (non commité).
 
 - [x] **Domaine définitif ACTÉ (2026-07-14)** : `livret.gretacfalyon.com`
-- [ ] Créer le sous-domaine dans cPanel (Domaines — Document Root par défaut)
-- [ ] **AutoSSL** vérifié actif sur le domaine
-- [ ] **Base MariaDB** créée en `utf8mb4` + collation `utf8mb4_unicode_ci`
-      (⚠ pas le défaut `latin1` — piège §8.1 de la stack)
-- [ ] **Utilisateur MySQL** dédié, mot de passe **alphanumérique** (piège kit)
-- [ ] **Node.js App** créée : version **22.x** (⚠ pas la 10.24.1 par défaut),
-      mode Production — la racine exacte sera fixée au chantier technique
+- [x] Sous-domaine créé dans cPanel (Document Root par défaut) — **2026-07-18
+      (bascule)**, serveur `pif.o2switch.net`
+- [x] **SSL actif** — certificat Let's Encrypt™ généré le 2026-07-18
+      (préflight : TLS valide > 30 j, HSTS, redirection 80→443 posée en
+      `.htaccess` — capitalisé au runbook §10)
+- [x] **Base MariaDB** `tlxn8907_livret` créée — 2026-07-18 (migrations
+      importées via phpMyAdmin : 15 tables, `charset=utf8mb4` dans la
+      `DATABASE_URL`)
+- [x] **Utilisateur MySQL** dédié `tlxn8907_livret`, mot de passe
+      **alphanumérique** — 2026-07-18
+- [x] **Node.js App** créée : Node **22**, mode Production, racine
+      `apps/livret`, startup `start.cjs` — 2026-07-18 (⚠ piège vécu : si
+      les pages statiques o2switch répondent à la place de l'app, re-Save
+      de l'Application URL + Restart)
 - [ ] **2FA cPanel** activé sur les comptes admin
 - [ ] **JetBackup** : quotidien, rétention ≥ 30 j, chiffré
 - [x] Adresse email de contact / notifications du projet — **ACTÉE le
@@ -199,9 +206,12 @@ formule gratuite 200 emails/jour) — **à ré-arbitrer** :
       au périmètre des comptes — **implémenté PAR DÉFAUT en V6 (parité
       maquette : le compte du/de la mineur·e s'active dès l'inscription, les
       responsables légaux reçoivent leurs propres liens) ; à confirmer pilote**
-- [ ] **Cron cPanel à câbler en V7** : `curl -fsS -H "Authorization: Bearer
-      $CRON_SECRET" https://<DOMAINE>/api/cron/quotidien` quotidien
-      (notifications comptes non activés J+7 + purges RGPD — V6)
+- [x] **Cron cPanel câblé à la bascule (2026-07-18)** : tâche quotidienne
+      05h17 (`CRON_SECRET` lu du `.env` serveur par `sed`, rien en clair
+      dans la crontab — runbook §11). Chaîne validée par test manuel :
+      `{"ok":true,"notifies":0,"purges":{...}}` dans
+      `~/logs/cron-livret.log`, 401 sans Bearer. **Contrôler le log à J+1**
+      (première exécution planifiée)
 - [ ] ⚠ **Page `/mentions-legales` (v1.0-2026-07) à faire VALIDER par le DPO**
       avant toute donnée réelle (le texte V6 est une version de travail ;
       recoupe le garde-fou du lot A)
@@ -394,3 +404,4 @@ Reprise de PROJECT-STATUS §12.4 + doctrine du kit :
 | 2026-07-15 | **V5 (PDF + mobile) LIVRÉE — la suite E2E de la maquette est intégralement portée : 767 Vitest + 225 E2E verts (213 desktop + 12 mobile Pixel 5), 0 fixme.** Export PDF lazy complet (livret 13 pages vérifié visuellement, périodes entreprise/centre, entretien, fiches de suivi), page Accès mobile (QR), audit responsive réintroduit (2 défauts mobiles réels corrigés dont une régression de parité V1). La suite E2E teste désormais le BUILD de production (doctrine maquette). Détail : journal du [`plan-portage-nextjs.md`](plan-portage-nextjs.md). Prochaine vague : V6 (comptes externes + emails — ré-arbitrage Mailjet vs SMTP académique du lot E à trancher), puis V7 (déploiement + recette, lots C/D à dérouler). |
 | 2026-07-15 | **V6 (comptes externes + emails) LIVRÉE — chantiers 2.2/2.3 implémentés dans la stack cible : 812 Vitest + 234 E2E verts, 0 fixme.** Activation par email (lien 7 j, usage unique, mentions d'information OBLIGATOIRES tracées en base), mot de passe oublié (lien 1 h), changement depuis « Mon compte », rate limiting (connexion, renvois, anti-scan de jetons), journal d'audit RGPD, notifications coordo J+7 + purges via `/api/cron/quotidien` (protégé `CRON_SECRET` — **cron cPanel à câbler en V7**). **Le transport email est AGNOSTIQUE (SMTP nodemailer, variables du kit) : le ré-arbitrage du lot E devient une pure décision de compte/configuration** — relais académique comme Mailjet sont du SMTP, aucun code à changer. ⚠ Page `/mentions-legales` (version `v1.0-2026-07`) rédigée en VERSION DE TRAVAIL : à valider par le DPO avant toute donnée réelle (garde-fou lot A inchangé). ⚠ Décision 7 re-cadrée PAR DÉFAUT (parité maquette) : le compte d'un·e mineur·e s'active dès l'inscription, ses responsables légaux ont leurs propres comptes — à confirmer pilote (lot E, dernier point). Détail : journal du [`plan-portage-nextjs.md`](plan-portage-nextjs.md). Prochaine vague : **V7 (déploiement + recette)** — lots B/C/D/E deviennent le chemin critique (comptes, domaine, SMTP). |
 | 2026-07-18 | **V7 — le reste TECHNIQUE est livré** (commits `28d6f11` + `1f96a1a` de livret-glm-app, 813 Vitest + 236 E2E verts) : 404 personnalisée, **préflight o2switch** (`scripts/preflight-o2switch.sh`, 16-19 contrôles adaptés Passenger/auth réelle — remplace `verifier-vps.sh`), risque upload §7 soldé côté appli, **`docs/RUNBOOK_BASCULE.md`** (séquence de mise en production complète : prérequis P1-P6 ↔ lots A-E, `.env` prod complet, migrations phpMyAdmin, seed fixtures par tunnel SSH, **cron cPanel quotidien documenté**, recette pilote 13 points, décommission VPS). **La bascule n'attend plus QUE les prérequis administratifs des lots A-E** : P2 Nuage, P3 SMTP (+ ré-arbitrage), P4 Entra (OPTIONNEL à la bascule — credentials en attendant), P5 email fonctionnel, P6 validation DPO des mentions (garde-fou : fixtures seulement d'ici là). Reste à vérifier EN RECETTE : limite POST LiteSpeed ≥ 4 Mo (lot D). |
+| 2026-07-18 | **🚀 BASCULE EFFECTUÉE — `https://livret.gretacfalyon.com` EN LIGNE avec les FIXTURES, préflight 19 OK / 0 KO.** Runbook déroulé en séance pilote (§1→§11) : lot D quasi soldé (sous-domaine, SSL, base, Node.js App — restent 2FA à confirmer et JetBackup à vérifier), cron du lot E câblé (test manuel OK — log à contrôler à J+1). Seed passé par le repli Remote MySQL® (port 22 filtré depuis le poste pilote). Recette §12 entamée en ligne (coordo, parcours livret, lecture Nuage en prod OK) ; restent les points manuels (dépôt Nuage, > 2 Mo/LiteSpeed, export PDF, SMTP réel, mobile). Le VPS duckdns reste le rollback jusqu'à la validation de la recette (lot F). Garde-fou lot A inchangé : fixtures seulement jusqu'à validation DPO. Détail : journal du [`plan-portage-nextjs.md`](plan-portage-nextjs.md). |
