@@ -157,8 +157,11 @@ Accès et identifiants : `STACK_GRETA_LYON.md` §2.4 (non commité).
       mode Production — la racine exacte sera fixée au chantier technique
 - [ ] **2FA cPanel** activé sur les comptes admin
 - [ ] **JetBackup** : quotidien, rétention ≥ 30 j, chiffré
-- [ ] Adresse email de contact / notifications du projet créée (marqueur
-      `<EMAIL-CONTACT>` — pattern ASR : `glm.livret@ac-lyon.fr` ? à valider)
+- [x] Adresse email de contact / notifications du projet — **ACTÉE le
+      2026-07-18 : `glm-referentnumerique@ac-lyon.fr`** (boîte fonctionnelle
+      académique existante, lettre DSI du 11/04/2023 `glmrefnum.pdf`,
+      compte `glmrefnum`, webmail `webmail.ac-lyon.fr`). Remplace le
+      marqueur `<EMAIL-CONTACT>` partout (CONTACT_EMAIL, EMAIL_FROM)
 
 ### Lot E — Emails transactionnels (chantiers 2.2/2.3)
 
@@ -171,16 +174,26 @@ formule gratuite 200 emails/jour) — **à ré-arbitrer** :
 > pure décision de compte + configuration `.env`, sans impact code. Sans
 > SMTP configuré, l'app écrit les emails dans `.emails-dev/` (dev/E2E).
 
-- [ ] ⚠ **Ré-arbitrage Mailjet vs SMTP académique** (découverte kit,
-      2026-07-14) : ASR tourne en production sur le **relais académique**
-      (`smtps.region-academique-auvergne-rhone-alpes.fr`, 587/STARTTLS,
-      compte `@ac-lyon.fr` — cf. `env.example` du kit). Un sous-traitant de
-      moins (pas de DPA Mailjet, pas de SPF/DKIM à poser), dossier RGPD
-      allégé. La décision Mailjet prédate ce retour d'expérience. Les points
-      suivants ne valent que si Mailjet est finalement confirmé :
-- [ ] Compte Mailjet créé (avec l'email fonctionnel du projet)
-- [ ] **Domaine d'envoi validé** : SPF + DKIM posés sur le DNS du domaine
-- [ ] DPA Mailjet accepté (recoupe le lot A)
+- [x] ⚠ **Ré-arbitrage Mailjet vs SMTP académique — TRANCHÉ le 2026-07-18
+      (pilote) : RELAIS ACADÉMIQUE** avec le compte fonctionnel
+      `glm-referentnumerique@ac-lyon.fr`
+      (`smtps.region-academique-auvergne-rhone-alpes.fr`, 587/STARTTLS —
+      même pattern qu'ASR en production). Bénéfices actés : un sous-traitant
+      de moins (pas de DPA Mailjet), pas de SPF/DKIM à poser (l'envoi part
+      en `@ac-lyon.fr` par le relais officiel), dossier RGPD allégé.
+      ⚠ Piège ASR repris : l'identifiant SMTP est l'ADRESSE COMPLÈTE
+      (login court rejeté 535). **TESTÉ le 2026-07-18** :
+      `npx tsx scripts/tester-smtp.ts` → relais OK du premier coup,
+      **réception confirmée dans le webmail par le pilote** (boîte de
+      réception, pas en indésirables). Identifiants dans `.env.smtp` (non
+      commité, poste pilote) — à recopier dans le `.env` serveur à la
+      bascule (runbook §6). La décision 1 du chantier création comptes est
+      amendée en conséquence. Boîte organisée : dossier « LIVRET
+      APPRENTISSAGE » + règle de filtrage (sujet « Livret » OU expéditeur
+      la boîte elle-même).
+- ~~[ ] Compte Mailjet créé~~ — sans objet (relais académique)
+- ~~[ ] Domaine d'envoi validé : SPF + DKIM~~ — sans objet
+- ~~[ ] DPA Mailjet accepté~~ — sans objet
 - [ ] ⚠ Re-cadrage de la **décision 7** (« majeurs uniquement », invalidée le
       2026-07-13 par la demande 5) : les mineurs et responsables légaux entrent
       au périmètre des comptes — **implémenté PAR DÉFAUT en V6 (parité

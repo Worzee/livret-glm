@@ -96,7 +96,7 @@
 
 | # | Question | Décision |
 |---|---|---|
-| 1 | Service mail | **Mailjet** (formule gratuite, 200 emails/jour) |
+| 1 | Service mail | ~~**Mailjet**~~ → **relais SMTP académique** (amendée pilote le **2026-07-18**, lot E du chantier de déploiement) : compte fonctionnel `glm-referentnumerique@ac-lyon.fr` via `smtps.region-academique-auvergne-rhone-alpes.fr` (587/STARTTLS, pattern ASR). Un sous-traitant de moins, pas de SPF/DKIM à poser. Le code V6 est agnostique (transport SMTP) — aucun impact |
 | 2 | Validité du lien d'activation | ~~**7 jours**~~ → **30 jours** (amendée pilote le **2026-07-15**, à la livraison V6 — commit `42952a1`), avec mention explicite dans l'email. La réinitialisation reste à **1 heure** |
 | 3 | Politique mot de passe | **Option A** — 12 caractères minimum, aucune complexité, aucune rotation forcée |
 | 4 | Authentification personnels GRETA | **SSO Entra ID** (étape 2.1) — 2FA imposé nativement par Microsoft |
