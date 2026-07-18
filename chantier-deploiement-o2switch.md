@@ -101,13 +101,21 @@ obligatoire** (`conformite-rgpd.md`, encadré de tête + §5).
 
 ### Lot B — Nuage (stockage des fichiers)
 
-- [ ] **Compte fonctionnel d'établissement** sur `apps.education.fr` (jamais
-      un compte nominatif d'agent — il porte le traitement)
-- [ ] **Mot de passe d'application** WebDAV généré (Paramètres → Sécurité) —
-      conservé par le responsable informatique, destiné au `.env` serveur
-      (jamais côté client, jamais commité)
-- [ ] Dossier racine applicatif créé (`/livret-apprentissage`) — prévoir un
-      sous-dossier par promo pour les documents de formation (dépôt en masse)
+- [x] **Compte fonctionnel d'établissement** sur `apps.education.fr` —
+      **ACTÉ le 2026-07-18** : `glmreferentnumerique` (compte fonctionnel,
+      pas nominatif ✓), WebDAV
+      `https://nuage15.apps.education.fr/remote.php/dav/files/glmreferentnumerique`
+- [x] Dossier racine applicatif — **`/LIVRET APPRENTISSAGE`** (existant,
+      2026-07-18 ; `NEXTCLOUD_FILES_BASEPATH` configuré tel quel) — prévoir
+      un sous-dossier par promo pour les documents de formation (le code les
+      crée seul au dépôt en masse)
+- [x] **Mot de passe d'application** WebDAV généré (`livret-glm-app`) et
+      **TESTÉ le 2026-07-18** : `npx tsx scripts/tester-nuage.ts` →
+      dépôt/relecture/suppression OK via le vrai code de stockage (espace
+      du nom de dossier géré). Identifiants dans `.env.nuage` (non commité,
+      poste pilote) — à recopier dans le `.env` serveur à la bascule
+      (runbook §6). ⚠ Jamais dans le `.env` de dev (le reset E2E purgerait
+      le Nuage réel)
 - [ ] Décision **sauvegarde séparée** des fichiers Nuage (hors JetBackup)
 - [ ] Durées de conservation des documents définies (purge effective — §7.6)
 
