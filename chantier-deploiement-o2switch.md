@@ -116,6 +116,33 @@ obligatoire** (`conformite-rgpd.md`, encadré de tête + §5).
       poste pilote) — à recopier dans le `.env` serveur à la bascule
       (runbook §6). ⚠ Jamais dans le `.env` de dev (le reset E2E purgerait
       le Nuage réel)
+- [x] 📎 **VALIDÉ EN ÉCRITURE DEPUIS LE SERVEUR le 2026-07-26 — le lot B est
+      CLOS techniquement.** Le test du 2026-07-18 partait du POSTE PILOTE et
+      la lecture seule avait été vérifiée à la bascule ; **écrire est une
+      autre opération, et c'est celle du quotidien des formateurs**. WebDAV
+      brut depuis `~/apps/livret` : PUT 201 → GET 200 contenu identique →
+      DELETE 204. `.stockage-dev/` **VIDE** : aucun dépôt n'est jamais tombé
+      en repli disque local depuis la bascule (le repli est d'ailleurs moins
+      traître qu'en SMTP — une écriture qui échoue LÈVE une erreur,
+      `storage.ts:79`). Puis dépôts RÉELS en production depuis l'interface :
+      **989 Ko et 1 800 Ko**, retrouvés dans l'arborescence aux bonnes
+      tailles sous `…/apprentis/u-apprenti-<id>/`, noms anonymisés
+      `docadm-<hash>.pdf` (l'interface conservant le nom d'origine), puis
+      **relus par « Consulter » — première relecture d'un fichier écrit par
+      l'APPLICATION** et non par le seed. Refus au-delà de 2 Mo confirmé.
+      ⚠ **Piège de méthode** : ne jamais conclure sur les uploads depuis un
+      POST `curl` — ils renvoient un `307 → /login` inexpliqué à TOUTE taille
+      (y compris 2 Mo, et même vers une page publique que le proxy ne
+      redirige pas), ce qui a produit une fausse alerte « tous les dépôts
+      sont cassés » ; ni le bug de cache o2switch ni l'en-tête
+      `Expect: 100-continue` ne l'expliquent. **Seul le dépôt réel depuis
+      l'interface fait foi.** Mesure de volume fiable en revanche :
+      multipart de 2 à 12 Mo tous acceptés intégralement → aucune limite
+      d'infrastructure sous 12 Mo.
+- [x] **Quota Nuage relevé le 2026-07-26 : 100 Go** — le pire cas absolu
+      (200 apprenti·e·s × 5 documents × 10 Mo) en occupe 10 %. Aucune
+      contrainte de stockage ; débloque le passage de la limite de dépôt à
+      10 Mo (lot de modifications post-recette)
 - [ ] Décision **sauvegarde séparée** des fichiers Nuage (hors JetBackup)
 - [ ] Durées de conservation des documents définies (purge effective — §7.6)
 
