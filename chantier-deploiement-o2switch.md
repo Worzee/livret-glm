@@ -198,6 +198,30 @@ formule gratuite 200 emails/jour) — **à ré-arbitrer** :
       amendée en conséquence. Boîte organisée : dossier « LIVRET
       APPRENTISSAGE » + règle de filtrage (sujet « Livret » OU expéditeur
       la boîte elle-même).
+- [x] ✉ **VALIDÉ DEPUIS LE SERVEUR le 2026-07-26 — le lot E est CLOS
+      techniquement** (procédure capitalisée : runbook §11bis de l'app).
+      Le test du 2026-07-18 partait du POSTE PILOTE et ne disait rien de la
+      capacité du mutualisé à sortir en 587 — port très souvent filtré chez
+      les hébergeurs (anti-spam). Résultat depuis `pif.o2switch.net` :
+      **587 ET 465 OUVERTS**, aucun filtrage o2switch → **le repli « envoi
+      via API HTTPS » envisagé en cas de blocage est SANS OBJET**, aucun
+      développement à prévoir. Handshake `nodemailer.verify()` (connexion +
+      STARTTLS + **authentification**) puis email témoin : reçus en boîte de
+      réception du webmail. Puis les 3 parcours réels en prod, qui cochent
+      3 lignes de la recette §12 : activation d'une apprentie de test
+      (email → lien 30 j → mot de passe → connexion auto → email de
+      confirmation), mot de passe oublié (lien 1 h, échéance affichée juste
+      en Europe/Paris), renvoi de lien depuis la liste admin. **Chez Gmail
+      (destinataire externe) : onglet Principal, ni spam ni Promotions** —
+      le pari « pas de SPF/DKIM à poser » du ré-arbitrage ci-dessus est
+      VÉRIFIÉ en conditions réelles. ⚠ 2 pièges capitalisés : (1)
+      `SMTP_HOST` **et** `SMTP_USER` conditionnent l'envoi réel — si l'un
+      manque, l'app écrit dans `.emails-dev/` **sans aucune erreur**, donc
+      contrôler ce dossier sur le serveur AVANT de suspecter le réseau ;
+      (2) `node : commande introuvable` dans le Terminal cPanel tant qu'on
+      n'a pas fait `source ~/nodevenv/apps/livret/22/bin/activate`.
+      Si le 587 tombait un jour : `SMTP_PORT=465` + `SMTP_SECURE=true` +
+      Restart, sans toucher au code.
 - ~~[ ] Compte Mailjet créé~~ — sans objet (relais académique)
 - ~~[ ] Domaine d'envoi validé : SPF + DKIM~~ — sans objet
 - ~~[ ] DPA Mailjet accepté~~ — sans objet
