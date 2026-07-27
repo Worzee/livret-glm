@@ -104,11 +104,40 @@ les comptes créés à la volée ont un nom vide).
 2. **`src/auth.ts`** — le callback `jwt` applique la décision au lieu de
    décider lui-même. Disparaissent : le fallback email non borné
    (`auth.ts:70-72`) et l'écrasement du rôle (`auth.ts:76`).
-3. **`src/app/login/page.tsx`** — libellés **par public** et non par
-   technologie : « Coordination, CFP et direction GRETA » au-dessus du bouton
-   Greta ; « Apprenti·e·s, maîtres d'apprentissage, formateurs référents,
-   responsables légaux » au-dessus du formulaire email.
-4. **Écran de refus lisible** pour les motifs du §3 (1 et 3b).
+3. **DEUX pages de connexion distinctes** (arbitrage pilote — le plus simple
+   pour l'utilisateur, décidé après coup contre la version « deux boutons sur
+   la même page ») :
+   - **`/login`** : email + mot de passe UNIQUEMENT. Reste la page par défaut,
+     ce qui préserve les parcours d'activation et de mot de passe oublié, qui
+     y renvoient avec leurs messages de confirmation et ne concernent que des
+     comptes à mot de passe.
+   - **`/connexion-greta`** (nouveau) : le bouton Greta UNIQUEMENT. Adresse
+     lisible et communicable par écrit — personne parmi les CFP ne sait ce
+     qu'est un « SSO ».
+
+   Deux publics disjoints, deux pages : plus de choix à faire, donc plus
+   d'erreur possible. ⚠ **Mais chaque page porte un lien DISCRET vers
+   l'autre** — pas un second bouton qui rivalise, une ligne en bas :
+   - sur `/login` : **« Accès Greta »** ;
+   - sur `/connexion-greta` : « Vous n'êtes pas personnel GRETA ? Connectez-vous
+     avec votre email et votre mot de passe. »
+
+   **Ce lien n'est pas cosmétique**, il rattrape les deux parcours les plus
+   fréquents : le proxy renvoie toute session expirée vers `/login`
+   (`proxy.ts`), et c'est aussi là qu'atterrit qui tape simplement l'adresse du
+   site ou ouvre son favori. Sans lui, un coordo dont la session expire est
+   bloqué. Le lien retour compte autant : quelqu'un finira par envoyer la
+   mauvaise adresse à un·e apprenti·e.
+
+   ⚠ `/connexion-greta` doit être ajoutée aux **préfixes publics du proxy**,
+   sinon elle redirige vers `/login` — la page de connexion se renverrait
+   elle-même.
+
+   ⚠ Quand Entra n'est pas configuré, `/connexion-greta` doit **le dire**
+   plutôt que d'afficher un bouton mort (comportement actuel de `/login`) :
+   sinon un testeur conclut à une panne pendant la mise en place.
+4. **Écran de refus lisible** pour les motifs du §3 (1 et 3b), rendu sur
+   `/connexion-greta`.
 
 ⚠ **Anti-énumération préservée** : le message d'échec d'une connexion PAR MOT
 DE PASSE ne dira jamais « ce compte est en SSO » — ce serait révéler
