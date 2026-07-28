@@ -92,7 +92,26 @@ Inchangé et à ne pas oublier : les **claims optionnels** `given_name`,
 `family_name`, `email` en Token configuration (piège P3 du playbook — sans eux
 les comptes créés à la volée ont un nom vide).
 
-`_ISSUER` attendu : `https://login.microsoftonline.com/<tenant-id>/v2.0`.
+⚠ **Les claims optionnels ne suffisent PAS** (vécu 2026-07-28) : Azure affiche
+un bandeau « Ces revendications requièrent que les étendues OpenID Connect
+soient configurées via la page des autorisations de l'API », et un triangle
+d'avertissement devant chaque claim. Il faut ajouter dans **API autorisées →
+Microsoft Graph → Autorisations déléguées** les étendues `openid`, `profile`,
+`email`. Garder aussi **`User.Read`** : le provider Auth.js la demande
+explicitement (`scope: "openid profile email User.Read"`, cf.
+`@auth/core/providers/microsoft-entra-id`).
+
+### Valeurs du tenant GRETA Lyon (relevées le 2026-07-28)
+
+| | |
+|---|---|
+| ID de l'annuaire (locataire) | `bc139aaa-fea0-465b-8d3d-be26ed74675d` |
+| `_ISSUER` attendu | `https://login.microsoftonline.com/bc139aaa-fea0-465b-8d3d-be26ed74675d/v2.0` |
+
+⚠ **Le portail français dit « ID de l'annuaire (locataire) »** là où la
+documentation anglaise dit *Directory (tenant) ID*. Sur la page Vue d'ensemble,
+**trois GUID sont empilés** — ID d'application (client), ID de l'objet, ID de
+l'annuaire — et c'est le troisième qu'il faut. Voir les pièges §9.
 
 ## 5. Modifications de code prévues
 
@@ -152,15 +171,107 @@ du parcours réel se fait **en production**, avec les 3 comptes de test du
 pilote (un `Coordo`, un `Admin`, et un compte du tenant **sans** App Role, qui
 doit être refusé).
 
-## 7. Prérequis avant de commencer
+## 7. Prérequis — checklist Entra
 
-- [ ] App Registration créée, **Assignment required = Oui**
-- [ ] App Roles `Coordo` et `Admin` créés
-- [ ] Claims optionnels `given_name` / `family_name` / `email` ajoutés
-- [ ] Redirect URI **exacte** du §4 enregistrée
-- [ ] Les 3 variables transmises pour le `.env` de prod
-      (⚠ le secret n'est affiché qu'une fois — piège P6 du playbook ;
-      poser un rappel de rotation à 18 mois)
+Dans l'ordre. Les cases cochées l'ont été le **2026-07-28**.
+
+- [x] App Registration créée — « Mon organisation uniquement »
+- [x] Redirect URI **exacte** du §4 enregistrée
+- [x] Secret client créé (⚠ affiché **une seule fois** — piège P6 du
+      playbook ; rappel de rotation à 18 mois à poser)
+- [x] App Roles `Coordo` et `Admin` créés — ⚠ la colonne **Valeur** est
+      comparée caractère par caractère par le code, majuscule comprise
+- [x] Claims optionnels `given_name` / `family_name` / `email` (type **ID**)
+- [x] Étendues déléguées `openid` / `profile` / `email` + `User.Read` ajoutées
+      dans **API autorisées** (sans elles les claims ne sont pas émis)
+- [x] **Assignment required = Oui** (Applications d'entreprise → Propriétés)
+- [x] Personnes habilitées dans **Utilisateurs et groupes** (créer un rôle ne
+      l'attribue à personne)
+- [ ] ⚠ **Consentement administrateur accordé** — BLOQUANT, voir piège §9.5
+- [ ] Les 3 variables posées dans le `.env` de prod + **Restart**
+- [ ] Validation avec 3 comptes, dont **un sans App Role qui doit être REFUSÉ**
+
+## 8bis. Conséquence à traiter : les adresses `.onmicrosoft.com`
+
+Le tenant est un tenant dédié administré par le pilote, dont le domaine par
+défaut est `gretalyon.onmicrosoft.com`. Les comptes coordo créés par le SSO
+porteront donc une adresse de ce type, **enregistrée telle quelle dans le
+livret** puisqu'elle vient du jeton.
+
+⚠ **Ces adresses ne reçoivent pas de courrier** sans boîte Exchange derrière.
+Conséquence concrète : la notification que le cron envoie aux coordos (compte
+apprenti jamais activé après 30 jours, spec §7.3) partirait dans le vide.
+
+Non bloquant pour la mise en route. À trancher avant les vraies données : soit
+corriger l'adresse dans le livret après la première connexion, soit dissocier
+l'adresse de CONTACT de l'identifiant de connexion (champ supplémentaire).
+
+## 9. Pièges rencontrés (mise en place du 2026-07-28)
+
+Chacun a coûté du temps. Ils sont dans l'ordre où ils se sont présentés.
+
+**9.1 — Le gabarit d'issuer collé tel quel.** La ligne du `.env` contenait
+encore `<Directory (tenant) ID>`. Symptôme : écran **`/api/auth/error?error=Configuration`**.
+
+**9.2 — Lire le bon GUID.** Le remplaçant fourni était l'**ID d'application
+(client)** et non l'**ID de l'annuaire (locataire)** — les trois GUID de la page
+Vue d'ensemble se ressemblent. Symptôme : Microsoft répond
+`AADSTS90002: Tenant '…' not found`.
+
+**9.3 — Diagnostic : où est la faute ?** Une erreur `error=Configuration` sur
+une URL de **notre** domaine, sans être passé par Microsoft, signifie que le
+provider n'a pas pu s'initialiser : le problème est dans le `.env`, pas dans
+Azure. Réciproquement, un message `AADSTS…` vient d'Azure.
+
+**9.4 — Vérifier AVANT de redémarrer.** Ce test ne demande aucun Restart et
+tranche immédiatement (attendu : **HTTP 200**) :
+
+```bash
+ISS=$(sed -n 's/^AUTH_MICROSOFT_ENTRA_ID_ISSUER="\{0,1\}\([^"]*\)"\{0,1\}$/\1/p' ~/apps/livret/.env); echo "issuer lu : [$ISS]"; curl -s -o /dev/null -w 'discovery -> HTTP %{http_code}\n' "${ISS%/}/.well-known/openid-configuration"
+```
+
+Contrôle de cohérence des 3 variables (valeurs masquées) — l'ID doit faire
+**36** caractères (un GUID) et le secret **~40** ; ⚠ un secret de 36 caractères
+en forme de GUID = c'est le *Secret ID* qui a été copié, pas la *Value* :
+
+```bash
+cd ~/apps/livret; grep -E '^AUTH_MICROSOFT_ENTRA_ID_' .env | while IFS='=' read -r cle val; do net=$(printf '%s' "$val" | sed 's/^"//; s/"$//'); printf '%-40s %s caracteres\n' "$cle" "${#net}"; done
+```
+
+**9.5 — Le consentement administrateur (le vrai obstacle).** Le tenant
+**interdit le consentement par l'utilisateur**. Résultat : écran « Approbation
+administrateur requise », et une **boucle** si l'on re-sélectionne un compte
+non administrateur. Le bouton « Accorder un consentement d'administrateur » du
+portail est alors **grisé**.
+
+Il faut un compte **Administrateur général**, **Administrateur d'application
+cloud** ou **Administrateur d'application**. Deux voies équivalentes : le
+bouton du portail, ou l'URL de consentement, qui ne contient aucun secret :
+
+```
+https://login.microsoftonline.com/<tenant-id>/adminconsent?client_id=<client-id>
+```
+
+⚠ Un rôle fraîchement attribué **n'entre pas en vigueur dans la session en
+cours** : se déconnecter du portail et se reconnecter, sinon le bouton reste
+grisé sans explication.
+
+**9.6 — « Ça marchait sans tout ça sur les autres projets ».** Constat du
+pilote, comparaison faite avec l'app « Suivi Pronote » du même tenant. La page
+API autorisées y montre deux blocs : « Autorisations configurées » (`User.Read`
+seul, statut vide) et **« Autres autorisations accordées pour GRETA Lyon
+Métropole »** avec `email`/`openid`/`profile` **« Accordé pour … »**. Le
+consentement Y AVAIT donc bien été donné — vraisemblablement à la première
+connexion par un compte administrateur ayant coché « **consentir au nom de
+votre organisation** », ce qui produit le même effet sans passer par le
+portail. Ce n'est donc pas la procédure qui diffère, c'est **le rôle du compte**
+qui se connecte.
+
+⚠ **Ne PAS copier la configuration de Suivi Pronote** : elle a
+« Affectation requise ? » = **Non**, c'est-à-dire ouverte à tout le tenant.
+Le livret garde **Oui** (décision D3) — il hébergera des données personnelles
+d'apprenti·e·s mineur·e·s. Consentement et affectation sont deux mécanismes
+distincts : être affecté ne dispense pas du consentement, et inversement.
 
 ## 8. Contexte au moment de la décision
 

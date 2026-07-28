@@ -431,6 +431,74 @@ contentSecurityPolicy: >
 
 ---
 
+### P10 — Avec Auth.js (NextAuth v5), la redirect URI n'est PAS libre
+
+**Symptôme** : `AADSTS50011: The redirect URI specified in the request does not
+match the redirect URIs configured for the application`.
+
+**Cause** : la Phase B de ce playbook propose `https://<domaine>/auth/callback`,
+qui vient d'une implémentation OIDC maison. Auth.js impose la sienne, dérivée de
+l'id du provider.
+
+**Parade** : enregistrer exactement
+`https://<domaine>/api/auth/callback/microsoft-entra-id`.
+
+Et les variables suivent la convention Auth.js, pas celle du §7 de ce playbook :
+`AUTH_MICROSOFT_ENTRA_ID_ID`, `_SECRET`, `_ISSUER` (ce dernier au format
+`https://login.microsoftonline.com/<tenant-id>/v2.0`).
+
+---
+
+### P11 — « Approbation administrateur requise » en boucle (vécu 2026-07-28)
+
+**Symptôme** : après authentification, écran « Approbation administrateur
+requise ». Cliquer « Vous possédez un compte administrateur ? » ramène au
+sélecteur de comptes, indéfiniment. Dans le portail, le bouton « Accorder un
+consentement d'administrateur » est **grisé**.
+
+**Cause** : le tenant **interdit le consentement par l'utilisateur**. Même des
+étendues anodines (`openid`, `profile`, `email`, `User.Read`) exigent alors un
+consentement administrateur. La boucle vient de ce qu'on re-sélectionne un
+compte sans rôle d'administration.
+
+**Parade** : un compte **Administrateur général**, **Administrateur
+d'application cloud** ou **Administrateur d'application** accorde le
+consentement — par le bouton du portail, ou par l'URL dédiée (aucun secret
+dedans) :
+
+```
+https://login.microsoftonline.com/<tenant-id>/adminconsent?client_id=<client-id>
+```
+
+⚠ Un rôle fraîchement attribué n'entre pas en vigueur dans la session en
+cours : **se déconnecter du portail et se reconnecter**, sinon le bouton reste
+grisé sans raison apparente.
+
+**⚠ Pourquoi certaines apps « marchent sans rien faire »** : parce que le
+consentement y a déjà été donné, souvent à la première connexion par un compte
+administrateur ayant coché « **consentir au nom de votre organisation** ». Ça ne
+se voit pas dans « Autorisations configurées » mais dans le bloc **« Autres
+autorisations accordées pour <organisation> »**, plus bas sur la même page. La
+procédure ne diffère pas d'une app à l'autre : c'est le RÔLE du compte qui se
+connecte qui fait la différence.
+
+---
+
+### P12 — Les claims optionnels sans les étendues ne servent à rien
+
+**Symptôme** : `given_name` / `family_name` / `email` ajoutés en Token
+configuration, mais un triangle d'avertissement devant chacun et un bandeau
+« Ces revendications requièrent que les étendues OpenID Connect soient
+configurées via la page des autorisations de l'API ».
+
+**Cause** : déclarer un claim ne demande pas l'étendue correspondante.
+
+**Parade** : **API autorisées → Microsoft Graph → Autorisations déléguées** →
+ajouter `openid`, `profile`, `email`. Conserver `User.Read` (Auth.js la demande
+dans son scope par défaut). Puis accorder le consentement (P11).
+
+---
+
 ## 6. Anti-phishing sur nouveau domaine (récap actionnable)
 
 À faire en parallèle de Phase A, **avant la mise en production publique** :
