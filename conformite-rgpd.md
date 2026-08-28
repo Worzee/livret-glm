@@ -13,6 +13,7 @@
 | **Responsable de traitement** | GRETA Lyon Métropole (à confirmer)                                                 |
 | **Pilote métier**             | Guillaume FERRERI                                                                  |
 | **⚠ Réexamen requis**         | **2026-07-13 — les MINEURS sont réintroduits** (voir encadré ci-dessous)           |
+| **⚠ Réexamen requis (2)**     | **2026-08-28 — nouveau traitement : les signalements au développeur** (voir encadré) |
 
 ---
 
@@ -38,6 +39,38 @@
 > **Action** : 3ᵉ passe de ce document à mener **avec le DPO du GRETA** avant
 > toute mise en production. Les §§1, 2.1, 5 et le classement R1 sont à
 > réviser ; le reste du document demeure valable.
+
+---
+
+## ⚠ RÉEXAMEN REQUIS (2) — signalements au développeur (2026-08-28)
+
+> Un **nouveau traitement** est entré en production le 2026-08-28 : le guichet
+> d'assistance (« Aide → Contacter le développeur »). Il n'était pas prévu au
+> cadrage de ce document.
+>
+> **Données traitées** : identité (prénom, nom), rôle et **texte libre** rédigé
+> par des **membres du personnel GRETA** — coordonnateurs·rices et formateurs
+> référents uniquement, jamais d'apprenti·e ni de responsable légal. S'y
+> ajoutent une note de 1 à 5, la **page d'origine** et le **navigateur**
+> (User-Agent tronqué), capturés automatiquement pour reproduire les
+> dysfonctionnements. Le tout dans une table unique `signalements`, le fil de
+> discussion en Json.
+>
+> **Ce qui reste à trancher avec le DPO** :
+> 1. **Durée de conservation** — aucune n'est définie à ce jour. Les autres
+>    traitements en ont une (audit : 12 mois ; livrets : contrat + 5 ans) ;
+>    celui-ci n'a rien. Un signalement traité depuis longtemps n'a pas de
+>    raison de rester indéfiniment.
+> 2. **Base légale** — intérêt légitime (amélioration d'un outil interne) à
+>    confirmer, le traitement portant sur des agents et non sur des apprenti·e·s.
+> 3. **Champ libre** — rien n'empêche techniquement un·e utilisateur·rice d'y
+>    écrire le nom d'un·e apprenti·e en décrivant un bug. À couvrir par une
+>    mention, ou par une consigne dans le guide.
+> 4. **Registre des traitements** — à compléter si le guichet y est considéré
+>    comme un traitement distinct du livret lui-même.
+>
+> **Action** : à verser à la 3ᵉ passe menée avec le DPO, en même temps que le
+> réexamen « mineurs » ci-dessus.
 
 ---
 
